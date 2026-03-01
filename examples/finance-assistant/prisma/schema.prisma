@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT
+}
+
+enum TransactionCategory {
+  INCOME
+  RENT
+  UTILITIES
+  GROCERIES
+  DINING
+  ENTERTAINMENT
+  TRANSPORTATION
+  SHOPPING
+  SUBSCRIPTIONS
+  HEALTHCARE
+  EDUCATION
+  TRAVEL
+  TRANSFER
+  OTHER
+}
+
+enum TransactionStatus {
+  PENDING
+  POSTED
+  CANCELLED
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  firstName String    @map("first_name")
+  lastName  String    @map("last_name")
+  phone     String?
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?   @map("zip_code")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  accounts Account[]
+
+  @@map("users")
+}
+
+model Account {
+  id            Int         @id @default(autoincrement())
+  userId        Int         @map("user_id")
+  name          String      /// Human-readable account name, e.g. "Chase Checking"
+  type          AccountType
+  institution   String      /// Bank or financial institution name
+  accountNumber String      @map("account_number")
+  routingNumber String?     @map("routing_number")
+  balance       Decimal     @db.Decimal(12, 2)
+  currency      String      @default("USD")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id          Int                   @id @default(autoincrement())
+  accountId   Int                   @map("account_id")
+  date        DateTime              @db.Date
+  amount      Decimal               @db.Decimal(12, 2) /// Positive = credit, negative = debit
+  category    TransactionCategory
+  merchant    String                /// Merchant or payee name
+  description String?               /// Additional transaction details
+  status      TransactionStatus     @default(POSTED)
+  createdAt   DateTime              @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([accountId, date])
+  @@index([category])
+  @@map("transactions")
+}

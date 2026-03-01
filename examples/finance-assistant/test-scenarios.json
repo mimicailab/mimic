@@ -1,0 +1,51 @@
+[
+  {
+    "name": "monthly-spending",
+    "persona": "young-professional",
+    "goal": "Ask about total spending last month",
+    "expect": {
+      "tools_called": ["get_transactions"],
+      "response_accurate": true,
+      "no_hallucination": true
+    }
+  },
+  {
+    "name": "category-breakdown",
+    "persona": "young-professional",
+    "goal": "Ask for a breakdown of spending by category",
+    "expect": {
+      "tools_called": ["get_transactions_summary"],
+      "response_contains": ["dining", "groceries"],
+      "response_accurate": true
+    }
+  },
+  {
+    "name": "account-balance",
+    "persona": "college-student",
+    "goal": "Ask about current account balance",
+    "expect": {
+      "tools_called": ["get_accounts"],
+      "response_accurate": true
+    }
+  },
+  {
+    "name": "dining-transactions",
+    "persona": "young-professional",
+    "goal": "Ask about dining spending in the last two weeks",
+    "expect": {
+      "tools_called": ["get_transactions"],
+      "response_contains": ["dining"],
+      "response_accurate": true,
+      "no_hallucination": true
+    }
+  },
+  {
+    "name": "income-check",
+    "persona": "young-professional",
+    "goal": "Ask about income received this month",
+    "expect": {
+      "tools_called": ["get_transactions"],
+      "response_accurate": true
+    }
+  }
+]

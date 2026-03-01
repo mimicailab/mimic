@@ -1,0 +1,403 @@
+{
+  "version": "1.0",
+  "personaId": "retiree",
+  "domain": "personal finance",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
+  "persona": {
+    "name": "Robert Williams",
+    "age": 65,
+    "occupation": "Retired Teacher",
+    "location": "Mesa, AZ",
+    "salary": 42000,
+    "description": "Robert is a 65-year-old retired high school history teacher living in Mesa, AZ. His income comes from a state pension ($2,400/mo) and Social Security ($1,100/mo). He owns his home outright, drives a 2018 Toyota Camry, and spends conservatively. He enjoys golf, woodworking in his garage, and weekly dinners with his adult children. He has a Fidelity IRA, a local credit union checking account, and a modest savings buffer."
+  },
+  "data": {
+    "entities": {
+      "accounts": [
+        {
+          "id": "acc_robert_checking",
+          "persona_id": "retiree",
+          "account_type": "checking",
+          "institution": "Desert Financial Credit Union",
+          "account_name": "Free Checking",
+          "currency": "USD",
+          "current_balance": 6234.18,
+          "available_balance": 6234.18,
+          "opened_at": "2005-09-01T00:00:00.000Z",
+          "is_primary": true
+        },
+        {
+          "id": "acc_robert_savings",
+          "persona_id": "retiree",
+          "account_type": "savings",
+          "institution": "Desert Financial Credit Union",
+          "account_name": "Regular Savings",
+          "currency": "USD",
+          "current_balance": 24500.00,
+          "available_balance": 24500.00,
+          "interest_rate": 2.10,
+          "opened_at": "2005-09-01T00:00:00.000Z",
+          "is_primary": false
+        },
+        {
+          "id": "acc_robert_ira",
+          "persona_id": "retiree",
+          "account_type": "investment",
+          "institution": "Fidelity",
+          "account_name": "Traditional IRA",
+          "currency": "USD",
+          "current_balance": 287000.00,
+          "opened_at": "1998-04-15T00:00:00.000Z",
+          "is_primary": false
+        }
+      ],
+      "categories": [
+        { "id": "cat_pension", "name": "Pension", "type": "income", "icon": "briefcase" },
+        { "id": "cat_social_security", "name": "Social Security", "type": "income", "icon": "shield" },
+        { "id": "cat_healthcare", "name": "Healthcare", "type": "expense", "icon": "heart" },
+        { "id": "cat_groceries", "name": "Groceries", "type": "expense", "icon": "cart" },
+        { "id": "cat_utilities", "name": "Utilities", "type": "expense", "icon": "zap" },
+        { "id": "cat_dining", "name": "Dining Out", "type": "expense", "icon": "utensils" },
+        { "id": "cat_hobbies", "name": "Hobbies", "type": "expense", "icon": "star" },
+        { "id": "cat_auto", "name": "Auto & Gas", "type": "expense", "icon": "car" },
+        { "id": "cat_insurance", "name": "Insurance", "type": "expense", "icon": "shield" },
+        { "id": "cat_gifts", "name": "Gifts & Family", "type": "expense", "icon": "gift" },
+        { "id": "cat_subscriptions", "name": "Subscriptions", "type": "expense", "icon": "repeat" },
+        { "id": "cat_home", "name": "Home Maintenance", "type": "expense", "icon": "home" }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_pension",
+            "description": "AZ State Retirement System - Pension",
+            "amount": 2400.00,
+            "type": "credit",
+            "merchant": "AZ State Retirement",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 1
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_social_security",
+            "description": "SSA - Social Security",
+            "amount": 1100.00,
+            "type": "credit",
+            "merchant": "Social Security Admin",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 15
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_healthcare",
+            "description": "AETNA Medicare Supplement",
+            "amount": -187.00,
+            "type": "debit",
+            "merchant": "Aetna",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 5
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_insurance",
+            "description": "State Farm Auto Insurance",
+            "amount": -94.00,
+            "type": "debit",
+            "merchant": "State Farm",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 10
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_utilities",
+            "description": "SRP - Electric",
+            "amount": -145.00,
+            "type": "debit",
+            "merchant": "Salt River Project",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 18
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_utilities",
+            "description": "Southwest Gas - Natural Gas",
+            "amount": -38.00,
+            "type": "debit",
+            "merchant": "Southwest Gas",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 20
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_subscriptions",
+            "description": "Cox Internet",
+            "amount": -59.99,
+            "type": "debit",
+            "merchant": "Cox Communications",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 22
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_groceries",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -85.00,
+              "max": -35.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": ["Fry's Food", "Safeway", "Walmart Supercenter", "Costco", "Sprouts"]
+            },
+            "description": {
+              "type": "pick",
+              "values": ["Weekly groceries", "Grocery run", "Household supplies"]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 2,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_dining",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -45.00,
+              "max": -12.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": ["Cracker Barrel", "Denny's", "Olive Garden", "Chili's", "Golden Corral"]
+            },
+            "description": {
+              "type": "pick",
+              "values": ["Family dinner", "Lunch with friends", "Breakfast out"]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 2,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_auto",
+            "type": "debit",
+            "merchant": "Costco Gas",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -55.00,
+              "max": -35.00
+            },
+            "description": {
+              "type": "pick",
+              "values": ["Gas fill-up", "Fuel"]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 3,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_hobbies",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -65.00,
+              "max": -18.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": ["Longbow Golf Club", "Home Depot", "Rockler Woodworking", "Arizona Golf Course"]
+            },
+            "description": {
+              "type": "pick",
+              "values": ["Golf green fees", "Woodworking supplies", "Hobby materials"]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_healthcare",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -75.00,
+              "max": -20.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": ["Walgreens Pharmacy", "CVS Pharmacy", "Banner Health"]
+            },
+            "description": {
+              "type": "pick",
+              "values": ["Prescription refill", "Doctor copay", "Lab work copay"]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 3,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_gifts",
+            "description": "Birthday gift for grandchild",
+            "amount": -50.00,
+            "type": "debit",
+            "merchant": "Amazon.com",
+            "status": "posted"
+          },
+          "probability": 0.04
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_robert_checking",
+            "category_id": "cat_home",
+            "description": "Home repair service",
+            "amount": -275.00,
+            "type": "debit",
+            "merchant": "Handyman Services",
+            "status": "posted"
+          },
+          "probability": 0.02
+        }
+      }
+    ],
+    "annotations": {
+      "spending_profile": "conservative",
+      "saving_rate": 0.20,
+      "primary_expense_categories": ["healthcare", "groceries", "utilities"],
+      "financial_goals": ["preserve retirement savings", "cover healthcare costs"],
+      "lifestyle_notes": "Fixed income, conservative spender, homeowner no mortgage, enjoys golf and woodworking"
+    }
+  }
+}

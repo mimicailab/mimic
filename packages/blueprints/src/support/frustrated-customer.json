@@ -1,0 +1,203 @@
+{
+  "version": "1.0",
+  "personaId": "frustrated-customer",
+  "domain": "support",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6",
+  "persona": {
+    "name": "Karen Mitchell",
+    "age": 42,
+    "occupation": "Real Estate Agent",
+    "location": "Tampa, FL",
+    "salary": 78000,
+    "description": "Karen is a 42-year-old real estate agent in Tampa who has been a customer for 3 years. She has experienced recurring billing issues — double charges, incorrect plan upgrades, and failed refunds. She's escalation-prone, references previous ticket numbers, and expects immediate resolution. She's technically competent but frustrated by having to repeat her issue history to every new agent."
+  },
+  "data": {
+    "entities": {
+      "customers": [
+        {
+          "id": "cust_karen",
+          "persona_id": "frustrated-customer",
+          "name": "Karen Mitchell",
+          "email": "karen.mitchell@example.com",
+          "phone": "+1-813-555-0142",
+          "plan": "professional",
+          "status": "active",
+          "created_at": "2022-03-10T00:00:00.000Z",
+          "lifetime_value": 2340.00,
+          "satisfaction_score": 2.1
+        }
+      ],
+      "tickets": [
+        {
+          "id": "tkt_001",
+          "customer_id": "cust_karen",
+          "subject": "Double charged for March billing",
+          "status": "resolved",
+          "priority": "high",
+          "channel": "phone",
+          "created_at": "2024-03-15T14:22:00.000Z",
+          "resolved_at": "2024-03-18T09:45:00.000Z",
+          "resolution": "Refund issued for duplicate charge",
+          "satisfaction_rating": 3
+        },
+        {
+          "id": "tkt_002",
+          "customer_id": "cust_karen",
+          "subject": "Plan upgraded without consent",
+          "status": "resolved",
+          "priority": "high",
+          "channel": "email",
+          "created_at": "2024-06-02T10:05:00.000Z",
+          "resolved_at": "2024-06-05T16:30:00.000Z",
+          "resolution": "Plan reverted, partial refund issued",
+          "satisfaction_rating": 2
+        },
+        {
+          "id": "tkt_003",
+          "customer_id": "cust_karen",
+          "subject": "Refund from ticket #002 never appeared",
+          "status": "resolved",
+          "priority": "urgent",
+          "channel": "phone",
+          "created_at": "2024-06-20T11:15:00.000Z",
+          "resolved_at": "2024-06-22T14:00:00.000Z",
+          "resolution": "Manual refund reprocessed",
+          "satisfaction_rating": 1
+        },
+        {
+          "id": "tkt_004",
+          "customer_id": "cust_karen",
+          "subject": "Charged for feature I cancelled",
+          "status": "open",
+          "priority": "high",
+          "channel": "chat",
+          "created_at": "2024-12-10T09:30:00.000Z",
+          "resolved_at": null,
+          "resolution": null,
+          "satisfaction_rating": null
+        }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "messages",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "customer_id": "cust_karen",
+            "direction": "inbound",
+            "channel": "chat"
+          },
+          "randomFields": {
+            "content": {
+              "type": "pick",
+              "values": [
+                "This is the FOURTH time I've had a billing issue. Ticket numbers: #001, #002, #003. I need to speak to a manager.",
+                "I was told the refund would appear in 3-5 business days. It's been two weeks. This is unacceptable.",
+                "Why am I being charged $49.99 when my plan is $29.99? I never authorized an upgrade.",
+                "I've already explained this three times to three different agents. Please read my ticket history before responding.",
+                "I need this resolved TODAY or I'm cancelling my account and filing a chargeback."
+              ]
+            },
+            "sentiment": {
+              "type": "pick",
+              "values": ["frustrated", "angry", "demanding"]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 5,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "messages",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "customer_id": "cust_karen",
+            "direction": "outbound",
+            "channel": "chat"
+          },
+          "randomFields": {
+            "content": {
+              "type": "pick",
+              "values": [
+                "I understand your frustration, Karen. Let me look into your account right away.",
+                "I can see the previous tickets in your history. Let me review what happened.",
+                "I've escalated this to our billing team. You should receive a call within 2 hours.",
+                "The refund of $49.99 has been processed. Please allow 3-5 business days.",
+                "I'm sorry for the inconvenience. I've applied a $25 account credit as well."
+              ]
+            },
+            "agent_id": {
+              "type": "pick",
+              "values": ["agent_101", "agent_205", "agent_312", "agent_supervisor"]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 5,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "billing_events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "customer_id": "cust_karen",
+            "type": "charge",
+            "amount": 29.99,
+            "description": "Professional Plan - Monthly",
+            "status": "completed"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 10
+          }
+        }
+      },
+      {
+        "targetTable": "billing_events",
+        "type": "event",
+        "event": {
+          "fields": {
+            "customer_id": "cust_karen",
+            "type": "charge",
+            "amount": 29.99,
+            "description": "Professional Plan - Duplicate Charge",
+            "status": "refunded"
+          },
+          "probability": 0.05
+        }
+      },
+      {
+        "targetTable": "billing_events",
+        "type": "event",
+        "event": {
+          "fields": {
+            "customer_id": "cust_karen",
+            "type": "refund",
+            "amount": -29.99,
+            "description": "Refund - Billing Error",
+            "status": "completed"
+          },
+          "probability": 0.04
+        }
+      }
+    ],
+    "annotations": {
+      "customer_profile": "high-risk-churn",
+      "escalation_tendency": "high",
+      "primary_issue_types": ["billing errors", "unauthorized charges", "failed refunds"],
+      "communication_style": "direct, references history, expects accountability",
+      "retention_risk": "critical",
+      "lifetime_notes": "Long-term customer with repeated negative billing experiences, requires careful handling"
+    }
+  }
+}

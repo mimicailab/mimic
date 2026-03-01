@@ -1,0 +1,683 @@
+{
+  "version": "1.0",
+  "personaId": "freelancer",
+  "domain": "personal finance",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3",
+  "persona": {
+    "name": "Alex Rivera",
+    "age": 34,
+    "occupation": "Freelance Web Developer",
+    "location": "Portland, OR",
+    "salary": 85000,
+    "description": "Alex is a 34-year-old freelance web developer based in Portland, OR. Income is variable (~$85K/year) with irregular client payments ranging from $2,000-$12,000 per invoice. Alex maintains a Chase business checking account and a personal savings account. Monthly expenses include a coworking space membership, frequent coffee shop visits, and typical Portland lifestyle spending. Tax management is a constant consideration with quarterly estimated payments."
+  },
+  "data": {
+    "entities": {
+      "accounts": [
+        {
+          "id": "acc_alex_biz_checking",
+          "persona_id": "freelancer",
+          "account_type": "checking",
+          "institution": "Chase",
+          "account_name": "Chase Business Complete Checking",
+          "currency": "USD",
+          "current_balance": 8742.19,
+          "available_balance": 8742.19,
+          "opened_at": "2019-06-01T00:00:00.000Z",
+          "is_primary": true
+        },
+        {
+          "id": "acc_alex_personal_savings",
+          "persona_id": "freelancer",
+          "account_type": "savings",
+          "institution": "Marcus by Goldman Sachs",
+          "account_name": "Marcus High-Yield Savings",
+          "currency": "USD",
+          "current_balance": 24300.00,
+          "available_balance": 24300.00,
+          "interest_rate": 4.40,
+          "opened_at": "2020-02-15T00:00:00.000Z",
+          "is_primary": false
+        },
+        {
+          "id": "acc_alex_tax_savings",
+          "persona_id": "freelancer",
+          "account_type": "savings",
+          "institution": "Marcus by Goldman Sachs",
+          "account_name": "Tax Reserve Fund",
+          "currency": "USD",
+          "current_balance": 7850.00,
+          "available_balance": 7850.00,
+          "interest_rate": 4.40,
+          "opened_at": "2020-02-15T00:00:00.000Z",
+          "is_primary": false
+        },
+        {
+          "id": "acc_alex_credit",
+          "persona_id": "freelancer",
+          "account_type": "credit",
+          "institution": "Chase",
+          "account_name": "Chase Ink Business Cash",
+          "currency": "USD",
+          "current_balance": -623.45,
+          "credit_limit": 8000,
+          "opened_at": "2020-09-10T00:00:00.000Z",
+          "is_primary": false
+        }
+      ],
+      "categories": [
+        { "id": "cat_client_income", "name": "Client Income", "type": "income", "icon": "dollar" },
+        { "id": "cat_housing", "name": "Housing", "type": "expense", "icon": "home" },
+        { "id": "cat_workspace", "name": "Workspace", "type": "expense", "icon": "building" },
+        { "id": "cat_food", "name": "Food & Dining", "type": "expense", "icon": "utensils" },
+        { "id": "cat_coffee", "name": "Coffee & Cafes", "type": "expense", "icon": "coffee" },
+        { "id": "cat_software", "name": "Software & Tools", "type": "expense", "icon": "code" },
+        { "id": "cat_transport", "name": "Transportation", "type": "expense", "icon": "car" },
+        { "id": "cat_groceries", "name": "Groceries", "type": "expense", "icon": "cart" },
+        { "id": "cat_utilities", "name": "Utilities", "type": "expense", "icon": "zap" },
+        { "id": "cat_insurance", "name": "Insurance", "type": "expense", "icon": "shield" },
+        { "id": "cat_taxes", "name": "Tax Payments", "type": "expense", "icon": "receipt" },
+        { "id": "cat_entertainment", "name": "Entertainment", "type": "expense", "icon": "music" },
+        { "id": "cat_savings_transfer", "name": "Savings Transfer", "type": "transfer", "icon": "piggy-bank" },
+        { "id": "cat_health", "name": "Health & Wellness", "type": "expense", "icon": "heart" },
+        { "id": "cat_subscriptions", "name": "Subscriptions", "type": "expense", "icon": "repeat" }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_client_income",
+            "type": "credit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": 2000.00,
+              "max": 12000.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Cascade Digital Agency",
+                "Willamette Brands Co.",
+                "NovaTech Solutions",
+                "Bridge City Marketing",
+                "Powell Street Studios",
+                "Evergreen SaaS Inc."
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Website redesign - milestone 2",
+                "React dashboard - final payment",
+                "Monthly retainer - January",
+                "E-commerce platform - deposit",
+                "API integration project",
+                "Landing page build",
+                "UX audit & recommendations",
+                "Monthly maintenance retainer"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 5,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_housing",
+            "description": "Rent - 1BR Pearl District",
+            "amount": -1650.00,
+            "type": "debit",
+            "merchant": "NW Property Management",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 1
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_workspace",
+            "description": "WeWork Hot Desk Membership",
+            "amount": -299.00,
+            "type": "debit",
+            "merchant": "WeWork",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 1
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_software",
+            "description": "GitHub Pro",
+            "amount": -4.00,
+            "type": "debit",
+            "merchant": "GitHub",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 7
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_software",
+            "description": "Figma Professional",
+            "amount": -15.00,
+            "type": "debit",
+            "merchant": "Figma",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 14
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_software",
+            "description": "Vercel Pro Plan",
+            "amount": -20.00,
+            "type": "debit",
+            "merchant": "Vercel",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 10
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_software",
+            "description": "Adobe Creative Cloud",
+            "amount": -59.99,
+            "type": "debit",
+            "merchant": "Adobe",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 20
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_insurance",
+            "description": "Oscar Health - Individual Plan",
+            "amount": -485.00,
+            "type": "debit",
+            "merchant": "Oscar Health",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 1
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_utilities",
+            "description": "PGE - Electric",
+            "amount": -72.00,
+            "type": "debit",
+            "merchant": "Portland General Electric",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 18
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_utilities",
+            "description": "Xfinity Internet 600Mbps",
+            "amount": -79.99,
+            "type": "debit",
+            "merchant": "Xfinity",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 25
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_subscriptions",
+            "description": "Spotify Premium",
+            "amount": -10.99,
+            "type": "debit",
+            "merchant": "Spotify",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 5
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_coffee",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -7.50,
+              "max": -4.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Stumptown Coffee Roasters",
+                "Heart Coffee Roasters",
+                "Coava Coffee Roasters",
+                "Case Study Coffee",
+                "Good Coffee",
+                "Never Coffee Lab",
+                "Proud Mary Coffee"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Coffee - working session",
+                "Latte & pastry",
+                "Cold brew",
+                "Espresso",
+                "Coffee meeting with client"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 4,
+            "max": 6,
+            "period": "week"
+          },
+          "timeBias": "morning"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_food",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -38.00,
+              "max": -12.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Pok Pok",
+                "Pine State Biscuits",
+                "Screen Door",
+                "Lardo",
+                "Salt & Straw",
+                "Nong's Khao Man Gai",
+                "Matt's BBQ",
+                "Afuri Ramen"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Lunch break",
+                "Dinner out",
+                "Working lunch",
+                "Takeout dinner"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 3,
+            "max": 5,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_groceries",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -85.00,
+              "max": -35.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "New Seasons Market",
+                "Fred Meyer",
+                "Trader Joe's",
+                "Whole Foods Market"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Weekly groceries",
+                "Grocery run",
+                "Meal prep supplies"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 2,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_transport",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -22.00,
+              "max": -5.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Lyft",
+                "TriMet",
+                "Biketown PDX",
+                "Shell",
+                "Chevron"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Ride to client meeting",
+                "Transit pass reload",
+                "Bike share rental",
+                "Gas fill-up"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_taxes",
+            "description": "IRS Quarterly Estimated Tax Payment",
+            "amount": -4250.00,
+            "type": "debit",
+            "merchant": "IRS USATAXPYMT",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "quarterly",
+            "dayOfMonth": 15
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_savings_transfer",
+            "description": "Transfer to Tax Reserve",
+            "amount": -800.00,
+            "type": "transfer",
+            "merchant": "Marcus by Goldman Sachs",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 15
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_entertainment",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -55.00,
+              "max": -12.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "McMenamins",
+                "Powell's City of Books",
+                "Living Room Theaters",
+                "Doug Fir Lounge",
+                "Mississippi Studios"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Books",
+                "Movie night",
+                "Live music",
+                "Happy hour networking"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_health",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -45.00,
+              "max": -15.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Planet Fitness",
+                "REI Co-op",
+                "New Seasons Pharmacy"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Gym session",
+                "Outdoor gear",
+                "Pharmacy"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_software",
+            "description": "Annual domain renewals (5 domains)",
+            "amount": -89.55,
+            "type": "debit",
+            "merchant": "Cloudflare",
+            "status": "posted"
+          },
+          "probability": 0.02
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_alex_credit",
+            "category_id": "cat_software",
+            "description": "New MacBook Pro keyboard",
+            "amount": -169.00,
+            "type": "debit",
+            "merchant": "Apple Store",
+            "status": "posted"
+          },
+          "probability": 0.01
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_alex_biz_checking",
+            "category_id": "cat_entertainment",
+            "description": "Conference registration - React Summit",
+            "amount": -599.00,
+            "type": "debit",
+            "merchant": "React Summit",
+            "status": "posted"
+          },
+          "probability": 0.03
+        }
+      }
+    ],
+    "annotations": {
+      "spending_profile": "variable-moderate",
+      "saving_rate": 0.12,
+      "income_type": "variable",
+      "primary_expense_categories": ["housing", "food", "coffee", "software"],
+      "financial_goals": ["tax compliance", "6-month emergency fund", "retirement savings"],
+      "lifestyle_notes": "Remote worker, coffee culture enthusiast, Portland food scene regular, bicycle commuter, quarterly tax management is critical"
+    }
+  }
+}

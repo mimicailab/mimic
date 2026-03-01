@@ -1,0 +1,555 @@
+{
+  "version": "1.0",
+  "personaId": "college-student",
+  "domain": "personal finance",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4",
+  "persona": {
+    "name": "Jordan Park",
+    "age": 21,
+    "occupation": "CS Student & Part-time Barista",
+    "location": "Austin, TX",
+    "salary": 18000,
+    "description": "Jordan is a 21-year-old computer science junior at UT Austin who works part-time as a barista at a local coffee shop. Annual income is roughly $18K from the part-time job plus occasional tutoring gigs. Jordan has a student checking account with no monthly fees and no credit card. Budget is tight: campus dining, cheap groceries, occasional late-night food runs, textbook purchases at semester start, and minimal entertainment. Transportation is mostly public transit and cycling."
+  },
+  "data": {
+    "entities": {
+      "accounts": [
+        {
+          "id": "acc_jordan_checking",
+          "persona_id": "college-student",
+          "account_type": "checking",
+          "institution": "Bank of America",
+          "account_name": "SafePass Student Checking",
+          "currency": "USD",
+          "current_balance": 847.32,
+          "available_balance": 847.32,
+          "opened_at": "2022-08-01T00:00:00.000Z",
+          "is_primary": true
+        },
+        {
+          "id": "acc_jordan_savings",
+          "persona_id": "college-student",
+          "account_type": "savings",
+          "institution": "Bank of America",
+          "account_name": "Student Savings",
+          "currency": "USD",
+          "current_balance": 1250.00,
+          "available_balance": 1250.00,
+          "interest_rate": 0.04,
+          "opened_at": "2022-08-01T00:00:00.000Z",
+          "is_primary": false
+        }
+      ],
+      "categories": [
+        { "id": "cat_income_job", "name": "Job Income", "type": "income", "icon": "briefcase" },
+        { "id": "cat_income_tutoring", "name": "Tutoring Income", "type": "income", "icon": "book" },
+        { "id": "cat_housing", "name": "Housing", "type": "expense", "icon": "home" },
+        { "id": "cat_food_campus", "name": "Campus Dining", "type": "expense", "icon": "utensils" },
+        { "id": "cat_groceries", "name": "Groceries", "type": "expense", "icon": "cart" },
+        { "id": "cat_food_out", "name": "Eating Out", "type": "expense", "icon": "utensils" },
+        { "id": "cat_education", "name": "Education & Books", "type": "expense", "icon": "book" },
+        { "id": "cat_transport", "name": "Transportation", "type": "expense", "icon": "bus" },
+        { "id": "cat_entertainment", "name": "Entertainment", "type": "expense", "icon": "gamepad" },
+        { "id": "cat_subscriptions", "name": "Subscriptions", "type": "expense", "icon": "repeat" },
+        { "id": "cat_phone", "name": "Phone", "type": "expense", "icon": "phone" },
+        { "id": "cat_personal", "name": "Personal & Misc", "type": "expense", "icon": "smile" },
+        { "id": "cat_supplies", "name": "Study Supplies", "type": "expense", "icon": "pencil" }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_income_job",
+            "description": "Epoch Coffee - Paycheck",
+            "amount": 692.31,
+            "type": "credit",
+            "merchant": "Epoch Coffee",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "biweekly",
+            "dayOfWeek": 5
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_income_tutoring",
+            "type": "credit",
+            "merchant": "Peer Tutoring",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": 40.00,
+              "max": 120.00
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "CS tutoring - data structures",
+                "Python tutoring session",
+                "Algorithms study group",
+                "Intro to CS tutoring"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 5,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_housing",
+            "description": "Rent - Shared apt near campus",
+            "amount": -625.00,
+            "type": "debit",
+            "merchant": "West Campus Apartments",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 1
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_phone",
+            "description": "Mint Mobile - Monthly plan",
+            "amount": -15.00,
+            "type": "debit",
+            "merchant": "Mint Mobile",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 10
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_subscriptions",
+            "description": "Spotify Student",
+            "amount": -5.99,
+            "type": "debit",
+            "merchant": "Spotify",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 22
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_subscriptions",
+            "description": "GitHub Student - Free (Copilot)",
+            "amount": 0,
+            "type": "debit",
+            "merchant": "GitHub",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 1
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_food_campus",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -12.00,
+              "max": -5.50
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "UT Dining - JCL",
+                "UT Dining - Jester",
+                "UT Dining - Kinsolving",
+                "Wendy's on Drag",
+                "Chick-fil-A Guadalupe",
+                "Panda Express - Drag"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Lunch between classes",
+                "Quick dinner on campus",
+                "Post-study snack",
+                "Breakfast before class"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 4,
+            "max": 6,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_groceries",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -45.00,
+              "max": -18.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "H-E-B",
+                "H-E-B #301",
+                "Fiesta Mart",
+                "Aldi"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Weekly groceries - basics",
+                "Ramen & snacks restock",
+                "Grocery run"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 1,
+            "period": "week"
+          },
+          "timeBias": "weekend"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_food_out",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -18.00,
+              "max": -7.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Torchy's Tacos",
+                "Whataburger",
+                "Taco Bell",
+                "P. Terry's",
+                "Domino's Pizza",
+                "East Side Pies"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Late night food run",
+                "Dinner with friends",
+                "Weekend hangout",
+                "Study session fuel"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 3,
+            "period": "week"
+          },
+          "timeBias": "evening"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_transport",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -5.00,
+              "max": -1.25
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "CapMetro",
+                "CapMetro Bus",
+                "Bird Scooter",
+                "Lime Scooter"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Bus to campus",
+                "Transit to work",
+                "Scooter ride",
+                "Bus fare"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 3,
+            "max": 6,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_entertainment",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -25.00,
+              "max": -5.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Steam",
+                "PlayStation Store",
+                "AMC Theater",
+                "Dave & Buster's",
+                "Pinballz Arcade"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Video game purchase",
+                "Movie with friends",
+                "Arcade night",
+                "Game sale"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_supplies",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -25.00,
+              "max": -5.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Amazon.com",
+                "UT Co-op",
+                "Dollar Tree",
+                "Target"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Notebooks & pens",
+                "USB-C hub",
+                "Study supplies",
+                "Printer paper"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 3,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_education",
+            "description": "UT Bookstore - Semester textbooks",
+            "amount": -287.50,
+            "type": "debit",
+            "merchant": "UT Co-op Bookstore",
+            "status": "posted"
+          },
+          "probability": 0.04
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_education",
+            "description": "Amazon - CS textbook (used)",
+            "amount": -42.99,
+            "type": "debit",
+            "merchant": "Amazon.com",
+            "status": "posted"
+          },
+          "probability": 0.03
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_education",
+            "description": "Udemy - Web Dev Bootcamp course",
+            "amount": -12.99,
+            "type": "debit",
+            "merchant": "Udemy",
+            "status": "posted"
+          },
+          "probability": 0.02
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_personal",
+            "description": "Venmo - Split dinner with roommates",
+            "amount": -15.00,
+            "type": "debit",
+            "merchant": "Venmo",
+            "status": "posted"
+          },
+          "probability": 0.08
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_personal",
+            "description": "Laundry - Campus wash & fold",
+            "amount": -8.50,
+            "type": "debit",
+            "merchant": "SpinZone Laundry",
+            "status": "posted"
+          },
+          "probability": 0.12
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "periodic",
+        "periodic": {
+          "fields": {
+            "account_id": "acc_jordan_checking",
+            "category_id": "cat_housing",
+            "description": "Utilities share - Venmo to roommate",
+            "amount": -45.00,
+            "type": "debit",
+            "merchant": "Venmo",
+            "status": "posted"
+          },
+          "frequency": "monthly"
+        }
+      }
+    ],
+    "annotations": {
+      "spending_profile": "frugal",
+      "saving_rate": 0.05,
+      "income_type": "part-time-hourly",
+      "primary_expense_categories": ["housing", "food", "transport"],
+      "financial_goals": ["avoid overdrafts", "build small emergency fund", "graduate debt-free"],
+      "lifestyle_notes": "Budget-conscious student, heavy campus meal plan usage, public transit dependent, seasonal textbook spikes, late-night food culture, gaming as primary entertainment"
+    }
+  }
+}

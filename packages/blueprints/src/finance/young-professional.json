@@ -1,0 +1,610 @@
+{
+  "version": "1.0",
+  "personaId": "young-professional",
+  "domain": "personal finance",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+  "persona": {
+    "name": "Maya Chen",
+    "age": 28,
+    "occupation": "Product Designer",
+    "location": "Austin, TX",
+    "salary": 95000,
+    "description": "Maya is a 28-year-old product designer living in Austin, TX. She earns $95K/year and enjoys dining out, live music, and fitness classes. She has a Chase checking account, an Amex Gold credit card, and an Ally high-yield savings account. She pays $1,850/month in rent, subscribes to several streaming services, and frequently uses rideshare on weekends."
+  },
+  "data": {
+    "entities": {
+      "accounts": [
+        {
+          "id": "acc_maya_checking",
+          "persona_id": "young-professional",
+          "account_type": "checking",
+          "institution": "Chase",
+          "account_name": "Chase Total Checking",
+          "currency": "USD",
+          "current_balance": 4823.47,
+          "available_balance": 4823.47,
+          "opened_at": "2020-03-15T00:00:00.000Z",
+          "is_primary": true
+        },
+        {
+          "id": "acc_maya_credit",
+          "persona_id": "young-professional",
+          "account_type": "credit",
+          "institution": "American Express",
+          "account_name": "Amex Gold Card",
+          "currency": "USD",
+          "current_balance": -1247.83,
+          "credit_limit": 12000,
+          "opened_at": "2021-08-01T00:00:00.000Z",
+          "is_primary": false
+        },
+        {
+          "id": "acc_maya_savings",
+          "persona_id": "young-professional",
+          "account_type": "savings",
+          "institution": "Ally Bank",
+          "account_name": "Ally High-Yield Savings",
+          "currency": "USD",
+          "current_balance": 18450.00,
+          "available_balance": 18450.00,
+          "interest_rate": 4.25,
+          "opened_at": "2021-01-10T00:00:00.000Z",
+          "is_primary": false
+        }
+      ],
+      "categories": [
+        { "id": "cat_income", "name": "Income", "type": "income", "icon": "briefcase" },
+        { "id": "cat_housing", "name": "Housing", "type": "expense", "icon": "home" },
+        { "id": "cat_food", "name": "Food & Dining", "type": "expense", "icon": "utensils" },
+        { "id": "cat_transport", "name": "Transportation", "type": "expense", "icon": "car" },
+        { "id": "cat_shopping", "name": "Shopping", "type": "expense", "icon": "bag" },
+        { "id": "cat_subscriptions", "name": "Subscriptions", "type": "expense", "icon": "repeat" },
+        { "id": "cat_fitness", "name": "Fitness & Wellness", "type": "expense", "icon": "heart" },
+        { "id": "cat_entertainment", "name": "Entertainment", "type": "expense", "icon": "music" },
+        { "id": "cat_groceries", "name": "Groceries", "type": "expense", "icon": "cart" },
+        { "id": "cat_utilities", "name": "Utilities", "type": "expense", "icon": "zap" },
+        { "id": "cat_savings_transfer", "name": "Savings Transfer", "type": "transfer", "icon": "piggy-bank" },
+        { "id": "cat_personal", "name": "Personal Care", "type": "expense", "icon": "smile" }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_income",
+            "description": "TechNova Inc. - Direct Deposit",
+            "amount": 3645.83,
+            "type": "credit",
+            "merchant": "TechNova Inc.",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "biweekly",
+            "dayOfWeek": 5
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_housing",
+            "description": "Rent - 2BR South Lamar",
+            "amount": -1850.00,
+            "type": "debit",
+            "merchant": "Greystar Properties",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 1
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_subscriptions",
+            "description": "Netflix Premium",
+            "amount": -15.49,
+            "type": "debit",
+            "merchant": "Netflix",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 12
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_subscriptions",
+            "description": "Spotify Premium",
+            "amount": -10.99,
+            "type": "debit",
+            "merchant": "Spotify",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 18
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_utilities",
+            "description": "Austin Energy - Electric",
+            "amount": -87.50,
+            "type": "debit",
+            "merchant": "Austin Energy",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 15
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_utilities",
+            "description": "Google Fi - Mobile",
+            "amount": -55.00,
+            "type": "debit",
+            "merchant": "Google Fi",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 22
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_fitness",
+            "description": "ClassPass Monthly",
+            "amount": -49.00,
+            "type": "debit",
+            "merchant": "ClassPass",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 5
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_subscriptions",
+            "description": "iCloud+ Storage 200GB",
+            "amount": -2.99,
+            "type": "debit",
+            "merchant": "Apple",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 8
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_savings_transfer",
+            "description": "Transfer to Ally Savings",
+            "amount": -500.00,
+            "type": "transfer",
+            "merchant": "Ally Bank",
+            "status": "posted"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 3
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_food",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -42.00,
+              "max": -12.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Torchy's Tacos",
+                "Uchi Austin",
+                "Via 313 Pizza",
+                "Ramen Tatsu-Ya",
+                "Loro",
+                "Hula Hut",
+                "Terry Black's BBQ",
+                "Salt Lick BBQ",
+                "Sushi Junai",
+                "Chili's"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Dinner with friends",
+                "Date night dinner",
+                "Team lunch",
+                "Weekend brunch",
+                "Late night tacos"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 3,
+            "max": 5,
+            "period": "week"
+          },
+          "timeBias": "evening"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_food",
+            "type": "debit",
+            "merchant": "DoorDash",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -35.00,
+              "max": -15.00
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "DoorDash - Torchy's Tacos",
+                "DoorDash - Pho Saigon",
+                "DoorDash - P. Terry's",
+                "DoorDash - Flyrite Chicken"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 3,
+            "period": "week"
+          },
+          "timeBias": "evening"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_transport",
+            "type": "debit",
+            "merchant": "Uber",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -28.00,
+              "max": -8.50
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Uber - Rainey St to Home",
+                "Uber - Home to 6th Street",
+                "Uber - South Congress to Home",
+                "Uber - Downtown to Domain"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "week"
+          },
+          "timeBias": "weekend"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_groceries",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -95.00,
+              "max": -45.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "H-E-B",
+                "H-E-B #405",
+                "H-E-B Plus",
+                "Whole Foods Market",
+                "Central Market"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Weekly groceries",
+                "Grocery run",
+                "Weekend grocery haul"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 2,
+            "period": "week"
+          },
+          "timeBias": "weekend"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_shopping",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -120.00,
+              "max": -15.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Amazon.com",
+                "Target",
+                "Nordstrom",
+                "Zara",
+                "Madewell",
+                "REI Co-op"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Online order",
+                "Clothing",
+                "Home goods",
+                "Gift",
+                "Household items"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 5,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_entertainment",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -75.00,
+              "max": -20.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Stubhub",
+                "Mohawk Austin",
+                "The Continental Club",
+                "Alamo Drafthouse",
+                "ACL Live at Moody Theater"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Concert tickets",
+                "Live music",
+                "Movie night",
+                "Comedy show"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_personal",
+            "type": "debit",
+            "status": "posted"
+          },
+          "randomFields": {
+            "amount": {
+              "type": "decimal_range",
+              "min": -65.00,
+              "max": -20.00
+            },
+            "merchant": {
+              "type": "pick",
+              "values": [
+                "Drybar",
+                "Sephora",
+                "CVS Pharmacy",
+                "Target Beauty"
+              ]
+            },
+            "description": {
+              "type": "pick",
+              "values": [
+                "Hair appointment",
+                "Skincare products",
+                "Personal care",
+                "Beauty products"
+              ]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 3,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "periodic",
+        "periodic": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_utilities",
+            "description": "Spectrum Internet - Monthly",
+            "amount": -69.99,
+            "type": "debit",
+            "merchant": "Spectrum",
+            "status": "posted"
+          },
+          "frequency": "monthly"
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_maya_credit",
+            "category_id": "cat_shopping",
+            "description": "Apple Store - AirPods Pro",
+            "amount": -249.00,
+            "type": "debit",
+            "merchant": "Apple Store",
+            "status": "posted"
+          },
+          "probability": 0.03
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_entertainment",
+            "description": "ACL Festival - Weekend Pass",
+            "amount": -315.00,
+            "type": "debit",
+            "merchant": "ACL Festival",
+            "status": "posted"
+          },
+          "probability": 0.02
+        }
+      },
+      {
+        "targetTable": "transactions",
+        "type": "event",
+        "event": {
+          "fields": {
+            "account_id": "acc_maya_checking",
+            "category_id": "cat_transport",
+            "description": "Southwest Airlines - Round trip",
+            "amount": -287.00,
+            "type": "debit",
+            "merchant": "Southwest Airlines",
+            "status": "posted"
+          },
+          "probability": 0.04
+        }
+      }
+    ],
+    "annotations": {
+      "spending_profile": "moderate-high",
+      "saving_rate": 0.15,
+      "primary_expense_categories": ["food", "housing", "transport"],
+      "financial_goals": ["emergency fund", "down payment savings"],
+      "lifestyle_notes": "Social, active nightlife on weekends, health-conscious, early tech adopter"
+    }
+  }
+}

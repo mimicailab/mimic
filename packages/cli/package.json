@@ -1,0 +1,42 @@
+{
+  "name": "@mimicailab/cli",
+  "version": "0.1.0",
+  "description": "CLI for Mimic — generate, seed, serve, and test synthetic data for AI agents",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Mimic AI Lab",
+  "homepage": "https://github.com/mimicailab/mimic",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mimicailab/mimic.git",
+    "directory": "packages/cli"
+  },
+  "keywords": ["cli", "synthetic-data", "mcp", "ai-agent", "testing"],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "mimic": "./dist/bin/mimic.js"
+  },
+  "files": ["dist", "bin"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mimicailab/core": "workspace:*",
+    "@mimicailab/blueprints": "workspace:*",
+    "commander": "^13.1.0",
+    "@inquirer/prompts": "^7.4.0",
+    "chalk": "^5.4.1",
+    "ora": "^8.2.0",
+    "cli-table3": "^0.6.5",
+    "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}

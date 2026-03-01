@@ -1,0 +1,297 @@
+{
+  "version": "1.0",
+  "personaId": "solo-professional",
+  "domain": "calendar",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5",
+  "persona": {
+    "name": "David Kim",
+    "age": 31,
+    "occupation": "Software Architect",
+    "location": "San Francisco, CA",
+    "salary": 195000,
+    "description": "David is a 31-year-old software architect at a mid-stage startup in SF. His calendar is dominated by engineering meetings, architecture reviews, and 1:1s. Outside work, he maintains a strict fitness routine (gym 5x/week, weekend runs), hosts a monthly board game night, and is active in the local climbing community. He blocks focus time aggressively and color-codes everything."
+  },
+  "data": {
+    "entities": {
+      "calendars": [
+        {
+          "id": "cal_david_work",
+          "persona_id": "solo-professional",
+          "name": "Work",
+          "color": "#4285F4",
+          "is_primary": true
+        },
+        {
+          "id": "cal_david_fitness",
+          "persona_id": "solo-professional",
+          "name": "Fitness",
+          "color": "#EA4335",
+          "is_primary": false
+        },
+        {
+          "id": "cal_david_social",
+          "persona_id": "solo-professional",
+          "name": "Social",
+          "color": "#34A853",
+          "is_primary": false
+        }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_work",
+            "title": "Engineering Standup",
+            "duration_minutes": 15,
+            "location": "Slack Huddle",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "daily",
+            "timeOfDay": "09:30"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_work",
+            "title": "Architecture Review",
+            "duration_minutes": 60,
+            "location": "Zoom",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 2,
+            "timeOfDay": "14:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_work",
+            "title": "1:1 with CTO",
+            "duration_minutes": 30,
+            "location": "Zoom",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 1,
+            "timeOfDay": "11:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_work",
+            "title": "Sprint Planning",
+            "duration_minutes": 90,
+            "location": "Conference Room",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "biweekly",
+            "dayOfWeek": 1,
+            "timeOfDay": "13:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_work",
+            "title": "Focus Time - No Meetings",
+            "duration_minutes": 180,
+            "location": "",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "daily",
+            "timeOfDay": "06:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_fitness",
+            "title": "Gym - Strength Training",
+            "duration_minutes": 75,
+            "location": "Fitness SF SoMa",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 1,
+            "timeOfDay": "07:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_fitness",
+            "title": "Gym - Strength Training",
+            "duration_minutes": 75,
+            "location": "Fitness SF SoMa",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 3,
+            "timeOfDay": "07:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_fitness",
+            "title": "Gym - Strength Training",
+            "duration_minutes": 75,
+            "location": "Fitness SF SoMa",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 5,
+            "timeOfDay": "07:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_david_fitness",
+            "title": "Weekend Run - Embarcadero",
+            "duration_minutes": 60,
+            "location": "Embarcadero",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 6,
+            "timeOfDay": "08:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "calendar_id": "cal_david_work",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "randomFields": {
+            "title": {
+              "type": "pick",
+              "values": ["1:1 with Senior Eng", "Code Review Session", "Design Doc Review", "Incident Retro", "Cross-team Sync"]
+            },
+            "duration_minutes": {
+              "type": "pick",
+              "values": [25, 30, 45]
+            },
+            "location": {
+              "type": "pick",
+              "values": ["Zoom", "Slack Huddle", "In-person"]
+            }
+          },
+          "frequency": {
+            "min": 4,
+            "max": 8,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "calendar_id": "cal_david_social",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "randomFields": {
+            "title": {
+              "type": "pick",
+              "values": ["Dinner with friends", "Climbing at Mission Cliffs", "Happy hour", "Coffee catch-up", "Board game night"]
+            },
+            "duration_minutes": {
+              "type": "pick",
+              "values": [90, 120, 180]
+            },
+            "location": {
+              "type": "pick",
+              "values": ["Mission District", "Mission Cliffs", "Hayes Valley", "The Interval", "Home"]
+            }
+          },
+          "frequency": {
+            "min": 2,
+            "max": 4,
+            "period": "week"
+          },
+          "timeBias": "evening"
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "event",
+        "event": {
+          "fields": {
+            "calendar_id": "cal_david_fitness",
+            "title": "Bay Area Climbing Comp",
+            "duration_minutes": 480,
+            "location": "Planet Granite Sunnyvale",
+            "is_all_day": true,
+            "status": "confirmed"
+          },
+          "probability": 0.03
+        }
+      }
+    ],
+    "annotations": {
+      "schedule_density": "high",
+      "coordination_complexity": "medium",
+      "primary_event_types": ["work meetings", "fitness", "social"],
+      "scheduling_challenges": ["protecting focus time", "meeting overload", "balancing work and fitness"],
+      "lifestyle_notes": "Tech professional, highly structured schedule, fitness-oriented, active social life"
+    }
+  }
+}

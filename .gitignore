@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.turbo/
+.mimic/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.claude/
+private/

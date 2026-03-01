@@ -1,0 +1,38 @@
+{
+  "name": "@mimicailab/blueprints",
+  "version": "0.1.0",
+  "description": "Pre-built persona blueprints for Mimic — finance, calendar, and support domains",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Mimic AI Lab",
+  "homepage": "https://github.com/mimicailab/mimic",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mimicailab/mimic.git",
+    "directory": "packages/blueprints"
+  },
+  "keywords": ["synthetic-data", "personas", "blueprints", "ai-agent"],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mimicailab/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3"
+  }
+}

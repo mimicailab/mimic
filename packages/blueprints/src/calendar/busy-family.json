@@ -1,0 +1,302 @@
+{
+  "version": "1.0",
+  "personaId": "busy-family",
+  "domain": "calendar",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4",
+  "persona": {
+    "name": "Sarah & Mike Thompson",
+    "age": 38,
+    "occupation": "Marketing Director & Civil Engineer",
+    "location": "Denver, CO",
+    "salary": 185000,
+    "description": "Sarah (38) and Mike (40) Thompson are a dual-income family with two kids — Emma (10) and Liam (7) — living in the Denver suburbs. Sarah is a marketing director and Mike is a civil engineer. Their calendar is packed with school events, kids' soccer and swim practice, work meetings, date nights, and weekend family activities. They coordinate heavily via shared calendars."
+  },
+  "data": {
+    "entities": {
+      "calendars": [
+        {
+          "id": "cal_family",
+          "persona_id": "busy-family",
+          "name": "Thompson Family",
+          "color": "#4285F4",
+          "is_primary": true
+        },
+        {
+          "id": "cal_sarah_work",
+          "persona_id": "busy-family",
+          "name": "Sarah - Work",
+          "color": "#EA4335",
+          "is_primary": false
+        },
+        {
+          "id": "cal_mike_work",
+          "persona_id": "busy-family",
+          "name": "Mike - Work",
+          "color": "#34A853",
+          "is_primary": false
+        },
+        {
+          "id": "cal_kids",
+          "persona_id": "busy-family",
+          "name": "Kids Activities",
+          "color": "#FBBC04",
+          "is_primary": false
+        }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_sarah_work",
+            "title": "Marketing Team Standup",
+            "duration_minutes": 30,
+            "location": "Zoom",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 1,
+            "timeOfDay": "09:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_sarah_work",
+            "title": "Campaign Review",
+            "duration_minutes": 60,
+            "location": "Conference Room B",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 3,
+            "timeOfDay": "14:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_mike_work",
+            "title": "Site Progress Meeting",
+            "duration_minutes": 90,
+            "location": "Main Office",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 2,
+            "timeOfDay": "08:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_kids",
+            "title": "Emma - Soccer Practice",
+            "duration_minutes": 90,
+            "location": "Cherry Creek Fields",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 2,
+            "timeOfDay": "16:30"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_kids",
+            "title": "Emma - Soccer Practice",
+            "duration_minutes": 90,
+            "location": "Cherry Creek Fields",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 4,
+            "timeOfDay": "16:30"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_kids",
+            "title": "Liam - Swim Lessons",
+            "duration_minutes": 45,
+            "location": "Apex Aquatic Center",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 3,
+            "timeOfDay": "17:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_kids",
+            "title": "Liam - Swim Lessons",
+            "duration_minutes": 45,
+            "location": "Apex Aquatic Center",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 5,
+            "timeOfDay": "17:00"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "calendar_id": "cal_family",
+            "title": "Family Dinner Night",
+            "duration_minutes": 120,
+            "location": "Home",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "schedule": {
+            "frequency": "weekly",
+            "dayOfWeek": 0,
+            "timeOfDay": "17:30"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "calendar_id": "cal_sarah_work",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "randomFields": {
+            "title": {
+              "type": "pick",
+              "values": ["1:1 with VP", "Budget Review", "Cross-functional Sync", "Client Call", "Strategy Session"]
+            },
+            "duration_minutes": {
+              "type": "pick",
+              "values": [30, 45, 60]
+            },
+            "location": {
+              "type": "pick",
+              "values": ["Zoom", "Conference Room A", "Google Meet"]
+            }
+          },
+          "frequency": {
+            "min": 3,
+            "max": 6,
+            "period": "week"
+          }
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "calendar_id": "cal_family",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "randomFields": {
+            "title": {
+              "type": "pick",
+              "values": ["Date Night", "Grocery Run", "Kids Playdate", "Neighborhood BBQ", "Family Hike"]
+            },
+            "duration_minutes": {
+              "type": "pick",
+              "values": [120, 180, 240]
+            },
+            "location": {
+              "type": "pick",
+              "values": ["Downtown Denver", "Red Rocks", "Home", "Cherry Creek Mall", "Washington Park"]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 3,
+            "period": "week"
+          },
+          "timeBias": "weekend"
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "event",
+        "event": {
+          "fields": {
+            "calendar_id": "cal_kids",
+            "title": "Emma - Soccer Tournament",
+            "duration_minutes": 360,
+            "location": "Dick's Sporting Goods Park",
+            "is_all_day": true,
+            "status": "confirmed"
+          },
+          "probability": 0.04
+        }
+      },
+      {
+        "targetTable": "events",
+        "type": "event",
+        "event": {
+          "fields": {
+            "calendar_id": "cal_family",
+            "title": "Parent-Teacher Conference",
+            "duration_minutes": 60,
+            "location": "Cherry Hills Elementary",
+            "is_all_day": false,
+            "status": "confirmed"
+          },
+          "probability": 0.03
+        }
+      }
+    ],
+    "annotations": {
+      "schedule_density": "very-high",
+      "coordination_complexity": "high",
+      "primary_event_types": ["work meetings", "kids activities", "family time"],
+      "scheduling_challenges": ["double-booking risk", "pickup/dropoff logistics", "work-life balance"],
+      "lifestyle_notes": "Dual-income suburban family, heavily calendar-dependent, weekends packed with kids' sports"
+    }
+  }
+}

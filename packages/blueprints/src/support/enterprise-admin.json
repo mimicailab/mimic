@@ -1,0 +1,191 @@
+{
+  "version": "1.0",
+  "personaId": "enterprise-admin",
+  "domain": "support",
+  "generatedAt": "2025-05-15T00:00:00.000Z",
+  "generatedBy": "mimic-builtin",
+  "checksum": "sha256:f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7",
+  "persona": {
+    "name": "James Okafor",
+    "age": 36,
+    "occupation": "IT Administrator",
+    "location": "Chicago, IL",
+    "salary": 105000,
+    "description": "James is a 36-year-old IT administrator managing a 500-person company's SaaS tooling. He handles bulk user provisioning, SSO configuration, API integrations, and license management. He communicates in a technical, no-nonsense style, prefers self-service docs over chatting with support, and only reaches out when blocked. His tickets tend to be detailed, well-documented, and often involve API or integration issues."
+  },
+  "data": {
+    "entities": {
+      "customers": [
+        {
+          "id": "cust_okafor_corp",
+          "persona_id": "enterprise-admin",
+          "name": "Winfield Logistics Inc.",
+          "email": "james.okafor@winfield-logistics.com",
+          "phone": "+1-312-555-0287",
+          "plan": "enterprise",
+          "status": "active",
+          "created_at": "2023-01-15T00:00:00.000Z",
+          "lifetime_value": 84000.00,
+          "satisfaction_score": 4.2,
+          "seat_count": 500,
+          "admin_contact": "James Okafor"
+        }
+      ],
+      "tickets": [
+        {
+          "id": "tkt_ent_001",
+          "customer_id": "cust_okafor_corp",
+          "subject": "SCIM provisioning fails for users with special characters",
+          "status": "resolved",
+          "priority": "high",
+          "channel": "email",
+          "created_at": "2024-02-12T08:45:00.000Z",
+          "resolved_at": "2024-02-14T11:20:00.000Z",
+          "resolution": "Bug fix deployed - SCIM endpoint now handles UTF-8 display names",
+          "satisfaction_rating": 5
+        },
+        {
+          "id": "tkt_ent_002",
+          "customer_id": "cust_okafor_corp",
+          "subject": "SSO SAML assertion failing after IdP cert rotation",
+          "status": "resolved",
+          "priority": "urgent",
+          "channel": "phone",
+          "created_at": "2024-05-20T07:10:00.000Z",
+          "resolved_at": "2024-05-20T09:30:00.000Z",
+          "resolution": "Certificate cache cleared, new cert uploaded via admin API",
+          "satisfaction_rating": 4
+        },
+        {
+          "id": "tkt_ent_003",
+          "customer_id": "cust_okafor_corp",
+          "subject": "Bulk user deprovisioning via API returns 429",
+          "status": "open",
+          "priority": "medium",
+          "channel": "email",
+          "created_at": "2024-11-05T14:30:00.000Z",
+          "resolved_at": null,
+          "resolution": null,
+          "satisfaction_rating": null
+        }
+      ]
+    },
+    "patterns": [
+      {
+        "targetTable": "messages",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "customer_id": "cust_okafor_corp",
+            "direction": "inbound",
+            "channel": "email"
+          },
+          "randomFields": {
+            "content": {
+              "type": "pick",
+              "values": [
+                "We're hitting rate limits on the /api/v2/users endpoint when deprovisioning. Current batch size is 50. Request headers and response attached.",
+                "After rotating our Okta IdP certificate, SAML assertions are rejected with error 'invalid_signature'. Our metadata XML is attached.",
+                "Need to provision 75 new users before Monday. SCIM sync is returning 500 for 12 users — all have accented characters in display_name. Logs attached.",
+                "Our audit log export via API is missing events from Nov 1-3. GET /api/v2/audit?from=2024-11-01 returns empty results for those dates.",
+                "Requesting a dedicated rate limit increase for our org. We run nightly sync jobs that require ~2000 API calls within a 15-minute window."
+              ]
+            },
+            "sentiment": {
+              "type": "pick",
+              "values": ["neutral", "professional", "urgent"]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 3,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "messages",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "customer_id": "cust_okafor_corp",
+            "direction": "outbound",
+            "channel": "email"
+          },
+          "randomFields": {
+            "content": {
+              "type": "pick",
+              "values": [
+                "Hi James, I've escalated this to our API team. The 429 responses are expected at batch size 50 — I'll request a rate limit increase for your org.",
+                "The SCIM issue has been identified as a bug in our UTF-8 handling. A hotfix will deploy today. I'll confirm once it's live.",
+                "I've increased your org's rate limit to 500 req/min. Please test your sync job and let me know if you hit any issues.",
+                "Good news — the audit log gap was caused by a replication lag on Nov 1-3. The data has been backfilled. Please re-run your export.",
+                "Your dedicated CSM has been looped in. We'll schedule a call to discuss your Q1 provisioning needs and API usage patterns."
+              ]
+            },
+            "agent_id": {
+              "type": "pick",
+              "values": ["agent_tier2_eng", "agent_csm", "agent_api_team"]
+            }
+          },
+          "frequency": {
+            "min": 1,
+            "max": 3,
+            "period": "month"
+          }
+        }
+      },
+      {
+        "targetTable": "billing_events",
+        "type": "recurring",
+        "recurring": {
+          "fields": {
+            "customer_id": "cust_okafor_corp",
+            "type": "charge",
+            "amount": 7000.00,
+            "description": "Enterprise Plan - 500 seats - Monthly",
+            "status": "completed"
+          },
+          "schedule": {
+            "frequency": "monthly",
+            "dayOfMonth": 15
+          }
+        }
+      },
+      {
+        "targetTable": "api_usage",
+        "type": "variable",
+        "variable": {
+          "fields": {
+            "customer_id": "cust_okafor_corp",
+            "endpoint_category": "user_management"
+          },
+          "randomFields": {
+            "request_count": {
+              "type": "decimal_range",
+              "min": 500,
+              "max": 2500
+            },
+            "endpoint": {
+              "type": "pick",
+              "values": ["/api/v2/users", "/api/v2/users/bulk", "/api/v2/groups", "/api/v2/scim/Users"]
+            }
+          },
+          "frequency": {
+            "min": 20,
+            "max": 30,
+            "period": "month"
+          }
+        }
+      }
+    ],
+    "annotations": {
+      "customer_profile": "strategic-enterprise",
+      "technical_sophistication": "high",
+      "primary_issue_types": ["API issues", "SSO/SCIM", "rate limits", "bulk operations"],
+      "communication_style": "technical, concise, includes logs and reproduction steps",
+      "account_health": "good",
+      "lifetime_notes": "High-value enterprise account, technically self-sufficient, only contacts support for blocking issues"
+    }
+  }
+}

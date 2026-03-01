@@ -1,0 +1,71 @@
+{
+  "domain": "personal finance assistant",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "young-professional",
+      "description": "28yo product designer, $95K salary, Austin TX"
+    },
+    {
+      "name": "college-student",
+      "description": "21yo CS student, part-time barista, tight budget"
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "prisma",
+        "path": "./prisma/schema.prisma"
+      }
+    }
+  },
+
+  "test": {
+    "agent": "http://localhost:3000/chat",
+    "mode": "text",
+    "scenarios": [
+      {
+        "name": "monthly-spending",
+        "persona": "young-professional",
+        "goal": "Ask about total spending last month",
+        "expect": {
+          "tools_called": ["get_transactions"],
+          "response_accurate": true,
+          "no_hallucination": true
+        }
+      },
+      {
+        "name": "category-breakdown",
+        "persona": "young-professional",
+        "goal": "Ask for a breakdown of spending by category",
+        "expect": {
+          "tools_called": ["get_transactions_summary"],
+          "response_contains": ["dining", "groceries"],
+          "response_accurate": true
+        }
+      },
+      {
+        "name": "account-balance",
+        "persona": "college-student",
+        "goal": "Ask about current account balance",
+        "expect": {
+          "tools_called": ["get_accounts"],
+          "response_accurate": true
+        }
+      }
+    ]
+  }
+}
