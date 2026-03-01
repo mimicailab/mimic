@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docs — Mimic</title>
+  <meta name="description" content="Mimic documentation. Learn how to simulate every data source your AI agent talks to." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #050507;
+      --bg-subtle: #0a0a0e;
+      --bg-raised: #0f0f14;
+      --bg-card: #131318;
+      --bg-card-hover: #19191f;
+      --bg-code: #0d0d12;
+      --border: #1e1e26;
+      --border-mid: #2a2a35;
+      --border-bright: #3a3a48;
+      --text: #f0f0f5;
+      --text-secondary: #9898a8;
+      --text-muted: #5c5c6e;
+      --accent: #7c6aff;
+      --accent-bright: #9585ff;
+      --accent-dim: #5a4ad4;
+      --accent-glow: rgba(124, 106, 255, 0.15);
+      --green: #3ecf71;
+      --green-dim: rgba(62, 207, 113, 0.12);
+      --cyan: #2dd4bf;
+      --cyan-dim: rgba(45, 212, 191, 0.12);
+      --amber: #f5b731;
+      --amber-dim: rgba(245, 183, 49, 0.12);
+      --pink: #f06595;
+      --red: #ef4444;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --sidebar-w: 260px;
+      --r-sm: 8px;
+      --r-md: 12px;
+    }
+
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection { background: var(--accent); color: #fff; }
+
+    /* ─── NAV ──────────────────────────────────── */
+    .topnav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 56px;
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      background: rgba(5, 5, 7, 0.8);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+    }
+
+    .topnav-inner {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topnav-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .topnav-logo {
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav-logo-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .topnav-logo-icon svg { width: 14px; height: 14px; }
+
+    .topnav-badge {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--accent-bright);
+      background: var(--accent-glow);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .topnav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: var(--r-sm);
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .topnav-link:hover {
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .topnav-gh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.8125rem;
+      padding: 6px 12px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border-mid);
+      transition: border-color 0.15s;
+    }
+
+    .topnav-gh:hover { border-color: var(--border-bright); }
+
+    .sidebar-toggle {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* ─── SIDEBAR ──────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-w);
+      border-right: 1px solid var(--border);
+      background: var(--bg-subtle);
+      overflow-y: auto;
+      padding: 24px 0;
+      z-index: 50;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+
+    .sidebar-group {
+      margin-bottom: 28px;
+    }
+
+    .sidebar-group-title {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      padding: 0 24px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-link {
+      display: block;
+      padding: 6px 24px 6px 28px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      font-weight: 450;
+    }
+
+    .sidebar-link:hover {
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .sidebar-link.active {
+      color: var(--accent-bright);
+      border-left-color: var(--accent);
+      background: rgba(124, 106, 255, 0.05);
+      font-weight: 550;
+    }
+
+    /* ─── MAIN ─────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      padding: 56px 0 0;
+      min-height: 100vh;
+    }
+
+    .doc-content {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 48px 120px;
+    }
+
+    /* ─── TYPOGRAPHY ───────────────────────────── */
+    .doc-content h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      margin-bottom: 12px;
+      line-height: 1.15;
+      padding-top: 20px;
+    }
+
+    .doc-content h1 .eyebrow {
+      display: block;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .doc-content > h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 64px 0 16px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      line-height: 1.2;
+    }
+
+    .doc-content > h2:first-of-type {
+      border-top: none;
+      margin-top: 40px;
+    }
+
+    .doc-content h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin: 40px 0 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .doc-content h4 {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      margin: 28px 0 8px;
+      color: var(--text-secondary);
+    }
+
+    .doc-content p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      line-height: 1.75;
+      margin-bottom: 16px;
+    }
+
+    .doc-content > .lead {
+      font-size: 1.0625rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 40px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-content a {
+      color: var(--accent-bright);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .doc-content a:hover { text-decoration: underline; }
+
+    .doc-content strong { color: var(--text); font-weight: 600; }
+
+    .doc-content ul, .doc-content ol {
+      margin: 0 0 16px 20px;
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+    }
+
+    .doc-content li {
+      margin-bottom: 6px;
+      line-height: 1.65;
+    }
+
+    .doc-content hr {
+      border: none;
+      height: 1px;
+      background: var(--border);
+      margin: 48px 0;
+    }
+
+    /* ─── CODE ─────────────────────────────────── */
+    .doc-content code {
+      font-family: var(--mono);
+      font-size: 0.8125em;
+      background: var(--bg-raised);
+      color: var(--accent-bright);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .code-block {
+      position: relative;
+      margin: 16px 0 24px;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+      background: var(--bg-code);
+      overflow: hidden;
+    }
+
+    .code-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--bg-raised);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+    }
+
+    .code-bar-lang {
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .code-copy {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.6875rem;
+      font-family: var(--sans);
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .code-copy:hover {
+      color: var(--text-secondary);
+      border-color: var(--border-mid);
+    }
+
+    .code-block pre {
+      padding: 18px 20px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--text-secondary);
+    }
+
+    .code-block pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    .code-block .kw { color: var(--accent-bright); }
+    .code-block .str { color: var(--green); }
+    .code-block .cm { color: var(--text-muted); font-style: italic; }
+    .code-block .fn { color: var(--cyan); }
+    .code-block .ty { color: var(--amber); }
+    .code-block .op { color: var(--text-muted); }
+    .code-block .flag { color: var(--cyan); }
+    .code-block .prompt { color: var(--accent-bright); user-select: none; }
+    .code-block .ok { color: var(--green); }
+    .code-block .out { color: var(--text-muted); }
+    .code-block .yk { color: var(--cyan); }
+    .code-block .ys { color: var(--green); }
+
+    /* ─── TABLE ────────────────────────────────── */
+    .doc-table-wrap {
+      margin: 16px 0 24px;
+      overflow-x: auto;
+      border-radius: var(--r-md);
+      border: 1px solid var(--border);
+    }
+
+    .doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+    }
+
+    .doc-table th {
+      text-align: left;
+      padding: 10px 16px;
+      background: var(--bg-raised);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .doc-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+
+    .doc-table tr:last-child td { border-bottom: none; }
+
+    .doc-table td code {
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    /* ─── CALLOUT ──────────────────────────────── */
+    .callout {
+      padding: 16px 20px;
+      border-radius: var(--r-md);
+      margin: 20px 0 24px;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .callout-icon {
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .callout p { margin: 0; font-size: 0.875rem; }
+
+    .callout.info {
+      background: rgba(124, 106, 255, 0.06);
+      border: 1px solid rgba(124, 106, 255, 0.15);
+      color: var(--text-secondary);
+    }
+
+    .callout.tip {
+      background: var(--green-dim);
+      border: 1px solid rgba(62, 207, 113, 0.2);
+      color: var(--text-secondary);
+    }
+
+    .callout.warn {
+      background: var(--amber-dim);
+      border: 1px solid rgba(245, 183, 49, 0.2);
+      color: var(--text-secondary);
+    }
+
+    /* ─── SECTION ANCHOR ───────────────────────── */
+    .doc-content [id] {
+      scroll-margin-top: 80px;
+    }
+
+    /* ─── ADAPTER GRID (compact for docs) ──────── */
+    .adapter-doc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      margin: 16px 0 24px;
+    }
+
+    .adapter-doc-item {
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 0.8125rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .adapter-doc-name { font-weight: 600; }
+    .adapter-doc-routes { color: var(--text-muted); font-family: var(--mono); font-size: 0.6875rem; }
+
+    /* ─── CHECKLIST ─────────────────────────────── */
+    .checklist {
+      list-style: none;
+      margin: 16px 0 24px 0;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .checklist li:last-child { border-bottom: none; }
+
+    .checklist-box {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1.5px solid var(--border-mid);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ─── FOOTER ───────────────────────────────── */
+    .doc-footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      margin-top: 64px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .doc-footer-nav {
+      display: flex;
+      gap: 32px;
+    }
+
+    .doc-footer a {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-decoration: none;
+    }
+
+    .doc-footer-label {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .doc-footer-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--accent-bright);
+    }
+
+    .doc-footer a:hover .doc-footer-title { text-decoration: underline; }
+
+    /* ─── COPY FOR LLM ─────────────────────────── */
+    .llm-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border-mid);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-family: var(--sans);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .llm-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: var(--bg-card-hover);
+    }
+
+    .llm-btn.copied {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .llm-btn svg { flex-shrink: 0; }
+
+    /* ─── RESPONSIVE ───────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        z-index: 90;
+        width: 280px;
+      }
+
+      .sidebar.open { transform: translateX(0); }
+
+      .sidebar-toggle { display: block; }
+
+      .main { margin-left: 0; }
+
+      .doc-content { padding: 32px 20px 80px; }
+
+      .topnav-right .topnav-link { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ─── NAV ─────────────────────────────────── -->
+  <header class="topnav">
+    <div class="topnav-inner">
+      <div class="topnav-left">
+        <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Toggle sidebar">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <a class="topnav-logo" href="index.html">
+          <span class="topnav-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V12L8 8L12 14L16 8L20 12V18"/></svg>
+          </span>
+          mimic
+        </a>
+        <span class="topnav-badge">docs</span>
+      </div>
+      <div class="topnav-right">
+        <a href="index.html" class="topnav-link">Home</a>
+        <a href="index.html#pricing" class="topnav-link">Pricing</a>
+        <a href="https://github.com/mimicailab/mimic" class="topnav-gh">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── SIDEBAR ─────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Getting Started</div>
+      <a href="#introduction" class="sidebar-link active">Introduction</a>
+      <a href="#installation" class="sidebar-link">Installation</a>
+      <a href="#quickstart" class="sidebar-link">Quickstart</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Core Concepts</div>
+      <a href="#personas" class="sidebar-link">Personas &amp; Blueprints</a>
+      <a href="#adapters" class="sidebar-link">Adapters</a>
+      <a href="#mock-server" class="sidebar-link">Mock Server</a>
+      <a href="#state-store" class="sidebar-link">State Store</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Configuration</div>
+      <a href="#config-file" class="sidebar-link">Config File</a>
+      <a href="#env-vars" class="sidebar-link">Environment Variables</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">CLI Reference</div>
+      <a href="#cli-init" class="sidebar-link">mimic init</a>
+      <a href="#cli-seed" class="sidebar-link">mimic seed</a>
+      <a href="#cli-host" class="sidebar-link">mimic host</a>
+      <a href="#cli-test" class="sidebar-link">mimic test</a>
+      <a href="#cli-inspect" class="sidebar-link">mimic inspect</a>
+      <a href="#cli-clean" class="sidebar-link">mimic clean</a>
+      <a href="#cli-generate" class="sidebar-link">mimic generate</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Adapters</div>
+      <a href="#adapter-list" class="sidebar-link">Adapter Catalog</a>
+      <a href="#adapter-databases" class="sidebar-link">Database Adapters</a>
+      <a href="#adapter-api" class="sidebar-link">API Mock Adapters</a>
+      <a href="#adapter-dev" class="sidebar-link">Build an Adapter</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">MCP Servers</div>
+      <a href="#mcp-overview" class="sidebar-link">Overview</a>
+      <a href="#mcp-setup" class="sidebar-link">Setup &amp; Config</a>
+      <a href="#mcp-parity" class="sidebar-link">Official Parity</a>
+      <a href="#mcp-catalog" class="sidebar-link">Server Catalog</a>
+      <a href="#mcp-build" class="sidebar-link">Build an MCP Server</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Architecture</div>
+      <a href="#arch-overview" class="sidebar-link">System Overview</a>
+      <a href="#arch-data-flow" class="sidebar-link">Data Flow</a>
+      <a href="#arch-consistency" class="sidebar-link">Cross-Surface Consistency</a>
+      <a href="#arch-packages" class="sidebar-link">Package Graph</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Guides</div>
+      <a href="#guide-finance" class="sidebar-link">Finance Agent</a>
+      <a href="#guide-support" class="sidebar-link">Support Agent</a>
+      <a href="#guide-cicd" class="sidebar-link">CI/CD</a>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN CONTENT ────────────────────────── -->
+  <main class="main">
+    <div class="doc-content">
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- INTRODUCTION                               -->
+      <!-- ────────────────────────────────────────── -->
+      <h1 id="introduction">
+        <span class="eyebrow">Getting Started</span>
+        Mimic Documentation
+      </h1>
+      <p class="lead">
+        Mimic is an open-source synthetic environment engine for AI agent development.
+        One persona generates coherent data across every database, API, and MCP server your agent touches.
+        Deterministic, offline-capable, and free.
+      </p>
+
+      <h2 id="installation">Installation</h2>
+      <p>Install the CLI globally via npm, pnpm, or yarn:</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> npm install -g @mimicailab/cli</code></pre>
+      </div>
+
+      <p>Or run directly with <code>npx</code> — no install needed:</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> npx @mimicailab/cli init</code></pre>
+      </div>
+
+      <p><strong>Requirements:</strong> Node.js 18+ (Node 22 recommended). No other dependencies.</p>
+
+      <h2 id="quickstart">Quickstart</h2>
+      <p>Get a fully mocked environment running in under 60 seconds.</p>
+
+      <h3>1. Initialise a project</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic init</code></pre>
+      </div>
+      <p>Creates a <code>.mimic/</code> directory with a default <code>config.yaml</code>. Edit it to declare which surfaces your agent uses:</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">yaml</span><span>.mimic/config.yaml</span></div>
+        <pre><code><span class="yk">persona:</span> <span class="ys">finance-alex</span>        <span class="cm"># Pre-built persona (ships free)</span>
+
+<span class="yk">surfaces:</span>
+  <span class="yk">databases:</span>
+    - <span class="yk">adapter:</span> <span class="ys">postgres</span>
+      <span class="yk">connection:</span> <span class="ys">postgresql://localhost:5432/testdb</span>
+
+  <span class="yk">apis:</span>
+    - <span class="yk">adapter:</span> <span class="ys">plaid</span>
+    - <span class="yk">adapter:</span> <span class="ys">stripe</span>
+    - <span class="yk">adapter:</span> <span class="ys">jira</span>
+
+  <span class="yk">mcp:</span>
+    - <span class="yk">adapter:</span> <span class="ys">slack</span>
+    - <span class="yk">adapter:</span> <span class="ys">notion</span></code></pre>
+      </div>
+
+      <h3>2. Seed databases</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic seed</code></pre>
+      </div>
+      <p>Populates your PostgreSQL (or MongoDB, MySQL, etc.) with persona-consistent data &mdash; users, accounts, transactions, all matching the persona's story.</p>
+
+      <h3>3. Start mock APIs + MCP servers</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic host
+
+<span class="ok">&#10003;</span> <span class="out">Plaid API     &rarr; http://localhost:4000/plaid</span>
+<span class="ok">&#10003;</span> <span class="out">Stripe API    &rarr; http://localhost:4000/stripe/v1</span>
+<span class="ok">&#10003;</span> <span class="out">Jira API      &rarr; http://localhost:4000/jira/rest/api/3</span>
+<span class="ok">&#10003;</span> <span class="out">Slack MCP     &rarr; stdio ready</span>
+<span class="ok">&#10003;</span> <span class="out">Notion MCP    &rarr; stdio ready</span>
+<span class="ok">&#10003;</span> <span class="out">Ready in 1.2s</span></code></pre>
+      </div>
+      <p>Point your agent at <code>localhost:4000</code> instead of production APIs. Everything just works.</p>
+
+      <h3>4. Run tests</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic test</code></pre>
+      </div>
+      <p>Execute test scenarios against your mock environment with optional AI-powered evaluation.</p>
+
+      <h3>5. Clean up</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic clean</code></pre>
+      </div>
+      <p>Truncates seeded database rows, stops mock servers, and clears caches.</p>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- CORE CONCEPTS                              -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="personas">Personas &amp; Blueprints</h2>
+      <p>A <strong>persona</strong> is a fictional identity with a coherent life story. A <strong>blueprint</strong> is the concrete data that persona generates across all surfaces &mdash; database rows, API responses, MCP tool outputs.</p>
+      <p>Pre-built personas ship as JSON files and work offline without LLM calls. Custom personas are generated by the Blueprint Engine (Pro), which uses an LLM to create a coherent persona then a deterministic expander to produce consistent data across all configured surfaces.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p>Pre-built personas ship free with every install. No API keys or LLM calls needed. Just <code>mimic seed --persona finance-alex</code> and go.</p>
+      </div>
+
+      <h3>Available pre-built personas</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Persona</th><th>Domain</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>finance-alex</code></td><td>Fintech</td><td>32, fintech PM, $85K, 3 bank accounts, active trader, Jira power user</td></tr>
+            <tr><td><code>freelancer-maya</code></td><td>Freelance</td><td>28, freelance designer, multi-currency income, Stripe/PayPal/invoicing</td></tr>
+            <tr><td><code>college-student</code></td><td>Education</td><td>20, college junior, part-time work, student loans, budgeting</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="adapters">Adapters</h2>
+      <p>Adapters are Mimic's plugin system. There are two types:</p>
+      <p><strong>Database adapters</strong> connect to real databases and seed them with persona data. They implement <code>DatabaseAdapter</code> with <code>seed()</code> and <code>clean()</code> methods.</p>
+      <p><strong>API mock adapters</strong> register Fastify routes that simulate real API endpoints. They implement <code>ApiMockAdapter</code> with <code>registerRoutes()</code> and <code>getEndpoints()</code> methods.</p>
+
+      <h2 id="mock-server">Mock Server</h2>
+      <p>The mock server is a Fastify instance that:</p>
+      <ol>
+        <li>Loads all configured adapters from <code>.mimic/config.yaml</code></li>
+        <li>Calls each adapter's <code>registerRoutes()</code> to mount route handlers</li>
+        <li>Serves HTTP requests, routing by path prefix to the correct adapter</li>
+        <li>Provides CORS headers for browser-based agent testing</li>
+      </ol>
+
+      <h2 id="state-store">State Store</h2>
+      <p>The state store is a per-adapter in-memory key-value store that holds seeded data during a mock server session.</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Method</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>set(collection, id, data)</code></td><td>Store a record</td></tr>
+            <tr><td><code>get(collection, id)</code></td><td>Retrieve by ID</td></tr>
+            <tr><td><code>list(collection)</code></td><td>List all records in a collection</td></tr>
+            <tr><td><code>filter(collection, predicate)</code></td><td>Query records by predicate function</td></tr>
+            <tr><td><code>update(collection, id, partial)</code></td><td>Partial update a record</td></tr>
+            <tr><td><code>delete(collection, id)</code></td><td>Remove a record</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The state store resets when the server restarts. For stateful testing across sessions, the Pro tier offers session persistence.</p>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- CONFIGURATION                              -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="config-file">Configuration File</h2>
+      <p>Mimic is configured via <code>.mimic/config.yaml</code> in your project root. Created automatically by <code>mimic init</code>.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">yaml</span><span>.mimic/config.yaml — full reference</span></div>
+        <pre><code><span class="cm"># Persona — use a pre-built or generate custom (Pro)</span>
+<span class="yk">persona:</span> <span class="ys">finance-alex</span>
+
+<span class="cm"># Port for the mock server</span>
+<span class="yk">port:</span> <span class="ys">4000</span>
+
+<span class="cm"># Seed for deterministic generation (optional)</span>
+<span class="yk">seed:</span> <span class="ys">42</span>
+
+<span class="cm"># Database surfaces</span>
+<span class="yk">surfaces:</span>
+  <span class="yk">databases:</span>
+    - <span class="yk">adapter:</span> <span class="ys">postgres</span>
+      <span class="yk">connection:</span> <span class="ys">postgresql://localhost:5432/testdb</span>
+      <span class="yk">tables:</span>              <span class="cm"># optional: limit to specific tables</span>
+        - users
+        - accounts
+        - transactions
+
+  <span class="cm"># API mock surfaces</span>
+  <span class="yk">apis:</span>
+    - <span class="yk">adapter:</span> <span class="ys">plaid</span>
+    - <span class="yk">adapter:</span> <span class="ys">stripe</span>
+      <span class="yk">config:</span>              <span class="cm"># adapter-specific options</span>
+        <span class="yk">webhookSecret:</span> <span class="ys">whsec_test</span>
+    - <span class="yk">adapter:</span> <span class="ys">jira</span>
+      <span class="yk">config:</span>
+        <span class="yk">projectKey:</span> <span class="ys">MIM</span>
+
+  <span class="cm"># MCP server surfaces</span>
+  <span class="yk">mcp:</span>
+    - <span class="yk">adapter:</span> <span class="ys">slack</span>
+      <span class="yk">transport:</span> <span class="ys">stdio</span>
+    - <span class="yk">adapter:</span> <span class="ys">notion</span>
+      <span class="yk">transport:</span> <span class="ys">stdio</span></code></pre>
+      </div>
+
+      <h2 id="env-vars">Environment Variables</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Variable</th><th>Description</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td><code>MIMIC_PORT</code></td><td>Mock server port</td><td><code>4000</code></td></tr>
+            <tr><td><code>MIMIC_PERSONA</code></td><td>Persona blueprint to use</td><td><code>finance-alex</code></td></tr>
+            <tr><td><code>MIMIC_API_KEY</code></td><td>API key for Pro features</td><td>&mdash;</td></tr>
+            <tr><td><code>MIMIC_LOG_LEVEL</code></td><td>Logging verbosity</td><td><code>info</code></td></tr>
+            <tr><td><code>MIMIC_BASE_URL</code></td><td>Used by MCP servers to reach mock server</td><td><code>http://localhost:4000</code></td></tr>
+            <tr><td><code>MIMIC_AUTH_TOKEN</code></td><td>Auth token for MCP &rarr; mock requests</td><td><code>mimic_test</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- CLI REFERENCE                              -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="cli-init">mimic init</h2>
+      <p>Initialise a new Mimic project in the current directory.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic init [options]
+
+<span class="cm">Options:</span>
+  <span class="flag">--persona</span> &lt;name&gt;     Pre-select a persona (default: finance-alex)
+  <span class="flag">--force</span>              Overwrite existing .mimic/ directory</code></pre>
+      </div>
+      <p>Creates <code>.mimic/config.yaml</code>, <code>.mimic/blueprints/</code>, and <code>.mimic/scenarios/</code>. If a Prisma schema or SQL files are detected, surfaces are auto-configured.</p>
+
+      <h2 id="cli-seed">mimic seed</h2>
+      <p>Seed databases with persona-consistent data.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic seed [options]
+
+<span class="cm">Options:</span>
+  <span class="flag">--persona</span> &lt;name&gt;     Override the persona from config
+  <span class="flag">--tables</span> &lt;list&gt;      Comma-separated list of tables to seed
+  <span class="flag">--rows</span> &lt;n&gt;           Number of rows per table (default: varies by persona)
+  <span class="flag">--clean-first</span>        Truncate before seeding
+  <span class="flag">--dry-run</span>            Print SQL without executing</code></pre>
+      </div>
+      <p>Uses COPY FROM STDIN for PostgreSQL (&ge;500 rows) for ~714K rows/sec throughput. Handles foreign key ordering via topological sort. Atomic transactions &mdash; all or nothing.</p>
+
+      <h2 id="cli-host">mimic host</h2>
+      <p>Start the mock API server and MCP servers.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic host [options]
+
+<span class="cm">Options:</span>
+  <span class="flag">--port</span> &lt;n&gt;           Server port (default: 4000)
+  <span class="flag">--adapters</span> &lt;list&gt;    Comma-separated adapter IDs to load
+  <span class="flag">--background</span>         Run as background process
+  <span class="flag">--cors</span>               Enable CORS (default: true)
+  <span class="flag">--watch</span>              Reload on config changes</code></pre>
+      </div>
+      <p>Starts a Fastify server with all configured API mocks mounted at their base paths. MCP servers are available via stdio or HTTP transport as configured.</p>
+
+      <h2 id="cli-test">mimic test</h2>
+      <p>Run test scenarios against the mock environment.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic test [options]
+
+<span class="cm">Options:</span>
+  <span class="flag">--scenario</span> &lt;file&gt;    Path to specific scenario file
+  <span class="flag">--eval</span> &lt;mode&gt;        Evaluation mode: keyword | llm (Pro)
+  <span class="flag">--workers</span> &lt;n&gt;        Parallel test workers (Pro)
+  <span class="flag">--verbose</span>            Show detailed output</code></pre>
+      </div>
+      <p>Reads scenarios from <code>.mimic/scenarios/</code>. Each scenario defines synthetic user inputs and expected outcomes. Supports keyword matching (free) and LLM-as-judge evaluation (Pro).</p>
+
+      <h2 id="cli-inspect">mimic inspect</h2>
+      <p>View seeded data across all surfaces.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic inspect [options]
+
+<span class="cm">Options:</span>
+  <span class="flag">--surface</span> &lt;name&gt;     Inspect a specific surface (e.g., postgres, stripe)
+  <span class="flag">--format</span> &lt;fmt&gt;       Output format: table | json (default: table)</code></pre>
+      </div>
+
+      <h2 id="cli-clean">mimic clean</h2>
+      <p>Remove all seeded data and stop running servers.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic clean [options]
+
+<span class="cm">Options:</span>
+  <span class="flag">--databases-only</span>     Only truncate database tables
+  <span class="flag">--keep-config</span>        Don't remove .mimic/ directory</code></pre>
+      </div>
+
+      <h2 id="cli-generate">mimic generate</h2>
+      <p>Generate a custom persona blueprint using the Blueprint Engine. <strong>Requires Pro.</strong></p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic generate [options]
+
+<span class="cm">Options:</span>
+  <span class="flag">--description</span> &lt;text&gt;  Natural language persona description
+  <span class="flag">--domain</span> &lt;name&gt;       Target domain: finance | support | devops | healthcare
+  <span class="flag">--output</span> &lt;path&gt;       Save blueprint to file
+  <span class="flag">--model</span> &lt;id&gt;          LLM model to use (default: claude-haiku-4-5)</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <p>Community tier gets 3 custom blueprints per month. Pro tier gets unlimited. Custom blueprints cost ~$0.02-$0.05 per generation via LLM.</p>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- ADAPTER CATALOG                            -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="adapter-list">Adapter Catalog</h2>
+      <p>Mimic supports <strong>65+ adapters</strong> across 8 categories. Every adapter is open source (Apache 2.0) and community-contributable.</p>
+
+      <h3 id="adapter-databases">Database Adapters</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Adapter</th><th>Package</th><th>Status</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td>PostgreSQL</td><td><code>@mimicailab/adapter-postgres</code></td><td>Stable</td><td>Seeds tables via COPY FROM STDIN, FK-aware ordering</td></tr>
+            <tr><td>MongoDB</td><td><code>@mimicailab/adapter-mongodb</code></td><td>Stable</td><td>Seeds collections with embedded documents</td></tr>
+            <tr><td>MySQL</td><td><code>@mimicailab/adapter-mysql</code></td><td>Stable</td><td>Seeds tables with relational integrity</td></tr>
+            <tr><td>Pinecone</td><td><code>@mimicailab/adapter-pinecone</code></td><td>Stable</td><td>Seeds vector embeddings for RAG testing</td></tr>
+            <tr><td>Redis</td><td><code>@mimicailab/adapter-redis</code></td><td>Stable</td><td>Seeds key-value pairs, sorted sets, streams</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="adapter-api">API Mock Adapters</h3>
+      <h4>Fintech / Payments (24 adapters)</h4>
+      <div class="adapter-doc-grid">
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Stripe</span><span class="adapter-doc-routes">29 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Plaid</span><span class="adapter-doc-routes">15 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Square</span><span class="adapter-doc-routes">16 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Wise</span><span class="adapter-doc-routes">14 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Adyen</span><span class="adapter-doc-routes">12 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Coinbase</span><span class="adapter-doc-routes">12 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">PayPal</span><span class="adapter-doc-routes">13 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Brex</span><span class="adapter-doc-routes">10 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Ramp</span><span class="adapter-doc-routes">10 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Mercury</span><span class="adapter-doc-routes">9 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Moov</span><span class="adapter-doc-routes">8 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">GoCardless</span><span class="adapter-doc-routes">11 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Marqeta</span><span class="adapter-doc-routes">12 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Paddle</span><span class="adapter-doc-routes">10 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Checkout.com</span><span class="adapter-doc-routes">10 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">+9 more</span><span class="adapter-doc-routes"></span></div>
+      </div>
+
+      <h4>Communication (11 adapters)</h4>
+      <div class="adapter-doc-grid">
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Slack</span><span class="adapter-doc-routes">19 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Twilio</span><span class="adapter-doc-routes">14 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">SendGrid</span><span class="adapter-doc-routes">11 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Discord</span><span class="adapter-doc-routes">13 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">MS Teams</span><span class="adapter-doc-routes">12 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">WhatsApp</span><span class="adapter-doc-routes">9 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Telegram</span><span class="adapter-doc-routes">11 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Mailgun</span><span class="adapter-doc-routes">10 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Postmark</span><span class="adapter-doc-routes">9 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Vonage</span><span class="adapter-doc-routes">8 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">MessageBird</span><span class="adapter-doc-routes">7 routes</span></div>
+      </div>
+
+      <h4>CRM (7 adapters)</h4>
+      <div class="adapter-doc-grid">
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Salesforce</span><span class="adapter-doc-routes">16 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">HubSpot</span><span class="adapter-doc-routes">16 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Pipedrive</span><span class="adapter-doc-routes">14 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Zoho CRM</span><span class="adapter-doc-routes">13 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Close</span><span class="adapter-doc-routes">14 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Attio</span><span class="adapter-doc-routes">12 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Dynamics 365</span><span class="adapter-doc-routes">11 routes</span></div>
+      </div>
+
+      <h4>Ticketing (8 adapters)</h4>
+      <div class="adapter-doc-grid">
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Zendesk</span><span class="adapter-doc-routes">24 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Jira</span><span class="adapter-doc-routes">21 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Linear</span><span class="adapter-doc-routes">20 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Intercom</span><span class="adapter-doc-routes">25 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">PagerDuty</span><span class="adapter-doc-routes">17 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Freshdesk</span><span class="adapter-doc-routes">18 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">ServiceNow</span><span class="adapter-doc-routes">9 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Shortcut</span><span class="adapter-doc-routes">22 routes</span></div>
+      </div>
+
+      <h4>Project Management (8 adapters)</h4>
+      <div class="adapter-doc-grid">
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Notion</span><span class="adapter-doc-routes">19 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Asana</span><span class="adapter-doc-routes">22 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Trello</span><span class="adapter-doc-routes">23 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Monday.com</span><span class="adapter-doc-routes">19 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Airtable</span><span class="adapter-doc-routes">11 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">ClickUp</span><span class="adapter-doc-routes">20 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Todoist</span><span class="adapter-doc-routes">18 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Basecamp</span><span class="adapter-doc-routes">23 routes</span></div>
+      </div>
+
+      <h4>Calendar / Scheduling (6 adapters)</h4>
+      <div class="adapter-doc-grid">
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Google Calendar</span><span class="adapter-doc-routes">10 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Calendly</span><span class="adapter-doc-routes">11 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Cal.com</span><span class="adapter-doc-routes">12 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Nylas</span><span class="adapter-doc-routes">9 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Cronofy</span><span class="adapter-doc-routes">10 routes</span></div>
+        <div class="adapter-doc-item"><span class="adapter-doc-name">Acuity</span><span class="adapter-doc-routes">9 routes</span></div>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- ADAPTER DEV                                -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="adapter-dev">Build an Adapter</h2>
+      <p>Every adapter implements the <code>ApiMockAdapter</code> interface. Scaffold a new one with:</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> pnpm mimic:create-adapter my-platform</code></pre>
+      </div>
+
+      <h3>The Adapter Interface</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">typescript</span><span>src/index.ts</span></div>
+        <pre><code><span class="kw">import</span> { <span class="ty">ApiMockAdapter</span>, <span class="ty">EndpointDefinition</span> } <span class="kw">from</span> <span class="str">'@mimicailab/adapter-sdk'</span>;
+
+<span class="kw">export class</span> <span class="ty">MyPlatformAdapter</span> <span class="kw">implements</span> <span class="ty">ApiMockAdapter</span> {
+  <span class="kw">readonly</span> id <span class="op">=</span> <span class="str">'my-platform'</span>;
+  <span class="kw">readonly</span> name <span class="op">=</span> <span class="str">'My Platform API'</span>;
+  <span class="kw">readonly</span> type <span class="op">=</span> <span class="str">'api-mock'</span>;
+  <span class="kw">readonly</span> basePath <span class="op">=</span> <span class="str">'/my-platform'</span>;
+
+  <span class="cm">// Extract persona ID from auth header</span>
+  <span class="fn">resolvePersona</span>(req): <span class="ty">string</span> | <span class="ty">null</span> { <span class="cm">/* ... */</span> }
+
+  <span class="cm">// Register routes on the Fastify server</span>
+  <span class="kw">async</span> <span class="fn">registerRoutes</span>(server, data, state) { <span class="cm">/* ... */</span> }
+
+  <span class="cm">// Declare endpoints for docs + MCP generation</span>
+  <span class="fn">getEndpoints</span>(): <span class="ty">EndpointDefinition</span>[] { <span class="cm">/* ... */</span> }
+}</code></pre>
+      </div>
+
+      <h3>Key guidelines</h3>
+      <ul>
+        <li><strong>Match real response shapes exactly</strong> &mdash; agents are trained on real API docs</li>
+        <li><strong>Match real ID formats</strong> &mdash; Stripe uses <code>cus_xxx</code>, Jira uses <code>MIM-1</code>, Notion uses UUIDs</li>
+        <li><strong>Match real pagination</strong> &mdash; cursor-based, offset-based, or page-based per platform</li>
+        <li><strong>Match real error formats</strong> &mdash; Stripe wraps in <code>{"error": {...}}</code>, Jira uses <code>{"errorMessages": [...]}</code></li>
+        <li><strong>Seed realistic data</strong> &mdash; no "test", "foo", "bar" in seed values</li>
+        <li><strong>Aim for 8-20 routes</strong> &mdash; cover core CRUD + 1-2 domain-specific actions</li>
+      </ul>
+
+      <h3>Submission checklist</h3>
+      <ul class="checklist">
+        <li><span class="checklist-box"></span>Implements <code>ApiMockAdapter</code> interface</li>
+        <li><span class="checklist-box"></span><code>resolvePersona()</code> matches platform auth pattern</li>
+        <li><span class="checklist-box"></span>8+ routes covering core CRUD operations</li>
+        <li><span class="checklist-box"></span>Realistic seed data (3-5 records per resource)</li>
+        <li><span class="checklist-box"></span>Response shapes match real API docs</li>
+        <li><span class="checklist-box"></span>Error responses match real API error format</li>
+        <li><span class="checklist-box"></span><code>getEndpoints()</code> returns all route definitions</li>
+        <li><span class="checklist-box"></span>Tests cover list, create, get, update</li>
+        <li><span class="checklist-box"></span>TypeScript strict mode, no untyped <code>any</code></li>
+      </ul>
+
+      <p>PRs are reviewed within 48 hours. Once merged, a corresponding MCP server is auto-generated from your <code>getEndpoints()</code>.</p>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- MCP SERVERS                                -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="mcp-overview">MCP Servers &mdash; Overview</h2>
+      <p>Every API mock adapter has a corresponding MCP server. MCP servers translate MCP tool calls into HTTP requests against the Mimic mock server.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span><span>data flow</span></div>
+        <pre><code>AI Agent  &mdash;MCP&mdash;&gt;  Mimic MCP Server  &mdash;HTTP&mdash;&gt;  Mimic Mock Adapter
+(Claude)           (mcp-jira)                    (adapter-jira)</code></pre>
+      </div>
+
+      <p>This matters because many agent frameworks use MCP as their primary tool interface. Mimic MCP servers give agents realistic mock data through the same protocol they'll use in production.</p>
+
+      <h2 id="mcp-setup">MCP Setup &amp; Config</h2>
+
+      <h3>With Claude Code</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> claude mcp add mimic-jira -- npx -y @mimicailab/mcp-jira
+
+<span class="cm"># With custom URL</span>
+<span class="prompt">$</span> claude mcp add <span class="flag">--env MIMIC_BASE_URL=http://localhost:4000</span> mimic-jira -- npx -y @mimicailab/mcp-jira</code></pre>
+      </div>
+
+      <h3>With Cursor / VS Code</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>MCP config</span></div>
+        <pre><code>{
+  <span class="yk">"mcpServers"</span>: {
+    <span class="yk">"mimic-jira"</span>: {
+      <span class="yk">"command"</span>: <span class="str">"npx"</span>,
+      <span class="yk">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@mimicailab/mcp-jira"</span>],
+      <span class="yk">"env"</span>: { <span class="yk">"MIMIC_BASE_URL"</span>: <span class="str">"http://localhost:4000"</span> }
+    },
+    <span class="yk">"mimic-slack"</span>: {
+      <span class="yk">"command"</span>: <span class="str">"npx"</span>,
+      <span class="yk">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@mimicailab/mcp-slack"</span>],
+      <span class="yk">"env"</span>: { <span class="yk">"MIMIC_BASE_URL"</span>: <span class="str">"http://localhost:4000"</span> }
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h3>With Mimic CLI</h3>
+      <p>The simplest way &mdash; configure MCP servers in your config and <code>mimic host</code> starts them alongside API mocks:</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">yaml</span><span>.mimic/config.yaml</span></div>
+        <pre><code><span class="yk">surfaces:</span>
+  <span class="yk">mcp:</span>
+    - <span class="yk">adapter:</span> <span class="ys">jira</span>
+      <span class="yk">transport:</span> <span class="ys">stdio</span>
+    - <span class="yk">adapter:</span> <span class="ys">slack</span>
+      <span class="yk">transport:</span> <span class="ys">stdio</span></code></pre>
+      </div>
+
+      <h2 id="mcp-parity">Official MCP Parity</h2>
+      <p>For platforms that ship official MCP servers, Mimic matches the <strong>exact same tool names and parameter schemas</strong>. Develop against Mimic, swap to real credentials in production &mdash; zero code changes.</p>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Platform</th><th>Official MCP</th><th>Mimic MCP</th><th>Parity</th></tr></thead>
+          <tbody>
+            <tr><td>Jira</td><td>Atlassian MCP</td><td><code>@mimicailab/mcp-jira</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>Slack</td><td>Claude.ai connector</td><td><code>@mimicailab/mcp-slack</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>Asana</td><td>mcp.asana.com/sse</td><td><code>@mimicailab/mcp-asana</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>HubSpot</td><td>mcp.hubspot.com</td><td><code>@mimicailab/mcp-hubspot</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>GitHub</td><td>@mcp/server-github</td><td><code>@mimicailab/mcp-github</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>GitLab</td><td>Official GitLab MCP</td><td><code>@mimicailab/mcp-gitlab</code></td><td style="color: var(--green);">Matched</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="mcp-catalog">MCP Server Catalog</h2>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Package</th><th>Tools</th><th>Primary Tools</th></tr></thead>
+          <tbody>
+            <tr><td><code>@mimicailab/mcp-stripe</code></td><td>12</td><td>create_payment_intent, list_charges, create_customer</td></tr>
+            <tr><td><code>@mimicailab/mcp-plaid</code></td><td>10</td><td>create_link_token, get_accounts, get_transactions</td></tr>
+            <tr><td><code>@mimicailab/mcp-slack</code></td><td>10</td><td>post_message, list_channels, search_messages</td></tr>
+            <tr><td><code>@mimicailab/mcp-jira</code></td><td>10</td><td>create_issue, search_jql, transition_issue</td></tr>
+            <tr><td><code>@mimicailab/mcp-salesforce</code></td><td>10</td><td>query_soql, create_record, update_record</td></tr>
+            <tr><td><code>@mimicailab/mcp-hubspot</code></td><td>10</td><td>search_contacts, create_deal, list_companies</td></tr>
+            <tr><td><code>@mimicailab/mcp-notion</code></td><td>10</td><td>query_database, create_page, search</td></tr>
+            <tr><td><code>@mimicailab/mcp-zendesk</code></td><td>8</td><td>create_ticket, update_ticket, search_tickets</td></tr>
+            <tr><td><code>@mimicailab/mcp-linear</code></td><td>8</td><td>create_issue, update_issue, list_issues</td></tr>
+            <tr><td><code>@mimicailab/mcp-asana</code></td><td>8</td><td>list_tasks, create_task, update_task</td></tr>
+            <tr><td><code>@mimicailab/mcp-pagerduty</code></td><td>8</td><td>create_incident, acknowledge, resolve</td></tr>
+            <tr><td><code>@mimicailab/mcp-trello</code></td><td>8</td><td>list_cards, create_card, move_card</td></tr>
+            <tr><td><code>@mimicailab/mcp-twilio</code></td><td>8</td><td>send_sms, make_call, list_messages</td></tr>
+            <tr><td><code>@mimicailab/mcp-sendgrid</code></td><td>6</td><td>send_email, list_contacts, get_stats</td></tr>
+            <tr><td><code>@mimicailab/mcp-airtable</code></td><td>6</td><td>list_records, create_records, update_records</td></tr>
+            <tr><td><code>@mimicailab/mcp-pipedrive</code></td><td>8</td><td>list_deals, create_person, search</td></tr>
+            <tr><td><code>@mimicailab/mcp-square</code></td><td>8</td><td>create_payment, list_orders, create_customer</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="mcp-build">Build an MCP Server</h2>
+      <p>Most MCP servers are auto-generated from the adapter's <code>getEndpoints()</code> definitions:</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> pnpm mimic:generate-mcp my-platform</code></pre>
+      </div>
+
+      <p>For hand-tuned implementations:</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">typescript</span><span>mcp-server.ts</span></div>
+        <pre><code><span class="kw">import</span> { <span class="ty">McpServer</span> } <span class="kw">from</span> <span class="str">'@modelcontextprotocol/sdk/server/mcp.js'</span>;
+<span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
+
+<span class="kw">const</span> server = <span class="kw">new</span> <span class="ty">McpServer</span>({
+  name: <span class="str">'mimic-my-platform'</span>,
+  version: <span class="str">'1.0.0'</span>,
+});
+
+server.<span class="fn">tool</span>(
+  <span class="str">'create_item'</span>,
+  <span class="str">'Create a new item. Requires title. Optionally set priority.'</span>,
+  {
+    title: z.<span class="fn">string</span>().<span class="fn">describe</span>(<span class="str">'Item title'</span>),
+    priority: z.<span class="fn">enum</span>([<span class="str">'low'</span>, <span class="str">'medium'</span>, <span class="str">'high'</span>]).<span class="fn">optional</span>(),
+  },
+  <span class="kw">async</span> (params) <span class="op">=></span> {
+    <span class="kw">const</span> data = <span class="kw">await</span> <span class="fn">mimicFetch</span>(<span class="str">'POST'</span>, <span class="str">'/my-platform/items'</span>, params);
+    <span class="kw">return</span> {
+      content: [{ type: <span class="str">'text'</span>, text: <span class="str">`Created #${data.id}: "${data.title}"`</span> }]
+    };
+  }
+);</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Tool design tip:</strong> Name tools to match the platform's vocabulary. Write descriptions for LLMs, not humans. Return human-readable summaries for write operations, full JSON for reads.</p>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- ARCHITECTURE                               -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="arch-overview">System Overview</h2>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span><span>architecture</span></div>
+        <pre><code>┌──────────────────────────────────────────────────────────┐
+│                        CLI Layer                          │
+│   mimic init │ mimic seed │ mimic host │ mimic test       │
+└─────────────────────────┬────────────────────────────────┘
+                          │
+             ┌────────────┼────────────┐
+             │            │            │
+             v            v            v
+  ┌──────────────┐ ┌────────────┐ ┌────────────┐
+  │  Blueprint   │ │ Mock Server│ │Test Runner  │
+  │              │ │            │ │             │
+  │ Persona load │ │ Fastify    │ │ Scenarios   │
+  │ Engine (Pro) │ │ Adapters   │ │ Eval (Pro)  │
+  │ Expander     │ │ State store│ │ Coverage    │
+  └──────┬───────┘ └──────┬─────┘ └─────────────┘
+         │          ┌─────┴─────┐
+         │          │           │
+         v          v           v
+  ┌──────────┐ ┌────────┐ ┌────────┐
+  │ Database │ │API Mock│ │  MCP   │
+  │ Adapters │ │Adapters│ │Servers │
+  │          │ │        │ │        │
+  │ Postgres │ │ Stripe │ │mcp-jira│
+  │ MongoDB  │ │ Plaid  │ │mcp-slk │
+  │ MySQL    │ │ 60+    │ │ ...    │
+  └────┬─────┘ └────────┘ └────────┘
+       v
+   Real databases</code></pre>
+      </div>
+
+      <h2 id="arch-data-flow">Data Flow</h2>
+
+      <h3>Seeding flow</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span></div>
+        <pre><code>mimic seed
+  │
+  ├─ Load persona blueprint from .mimic/blueprints/{persona}.json
+  │
+  ├─ For each configured database adapter:
+  │   ├─ Connect to database
+  │   ├─ Map blueprint data to table schemas
+  │   ├─ INSERT/COPY rows (FK-aware ordering)
+  │   └─ Report: "Seeded 42 rows across 5 tables"
+  │
+  └─ Done (API mocks seed lazily on first request)</code></pre>
+      </div>
+
+      <h3>Request flow (API mock)</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span></div>
+        <pre><code>Agent sends: GET /jira/rest/api/3/search?jql=project=MIM
+
+Mock Server
+  ├─ Route matched: /jira/* &rarr; JiraAdapter
+  ├─ JiraAdapter.handleSearch(req, reply)
+  │   ├─ seedData()   &mdash; populate state store if empty
+  │   ├─ Parse JQL from query params
+  │   ├─ Filter state store by parsed criteria
+  │   ├─ Format response matching Jira's real shape
+  │   └─ reply.send({ issues: [...], total: N })
+  └─ Response returned to agent</code></pre>
+      </div>
+
+      <h3>MCP flow</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span></div>
+        <pre><code>Agent calls MCP tool: search_jql({ jql: "project = MIM" })
+
+MCP Server (@mimicailab/mcp-jira)
+  ├─ Validate params with Zod schema
+  ├─ Translate to HTTP:
+  │   POST http://localhost:4000/jira/rest/api/3/search
+  ├─ Parse response
+  ├─ Format for agent: "Found 5 issues: MIM-1 | In Progress | ..."
+  └─ Return MCP response</code></pre>
+      </div>
+
+      <h2 id="arch-consistency">Cross-Surface Consistency</h2>
+      <p>The Blueprint Engine's core differentiator. When it generates data for persona "Alex", the <strong>same Alex appears across all surfaces</strong>:</p>
+      <ul>
+        <li>PostgreSQL <code>users</code> table has Alex with ID <code>user_001</code></li>
+        <li>Plaid API returns bank accounts owned by <code>user_001</code></li>
+        <li>Stripe API returns payment history for <code>user_001</code>'s card</li>
+        <li>Jira API returns issues assigned to Alex</li>
+        <li>Slack API shows messages from Alex</li>
+      </ul>
+      <p>Achieved through a two-phase process:</p>
+      <ol>
+        <li><strong>Phase 1: Persona Generation</strong> &mdash; LLM creates a detailed persona with relationships, financial profile, work context</li>
+        <li><strong>Phase 2: Deterministic Expansion</strong> &mdash; Rules engine expands into concrete data with shared identifiers, consistent timestamps, and correlated values</li>
+      </ol>
+
+      <h2 id="arch-packages">Package Dependency Graph</h2>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span></div>
+        <pre><code>@mimicailab/cli
+  ├── @mimicailab/mock-server
+  │     ├── @mimicailab/adapter-sdk
+  │     ├── @mimicailab/adapter-stripe
+  │     ├── @mimicailab/adapter-jira
+  │     └── ... (all adapters)
+  ├── @mimicailab/blueprints
+  └── @mimicailab/core (Pro - optional)
+        ├── blueprint-engine
+        ├── consistency
+        └── test-advanced
+
+@mimicailab/mcp-jira (standalone)
+  └── @modelcontextprotocol/sdk
+
+@mimicailab/adapter-sdk (standalone)
+  └── zod, fastify (peer deps)</code></pre>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- GUIDES                                     -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="guide-finance">Guide: Testing a Finance Agent</h2>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic init
+<span class="prompt">$</span> mimic seed <span class="flag">--persona finance-alex</span>
+<span class="prompt">$</span> mimic host &amp;
+
+<span class="cm"># Your agent connects to:</span>
+<span class="cm">#   Plaid    &rarr; http://localhost:4000/plaid</span>
+<span class="cm">#   Stripe   &rarr; http://localhost:4000/stripe/v1</span>
+<span class="cm">#   Postgres &rarr; postgresql://localhost:5432/testdb (seeded)</span>
+
+<span class="prompt">$</span> python my_finance_agent.py --test
+<span class="prompt">$</span> mimic clean</code></pre>
+      </div>
+
+      <h2 id="guide-support">Guide: Testing a Support Agent (MCP)</h2>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> mimic host <span class="flag">--adapters jira,slack,zendesk</span> &amp;
+
+<span class="cm"># In your Claude/Cursor MCP config, add:</span>
+<span class="cm">#   "mimic-jira":    npx -y @mimicailab/mcp-jira</span>
+<span class="cm">#   "mimic-slack":   npx -y @mimicailab/mcp-slack</span>
+<span class="cm">#   "mimic-zendesk": npx -y @mimicailab/mcp-zendesk</span>
+
+<span class="cm"># Agent now has realistic tickets, messages, and support data</span></code></pre>
+      </div>
+
+      <h2 id="guide-cicd">Guide: CI/CD Integration</h2>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">yaml</span><span>.github/workflows/agent-tests.yml</span></div>
+        <pre><code><span class="yk">name:</span> <span class="ys">Agent Tests</span>
+<span class="yk">on:</span> [push, pull_request]
+
+<span class="yk">jobs:</span>
+  <span class="yk">test:</span>
+    <span class="yk">runs-on:</span> <span class="ys">ubuntu-latest</span>
+    <span class="yk">steps:</span>
+      - <span class="yk">uses:</span> <span class="ys">actions/checkout@v4</span>
+      - <span class="yk">uses:</span> <span class="ys">actions/setup-node@v4</span>
+        <span class="yk">with:</span>
+          <span class="yk">node-version:</span> <span class="ys">22</span>
+
+      - <span class="yk">name:</span> <span class="ys">Start Mimic</span>
+        <span class="yk">run:</span> |
+          npx @mimicailab/cli seed --persona finance-alex
+          npx @mimicailab/cli host --background
+
+      - <span class="yk">name:</span> <span class="ys">Run agent tests</span>
+        <span class="yk">run:</span> <span class="ys">npm test</span>
+        <span class="yk">env:</span>
+          <span class="yk">PLAID_BASE_URL:</span> <span class="ys">http://localhost:4000/plaid</span>
+          <span class="yk">STRIPE_API_BASE:</span> <span class="ys">http://localhost:4000/stripe/v1</span>
+
+      - <span class="yk">name:</span> <span class="ys">Cleanup</span>
+        <span class="yk">run:</span> <span class="ys">npx @mimicailab/cli clean</span></code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <p>Pre-built personas work fully offline &mdash; no API keys or secrets needed in your CI environment. Deterministic seeding guarantees identical data in every pipeline run.</p>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- FOOTER                                     -->
+      <!-- ────────────────────────────────────────── -->
+      <div class="doc-footer">
+        <div class="doc-footer-nav">
+          <a href="index.html">
+            <span class="doc-footer-label">&larr; Back</span>
+            <span class="doc-footer-title">Home</span>
+          </a>
+        </div>
+        <div class="doc-footer-nav">
+          <a href="https://github.com/mimicailab/mimic" style="text-align: right;">
+            <span class="doc-footer-label">Source</span>
+            <span class="doc-footer-title">GitHub &rarr;</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ─── COPY FOR LLM BUTTON ─────────────────── -->
+  <button class="llm-btn" id="llmCopyBtn" title="Copy entire docs as Markdown for LLM context">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <span id="llmBtnLabel">Copy for LLM</span>
+  </button>
+
+  <!-- ─── SCRIPTS ─────────────────────────────── -->
+  <script>
+    // Active sidebar link tracking
+    const sections = document.querySelectorAll('[id]');
+    const links = document.querySelectorAll('.sidebar-link');
+
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector(`.sidebar-link[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+
+    sections.forEach(s => {
+      if (document.querySelector(`.sidebar-link[href="#${s.id}"]`)) {
+        obs.observe(s);
+      }
+    });
+
+    // Close sidebar on mobile when clicking a link
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+          document.querySelector('.sidebar').classList.remove('open');
+        }
+      });
+    });
+
+    // Copy buttons
+    document.querySelectorAll('.code-copy').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.closest('.code-block').querySelector('pre').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+          btn.textContent = 'Copied!';
+          setTimeout(() => btn.textContent = 'Copy', 1500);
+        });
+      });
+    });
+
+    // Copy for LLM — convert doc-content to clean Markdown
+    document.getElementById('llmCopyBtn').addEventListener('click', () => {
+      const content = document.querySelector('.doc-content');
+      if (!content) return;
+
+      const lines = [];
+
+      function textOf(el) {
+        return el.textContent.trim().replace(/\s+/g, ' ');
+      }
+
+      function processTable(table) {
+        const rows = table.querySelectorAll('tr');
+        if (!rows.length) return;
+        rows.forEach((row, ri) => {
+          const cells = row.querySelectorAll('th, td');
+          const vals = Array.from(cells).map(c => textOf(c));
+          lines.push('| ' + vals.join(' | ') + ' |');
+          if (ri === 0) {
+            lines.push('| ' + vals.map(() => '---').join(' | ') + ' |');
+          }
+        });
+        lines.push('');
+      }
+
+      function processList(ul, indent) {
+        const items = ul.querySelectorAll(':scope > li');
+        const ordered = ul.tagName === 'OL';
+        items.forEach((li, i) => {
+          const prefix = ordered ? `${i + 1}. ` : '- ';
+          // Get direct text (not nested lists)
+          const clone = li.cloneNode(true);
+          clone.querySelectorAll('ul, ol').forEach(n => n.remove());
+          lines.push(indent + prefix + textOf(clone));
+          // Handle nested lists
+          li.querySelectorAll(':scope > ul, :scope > ol').forEach(nested => {
+            processList(nested, indent + '  ');
+          });
+        });
+        lines.push('');
+      }
+
+      const children = content.children;
+      for (let i = 0; i < children.length; i++) {
+        const el = children[i];
+        const tag = el.tagName;
+
+        if (tag === 'H1') {
+          // Skip eyebrow span, get main text
+          const eyebrow = el.querySelector('.eyebrow');
+          const main = textOf(el).replace(eyebrow ? textOf(eyebrow) : '', '').trim();
+          if (eyebrow) lines.push('# ' + textOf(eyebrow) + ': ' + main);
+          else lines.push('# ' + main);
+          lines.push('');
+        } else if (tag === 'H2') {
+          lines.push('## ' + textOf(el));
+          lines.push('');
+        } else if (tag === 'H3') {
+          lines.push('### ' + textOf(el));
+          lines.push('');
+        } else if (tag === 'H4') {
+          lines.push('#### ' + textOf(el));
+          lines.push('');
+        } else if (tag === 'P') {
+          lines.push(textOf(el));
+          lines.push('');
+        } else if (tag === 'HR') {
+          lines.push('---');
+          lines.push('');
+        } else if (tag === 'UL' || tag === 'OL') {
+          processList(el, '');
+        } else if (el.classList.contains('code-block')) {
+          const langEl = el.querySelector('.code-bar-lang');
+          const lang = langEl ? textOf(langEl) : '';
+          const code = el.querySelector('pre')?.textContent || '';
+          lines.push('```' + lang);
+          lines.push(code.trim());
+          lines.push('```');
+          lines.push('');
+        } else if (el.classList.contains('doc-table-wrap')) {
+          const table = el.querySelector('table');
+          if (table) processTable(table);
+        } else if (el.classList.contains('callout')) {
+          const txt = textOf(el);
+          lines.push('> **Note:** ' + txt);
+          lines.push('');
+        } else if (el.classList.contains('arch-diagram') || el.classList.contains('flow-row')) {
+          // Skip visual-only elements
+        } else {
+          // Fallback: grab text content for any other element
+          const txt = textOf(el);
+          if (txt) {
+            lines.push(txt);
+            lines.push('');
+          }
+        }
+      }
+
+      const markdown = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+      navigator.clipboard.writeText(markdown).then(() => {
+        const btn = document.getElementById('llmCopyBtn');
+        const label = document.getElementById('llmBtnLabel');
+        btn.classList.add('copied');
+        label.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          label.textContent = 'Copy for LLM';
+        }, 2000);
+      });
+    });
+  </script>
+</body>
+</html>
