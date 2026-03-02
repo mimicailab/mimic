@@ -9,3 +9,4 @@ export {
 } from './registry.js';
 export { loadExternalAdapter } from './loader.js';
 export type { LoadedAdapter } from './loader.js';
+export { registerDefaults } from './defaults.js';
