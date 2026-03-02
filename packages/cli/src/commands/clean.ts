@@ -9,8 +9,11 @@ import {
   logger,
   fileExists,
   MimicError,
-  DatabaseConnectionError,
+  PgSeeder,
+  parseSchema,
+  readJson,
 } from '@mimicailab/core';
+import type { MimicConfig, SchemaModel } from '@mimicailab/core';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -74,7 +77,7 @@ async function runClean(opts: CleanOptions): Promise<void> {
     }
   }
 
-  // ── Truncate database tables ────────────────────────────────────────────
+  // ── Truncate database tables via PgSeeder ───────────────────────────────
   const databases = config.databases;
   if (databases && Object.keys(databases).length > 0) {
     const [dbName, dbConfig] = Object.entries(databases)[0]!;
@@ -82,50 +85,22 @@ async function runClean(opts: CleanOptions): Promise<void> {
 
     logger.step(`Truncating tables in database "${dbName}"...`);
 
-    let pg: typeof import('pg');
-    try {
-      pg = await import('pg');
-    } catch {
-      throw new DatabaseConnectionError(
-        'pg module not available',
-        'Ensure "pg" is installed: pnpm add pg',
-      );
-    }
-
-    const pool = new pg.default.Pool({ connectionString: dbUrl });
+    const seeder = new PgSeeder(dbUrl);
 
     try {
-      const client = await pool.connect();
+      const schema = await resolveSchemaForClean(cwd, config, dbUrl);
 
-      try {
-        // Discover tables that Mimic may have seeded
-        const tableResult = await client.query<{ tablename: string }>(
-          `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
+      if (schema) {
+        await seeder.cleanTables(schema);
+        logger.success(
+          `Truncated ${chalk.yellow(String(schema.insertionOrder.length))} table(s)`,
         );
-        const tableNames = tableResult.rows.map((r) => r.tablename);
-
-        if (tableNames.length === 0) {
-          logger.info('No tables found in public schema');
-        } else {
-          await client.query('BEGIN');
-          // Truncate all tables with CASCADE
-          for (const table of tableNames) {
-            await client.query(`TRUNCATE TABLE "${table}" CASCADE`);
-            logger.debug(`Truncated ${table}`);
-          }
-          await client.query('COMMIT');
-          logger.success(
-            `Truncated ${chalk.yellow(String(tableNames.length))} table(s)`,
-          );
-        }
-      } finally {
-        client.release();
+      } else {
+        // No schema available — fall back to discovering tables directly
+        logger.debug('No schema available, discovering tables from database');
+        await cleanTablesDirectly(dbUrl);
       }
-
-      await pool.end();
     } catch (err) {
-      await pool.end().catch(() => {});
-
       // Non-fatal: warn but continue with local cleanup
       if (err instanceof MimicError) {
         throw err;
@@ -134,6 +109,8 @@ async function runClean(opts: CleanOptions): Promise<void> {
         `Database truncation failed: ${err instanceof Error ? err.message : String(err)}`,
       );
       logger.info('Continuing with local file cleanup...');
+    } finally {
+      await seeder.dispose();
     }
   } else {
     logger.info('No database configured — skipping truncation');
@@ -176,4 +153,95 @@ async function runClean(opts: CleanOptions): Promise<void> {
   console.log();
   logger.done('Clean complete');
   console.log();
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+async function resolveSchemaForClean(
+  cwd: string,
+  config: MimicConfig,
+  dbUrl: string,
+): Promise<SchemaModel | null> {
+  // Try loading from cached schema first
+  const cachedSchemaPath = join(cwd, '.mimic', 'schema.json');
+  if (await fileExists(cachedSchemaPath)) {
+    return readJson<SchemaModel>(cachedSchemaPath);
+  }
+
+  // Resolve schema config from the database entry
+  const databases = config.databases;
+  if (!databases || Object.keys(databases).length === 0) return null;
+
+  const [, dbConfig] = Object.entries(databases)[0]!;
+  const schemaConfig = (dbConfig as Record<string, unknown>).schema as
+    | { source: 'prisma' | 'sql' | 'introspect'; path?: string }
+    | undefined;
+
+  if (!schemaConfig) return null;
+
+  const source = schemaConfig.source ?? 'introspect';
+
+  try {
+    if (source === 'introspect') {
+      const pg = await import('pg');
+      const pool = new pg.default.Pool({ connectionString: dbUrl });
+      try {
+        return await parseSchema({ schema: schemaConfig, pool, basePath: cwd });
+      } finally {
+        await pool.end();
+      }
+    }
+
+    return await parseSchema({ schema: schemaConfig, basePath: cwd });
+  } catch {
+    // Schema resolution is best-effort for clean; fall back to direct truncation
+    return null;
+  }
+}
+
+/**
+ * Fallback: truncate all public-schema tables directly when no schema model
+ * is available. This preserves the original clean behavior.
+ */
+async function cleanTablesDirectly(dbUrl: string): Promise<void> {
+  let pg: typeof import('pg');
+  try {
+    pg = await import('pg');
+  } catch {
+    logger.warn('pg module not available — cannot truncate database');
+    return;
+  }
+
+  const pool = new pg.default.Pool({ connectionString: dbUrl });
+
+  try {
+    const client = await pool.connect();
+
+    try {
+      const tableResult = await client.query<{ tablename: string }>(
+        `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
+      );
+      const tableNames = tableResult.rows.map((r: { tablename: string }) => r.tablename);
+
+      if (tableNames.length === 0) {
+        logger.info('No tables found in public schema');
+      } else {
+        await client.query('BEGIN');
+        for (const table of tableNames) {
+          await client.query(`TRUNCATE TABLE "${table}" CASCADE`);
+          logger.debug(`Truncated ${table}`);
+        }
+        await client.query('COMMIT');
+        logger.success(
+          `Truncated ${chalk.yellow(String(tableNames.length))} table(s)`,
+        );
+      }
+    } finally {
+      client.release();
+    }
+  } finally {
+    await pool.end();
+  }
 }

@@ -50,14 +50,40 @@ const EventSchema = z.object({
   probability: z.number().min(0).max(1),
 });
 
-const DataPatternSchema = z.object({
-  targetTable: z.string(),
-  type: z.enum(['recurring', 'variable', 'periodic', 'event']),
-  recurring: RecurringSchema.optional(),
-  variable: VariableSchema.optional(),
-  periodic: PeriodicSchema.optional(),
-  event: EventSchema.optional(),
-});
+const DataPatternSchema = z.discriminatedUnion('type', [
+  z.object({
+    targetTable: z.string(),
+    type: z.literal('recurring'),
+    recurring: RecurringSchema,
+    variable: VariableSchema.optional(),
+    periodic: PeriodicSchema.optional(),
+    event: EventSchema.optional(),
+  }),
+  z.object({
+    targetTable: z.string(),
+    type: z.literal('variable'),
+    recurring: RecurringSchema.optional(),
+    variable: VariableSchema,
+    periodic: PeriodicSchema.optional(),
+    event: EventSchema.optional(),
+  }),
+  z.object({
+    targetTable: z.string(),
+    type: z.literal('periodic'),
+    recurring: RecurringSchema.optional(),
+    variable: VariableSchema.optional(),
+    periodic: PeriodicSchema,
+    event: EventSchema.optional(),
+  }),
+  z.object({
+    targetTable: z.string(),
+    type: z.literal('event'),
+    recurring: RecurringSchema.optional(),
+    variable: VariableSchema.optional(),
+    periodic: PeriodicSchema.optional(),
+    event: EventSchema,
+  }),
+]);
 
 const PersonaProfileSchema = z.object({
   name: z.string(),

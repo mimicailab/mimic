@@ -8,10 +8,10 @@ import {
   readJson,
   fileExists,
   MimicError,
-  DatabaseConnectionError,
-  SeedingError,
+  PgSeeder,
+  parseSchema,
 } from '@mimicailab/core';
-import type { MimicConfig, ExpandedData } from '@mimicailab/core';
+import type { MimicConfig, ExpandedData, SchemaModel } from '@mimicailab/core';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -68,15 +68,21 @@ async function runSeed(opts: SeedOptions): Promise<void> {
 
   // ── Resolve database config ─────────────────────────────────────────────
   const dbConfig = resolveDatabase(config);
-  const strategy = opts.strategy ?? dbConfig.seedStrategy ?? 'truncate-and-insert';
+  const strategy = (opts.strategy ?? dbConfig.seedStrategy ?? 'truncate-and-insert') as
+    | 'truncate-and-insert'
+    | 'append'
+    | 'upsert';
 
   logger.debug(`Database URL: ${maskUrl(dbConfig.url)}`);
   logger.debug(`Strategy: ${strategy}`);
 
+  // ── Resolve schema ────────────────────────────────────────────────────────
+  const schema = await resolveSchema(cwd, config, dbConfig.url);
+
   // ── Load expanded data ──────────────────────────────────────────────────
   const dataDir = join(cwd, '.mimic', 'data');
   const personaNames = resolvePersonaNames(config, opts.persona);
-  const datasets: { name: string; data: ExpandedData }[] = [];
+  const dataMap = new Map<string, ExpandedData>();
 
   for (const name of personaNames) {
     const dataPath = join(dataDir, `${name}.json`);
@@ -88,117 +94,47 @@ async function runSeed(opts: SeedOptions): Promise<void> {
       );
     }
     const data = await readJson<ExpandedData>(dataPath);
-    datasets.push({ name, data });
+    dataMap.set(name, data);
   }
 
   if (!opts.json) {
     logger.step(
-      `Seeding ${datasets.length} persona(s) with strategy "${chalk.yellow(strategy)}"`,
+      `Seeding ${dataMap.size} persona(s) with strategy "${chalk.yellow(strategy)}"`,
     );
   }
 
-  // ── Connect and seed ────────────────────────────────────────────────────
-  let pg: typeof import('pg');
-  try {
-    pg = await import('pg');
-  } catch {
-    throw new DatabaseConnectionError(
-      'pg module not available',
-      'Ensure "pg" is installed: pnpm add pg',
-    );
-  }
-
-  const pool = new pg.default.Pool({ connectionString: dbConfig.url });
+  // ── Seed via PgSeeder adapter ──────────────────────────────────────────
+  const seeder = new PgSeeder(dbConfig.url);
   const results: SeedResult[] = [];
 
   try {
     // Verify connectivity
-    const testClient = await pool.connect();
-    testClient.release();
+    const healthy = await seeder.healthcheck();
+    if (!healthy) {
+      throw new MimicError(
+        'Cannot connect to PostgreSQL',
+        'DB_CONNECTION_ERROR',
+        'Check your database URL and ensure the server is running',
+      );
+    }
     logger.debug('Database connection verified');
 
-    for (const { name, data } of datasets) {
-      const start = performance.now();
+    const start = performance.now();
+
+    await seeder.seedBatch(schema, dataMap, { strategy });
+
+    const duration = Math.round(performance.now() - start);
+
+    // Build results from the data map
+    for (const [name, data] of dataMap) {
       const tableCounts: Record<string, number> = {};
-      const client = await pool.connect();
-
-      try {
-        await client.query('BEGIN');
-
-        // If strategy is truncate-and-insert, truncate first
-        if (strategy === 'truncate-and-insert') {
-          const tableNames = Object.keys(data.tables);
-          if (tableNames.length > 0) {
-            // Truncate in reverse order to respect FK constraints
-            const reversed = [...tableNames].reverse();
-            for (const table of reversed) {
-              await client.query(`TRUNCATE TABLE "${table}" CASCADE`);
-              logger.debug(`Truncated ${table}`);
-            }
-          }
-        }
-
-        // Insert data table by table
-        for (const [table, rows] of Object.entries(data.tables)) {
-          const typedRows = rows as Record<string, unknown>[];
-          if (typedRows.length === 0) {
-            tableCounts[table] = 0;
-            continue;
-          }
-
-          const columns = Object.keys(typedRows[0]!);
-          const spin = opts.json ? null : logger.spinner(`Seeding ${table}...`);
-
-          try {
-            // Batch insert using multi-row parameterised INSERTs
-            const BATCH_SIZE = 100;
-            for (let offset = 0; offset < typedRows.length; offset += BATCH_SIZE) {
-              const batch = typedRows.slice(offset, offset + BATCH_SIZE);
-              const quotedCols = columns.map((c) => `"${c}"`).join(', ');
-              const valueTuples: string[] = [];
-              const params: unknown[] = [];
-              const colCount = columns.length;
-
-              for (let rowIdx = 0; rowIdx < batch.length; rowIdx++) {
-                const placeholders: string[] = [];
-                for (let colIdx = 0; colIdx < colCount; colIdx++) {
-                  placeholders.push(`$${rowIdx * colCount + colIdx + 1}`);
-                  const val = batch[rowIdx]![columns[colIdx]!];
-                  params.push(serialiseValue(val));
-                }
-                valueTuples.push(`(${placeholders.join(', ')})`);
-              }
-
-              const sql = `INSERT INTO "${table}" (${quotedCols}) VALUES ${valueTuples.join(', ')}`;
-              await client.query(sql, params);
-            }
-
-            tableCounts[table] = typedRows.length;
-            spin?.succeed(`${table}: ${chalk.yellow(String(typedRows.length))} rows`);
-          } catch (err) {
-            spin?.fail(`Failed to seed ${table}`);
-            throw new SeedingError(
-              `Failed to insert into "${table}": ${err instanceof Error ? err.message : String(err)}`,
-              `Check that table "${table}" exists and column types match`,
-              err instanceof Error ? err : undefined,
-            );
-          }
-        }
-
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK').catch(() => {});
-        client.release();
-        throw err;
+      for (const [table, rows] of Object.entries(data.tables)) {
+        tableCounts[table] = (rows as Record<string, unknown>[]).length;
       }
-
-      client.release();
-
-      const duration = Math.round(performance.now() - start);
       results.push({ persona: name, tables: tableCounts, duration });
     }
   } finally {
-    await pool.end();
+    await seeder.dispose();
   }
 
   // ── Output ──────────────────────────────────────────────────────────────
@@ -275,12 +211,51 @@ function resolvePersonaNames(
   return all;
 }
 
-function serialiseValue(value: unknown): unknown {
-  if (value === null || value === undefined) return null;
-  if (value instanceof Date) return value.toISOString();
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'object') return JSON.stringify(value);
-  return value;
+async function resolveSchema(cwd: string, config: MimicConfig, dbUrl: string): Promise<SchemaModel> {
+  // Try loading from cached schema first
+  const cachedSchemaPath = join(cwd, '.mimic', 'schema.json');
+  if (await fileExists(cachedSchemaPath)) {
+    logger.debug('Loading schema from .mimic/schema.json');
+    return readJson<SchemaModel>(cachedSchemaPath);
+  }
+
+  // Resolve schema config from the database entry
+  const databases = config.databases;
+  if (!databases || Object.keys(databases).length === 0) {
+    throw new MimicError(
+      'No database configured',
+      'CONFIG_INVALID',
+      "Add a 'databases' section to mimic.json with a schema source",
+    );
+  }
+
+  const [, dbConfig] = Object.entries(databases)[0]!;
+  const schemaConfig = (dbConfig as Record<string, unknown>).schema as
+    | { source: 'prisma' | 'sql' | 'introspect'; path?: string }
+    | undefined;
+
+  const source = schemaConfig?.source ?? 'introspect';
+
+  if (source === 'introspect') {
+    let pg: typeof import('pg');
+    try {
+      pg = await import('pg');
+    } catch {
+      throw new MimicError(
+        'pg module not available for introspection',
+        'DB_CONNECTION_ERROR',
+        'Ensure "pg" is installed: pnpm add pg',
+      );
+    }
+    const pool = new pg.default.Pool({ connectionString: dbUrl });
+    try {
+      return await parseSchema({ schema: schemaConfig, pool, basePath: cwd });
+    } finally {
+      await pool.end();
+    }
+  }
+
+  return parseSchema({ schema: schemaConfig, basePath: cwd });
 }
 
 function maskUrl(url: string): string {

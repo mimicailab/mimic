@@ -11,14 +11,23 @@
     "url": "https://github.com/mimicailab/mimic.git",
     "directory": "packages/cli"
   },
-  "keywords": ["cli", "synthetic-data", "mcp", "ai-agent", "testing"],
+  "keywords": [
+    "cli",
+    "synthetic-data",
+    "mcp",
+    "ai-agent",
+    "testing"
+  ],
   "engines": {
     "node": ">=22"
   },
   "bin": {
     "mimic": "./dist/bin/mimic.js"
   },
-  "files": ["dist", "bin"],
+  "files": [
+    "dist",
+    "bin"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -26,16 +35,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@mimicailab/core": "workspace:*",
-    "@mimicailab/blueprints": "workspace:*",
-    "commander": "^13.1.0",
     "@inquirer/prompts": "^7.4.0",
+    "@mimicailab/blueprints": "workspace:*",
+    "@mimicailab/core": "workspace:*",
     "chalk": "^5.4.1",
-    "ora": "^8.2.0",
     "cli-table3": "^0.6.5",
+    "commander": "^13.1.0",
+    "ora": "^8.2.0",
     "pg": "^8.13.3"
   },
   "devDependencies": {
+    "@types/pg": "^8.11.11",
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   }

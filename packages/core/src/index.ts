@@ -25,11 +25,14 @@ export type {
 export type {
   Adapter,
   AdapterType,
+  DatabaseAdapter,
   ApiMockAdapter,
   EventEmitterAdapter,
   AdapterContext,
   AdapterResult,
   EndpointDefinition,
+  InspectResult,
+  HealthCheckResult,
   AdapterManifest,
 } from './types/adapter.js';
 
@@ -126,6 +129,14 @@ export { RequestLogger } from './mock/request-logger.js';
 export type { RequestLogEntry } from './mock/request-logger.js';
 export { attachMcpTransport, detachMcpTransport } from './mock/mcp-transport.js';
 export type { McpTransportConfig } from './mock/mcp-transport.js';
+export {
+  generateId,
+  paginate,
+  filterByDate,
+  resolvePersonaFromBearer,
+  resolvePersonaFromBody,
+} from './mock/utils.js';
+export type { PaginatedResult } from './mock/utils.js';
 
 // Orchestration
 export { Mimic } from './mimic.js';
@@ -141,3 +152,8 @@ export {
   listAdapters,
 } from './adapter/registry.js';
 export { loadExternalAdapter } from './adapter/loader.js';
+export { registerDefaults } from './adapter/defaults.js';
+
+// Register built-in adapters on import
+import { registerDefaults as _registerDefaults } from './adapter/defaults.js';
+_registerDefaults();

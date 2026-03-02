@@ -97,7 +97,7 @@ export class Mimic {
       for (const [name, dbConfig] of dbEntries) {
         if (dbConfig.type === 'postgres') {
           const seeder = new PgSeeder(dbConfig.url);
-          await seeder.seed(schema, data, {
+          await seeder.seedBatch(schema, data, {
             strategy: dbConfig.seedStrategy ?? 'truncate-and-insert',
           });
           await seeder.disconnect();

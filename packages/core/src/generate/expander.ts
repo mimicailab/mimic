@@ -5,6 +5,7 @@ import type {
   FrequencySpec,
   SchemaModel,
   TableInfo,
+  ColumnInfo,
   ExpandedData,
   Row,
 } from '../types/index.js';
@@ -111,6 +112,16 @@ export class BlueprintExpander {
       const tableInfo = tableIndex.get(tableName);
       sortChronologically(rows, tableInfo);
       reassignSequentialIds(rows, tableInfo, idTracker, tableName);
+    }
+
+    // ------------------------------------------------------------------
+    // 4. Fill missing required columns with generated values
+    // ------------------------------------------------------------------
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 0) {
+        fillMissingRequiredColumns(rows, tableInfo, this.rng);
+      }
     }
 
     return {
@@ -670,4 +681,85 @@ function inferDateField(
   }
 
   return { [dateCol.name]: date.toISOString() };
+}
+
+// ---------------------------------------------------------------------------
+// Missing required column fill
+// ---------------------------------------------------------------------------
+
+/**
+ * After expansion, check every row against the schema. Any NOT NULL column
+ * without a DB default that is missing from the data gets a generated value.
+ * This handles LLM omissions (e.g. missing `balance`) and ORM-managed
+ * columns like Prisma's `@updatedAt` which have no SQL default.
+ */
+function fillMissingRequiredColumns(
+  rows: Row[],
+  tableInfo: TableInfo,
+  rng: SeededRandom,
+): void {
+  for (const col of tableInfo.columns) {
+    // Skip columns that the DB handles: has default, nullable, auto-inc, generated
+    if (col.hasDefault || col.isNullable || col.isAutoIncrement || col.isGenerated) {
+      continue;
+    }
+
+    // Check if any row is missing this column
+    const hasMissing = rows.some(
+      (row) => row[col.name] === undefined || row[col.name] === null,
+    );
+    if (!hasMissing) continue;
+
+    logger.debug(
+      `Filling missing required column "${tableInfo.name}.${col.name}" (${col.type})`,
+    );
+
+    for (const row of rows) {
+      if (row[col.name] !== undefined && row[col.name] !== null) continue;
+      row[col.name] = generateColumnValue(col, rng);
+    }
+  }
+}
+
+/**
+ * Generate a realistic value for a column based on its type.
+ * Uses the seeded RNG for determinism.
+ */
+function generateColumnValue(col: ColumnInfo, rng: SeededRandom): unknown {
+  // Check for enum columns first
+  if (col.type === 'enum' && col.enumValues && col.enumValues.length > 0) {
+    return rng.pick(col.enumValues);
+  }
+
+  switch (col.type) {
+    case 'integer':
+    case 'smallint':
+      return rng.intBetween(0, 1000);
+    case 'bigint':
+      return rng.intBetween(0, 100000);
+    case 'decimal':
+    case 'float':
+    case 'double':
+      return rng.decimalBetween(1, 10000, col.scale ?? 2);
+    case 'text':
+    case 'varchar':
+    case 'char':
+      return '';
+    case 'boolean':
+      return rng.chance(0.5);
+    case 'timestamptz':
+    case 'timestamp':
+      return new Date().toISOString();
+    case 'date':
+      return new Date().toISOString().split('T')[0];
+    case 'time':
+      return `${rng.intBetween(0, 23).toString().padStart(2, '0')}:${rng.intBetween(0, 59).toString().padStart(2, '0')}:00`;
+    case 'uuid':
+      return crypto.randomUUID();
+    case 'json':
+    case 'jsonb':
+      return {};
+    default:
+      return null;
+  }
 }

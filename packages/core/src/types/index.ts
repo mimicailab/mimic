@@ -24,11 +24,14 @@ export type {
 export type {
   Adapter,
   AdapterType,
+  DatabaseAdapter,
   ApiMockAdapter,
   EventEmitterAdapter,
   AdapterContext,
   AdapterResult,
   EndpointDefinition,
+  InspectResult,
+  HealthCheckResult,
   AdapterManifest,
 } from './adapter.js';
 
