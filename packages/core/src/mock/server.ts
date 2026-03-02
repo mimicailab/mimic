@@ -23,14 +23,22 @@ export class MockServer {
 
   async registerAdapter(
     adapter: ApiMockAdapter,
-    data: ExpandedData,
+    data: ExpandedData | Map<string, ExpandedData>,
     config: { basePath: string; port?: number },
   ): Promise<void> {
     this.adapters.set(adapter.id, adapter);
+
+    // Normalize data to Map<string, ExpandedData>
+    const dataMap =
+      data instanceof Map
+        ? data
+        : new Map<string, ExpandedData>([[data.personaId, data]]);
+
     await this.router.registerAdapter(
       this.server,
       adapter,
-      data,
+      dataMap,
+      this.stateStore,
       config.basePath,
     );
     logger.info(`Registered ${adapter.name} at ${config.basePath}`);

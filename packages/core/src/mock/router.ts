@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ApiMockAdapter } from '../types/adapter.js';
 import type { ExpandedData } from '../types/dataset.js';
 import type { EndpointDefinition } from '../types/adapter.js';
+import type { StateStore } from './state-store.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -13,10 +14,11 @@ export class MockRouter {
   async registerAdapter(
     server: FastifyInstance,
     adapter: ApiMockAdapter,
-    data: ExpandedData,
+    data: Map<string, ExpandedData>,
+    stateStore: StateStore,
     basePath: string,
   ): Promise<void> {
-    await adapter.registerRoutes(server, data);
+    await adapter.registerRoutes(server, data, stateStore);
 
     const endpoints = adapter.getEndpoints();
     this.registeredEndpoints.push(...endpoints);
