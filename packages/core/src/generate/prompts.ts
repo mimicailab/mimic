@@ -33,9 +33,11 @@ Rules:
    - **event** — one-off or probabilistic occurrences (car repair, medical bill).  Provide a \`probability\` (0..1) per time-step.
 4. All monetary amounts must be realistic for the persona's income level and location.
 5. Use the column names and types defined in the schema — do NOT invent columns.
-6. Foreign-key values in patterns should reference entity IDs using the placeholder format \`{{table_name.column_name}}\` so the expander can resolve them.
-7. Keep annotations minimal — they are for the expander's benefit (e.g. \`startBalance\`, currency).
-8. Output **only** valid JSON matching the provided Zod schema.  No markdown, no commentary.`;
+6. **CRITICAL: Every column marked REQUIRED in the schema MUST be included in entity seeds and pattern fields.** These columns are NOT NULL with no database default — the database will reject rows that omit them. Pay special attention to numeric columns like balances, amounts, and quantities.
+7. For pattern fields (recurring/variable/periodic/event), include ALL REQUIRED columns from the target table. If a column varies per row, put it in \`randomFields\` with a realistic range. If it has a fixed value, put it in \`fields\`.
+8. Foreign-key values in patterns should reference entity IDs using the placeholder format \`{{table_name.column_name}}\` so the expander can resolve them.
+9. Keep annotations minimal — they are for the expander's benefit (e.g. \`startBalance\`, currency).
+10. Output **only** valid JSON matching the provided Zod schema.  No markdown, no commentary.`;
 
 // ---------------------------------------------------------------------------
 // User prompt construction
@@ -48,6 +50,8 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
   const { schema, persona, domain } = options;
   const schemaDump = formatSchema(schema);
 
+  const requiredSummary = formatRequiredColumns(schema);
+
   const user = [
     `Domain: ${domain}`,
     '',
@@ -58,6 +62,7 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
     schemaDump,
     '--- END SCHEMA ---',
     '',
+    ...(requiredSummary ? [requiredSummary, ''] : []),
     'Generate a complete blueprint for this persona.  Follow the system instructions exactly.',
   ].join('\n');
 
@@ -67,6 +72,31 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
 // ---------------------------------------------------------------------------
 // Schema formatter  (human-readable dump for the LLM context window)
 // ---------------------------------------------------------------------------
+
+/**
+ * Build a prominent reminder listing every REQUIRED column per table.
+ * This makes it impossible for the LLM to miss them.
+ */
+function formatRequiredColumns(schema: SchemaModel): string {
+  const sections: string[] = [];
+
+  for (const table of schema.tables) {
+    const required = table.columns.filter(
+      (c) => !c.isNullable && !c.hasDefault && !c.isAutoIncrement && !c.isGenerated,
+    );
+    if (required.length === 0) continue;
+
+    const cols = required.map((c) => `${c.name} (${c.pgType})`).join(', ');
+    sections.push(`  ${table.name}: ${cols}`);
+  }
+
+  if (sections.length === 0) return '';
+
+  return [
+    '⚠ REQUIRED COLUMNS — you MUST provide values for these in every entity seed and pattern field:',
+    ...sections,
+  ].join('\n');
+}
 
 function formatSchema(schema: SchemaModel): string {
   const lines: string[] = [];
@@ -141,6 +171,11 @@ function formatColumn(col: ColumnInfo): string {
     parts.push(`[${col.enumValues.join(', ')}]`);
   }
   if (col.comment) parts.push(`-- ${col.comment}`);
+
+  // Mark columns that MUST be included in blueprint data
+  if (!col.isNullable && !col.hasDefault && !col.isAutoIncrement && !col.isGenerated) {
+    parts.push('⚠ REQUIRED');
+  }
 
   return parts.join(' ');
 }
