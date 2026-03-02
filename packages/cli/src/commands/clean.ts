@@ -223,7 +223,7 @@ async function cleanTablesDirectly(dbUrl: string): Promise<void> {
       const tableResult = await client.query<{ tablename: string }>(
         `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
       );
-      const tableNames = tableResult.rows.map((r) => r.tablename);
+      const tableNames = tableResult.rows.map((r: { tablename: string }) => r.tablename);
 
       if (tableNames.length === 0) {
         logger.info('No tables found in public schema');

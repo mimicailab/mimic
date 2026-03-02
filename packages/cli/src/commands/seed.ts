@@ -113,7 +113,7 @@ async function runSeed(opts: SeedOptions): Promise<void> {
     if (!healthy) {
       throw new MimicError(
         'Cannot connect to PostgreSQL',
-        'DATABASE_ERROR',
+        'DB_CONNECTION_ERROR',
         'Check your database URL and ensure the server is running',
       );
     }
@@ -243,7 +243,7 @@ async function resolveSchema(cwd: string, config: MimicConfig, dbUrl: string): P
     } catch {
       throw new MimicError(
         'pg module not available for introspection',
-        'DATABASE_ERROR',
+        'DB_CONNECTION_ERROR',
         'Ensure "pg" is installed: pnpm add pg',
       );
     }
