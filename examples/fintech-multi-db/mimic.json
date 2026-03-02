@@ -1,0 +1,42 @@
+{
+  "domain": "personal finance and banking platform",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "active-trader",
+      "description": "31yo software engineer, $140K salary, active stock trader, 5+ bank accounts, heavy transaction volume"
+    },
+    {
+      "name": "saver",
+      "description": "27yo teacher, $55K salary, focuses on saving, minimal spending, tracks every dollar"
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "postgres": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "introspect"
+      },
+      "seedStrategy": "truncate-and-insert"
+    },
+    "mongodb": {
+      "type": "mongodb",
+      "url": "$MONGO_URL",
+      "database": "mimic_fintech",
+      "seedStrategy": "delete-and-insert",
+      "autoCreateIndexes": true
+    }
+  }
+}

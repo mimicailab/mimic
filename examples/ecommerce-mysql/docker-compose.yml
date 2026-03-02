@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: mimic
+      MYSQL_DATABASE: mimic_ecommerce
+      MYSQL_USER: mimic
+      MYSQL_PASSWORD: mimic
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "mimic", "-pmimic"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  mysqldata:

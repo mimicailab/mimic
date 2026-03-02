@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import type { Row } from '../types/index.js';
+import type { Row } from '@mimicailab/core';
 
 /**
  * Default number of rows per INSERT statement.

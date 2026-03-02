@@ -1,6 +1,8 @@
 import type { PoolClient } from 'pg';
-import type { SchemaModel } from '../types/index.js';
-import { debug } from '../utils/logger.js';
+import type { SchemaModel } from '@mimicailab/core';
+import { logger } from '@mimicailab/core';
+
+const { debug } = logger;
 
 /**
  * Re-synchronise all SERIAL / IDENTITY sequences so that the next

@@ -5,14 +5,15 @@ import type {
   AdapterContext,
   AdapterResult,
   InspectResult,
-} from '../types/adapter.js';
-import type { SchemaModel, TableInfo, ColumnInfo, ExpandedData, Row } from '../types/index.js';
-import { DatabaseConnectionError, SeedingError } from '../utils/errors.js';
-import { introspectDatabase } from '../schema/db-introspector.js';
-import { debug, success, warn } from '../utils/logger.js';
+} from '@mimicailab/core';
+import type { SchemaModel, TableInfo, ColumnInfo, ExpandedData, Row } from '@mimicailab/core';
+import { DatabaseConnectionError, SeedingError, logger } from '@mimicailab/core';
+import { introspectDatabase } from '@mimicailab/core';
 import { batchInsert } from './batch-insert.js';
 import { bulkCopy } from './bulk-copy.js';
 import { syncSequences } from './sequence-sync.js';
+
+const { debug, success, warn } = logger;
 
 // ---------------------------------------------------------------------------
 // PG type parser overrides (module-level, applied once on import)

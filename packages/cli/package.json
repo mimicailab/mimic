@@ -36,6 +36,10 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^7.4.0",
+    "@mimicailab/adapter-mongodb": "workspace:*",
+    "@mimicailab/adapter-mysql": "workspace:*",
+    "@mimicailab/adapter-postgres": "workspace:*",
+    "@mimicailab/adapter-sqlite": "workspace:*",
     "@mimicailab/blueprints": "workspace:*",
     "@mimicailab/core": "workspace:*",
     "chalk": "^5.4.1",

@@ -8,11 +8,11 @@
     "dev": "tsx --watch index.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.0",
-    "@openai/agents": "^0.5.2",
-    "@openai/agents-extensions": "^0.5.2",
-    "ai": "^6.0.0",
-    "zod": "^4.0.0"
+    "@ai-sdk/anthropic": "^3.0.50",
+    "@openai/agents": "^0.5.3",
+    "@openai/agents-extensions": "^0.5.3",
+    "ai": "^6.0.105",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "tsx": "^4.21.0",

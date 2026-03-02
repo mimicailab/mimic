@@ -1,0 +1,35 @@
+{
+  "domain": "e-commerce storefront",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "power-shopper",
+      "description": "34yo marketing exec, frequent online buyer, $120K salary, loves electronics and fashion"
+    },
+    {
+      "name": "casual-browser",
+      "description": "22yo grad student, occasional buyer, budget-conscious, mostly books and supplies"
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "mysql",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "introspect"
+      },
+      "seedStrategy": "truncate-and-insert"
+    }
+  }
+}
