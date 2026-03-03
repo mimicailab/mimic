@@ -8,3 +8,6 @@ dist/
 !.env.example
 .claude/
 private/
+*.db
+*.db-shm
+*.db-wal

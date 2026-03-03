@@ -50,9 +50,44 @@ export const MimicConfigSchema = z.object({
             .default('truncate-and-insert'),
         }),
         z.object({
+          type: z.literal('mysql'),
+          url: z.string(),
+          schema: z
+            .object({
+              source: z.enum(['sql', 'introspect']),
+              path: z.string().optional(),
+            })
+            .optional(),
+          seedStrategy: z
+            .enum(['truncate-and-insert', 'append', 'upsert'])
+            .default('truncate-and-insert'),
+          pool: z
+            .object({
+              max: z.number().default(5),
+              timeout: z.number().default(5000),
+            })
+            .optional(),
+          copyThreshold: z.number().default(500),
+          excludeTables: z.array(z.string()).optional(),
+        }),
+        z.object({
+          type: z.literal('sqlite'),
+          path: z.string(),
+          walMode: z.boolean().optional(),
+          seedStrategy: z
+            .enum(['truncate-and-insert', 'append'])
+            .default('truncate-and-insert'),
+        }),
+        z.object({
           type: z.literal('mongodb'),
           url: z.string(),
+          database: z.string().optional(),
           collections: z.array(z.string()).optional(),
+          seedStrategy: z
+            .enum(['drop-and-insert', 'delete-and-insert', 'append', 'upsert'])
+            .default('delete-and-insert'),
+          autoCreateIndexes: z.boolean().optional(),
+          tls: z.boolean().optional(),
         }),
         z.object({
           type: z.literal('vector'),
@@ -80,6 +115,8 @@ export const MimicConfigSchema = z.object({
         adapter: z.string().optional(),
         version: z.string().optional(),
         port: z.number().optional(),
+        enabled: z.boolean().default(true),
+        mcp: z.boolean().default(false),
         config: z.record(z.unknown()).optional(),
       }),
     )

@@ -1,11 +1,28 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
-  "changelog": "@changesets/cli/changelog",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "mimicailab/mimic" }
+  ],
   "commit": false,
-  "fixed": [],
-  "linked": [["@mimicailab/core", "@mimicailab/cli", "@mimicailab/blueprints"]],
+  "fixed": [
+    [
+      "@mimicailab/core",
+      "@mimicailab/cli",
+      "@mimicailab/blueprints",
+      "@mimicailab/adapter-sdk",
+      "@mimicailab/adapter-postgres",
+      "@mimicailab/adapter-mysql",
+      "@mimicailab/adapter-mongodb",
+      "@mimicailab/adapter-sqlite",
+      "@mimicailab/adapter-plaid",
+      "@mimicailab/adapter-slack",
+      "@mimicailab/adapter-stripe"
+    ]
+  ],
+  "linked": [],
   "access": "public",
   "baseBranch": "main",
-  "updateInternalDependencies": "patch",
-  "ignore": []
+  "updateInternalDependencies": "minor",
+  "ignore": ["@mimicailab/docs"]
 }

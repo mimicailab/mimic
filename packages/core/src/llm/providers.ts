@@ -1,3 +1,4 @@
+import type { LanguageModel } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import type { MimicConfig } from '../types/index.js';
@@ -61,7 +62,7 @@ export function getModelPricing(model: string): ModelPricing {
 /**
  * Create a Vercel AI SDK language-model instance from the Mimic LLM config.
  */
-export function createProvider(config: ProviderConfig) {
+export function createProvider(config: ProviderConfig): LanguageModel {
   const { provider, model, apiKey, baseUrl } = config;
 
   switch (provider) {

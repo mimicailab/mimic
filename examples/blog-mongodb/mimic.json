@@ -1,0 +1,34 @@
+{
+  "domain": "technical blog and content platform",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "prolific-writer",
+      "description": "32yo senior engineer, writes 2-3 posts/week on distributed systems and Rust, active commenter"
+    },
+    {
+      "name": "casual-reader",
+      "description": "24yo junior dev, reads daily, comments occasionally, bookmarks tutorials"
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "mongodb",
+      "url": "$MONGO_URL",
+      "database": "mimic_blog",
+      "seedStrategy": "delete-and-insert",
+      "autoCreateIndexes": true
+    }
+  }
+}

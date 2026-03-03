@@ -1,0 +1,23 @@
+{
+  "name": "meeting-notes-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx --watch index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.50",
+    "@openai/agents": "^0.5.3",
+    "@openai/agents-extensions": "^0.5.3",
+    "ai": "^6.0.105",
+    "pg": "^8.16.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3"
+  }
+}

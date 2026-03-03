@@ -1,0 +1,19 @@
+{
+  "name": "@mimicailab/adapter-sqlite",
+  "version": "0.2.0",
+  "description": "SQLite database adapter for Mimic — prepared statements, WAL mode, PRAGMA introspection",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Mimic AI Lab",
+  "homepage": "https://github.com/mimicailab/mimic",
+  "repository": { "type": "git", "url": "https://github.com/mimicailab/mimic.git", "directory": "packages/adapters/adapter-sqlite" },
+  "keywords": ["mimic", "adapter", "sqlite", "database", "seeding"],
+  "engines": { "node": ">=22" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js", "require": "./dist/index.cjs" } },
+  "files": ["dist"],
+  "scripts": { "build": "tsup", "dev": "tsup --watch", "test": "vitest run", "typecheck": "tsc --noEmit", "clean": "rm -rf dist" },
+  "dependencies": { "@mimicailab/core": "workspace:*" },
+  "peerDependencies": { "better-sqlite3": "^11.0.0" },
+  "peerDependenciesMeta": { "better-sqlite3": { "optional": true } },
+  "devDependencies": { "tsup": "^8.3.6", "vitest": "^3.0.5", "typescript": "^5.7.3", "@types/better-sqlite3": "^7.6.12" }
+}

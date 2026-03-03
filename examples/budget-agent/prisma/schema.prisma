@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model accounts {
+  id              Int       @id @default(autoincrement())
+  institution     String
+  type            String    // checking, savings, credit
+  name            String
+  balance         Decimal   @db.Decimal(12, 2)
+  currency        String    @default("USD")
+  plaid_account_id String?
+  created_at      DateTime  @default(now())
+  transactions    transactions[]
+}
+
+model transactions {
+  id              Int       @id @default(autoincrement())
+  account_id      Int
+  amount          Decimal   @db.Decimal(12, 2)
+  merchant        String
+  category        String
+  date            DateTime
+  pending         Boolean   @default(false)
+  plaid_txn_id    String?
+  created_at      DateTime  @default(now())
+  account         accounts  @relation(fields: [account_id], references: [id])
+}
+
+model budgets {
+  id              Int       @id @default(autoincrement())
+  category        String
+  monthly_limit   Decimal   @db.Decimal(12, 2)
+  month           String    // YYYY-MM format
+  spent           Decimal   @db.Decimal(12, 2) @default(0)
+  created_at      DateTime  @default(now())
+
+  @@unique([category, month])
+}
+
+model savings_goals {
+  id              Int       @id @default(autoincrement())
+  name            String
+  target_amount   Decimal   @db.Decimal(12, 2)
+  current_amount  Decimal   @db.Decimal(12, 2) @default(0)
+  target_date     DateTime?
+  status          String    @default("active")  // active, completed, paused
+  created_at      DateTime  @default(now())
+}

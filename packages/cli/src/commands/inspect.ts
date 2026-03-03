@@ -12,7 +12,11 @@ import {
   MimicError,
   parseSchema,
 } from '@mimicailab/core';
-import type { ExpandedData, Blueprint, SchemaModel } from '@mimicailab/core';
+import type { ExpandedData, Blueprint, SchemaModel, InspectResult } from '@mimicailab/core';
+import { PgSeeder } from '@mimicailab/adapter-postgres';
+import { MySQLSeeder } from '@mimicailab/adapter-mysql';
+import { SQLiteSeeder } from '@mimicailab/adapter-sqlite';
+import { MongoSeeder } from '@mimicailab/adapter-mongodb';
 import { resolveEnvVars } from '../utils/env.js';
 
 // ---------------------------------------------------------------------------
@@ -51,6 +55,16 @@ export function registerInspectCommand(program: Command): void {
     .action(async (opts) => {
       await inspectBlueprints(opts);
     });
+
+  // ── mimic inspect db ──────────────────────────────────────────────────
+  inspect
+    .command('db')
+    .description('Query live database(s) for row/document counts')
+    .option('-d, --database <name>', 'inspect a specific database entry')
+    .option('--verbose', 'enable verbose logging')
+    .action(async (opts) => {
+      await inspectDb(opts);
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -82,36 +96,49 @@ async function inspectSchema(opts: SchemaOptions): Promise<void> {
   }
 
   const [, dbConfig] = Object.entries(databases)[0]!;
+  const dbType = dbConfig.type;
   const schemaConfig = (dbConfig as Record<string, unknown>).schema as
     | { source: string; path?: string }
     | undefined;
 
-  if (!schemaConfig) {
-    throw new MimicError(
-      'No schema source configured',
-      'CONFIG_INVALID',
-      "Add a 'schema' section to your database config in mimic.json",
-    );
-  }
+  // For non-PG databases, use the adapter's introspect method directly
+  const source = schemaConfig?.source ?? 'introspect';
 
   const spin = logger.spinner('Parsing schema...');
 
   try {
-    // Connect to PG if introspection is needed
-    let pool: import('pg').Pool | undefined;
-    if (schemaConfig.source === 'introspect') {
-      const dbUrl = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
-      const pg = await import('pg');
-      pool = new pg.default.Pool({ connectionString: dbUrl });
+    let schema: SchemaModel;
+
+    if (source === 'introspect' && dbType !== 'postgres') {
+      // Route through the appropriate adapter
+      schema = await introspectViaAdapter(dbType, dbConfig as Record<string, unknown>, config);
+    } else {
+      // PG introspection or file-based parsing (prisma/sql)
+      if (!schemaConfig && dbType === 'postgres') {
+        // Default to introspect for PG
+      } else if (!schemaConfig) {
+        throw new MimicError(
+          'No schema source configured',
+          'CONFIG_INVALID',
+          "Add a 'schema' section to your database config in mimic.json, or use 'introspect' mode",
+        );
+      }
+
+      let pool: import('pg').Pool | undefined;
+      if (source === 'introspect') {
+        const dbUrl = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
+        const pg = await import('pg');
+        pool = new pg.default.Pool({ connectionString: dbUrl });
+      }
+
+      schema = await parseSchema({
+        schema: (schemaConfig ?? { source: 'introspect' }) as { source: 'prisma' | 'sql' | 'introspect'; path?: string },
+        pool,
+        basePath: cwd,
+      });
+
+      if (pool) await pool.end();
     }
-
-    const schema = await parseSchema({
-      schema: schemaConfig as { source: 'prisma' | 'sql' | 'introspect'; path?: string },
-      pool,
-      basePath: cwd,
-    });
-
-    if (pool) await pool.end();
 
     spin.succeed(`Parsed ${chalk.yellow(String(schema.tables.length))} table(s), ${chalk.yellow(String(schema.enums.length))} enum(s)`);
 
@@ -360,4 +387,176 @@ async function inspectBlueprints(opts: BlueprintOptions): Promise<void> {
   console.log();
   console.log(table.toString());
   console.log();
+}
+
+// ---------------------------------------------------------------------------
+// inspect db
+// ---------------------------------------------------------------------------
+
+interface DbOptions {
+  database?: string;
+  verbose?: boolean;
+}
+
+async function inspectDb(opts: DbOptions): Promise<void> {
+  if (opts.verbose) {
+    logger.setVerbose(true);
+  }
+
+  const cwd = process.cwd();
+  const config = await loadConfig(cwd);
+
+  logger.header('mimic inspect db');
+
+  const databases = config.databases;
+  if (!databases || Object.keys(databases).length === 0) {
+    throw new MimicError(
+      'No database configured',
+      'CONFIG_INVALID',
+      "Add a 'databases' section to mimic.json",
+    );
+  }
+
+  const dbEntries = opts.database
+    ? Object.entries(databases).filter(([name]) => name === opts.database)
+    : Object.entries(databases);
+
+  if (dbEntries.length === 0) {
+    throw new MimicError(
+      `Database "${opts.database}" not found`,
+      'CONFIG_INVALID',
+      `Available: ${Object.keys(databases).join(', ')}`,
+    );
+  }
+
+  for (const [dbName, dbConfig] of dbEntries) {
+    const dbType = dbConfig.type;
+    const spin = logger.spinner(`Inspecting "${dbName}" (${dbType})...`);
+
+    try {
+      const result = await inspectLiveDb(dbType, dbConfig as Record<string, unknown>, config);
+      spin.succeed(`${dbName} (${dbType}): ${chalk.yellow(String(result.totalRows))} total rows`);
+
+      const dbTable = new Table({
+        head: [chalk.bold('Table/Collection'), chalk.bold('Row Count')],
+        style: { head: [], border: [] },
+      });
+
+      for (const [tableName, info] of Object.entries(result.tables)) {
+        dbTable.push([chalk.dim(tableName), chalk.yellow(String(info.rowCount))]);
+      }
+
+      console.log();
+      console.log(dbTable.toString());
+    } catch (err) {
+      spin.fail(`Failed to inspect "${dbName}"`);
+      logger.warn(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  console.log();
+}
+
+async function inspectLiveDb(
+  dbType: string,
+  dbConfig: Record<string, unknown>,
+  config: import('@mimicailab/core').MimicConfig,
+): Promise<InspectResult> {
+  const ctx = { config, blueprints: new Map() as Map<string, Blueprint>, logger };
+
+  switch (dbType) {
+    case 'postgres': {
+      const seeder = new PgSeeder(dbConfig.url as string);
+      try {
+        return await seeder.inspect(ctx);
+      } finally {
+        await seeder.dispose();
+      }
+    }
+    case 'mysql': {
+      const seeder = new MySQLSeeder();
+      await seeder.init({ url: dbConfig.url as string }, ctx);
+      try {
+        return await seeder.inspect(ctx);
+      } finally {
+        await seeder.dispose();
+      }
+    }
+    case 'sqlite': {
+      const seeder = new SQLiteSeeder();
+      await seeder.init({ path: dbConfig.path as string, walMode: dbConfig.walMode as boolean | undefined }, ctx);
+      try {
+        return await seeder.inspect(ctx);
+      } finally {
+        await seeder.dispose();
+      }
+    }
+    case 'mongodb': {
+      const seeder = new MongoSeeder();
+      await seeder.init({
+        url: dbConfig.url as string,
+        database: dbConfig.database as string | undefined,
+        collections: dbConfig.collections as string[] | undefined,
+      }, ctx);
+      try {
+        return await seeder.inspect(ctx);
+      } finally {
+        await seeder.dispose();
+      }
+    }
+    default:
+      throw new MimicError(
+        `Unsupported database type: ${dbType}`,
+        'CONFIG_INVALID',
+        'Supported types: postgres, mysql, sqlite, mongodb',
+      );
+  }
+}
+
+async function introspectViaAdapter(
+  dbType: string,
+  dbConfig: Record<string, unknown>,
+  config: import('@mimicailab/core').MimicConfig,
+): Promise<SchemaModel> {
+  const ctx = { config, blueprints: new Map() as Map<string, Blueprint>, logger };
+
+  switch (dbType) {
+    case 'mysql': {
+      const seeder = new MySQLSeeder();
+      const url = resolveEnvVars(dbConfig.url as string);
+      await seeder.init({ url }, ctx);
+      try {
+        return await seeder.introspect({ url });
+      } finally {
+        await seeder.dispose();
+      }
+    }
+    case 'sqlite': {
+      const seeder = new SQLiteSeeder();
+      const path = dbConfig.path as string;
+      await seeder.init({ path }, ctx);
+      try {
+        return await seeder.introspect({ path });
+      } finally {
+        await seeder.dispose();
+      }
+    }
+    case 'mongodb': {
+      const seeder = new MongoSeeder();
+      const url = resolveEnvVars(dbConfig.url as string);
+      const database = dbConfig.database as string | undefined;
+      await seeder.init({ url, database }, ctx);
+      try {
+        return await seeder.introspect({ url, database });
+      } finally {
+        await seeder.dispose();
+      }
+    }
+    default:
+      throw new MimicError(
+        `Unsupported database type "${dbType}" for introspection`,
+        'CONFIG_INVALID',
+        'Supported: postgres, mysql, sqlite, mongodb',
+      );
+  }
 }

@@ -1,4 +1,4 @@
-import { generateObject, generateText } from 'ai';
+import { generateText, Output } from 'ai';
 import type { z } from 'zod';
 import { createProvider, type ProviderConfig } from './providers.js';
 import { CostTracker, type CostCategory } from './cost-tracker.js';
@@ -57,9 +57,9 @@ export interface GenerateTextResult {
 // ---------------------------------------------------------------------------
 
 /**
- * Thin, opinionated wrapper around the Vercel AI SDK that:
+ * Thin, opinionated wrapper around the Vercel AI SDK v6 that:
  *   1. Creates a provider-specific model from Mimic config.
- *   2. Delegates to `generateObject` / `generateText`.
+ *   2. Delegates to `generateText` with `Output.object()` for structured output.
  *   3. Records every call's token usage via `CostTracker`.
  *   4. Maps SDK errors into `BlueprintGenerationError`.
  */
@@ -94,11 +94,14 @@ export class LLMClient {
   }
 
   // -----------------------------------------------------------------------
-  // Structured output
+  // Structured output (AI SDK v6: generateText + Output.object)
   // -----------------------------------------------------------------------
 
   /**
    * Generate a structured object validated against a Zod schema.
+   *
+   * Uses AI SDK v6's `generateText` with `Output.object()` which leverages
+   * the provider's native structured output capabilities.
    */
   async generateObject<T extends z.ZodTypeAny>(
     opts: GenerateObjectOptions<T>,
@@ -106,22 +109,64 @@ export class LLMClient {
     const label = opts.label ?? 'generateObject';
     const category = opts.category ?? 'generation';
 
-    logger.debug(`LLM [${label}] calling ${this.config.model} (object mode)`);
+    logger.debug(`LLM [${label}] calling ${this.config.model} (structured output)`);
 
     try {
-      const result = await generateObject({
-        model: this.model,
-        schema: opts.schema,
-        schemaName: opts.schemaName,
-        schemaDescription: opts.schemaDescription,
-        system: opts.system,
-        prompt: opts.prompt,
-        temperature: opts.temperature ?? this.config.temperature ?? 0.7,
-        maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
-      });
+      let result;
+      try {
+        result = await generateText({
+          model: this.model,
+          output: Output.object({
+            schema: opts.schema,
+          }),
+          system: opts.system,
+          prompt: opts.prompt,
+          temperature: opts.temperature ?? this.config.temperature ?? 0.7,
+          maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
+          providerOptions: {
+            anthropic: { structuredOutputMode: 'jsonTool' },
+          },
+        });
+      } catch (sdkErr: unknown) {
+        // Output.object validation failed — try to extract what the LLM returned
+        const errObj = sdkErr as { text?: string; output?: unknown; cause?: { value?: unknown } };
+        const rawText = errObj.text ?? '';
+        if (rawText) {
+          logger.debug(`LLM [${label}] SDK error, raw text: ${rawText.substring(0, 500)}`);
+          try {
+            let raw = JSON.parse(rawText);
+            // jsonTool mode wraps output in {"data": ...} or {"json": ...}
+            if (raw.data && !opts.schema.safeParse(raw).success) {
+              raw = raw.data;
+            } else if (raw.json && !opts.schema.safeParse(raw).success) {
+              raw = raw.json;
+            }
+            const validation = opts.schema.safeParse(raw);
+            if (!validation.success) {
+              const issues = validation.error.issues.map((i: { path: unknown[]; message: string }) =>
+                `${(i.path as string[]).join('.')}: ${i.message}`);
+              logger.debug(`LLM [${label}] Zod validation issues:\n  ${issues.join('\n  ')}`);
+            } else {
+              // Zod passes but Output.object() didn't — return it directly
+              logger.debug(`LLM [${label}] Zod passed on manual parse, using result`);
+              const err2 = sdkErr as { usage?: { inputTokens?: number; outputTokens?: number } };
+              return {
+                object: validation.data as z.infer<T>,
+                promptTokens: err2.usage?.inputTokens ?? 0,
+                completionTokens: err2.usage?.outputTokens ?? 0,
+              };
+            }
+          } catch { /* not parseable */ }
+        }
+        throw sdkErr;
+      }
 
-      const promptTokens = result.usage?.promptTokens ?? 0;
-      const completionTokens = result.usage?.completionTokens ?? 0;
+      if (!result.output) {
+        throw new Error('No object generated: response did not match schema.');
+      }
+
+      const promptTokens = result.usage?.inputTokens ?? 0;
+      const completionTokens = result.usage?.outputTokens ?? 0;
 
       this.costTracker.record({
         label,
@@ -136,7 +181,7 @@ export class LLMClient {
       );
 
       return {
-        object: result.object as z.infer<T>,
+        object: result.output as z.infer<T>,
         promptTokens,
         completionTokens,
       };
@@ -164,12 +209,12 @@ export class LLMClient {
         system: opts.system,
         prompt: opts.prompt,
         temperature: opts.temperature ?? this.config.temperature ?? 0.7,
-        maxTokens: opts.maxTokens,
+        maxOutputTokens: opts.maxTokens,
         maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
       });
 
-      const promptTokens = result.usage?.promptTokens ?? 0;
-      const completionTokens = result.usage?.completionTokens ?? 0;
+      const promptTokens = result.usage?.inputTokens ?? 0;
+      const completionTokens = result.usage?.outputTokens ?? 0;
 
       this.costTracker.record({
         label,

@@ -9,11 +9,14 @@ import {
   logger,
   fileExists,
   MimicError,
-  PgSeeder,
   parseSchema,
   readJson,
 } from '@mimicailab/core';
 import type { MimicConfig, SchemaModel } from '@mimicailab/core';
+import { PgSeeder } from '@mimicailab/adapter-postgres';
+import { MySQLSeeder } from '@mimicailab/adapter-mysql';
+import { SQLiteSeeder } from '@mimicailab/adapter-sqlite';
+import { MongoSeeder } from '@mimicailab/adapter-mongodb';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -25,6 +28,7 @@ export function registerCleanCommand(program: Command): void {
     .description('Truncate database tables and remove generated data')
     .option('-y, --yes', 'skip confirmation prompt')
     .option('--keep-blueprints', 'keep cached blueprints in .mimic/blueprints/')
+    .option('-d, --database <name>', 'clean a specific database entry')
     .option('--verbose', 'enable verbose logging')
     .action(async (opts) => {
       await runClean(opts);
@@ -38,6 +42,7 @@ export function registerCleanCommand(program: Command): void {
 interface CleanOptions {
   yes?: boolean;
   keepBlueprints?: boolean;
+  database?: string;
   verbose?: boolean;
 }
 
@@ -59,7 +64,7 @@ async function runClean(opts: CleanOptions): Promise<void> {
   if (!opts.yes) {
     console.log();
     logger.warn('This will:');
-    logger.info('  - Truncate all Mimic-seeded tables in the database');
+    logger.info('  - Truncate all Mimic-seeded tables in configured database(s)');
     logger.info('  - Remove all files from .mimic/data/');
     if (!opts.keepBlueprints) {
       logger.info('  - Remove all files from .mimic/blueprints/');
@@ -77,40 +82,26 @@ async function runClean(opts: CleanOptions): Promise<void> {
     }
   }
 
-  // ── Truncate database tables via PgSeeder ───────────────────────────────
+  // ── Truncate database tables ────────────────────────────────────────────
   const databases = config.databases;
   if (databases && Object.keys(databases).length > 0) {
-    const [dbName, dbConfig] = Object.entries(databases)[0]!;
-    const dbUrl = (dbConfig as Record<string, unknown>).url as string;
+    const dbEntries = opts.database
+      ? Object.entries(databases).filter(([name]) => name === opts.database)
+      : Object.entries(databases);
 
-    logger.step(`Truncating tables in database "${dbName}"...`);
+    for (const [dbName, dbConfig] of dbEntries) {
+      const dbType = dbConfig.type;
+      logger.step(`Cleaning database "${dbName}" (${chalk.yellow(dbType)})...`);
 
-    const seeder = new PgSeeder(dbUrl);
-
-    try {
-      const schema = await resolveSchemaForClean(cwd, config, dbUrl);
-
-      if (schema) {
-        await seeder.cleanTables(schema);
-        logger.success(
-          `Truncated ${chalk.yellow(String(schema.insertionOrder.length))} table(s)`,
+      try {
+        await cleanDatabase(dbName, dbType, dbConfig as Record<string, unknown>, cwd, config);
+      } catch (err) {
+        if (err instanceof MimicError) throw err;
+        logger.warn(
+          `Database "${dbName}" cleanup failed: ${err instanceof Error ? err.message : String(err)}`,
         );
-      } else {
-        // No schema available — fall back to discovering tables directly
-        logger.debug('No schema available, discovering tables from database');
-        await cleanTablesDirectly(dbUrl);
+        logger.info('Continuing with local file cleanup...');
       }
-    } catch (err) {
-      // Non-fatal: warn but continue with local cleanup
-      if (err instanceof MimicError) {
-        throw err;
-      }
-      logger.warn(
-        `Database truncation failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      logger.info('Continuing with local file cleanup...');
-    } finally {
-      await seeder.dispose();
     }
   } else {
     logger.info('No database configured — skipping truncation');
@@ -156,56 +147,124 @@ async function runClean(opts: CleanOptions): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Multi-DB clean routing
+// ---------------------------------------------------------------------------
+
+async function cleanDatabase(
+  dbName: string,
+  dbType: string,
+  dbConfig: Record<string, unknown>,
+  cwd: string,
+  config: MimicConfig,
+): Promise<void> {
+  switch (dbType) {
+    case 'postgres': {
+      const url = dbConfig.url as string;
+      const seeder = new PgSeeder(url);
+      try {
+        const schema = await resolveSchemaForClean(cwd, config, dbConfig);
+        if (schema) {
+          await seeder.cleanTables(schema);
+          logger.success(`Truncated ${chalk.yellow(String(schema.insertionOrder.length))} table(s) in "${dbName}"`);
+        } else {
+          await cleanPgDirectly(url);
+        }
+      } finally {
+        await seeder.dispose();
+      }
+      break;
+    }
+    case 'mysql': {
+      const url = dbConfig.url as string;
+      const seeder = new MySQLSeeder();
+      try {
+        await seeder.init({ url }, { config, blueprints: new Map(), logger });
+        const schema = await seeder.introspect({ url });
+        await seeder.clean({ config, blueprints: new Map(), logger, schema });
+        logger.success(`Truncated MySQL tables in "${dbName}"`);
+      } finally {
+        await seeder.dispose();
+      }
+      break;
+    }
+    case 'sqlite': {
+      const path = dbConfig.path as string;
+      const seeder = new SQLiteSeeder();
+      try {
+        await seeder.init(
+          { path, walMode: dbConfig.walMode as boolean | undefined },
+          { config, blueprints: new Map(), logger },
+        );
+        const schema = await seeder.introspect({ path });
+        await seeder.clean({ config, blueprints: new Map(), logger, schema });
+        logger.success(`Cleaned SQLite tables in "${dbName}"`);
+      } finally {
+        await seeder.dispose();
+      }
+      break;
+    }
+    case 'mongodb': {
+      const url = dbConfig.url as string;
+      const seeder = new MongoSeeder();
+      try {
+        await seeder.init(
+          {
+            url,
+            database: dbConfig.database as string | undefined,
+            collections: dbConfig.collections as string[] | undefined,
+          },
+          { config, blueprints: new Map(), logger },
+        );
+        await seeder.clean({ config, blueprints: new Map(), logger });
+        logger.success(`Cleaned MongoDB collections in "${dbName}"`);
+      } finally {
+        await seeder.dispose();
+      }
+      break;
+    }
+    default:
+      logger.warn(`Unsupported database type "${dbType}" for clean — skipping "${dbName}"`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 async function resolveSchemaForClean(
   cwd: string,
-  config: MimicConfig,
-  dbUrl: string,
+  _config: MimicConfig,
+  dbConfig: Record<string, unknown>,
 ): Promise<SchemaModel | null> {
-  // Try loading from cached schema first
   const cachedSchemaPath = join(cwd, '.mimic', 'schema.json');
   if (await fileExists(cachedSchemaPath)) {
     return readJson<SchemaModel>(cachedSchemaPath);
   }
 
-  // Resolve schema config from the database entry
-  const databases = config.databases;
-  if (!databases || Object.keys(databases).length === 0) return null;
-
-  const [, dbConfig] = Object.entries(databases)[0]!;
-  const schemaConfig = (dbConfig as Record<string, unknown>).schema as
+  const schemaConfig = dbConfig.schema as
     | { source: 'prisma' | 'sql' | 'introspect'; path?: string }
     | undefined;
 
   if (!schemaConfig) return null;
-
   const source = schemaConfig.source ?? 'introspect';
 
   try {
     if (source === 'introspect') {
       const pg = await import('pg');
-      const pool = new pg.default.Pool({ connectionString: dbUrl });
+      const pool = new pg.default.Pool({ connectionString: dbConfig.url as string });
       try {
         return await parseSchema({ schema: schemaConfig, pool, basePath: cwd });
       } finally {
         await pool.end();
       }
     }
-
     return await parseSchema({ schema: schemaConfig, basePath: cwd });
   } catch {
-    // Schema resolution is best-effort for clean; fall back to direct truncation
     return null;
   }
 }
 
-/**
- * Fallback: truncate all public-schema tables directly when no schema model
- * is available. This preserves the original clean behavior.
- */
-async function cleanTablesDirectly(dbUrl: string): Promise<void> {
+async function cleanPgDirectly(dbUrl: string): Promise<void> {
   let pg: typeof import('pg');
   try {
     pg = await import('pg');
@@ -218,7 +277,6 @@ async function cleanTablesDirectly(dbUrl: string): Promise<void> {
 
   try {
     const client = await pool.connect();
-
     try {
       const tableResult = await client.query<{ tablename: string }>(
         `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
@@ -234,9 +292,7 @@ async function cleanTablesDirectly(dbUrl: string): Promise<void> {
           logger.debug(`Truncated ${table}`);
         }
         await client.query('COMMIT');
-        logger.success(
-          `Truncated ${chalk.yellow(String(tableNames.length))} table(s)`,
-        );
+        logger.success(`Truncated ${chalk.yellow(String(tableNames.length))} table(s)`);
       }
     } finally {
       client.release();

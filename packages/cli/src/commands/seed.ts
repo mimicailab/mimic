@@ -8,10 +8,13 @@ import {
   readJson,
   fileExists,
   MimicError,
-  PgSeeder,
   parseSchema,
 } from '@mimicailab/core';
-import type { MimicConfig, ExpandedData, SchemaModel } from '@mimicailab/core';
+import type { MimicConfig, ExpandedData, SchemaModel, DatabaseAdapter } from '@mimicailab/core';
+import { PgSeeder } from '@mimicailab/adapter-postgres';
+import { MySQLSeeder } from '@mimicailab/adapter-mysql';
+import { SQLiteSeeder } from '@mimicailab/adapter-sqlite';
+import { MongoSeeder } from '@mimicailab/adapter-mongodb';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -20,12 +23,13 @@ import type { MimicConfig, ExpandedData, SchemaModel } from '@mimicailab/core';
 export function registerSeedCommand(program: Command): void {
   program
     .command('seed')
-    .description('Push expanded data to PostgreSQL')
+    .description('Push expanded data to configured databases')
     .option('-p, --persona <names...>', 'limit to specific personas')
     .option(
       '-s, --strategy <strategy>',
-      'seed strategy: truncate-and-insert, append, upsert',
+      'seed strategy (depends on database type)',
     )
+    .option('-d, --database <name>', 'seed a specific database entry')
     .option('--verbose', 'enable verbose logging')
     .option('--json', 'output results as JSON')
     .action(async (opts) => {
@@ -40,11 +44,14 @@ export function registerSeedCommand(program: Command): void {
 interface SeedOptions {
   persona?: string[];
   strategy?: string;
+  database?: string;
   verbose?: boolean;
   json?: boolean;
 }
 
 interface SeedResult {
+  database: string;
+  type: string;
   persona: string;
   tables: Record<string, number>;
   duration: number;
@@ -66,18 +73,28 @@ async function runSeed(opts: SeedOptions): Promise<void> {
     logger.header('mimic seed');
   }
 
-  // ── Resolve database config ─────────────────────────────────────────────
-  const dbConfig = resolveDatabase(config);
-  const strategy = (opts.strategy ?? dbConfig.seedStrategy ?? 'truncate-and-insert') as
-    | 'truncate-and-insert'
-    | 'append'
-    | 'upsert';
+  // ── Resolve databases ─────────────────────────────────────────────────
+  const databases = config.databases;
+  if (!databases || Object.keys(databases).length === 0) {
+    throw new MimicError(
+      'No database configured',
+      'CONFIG_INVALID',
+      "Add a 'databases' section to mimic.json or run 'mimic init'",
+    );
+  }
 
-  logger.debug(`Database URL: ${maskUrl(dbConfig.url)}`);
-  logger.debug(`Strategy: ${strategy}`);
+  // Filter to specific database if --database flag is used
+  const dbEntries = opts.database
+    ? Object.entries(databases).filter(([name]) => name === opts.database)
+    : Object.entries(databases);
 
-  // ── Resolve schema ────────────────────────────────────────────────────────
-  const schema = await resolveSchema(cwd, config, dbConfig.url);
+  if (dbEntries.length === 0) {
+    throw new MimicError(
+      `Database "${opts.database}" not found in config`,
+      'CONFIG_INVALID',
+      `Available databases: ${Object.keys(databases).join(', ')}`,
+    );
+  }
 
   // ── Load expanded data ──────────────────────────────────────────────────
   const dataDir = join(cwd, '.mimic', 'data');
@@ -97,44 +114,76 @@ async function runSeed(opts: SeedOptions): Promise<void> {
     dataMap.set(name, data);
   }
 
-  if (!opts.json) {
-    logger.step(
-      `Seeding ${dataMap.size} persona(s) with strategy "${chalk.yellow(strategy)}"`,
-    );
-  }
-
-  // ── Seed via PgSeeder adapter ──────────────────────────────────────────
-  const seeder = new PgSeeder(dbConfig.url);
   const results: SeedResult[] = [];
 
-  try {
-    // Verify connectivity
-    const healthy = await seeder.healthcheck();
-    if (!healthy) {
-      throw new MimicError(
-        'Cannot connect to PostgreSQL',
-        'DB_CONNECTION_ERROR',
-        'Check your database URL and ensure the server is running',
+  // ── Seed each database ──────────────────────────────────────────────────
+  for (const [dbName, dbConfig] of dbEntries) {
+    const dbType = dbConfig.type;
+
+    if (!opts.json) {
+      logger.step(
+        `Seeding ${chalk.cyan(dbName)} (${chalk.yellow(dbType)}) with ${dataMap.size} persona(s)`,
       );
     }
-    logger.debug('Database connection verified');
 
-    const start = performance.now();
+    const { seeder, strategy, schema } = await createSeeder(dbType, dbConfig, opts.strategy, cwd, config);
 
-    await seeder.seedBatch(schema, dataMap, { strategy });
-
-    const duration = Math.round(performance.now() - start);
-
-    // Build results from the data map
-    for (const [name, data] of dataMap) {
-      const tableCounts: Record<string, number> = {};
-      for (const [table, rows] of Object.entries(data.tables)) {
-        tableCounts[table] = (rows as Record<string, unknown>[]).length;
+    try {
+      // Verify connectivity
+      const healthy = await seeder.healthcheck();
+      if (!healthy) {
+        throw new MimicError(
+          `Cannot connect to ${dbType} database "${dbName}"`,
+          'DB_CONNECTION_ERROR',
+          'Check your database URL/path and ensure the server is running',
+        );
       }
-      results.push({ persona: name, tables: tableCounts, duration });
+      logger.debug(`${dbType} connection verified for "${dbName}"`);
+
+      const start = performance.now();
+
+      // Route to the correct seed method
+      switch (dbType) {
+        case 'postgres': {
+          const pgSeeder = seeder as InstanceType<typeof PgSeeder>;
+          await pgSeeder.seedBatch(schema!, dataMap, { strategy: strategy as 'truncate-and-insert' | 'append' | 'upsert' });
+          break;
+        }
+        case 'mysql': {
+          const mysqlSeeder = seeder as InstanceType<typeof MySQLSeeder>;
+          await mysqlSeeder.seedBatch(schema!, dataMap, { strategy: strategy as 'truncate-and-insert' | 'append' | 'upsert' });
+          break;
+        }
+        case 'sqlite': {
+          const sqliteSeeder = seeder as InstanceType<typeof SQLiteSeeder>;
+          await sqliteSeeder.seedBatch(schema!, dataMap, { strategy: strategy as 'truncate-and-insert' | 'append' });
+          break;
+        }
+        case 'mongodb': {
+          const mongoSeeder = seeder as InstanceType<typeof MongoSeeder>;
+          await mongoSeeder.seedBatch(dataMap);
+          break;
+        }
+        default:
+          throw new MimicError(
+            `Unsupported database type: ${dbType}`,
+            'CONFIG_INVALID',
+            'Supported types: postgres, mysql, sqlite, mongodb',
+          );
+      }
+
+      const duration = Math.round(performance.now() - start);
+
+      for (const [name, data] of dataMap) {
+        const tableCounts: Record<string, number> = {};
+        for (const [table, rows] of Object.entries(data.tables)) {
+          tableCounts[table] = (rows as Record<string, unknown>[]).length;
+        }
+        results.push({ database: dbName, type: dbType, persona: name, tables: tableCounts, duration });
+      }
+    } finally {
+      await seeder.dispose();
     }
-  } finally {
-    await seeder.dispose();
   }
 
   // ── Output ──────────────────────────────────────────────────────────────
@@ -148,7 +197,7 @@ async function runSeed(opts: SeedOptions): Promise<void> {
 
   for (const result of results) {
     console.log();
-    console.log(`  ${chalk.bold(result.persona)} ${chalk.dim(`(${result.duration}ms)`)}`);
+    console.log(`  ${chalk.bold(result.persona)} → ${chalk.cyan(result.database)} ${chalk.dim(`(${result.duration}ms)`)}`);
     for (const [table, count] of Object.entries(result.tables)) {
       logger.info(`  ${chalk.dim(table)}: ${chalk.yellow(String(count))} rows`);
     }
@@ -158,10 +207,9 @@ async function runSeed(opts: SeedOptions): Promise<void> {
     (sum, r) => sum + Object.values(r.tables).reduce((s, n) => s + n, 0),
     0,
   );
-  const totalTime = results.reduce((sum, r) => sum + r.duration, 0);
 
   console.log();
-  logger.done(`Seeded ${totalRows} rows in ${totalTime}ms`);
+  logger.done(`Seeded ${totalRows} rows across ${dbEntries.length} database(s)`);
   console.log();
 }
 
@@ -169,25 +217,68 @@ async function runSeed(opts: SeedOptions): Promise<void> {
 // Helpers
 // ---------------------------------------------------------------------------
 
-interface DbEntry {
-  type: string;
-  url: string;
-  seedStrategy?: string;
-}
-
-function resolveDatabase(config: MimicConfig): DbEntry {
-  const databases = config.databases;
-  if (!databases || Object.keys(databases).length === 0) {
-    throw new MimicError(
-      'No database configured',
-      'CONFIG_INVALID',
-      "Add a 'databases' section to mimic.json or run 'mimic init'",
-    );
+async function createSeeder(
+  dbType: string,
+  dbConfig: Record<string, unknown>,
+  strategyOverride: string | undefined,
+  cwd: string,
+  config: MimicConfig,
+): Promise<{ seeder: DatabaseAdapter & { dispose: () => Promise<void>; healthcheck: () => Promise<boolean> }; strategy: string; schema: SchemaModel | null }> {
+  switch (dbType) {
+    case 'postgres': {
+      const url = dbConfig.url as string;
+      const strategy = strategyOverride ?? (dbConfig.seedStrategy as string) ?? 'truncate-and-insert';
+      const seeder = new PgSeeder(url);
+      const schema = await resolveSchema(cwd, config, dbConfig);
+      return { seeder, strategy, schema };
+    }
+    case 'mysql': {
+      const url = dbConfig.url as string;
+      const strategy = strategyOverride ?? (dbConfig.seedStrategy as string) ?? 'truncate-and-insert';
+      const seeder = new MySQLSeeder();
+      await seeder.init(
+        { url, seedStrategy: strategy as 'truncate-and-insert' | 'append' | 'upsert', copyThreshold: dbConfig.copyThreshold as number | undefined, excludeTables: dbConfig.excludeTables as string[] | undefined },
+        { config, blueprints: new Map(), logger },
+      );
+      const schema = await resolveSchema(cwd, config, dbConfig);
+      return { seeder, strategy, schema };
+    }
+    case 'sqlite': {
+      const path = dbConfig.path as string;
+      const strategy = strategyOverride ?? (dbConfig.seedStrategy as string) ?? 'truncate-and-insert';
+      const seeder = new SQLiteSeeder();
+      await seeder.init(
+        { path, walMode: dbConfig.walMode as boolean | undefined, seedStrategy: strategy as 'truncate-and-insert' | 'append' },
+        { config, blueprints: new Map(), logger },
+      );
+      // For SQLite, introspect from the live database
+      const schema = await seeder.introspect({ path, walMode: dbConfig.walMode as boolean | undefined });
+      return { seeder, strategy, schema };
+    }
+    case 'mongodb': {
+      const url = dbConfig.url as string;
+      const strategy = strategyOverride ?? (dbConfig.seedStrategy as string) ?? 'delete-and-insert';
+      const seeder = new MongoSeeder();
+      await seeder.init(
+        {
+          url,
+          database: dbConfig.database as string | undefined,
+          collections: dbConfig.collections as string[] | undefined,
+          seedStrategy: strategy as 'drop-and-insert' | 'delete-and-insert' | 'append' | 'upsert',
+          autoCreateIndexes: dbConfig.autoCreateIndexes as boolean | undefined,
+          tls: dbConfig.tls as boolean | undefined,
+        },
+        { config, blueprints: new Map(), logger },
+      );
+      return { seeder, strategy, schema: null };
+    }
+    default:
+      throw new MimicError(
+        `Unsupported database type: ${dbType}`,
+        'CONFIG_INVALID',
+        'Supported types: postgres, mysql, sqlite, mongodb',
+      );
   }
-
-  // Use the first database (typically "default")
-  const [, db] = Object.entries(databases)[0]!;
-  return db as DbEntry;
 }
 
 function resolvePersonaNames(
@@ -211,7 +302,11 @@ function resolvePersonaNames(
   return all;
 }
 
-async function resolveSchema(cwd: string, config: MimicConfig, dbUrl: string): Promise<SchemaModel> {
+async function resolveSchema(
+  cwd: string,
+  config: MimicConfig,
+  dbConfig: Record<string, unknown>,
+): Promise<SchemaModel> {
   // Try loading from cached schema first
   const cachedSchemaPath = join(cwd, '.mimic', 'schema.json');
   if (await fileExists(cachedSchemaPath)) {
@@ -219,24 +314,14 @@ async function resolveSchema(cwd: string, config: MimicConfig, dbUrl: string): P
     return readJson<SchemaModel>(cachedSchemaPath);
   }
 
-  // Resolve schema config from the database entry
-  const databases = config.databases;
-  if (!databases || Object.keys(databases).length === 0) {
-    throw new MimicError(
-      'No database configured',
-      'CONFIG_INVALID',
-      "Add a 'databases' section to mimic.json with a schema source",
-    );
-  }
-
-  const [, dbConfig] = Object.entries(databases)[0]!;
-  const schemaConfig = (dbConfig as Record<string, unknown>).schema as
+  const schemaConfig = dbConfig.schema as
     | { source: 'prisma' | 'sql' | 'introspect'; path?: string }
     | undefined;
 
   const source = schemaConfig?.source ?? 'introspect';
 
   if (source === 'introspect') {
+    const url = dbConfig.url as string;
     let pg: typeof import('pg');
     try {
       pg = await import('pg');
@@ -247,7 +332,7 @@ async function resolveSchema(cwd: string, config: MimicConfig, dbUrl: string): P
         'Ensure "pg" is installed: pnpm add pg',
       );
     }
-    const pool = new pg.default.Pool({ connectionString: dbUrl });
+    const pool = new pg.default.Pool({ connectionString: url });
     try {
       return await parseSchema({ schema: schemaConfig, pool, basePath: cwd });
     } finally {
@@ -256,16 +341,4 @@ async function resolveSchema(cwd: string, config: MimicConfig, dbUrl: string): P
   }
 
   return parseSchema({ schema: schemaConfig, basePath: cwd });
-}
-
-function maskUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (parsed.password) {
-      parsed.password = '****';
-    }
-    return parsed.toString();
-  } catch {
-    return url.slice(0, 30) + '...';
-  }
 }

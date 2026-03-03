@@ -5,14 +5,15 @@ import type {
   AdapterContext,
   AdapterResult,
   InspectResult,
-} from '../types/adapter.js';
-import type { SchemaModel, TableInfo, ColumnInfo, ExpandedData, Row } from '../types/index.js';
-import { DatabaseConnectionError, SeedingError } from '../utils/errors.js';
-import { introspectDatabase } from '../schema/db-introspector.js';
-import { debug, success, warn } from '../utils/logger.js';
+} from '@mimicailab/core';
+import type { SchemaModel, TableInfo, ColumnInfo, ExpandedData, Row } from '@mimicailab/core';
+import { DatabaseConnectionError, SeedingError, logger } from '@mimicailab/core';
+import { introspectDatabase } from '@mimicailab/core';
 import { batchInsert } from './batch-insert.js';
 import { bulkCopy } from './bulk-copy.js';
 import { syncSequences } from './sequence-sync.js';
+
+const { debug, success, warn } = logger;
 
 // ---------------------------------------------------------------------------
 // PG type parser overrides (module-level, applied once on import)
@@ -200,13 +201,35 @@ export class PgSeeder implements DatabaseAdapter<PostgresConfig> {
         const tableInfo = schema.tables.find((t) => t.name === tableName);
         if (!tableInfo) continue;
 
+        // Find auto-increment PK column (if any) for dedup
+        const autoPkCol = tableInfo.columns.find(
+          (c) => c.isAutoIncrement && tableInfo.primaryKey.includes(c.name),
+        );
+
         const mergedRows: Row[] = [];
         for (let pi = 0; pi < personaKeys.length; pi++) {
           const expandedData = data.get(personaKeys[pi]!)!;
           const tableRows = expandedData.tables[tableName];
           if (!tableRows || tableRows.length === 0) continue;
 
-          for (const originalRow of tableRows) {
+          // Deduplicate rows within this persona by auto-increment PK.
+          // LLM-generated data may produce duplicate IDs when entities and
+          // patterns both emit rows with the same ID values.
+          let deduped = tableRows;
+          if (autoPkCol) {
+            const seen = new Set<unknown>();
+            deduped = tableRows.filter((row) => {
+              const id = row[autoPkCol.name];
+              if (seen.has(id)) return false;
+              seen.add(id);
+              return true;
+            });
+            if (deduped.length < tableRows.length) {
+              debug(`Deduped "${tableName}" for persona "${personaKeys[pi]}": ${tableRows.length} → ${deduped.length} rows`);
+            }
+          }
+
+          for (const originalRow of deduped) {
             // Deep-clone so we don't mutate the source data
             const row = { ...originalRow };
 
@@ -219,25 +242,39 @@ export class PgSeeder implements DatabaseAdapter<PostgresConfig> {
           }
         }
 
-        if (mergedRows.length === 0) {
+        // Remove rows containing unresolved template placeholders
+        // (e.g. "{{subscriptions.amount_cents}}") which the LLM may produce
+        const cleanRows = mergedRows.filter((row) => {
+          for (const val of Object.values(row)) {
+            if (typeof val === 'string' && val.includes('{{') && val.includes('}}')) {
+              return false;
+            }
+          }
+          return true;
+        });
+        if (cleanRows.length < mergedRows.length) {
+          debug(`Removed ${mergedRows.length - cleanRows.length} rows with unresolved templates from "${tableName}"`);
+        }
+
+        if (cleanRows.length === 0) {
           debug(`Skipping "${tableName}" -- no rows to insert`);
           continue;
         }
 
         // Fill missing required columns with type-appropriate defaults
-        fillMissingColumns(mergedRows, tableInfo);
+        fillMissingColumns(cleanRows, tableInfo);
 
         // Normalize columns across all rows. When personas have different
         // columns (e.g. one includes "status", another doesn't), we must
         // either include the column for all rows or exclude it entirely.
-        const columns = normalizeRowColumns(mergedRows, tableInfo);
+        const columns = normalizeRowColumns(cleanRows, tableInfo);
 
-        if (mergedRows.length > COPY_THRESHOLD) {
-          debug(`COPY "${tableName}" -- ${mergedRows.length} rows`);
-          await bulkCopy(client, tableName, columns, mergedRows);
+        if (cleanRows.length > COPY_THRESHOLD) {
+          debug(`COPY "${tableName}" -- ${cleanRows.length} rows`);
+          await bulkCopy(client, tableName, columns, cleanRows);
         } else {
-          debug(`INSERT "${tableName}" -- ${mergedRows.length} rows`);
-          await batchInsert(client, tableName, columns, mergedRows);
+          debug(`INSERT "${tableName}" -- ${cleanRows.length} rows`);
+          await batchInsert(client, tableName, columns, cleanRows);
         }
       }
 

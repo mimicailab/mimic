@@ -62,8 +62,9 @@ export class BlueprintEngine {
     persona: PersonaInput,
     domain: string,
     options: GenerateOptions = {},
+    apis?: Record<string, { adapter?: string; config?: Record<string, unknown> }>,
   ): Promise<Blueprint> {
-    const cacheKey = this.computeCacheKey(schema, persona, domain);
+    const cacheKey = this.computeCacheKey(schema, persona, domain, apis);
 
     // ------------------------------------------------------------------
     // 1. Cache check
@@ -85,7 +86,7 @@ export class BlueprintEngine {
       `Generating blueprint for "${persona.name}" in domain "${domain}"...`,
     );
 
-    const { system, user } = buildPrompt({ schema, persona, domain });
+    const { system, user } = buildPrompt({ schema, persona, domain, apis });
 
     let llmOutput: BlueprintLLMOutput;
     try {
@@ -171,6 +172,7 @@ export class BlueprintEngine {
     schema: SchemaModel,
     persona: PersonaInput,
     domain: string,
+    apis?: Record<string, unknown>,
   ): string {
     const payload = JSON.stringify({
       schema: {
@@ -190,6 +192,7 @@ export class BlueprintEngine {
         description: persona.description,
       },
       domain,
+      apis: apis ? Object.keys(apis).sort() : [],
     });
 
     return createHash('sha256').update(payload).digest('hex');

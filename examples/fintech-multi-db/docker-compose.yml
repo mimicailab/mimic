@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: mimic
+      POSTGRES_PASSWORD: mimic
+      POSTGRES_DB: mimic_fintech
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mimic -d mimic_fintech"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mongodb:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_DATABASE: mimic_fintech
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+  mongodata:

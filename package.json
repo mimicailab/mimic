@@ -8,17 +8,24 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "clean": "turbo clean"
+    "clean": "turbo clean",
+    "release": "pnpm build && pnpm changeset publish"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.6.2",
+    "mysql2": "^3.18.2",
+    "prettier": "^3.5.3",
     "turbo": "^2.4.4",
-    "typescript": "^5.7.3",
-    "prettier": "^3.5.3"
+    "typescript": "^5.7.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
-      "@esbuild/*"
+      "@esbuild/*",
+      "better-sqlite3"
     ]
   }
 }

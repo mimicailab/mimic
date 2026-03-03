@@ -8,7 +8,7 @@ import { BlueprintExpander } from './generate/expander.js';
 import { BlueprintCache } from './generate/blueprint-cache.js';
 import { LLMClient } from './llm/client.js';
 import { CostTracker } from './llm/cost-tracker.js';
-import { PgSeeder } from './seed/pg-seeder.js';
+// PgSeeder loaded dynamically from @mimicailab/adapter-postgres
 import { AdapterRegistry } from './adapter/registry.js';
 import { MockServer } from './mock/server.js';
 import { logger } from './utils/logger.js';
@@ -96,14 +96,20 @@ export class Mimic {
       const dbEntries = Object.entries(this.config.databases);
       for (const [name, dbConfig] of dbEntries) {
         if (dbConfig.type === 'postgres') {
-          const seeder = new PgSeeder(dbConfig.url);
-          await seeder.seedBatch(schema, data, {
-            strategy: dbConfig.seedStrategy ?? 'truncate-and-insert',
-          });
-          await seeder.disconnect();
-          logger.success(`Seeded database: ${name}`);
+          try {
+            const pkg = '@mimicailab/adapter-postgres';
+            const { PgSeeder } = await import(/* @vite-ignore */ pkg);
+            const seeder = new PgSeeder(dbConfig.url);
+            await seeder.seedBatch(schema, data, {
+              strategy: dbConfig.seedStrategy ?? 'truncate-and-insert',
+            });
+            await seeder.disconnect();
+            logger.success(`Seeded database: ${name}`);
+          } catch {
+            logger.warn(`@mimicailab/adapter-postgres not installed — skipping ${name}`);
+          }
         } else {
-          logger.warn(`Seeder for ${dbConfig.type} not yet implemented — skipping ${name}`);
+          logger.warn(`Seeder for ${dbConfig.type} not yet implemented in orchestrator — use 'mimic seed' CLI instead`);
         }
       }
     }

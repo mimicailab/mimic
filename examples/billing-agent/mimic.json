@@ -1,0 +1,40 @@
+{
+  "domain": "SaaS billing and subscription management platform. Customers sign up for plans, make payments, manage subscriptions, and view invoices.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6"
+  },
+
+  "personas": [
+    {
+      "name": "growth-startup",
+      "description": "A fast-growing startup with 50 customers across 3 pricing tiers (starter, pro, enterprise). Mix of monthly and annual subscriptions, some past-due invoices, recent upgrades and downgrades. 6 months of billing history with increasing MRR."
+    },
+    {
+      "name": "established-saas",
+      "description": "A mature SaaS company with 200+ customers, low churn, mostly enterprise annual contracts. Clean billing history, some refunds, dunning management. 12 months of data."
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": { "source": "prisma", "path": "./prisma/schema.prisma" },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "stripe": {
+      "enabled": true,
+      "mcp": true
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "domain": "project and task management app",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "busy-developer",
+      "description": "29yo full-stack dev, manages 3 active projects, heavy task creator, uses labels extensively"
+    },
+    {
+      "name": "project-manager",
+      "description": "35yo PM, oversees team of 8, focuses on milestones and deadlines, tracks blockers"
+    }
+  ],
+
+  "generate": {
+    "volume": "3 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "local": {
+      "type": "sqlite",
+      "path": "./tasks.db",
+      "walMode": true,
+      "seedStrategy": "truncate-and-insert"
+    }
+  }
+}

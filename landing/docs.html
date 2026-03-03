@@ -685,7 +685,13 @@
     </div>
     <div class="sidebar-group">
       <div class="sidebar-group-title">Configuration</div>
-      <a href="#config-file" class="sidebar-link">Config File</a>
+      <a href="#config-file" class="sidebar-link">mimic.json</a>
+      <a href="#config-domain" class="sidebar-link">domain</a>
+      <a href="#config-personas" class="sidebar-link">personas</a>
+      <a href="#config-llm" class="sidebar-link">llm</a>
+      <a href="#config-generate" class="sidebar-link">generate</a>
+      <a href="#config-databases" class="sidebar-link">databases</a>
+      <a href="#config-test" class="sidebar-link">test</a>
       <a href="#env-vars" class="sidebar-link">Environment Variables</a>
     </div>
     <div class="sidebar-group">
@@ -725,6 +731,15 @@
       <a href="#guide-finance" class="sidebar-link">Finance Agent</a>
       <a href="#guide-support" class="sidebar-link">Support Agent</a>
       <a href="#guide-cicd" class="sidebar-link">CI/CD</a>
+    </div>
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">Examples</div>
+      <a href="#examples-overview" class="sidebar-link">Overview</a>
+      <a href="#example-tasks-sqlite" class="sidebar-link">Tasks (SQLite)</a>
+      <a href="#example-ecommerce-mysql" class="sidebar-link">E-Commerce (MySQL)</a>
+      <a href="#example-blog-mongodb" class="sidebar-link">Blog (MongoDB)</a>
+      <a href="#example-fintech-multi" class="sidebar-link">Fintech (Multi-DB)</a>
+      <a href="#example-finance-assistant" class="sidebar-link">Finance Assistant</a>
     </div>
   </aside>
 
@@ -884,61 +899,457 @@
       <!-- ────────────────────────────────────────── -->
       <!-- CONFIGURATION                              -->
       <!-- ────────────────────────────────────────── -->
-      <h2 id="config-file">Configuration File</h2>
-      <p>Mimic is configured via <code>.mimic/config.yaml</code> in your project root. Created automatically by <code>mimic init</code>.</p>
+      <h2 id="config-file">
+        <span class="eyebrow">Configuration</span>
+        mimic.json
+      </h2>
+      <p class="lead">
+        The <code>mimic.json</code> file is the single entry point for all of Mimic's behaviour. It lives in your project root and defines <em>what</em> your agent's world looks like &mdash; the domain, the people in it, which databases to seed, and how to test the agent.
+      </p>
 
+      <p>Created automatically by <code>mimic init</code>, or write one by hand. Only two fields are required: <code>domain</code> and <code>personas</code>. Everything else is optional with sensible defaults.</p>
+
+      <h3>Minimal example</h3>
       <div class="code-block">
-        <div class="code-bar"><span class="code-bar-lang">yaml</span><span>.mimic/config.yaml — full reference</span></div>
-        <pre><code><span class="cm"># Persona — use a pre-built or generate custom (Pro)</span>
-<span class="yk">persona:</span> <span class="ys">finance-alex</span>
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>mimic.json &mdash; bare minimum</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"personal finance assistant"</span>,
+  <span class="yk">"personas"</span>: [
+    {
+      <span class="yk">"name"</span>: <span class="str">"young-professional"</span>,
+      <span class="yk">"description"</span>: <span class="str">"28yo product designer, $95K salary, Austin TX"</span>
+    }
+  ]
+}</code></pre>
+      </div>
+      <p>That's it. Two fields and you can run <code>mimic run</code> to generate blueprints. Add a <code>databases</code> block when you're ready to seed real data.</p>
 
-<span class="cm"># Port for the mock server</span>
-<span class="yk">port:</span> <span class="ys">4000</span>
+      <h3>Full example</h3>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>mimic.json &mdash; all options</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"personal finance and banking platform"</span>,
 
-<span class="cm"># Seed for deterministic generation (optional)</span>
-<span class="yk">seed:</span> <span class="ys">42</span>
+  <span class="yk">"llm"</span>: {
+    <span class="yk">"provider"</span>: <span class="str">"anthropic"</span>,
+    <span class="yk">"model"</span>: <span class="str">"claude-haiku-4-5"</span>
+  },
 
-<span class="cm"># Database surfaces</span>
-<span class="yk">surfaces:</span>
-  <span class="yk">databases:</span>
-    - <span class="yk">adapter:</span> <span class="ys">postgres</span>
-      <span class="yk">connection:</span> <span class="ys">postgresql://localhost:5432/testdb</span>
-      <span class="yk">tables:</span>              <span class="cm"># optional: limit to specific tables</span>
-        - users
-        - accounts
-        - transactions
+  <span class="yk">"personas"</span>: [
+    {
+      <span class="yk">"name"</span>: <span class="str">"active-trader"</span>,
+      <span class="yk">"description"</span>: <span class="str">"31yo software engineer, $140K salary, active stock trader, 5+ bank accounts"</span>
+    },
+    {
+      <span class="yk">"name"</span>: <span class="str">"saver"</span>,
+      <span class="yk">"description"</span>: <span class="str">"27yo teacher, $55K salary, focuses on saving, tracks every dollar"</span>
+    }
+  ],
 
-  <span class="cm"># API mock surfaces</span>
-  <span class="yk">apis:</span>
-    - <span class="yk">adapter:</span> <span class="ys">plaid</span>
-    - <span class="yk">adapter:</span> <span class="ys">stripe</span>
-      <span class="yk">config:</span>              <span class="cm"># adapter-specific options</span>
-        <span class="yk">webhookSecret:</span> <span class="ys">whsec_test</span>
-    - <span class="yk">adapter:</span> <span class="ys">jira</span>
-      <span class="yk">config:</span>
-        <span class="yk">projectKey:</span> <span class="ys">MIM</span>
+  <span class="yk">"generate"</span>: {
+    <span class="yk">"volume"</span>: <span class="str">"6 months"</span>,
+    <span class="yk">"seed"</span>: <span class="ty">42</span>
+  },
 
-  <span class="cm"># MCP server surfaces</span>
-  <span class="yk">mcp:</span>
-    - <span class="yk">adapter:</span> <span class="ys">slack</span>
-      <span class="yk">transport:</span> <span class="ys">stdio</span>
-    - <span class="yk">adapter:</span> <span class="ys">notion</span>
-      <span class="yk">transport:</span> <span class="ys">stdio</span></code></pre>
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"postgres"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"postgres"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+      <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"introspect"</span> },
+      <span class="yk">"seedStrategy"</span>: <span class="str">"truncate-and-insert"</span>
+    },
+    <span class="yk">"mongodb"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"mongodb"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$MONGO_URL"</span>,
+      <span class="yk">"database"</span>: <span class="str">"mimic_fintech"</span>,
+      <span class="yk">"seedStrategy"</span>: <span class="str">"delete-and-insert"</span>,
+      <span class="yk">"autoCreateIndexes"</span>: <span class="ty">true</span>
+    }
+  },
+
+  <span class="yk">"test"</span>: {
+    <span class="yk">"agent"</span>: <span class="str">"http://localhost:3000/chat"</span>,
+    <span class="yk">"scenarios"</span>: [
+      {
+        <span class="yk">"name"</span>: <span class="str">"balance-check"</span>,
+        <span class="yk">"persona"</span>: <span class="str">"active-trader"</span>,
+        <span class="yk">"goal"</span>: <span class="str">"Ask about current account balance"</span>,
+        <span class="yk">"expect"</span>: {
+          <span class="yk">"tools_called"</span>: [<span class="str">"get_accounts"</span>],
+          <span class="yk">"response_accurate"</span>: <span class="ty">true</span>
+        }
+      }
+    ]
+  }
+}</code></pre>
       </div>
 
-      <h2 id="env-vars">Environment Variables</h2>
+      <h3>Field reference</h3>
       <div class="doc-table-wrap">
         <table class="doc-table">
-          <thead><tr><th>Variable</th><th>Description</th><th>Default</th></tr></thead>
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><code>MIMIC_PORT</code></td><td>Mock server port</td><td><code>4000</code></td></tr>
-            <tr><td><code>MIMIC_PERSONA</code></td><td>Persona blueprint to use</td><td><code>finance-alex</code></td></tr>
-            <tr><td><code>MIMIC_API_KEY</code></td><td>API key for Pro features</td><td>&mdash;</td></tr>
-            <tr><td><code>MIMIC_LOG_LEVEL</code></td><td>Logging verbosity</td><td><code>info</code></td></tr>
-            <tr><td><code>MIMIC_BASE_URL</code></td><td>Used by MCP servers to reach mock server</td><td><code>http://localhost:4000</code></td></tr>
-            <tr><td><code>MIMIC_AUTH_TOKEN</code></td><td>Auth token for MCP &rarr; mock requests</td><td><code>mimic_test</code></td></tr>
+            <tr><td><code>domain</code></td><td>Yes</td><td>string</td><td>What your app does &mdash; used as context during data generation</td></tr>
+            <tr><td><code>personas</code></td><td>Yes</td><td>array</td><td>One or more persona definitions (min 1)</td></tr>
+            <tr><td><code>llm</code></td><td>No</td><td>object</td><td>LLM provider and model for blueprint generation</td></tr>
+            <tr><td><code>generate</code></td><td>No</td><td>object</td><td>Volume, seed, and per-table row overrides</td></tr>
+            <tr><td><code>databases</code></td><td>No</td><td>object</td><td>Named database targets to seed</td></tr>
+            <tr><td><code>test</code></td><td>No</td><td>object</td><td>Agent endpoint and test scenarios</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <hr>
+
+      <!-- ─── DOMAIN ──────────────────────────────── -->
+      <h3 id="config-domain">domain</h3>
+      <p>A plain-English description of what your application does. This is the most important field &mdash; it's the primary context given to the LLM when generating persona blueprints. Be specific: "personal finance assistant" generates better data than "app".</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span></div>
+        <pre><code><span class="yk">"domain"</span>: <span class="str">"e-commerce storefront with product catalog, shopping cart, and order tracking"</span></code></pre>
+      </div>
+
+      <p>Good domain descriptions include the kind of data your app works with. Here are examples from the bundled examples:</p>
+      <ul>
+        <li><code>"project and task management app"</code> &mdash; generates projects, tasks, labels, comments</li>
+        <li><code>"technical blog and content platform"</code> &mdash; generates users, posts, comments, bookmarks</li>
+        <li><code>"e-commerce storefront"</code> &mdash; generates customers, products, orders, reviews</li>
+        <li><code>"personal finance and banking platform"</code> &mdash; generates accounts, transactions, activity logs</li>
+      </ul>
+
+      <!-- ─── PERSONAS ────────────────────────────── -->
+      <h3 id="config-personas">personas</h3>
+      <p>An array of fictional identities that drive data generation. Each persona produces a different <strong>style</strong> of data &mdash; different volumes, different patterns, different values &mdash; even though they share the same schema.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span></div>
+        <pre><code><span class="yk">"personas"</span>: [
+  {
+    <span class="yk">"name"</span>: <span class="str">"power-shopper"</span>,
+    <span class="yk">"description"</span>: <span class="str">"34yo marketing exec, frequent online buyer, $120K salary, loves electronics and fashion"</span>
+  },
+  {
+    <span class="yk">"name"</span>: <span class="str">"casual-browser"</span>,
+    <span class="yk">"description"</span>: <span class="str">"22yo grad student, occasional buyer, budget-conscious, mostly books and supplies"</span>
+  }
+]</code></pre>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>Yes</td><td>string</td><td>Unique identifier. Lowercase, hyphens, numbers only (<code>^[a-z0-9-]+$</code>)</td></tr>
+            <tr><td><code>description</code></td><td>Yes</td><td>string</td><td>Detailed persona description &mdash; the LLM reads this to generate data</td></tr>
+            <tr><td><code>blueprint</code></td><td>No</td><td>string</td><td>Path to a pre-built JSON blueprint file (skips LLM generation)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Writing good descriptions:</strong> Include age, occupation, salary range, and behavioural patterns. The more specific you are, the more realistic the generated data. "29yo full-stack dev, manages 3 active projects, heavy task creator, uses labels extensively" produces much better data than "developer".</p>
+      </div>
+
+      <p>Each persona generates its own blueprint and seeds its own dataset. When you run <code>mimic seed</code>, every persona's data is inserted into the same database, giving you a realistic multi-user environment.</p>
+
+      <!-- ─── LLM ─────────────────────────────────── -->
+      <h3 id="config-llm">llm</h3>
+      <p>Configures which LLM provider and model to use for blueprint generation. If omitted, defaults to Anthropic Claude Haiku.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span></div>
+        <pre><code><span class="yk">"llm"</span>: {
+  <span class="yk">"provider"</span>: <span class="str">"anthropic"</span>,
+  <span class="yk">"model"</span>: <span class="str">"claude-haiku-4-5"</span>
+}</code></pre>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>provider</code></td><td>Yes</td><td>string</td><td><code>anthropic</code></td><td><code>anthropic</code>, <code>openai</code>, <code>ollama</code>, or <code>custom</code></td></tr>
+            <tr><td><code>model</code></td><td>Yes</td><td>string</td><td><code>claude-haiku-4-5</code></td><td>Model identifier for the chosen provider</td></tr>
+            <tr><td><code>apiKey</code></td><td>No</td><td>string</td><td>from env</td><td>API key &mdash; defaults to <code>ANTHROPIC_API_KEY</code> or <code>OPENAI_API_KEY</code></td></tr>
+            <tr><td><code>baseUrl</code></td><td>No</td><td>string</td><td>&mdash;</td><td>Custom endpoint for <code>ollama</code> or <code>custom</code> providers</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>The LLM is only called during <code>mimic run</code> (blueprint generation). Once blueprints are generated and cached in <code>.mimic/blueprints/</code>, subsequent <code>mimic seed</code> commands work entirely offline.</p>
+
+      <!-- ─── GENERATE ────────────────────────────── -->
+      <h3 id="config-generate">generate</h3>
+      <p>Controls the volume and reproducibility of generated data.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span></div>
+        <pre><code><span class="yk">"generate"</span>: {
+  <span class="yk">"volume"</span>: <span class="str">"6 months"</span>,
+  <span class="yk">"seed"</span>: <span class="ty">42</span>,
+  <span class="yk">"tables"</span>: {
+    <span class="yk">"transactions"</span>: <span class="ty">500</span>,
+    <span class="yk">"users"</span>: <span class="str">"auto"</span>
+  }
+}</code></pre>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>volume</code></td><td>No</td><td>string</td><td><code>6 months</code></td><td>Time span of synthetic data. Examples: <code>"3 months"</code>, <code>"1 year"</code>, <code>"2 weeks"</code></td></tr>
+            <tr><td><code>seed</code></td><td>No</td><td>integer</td><td><code>42</code></td><td>PRNG seed for deterministic generation &mdash; same seed = same data every time</td></tr>
+            <tr><td><code>tables</code></td><td>No</td><td>object</td><td>&mdash;</td><td>Override row counts per table. Value is a number or <code>"auto"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>The <code>volume</code> field tells the blueprint expander how far back in time to generate data. A "busy-developer" persona with <code>"3 months"</code> might create 40-60 tasks, while <code>"1 year"</code> for the same persona would produce 150-200. The <code>seed</code> makes this deterministic &mdash; use it for reproducible test environments and CI pipelines.</p>
+
+      <!-- ─── DATABASES ───────────────────────────── -->
+      <h3 id="config-databases">databases</h3>
+      <p>A named map of database targets to seed. Each key is a label you choose (e.g. <code>"primary"</code>, <code>"analytics"</code>, <code>"cache"</code>), and the value configures the connection and seeding behaviour. The <code>type</code> field determines which adapter is used.</p>
+
+      <p>Mimic supports four database types: <strong>PostgreSQL</strong>, <strong>MySQL</strong>, <strong>SQLite</strong>, and <strong>MongoDB</strong>. You can configure multiple databases &mdash; even of different types &mdash; and <code>mimic seed</code> populates them all in a single command.</p>
+
+      <h4>PostgreSQL</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>type: "postgres"</span></div>
+        <pre><code><span class="yk">"primary"</span>: {
+  <span class="yk">"type"</span>: <span class="str">"postgres"</span>,
+  <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+  <span class="yk">"schema"</span>: {
+    <span class="yk">"source"</span>: <span class="str">"prisma"</span>,
+    <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span>
+  },
+  <span class="yk">"seedStrategy"</span>: <span class="str">"truncate-and-insert"</span>
+}</code></pre>
+      </div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>type</code></td><td>Yes</td><td><code>"postgres"</code></td><td>Selects the PostgreSQL adapter</td></tr>
+            <tr><td><code>url</code></td><td>Yes</td><td>string</td><td>Connection string: <code>postgresql://user:pass@host:port/db</code></td></tr>
+            <tr><td><code>schema.source</code></td><td>No</td><td>string</td><td><code>"prisma"</code>, <code>"sql"</code>, or <code>"introspect"</code> (reads live DB)</td></tr>
+            <tr><td><code>schema.path</code></td><td>No</td><td>string</td><td>File path for <code>prisma</code> or <code>sql</code> sources</td></tr>
+            <tr><td><code>seedStrategy</code></td><td>No</td><td>string</td><td><code>"truncate-and-insert"</code> (default), <code>"append"</code>, or <code>"upsert"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Schema sources</strong> tell Mimic how to discover your table structure:</p>
+      <ul>
+        <li><code>"prisma"</code> &mdash; parses a Prisma schema file with <code>prisma-ast</code>. Supports enums, relations, and column-level annotations</li>
+        <li><code>"sql"</code> &mdash; parses SQL DDL files (CREATE TABLE statements)</li>
+        <li><code>"introspect"</code> &mdash; connects to the live database and reads <code>information_schema</code>. No schema files needed, but requires the database to be running with tables already created</li>
+      </ul>
+
+      <h4>MySQL</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>type: "mysql"</span></div>
+        <pre><code><span class="yk">"primary"</span>: {
+  <span class="yk">"type"</span>: <span class="str">"mysql"</span>,
+  <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+  <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"introspect"</span> },
+  <span class="yk">"seedStrategy"</span>: <span class="str">"truncate-and-insert"</span>
+}</code></pre>
+      </div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>type</code></td><td>Yes</td><td><code>"mysql"</code></td><td>Selects the MySQL adapter</td></tr>
+            <tr><td><code>url</code></td><td>Yes</td><td>string</td><td>Connection string: <code>mysql://user:pass@host:port/db</code></td></tr>
+            <tr><td><code>schema.source</code></td><td>No</td><td>string</td><td><code>"sql"</code> or <code>"introspect"</code></td></tr>
+            <tr><td><code>schema.path</code></td><td>No</td><td>string</td><td>File path for <code>sql</code> source</td></tr>
+            <tr><td><code>seedStrategy</code></td><td>No</td><td>string</td><td><code>"truncate-and-insert"</code> (default), <code>"append"</code>, or <code>"upsert"</code></td></tr>
+            <tr><td><code>excludeTables</code></td><td>No</td><td>array</td><td>Table names to skip during seeding (e.g. <code>["_migrations"]</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>SQLite</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>type: "sqlite"</span></div>
+        <pre><code><span class="yk">"local"</span>: {
+  <span class="yk">"type"</span>: <span class="str">"sqlite"</span>,
+  <span class="yk">"path"</span>: <span class="str">"./tasks.db"</span>,
+  <span class="yk">"walMode"</span>: <span class="ty">true</span>,
+  <span class="yk">"seedStrategy"</span>: <span class="str">"truncate-and-insert"</span>
+}</code></pre>
+      </div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>type</code></td><td>Yes</td><td><code>"sqlite"</code></td><td>Selects the SQLite adapter</td></tr>
+            <tr><td><code>path</code></td><td>Yes</td><td>string</td><td>File path to the SQLite database (e.g. <code>"./data.db"</code>)</td></tr>
+            <tr><td><code>walMode</code></td><td>No</td><td>boolean</td><td>Enable Write-Ahead Logging for better concurrency. Default: <code>false</code></td></tr>
+            <tr><td><code>seedStrategy</code></td><td>No</td><td>string</td><td><code>"truncate-and-insert"</code> (default) or <code>"append"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>SQLite requires no server &mdash; the database is a single file. Use <code>"walMode": true</code> if your agent reads the database while Mimic is seeding, to avoid locking issues.</p>
+
+      <h4>MongoDB</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>type: "mongodb"</span></div>
+        <pre><code><span class="yk">"documents"</span>: {
+  <span class="yk">"type"</span>: <span class="str">"mongodb"</span>,
+  <span class="yk">"url"</span>: <span class="str">"$MONGO_URL"</span>,
+  <span class="yk">"database"</span>: <span class="str">"mimic_blog"</span>,
+  <span class="yk">"seedStrategy"</span>: <span class="str">"delete-and-insert"</span>,
+  <span class="yk">"autoCreateIndexes"</span>: <span class="ty">true</span>
+}</code></pre>
+      </div>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>type</code></td><td>Yes</td><td><code>"mongodb"</code></td><td>Selects the MongoDB adapter</td></tr>
+            <tr><td><code>url</code></td><td>Yes</td><td>string</td><td>Connection string: <code>mongodb://host:port</code> or <code>mongodb+srv://...</code></td></tr>
+            <tr><td><code>database</code></td><td>No</td><td>string</td><td>Database name. If omitted, uses the name from the URL</td></tr>
+            <tr><td><code>seedStrategy</code></td><td>No</td><td>string</td><td><code>"delete-and-insert"</code> (default), <code>"drop-and-insert"</code>, <code>"append"</code>, or <code>"upsert"</code></td></tr>
+            <tr><td><code>autoCreateIndexes</code></td><td>No</td><td>boolean</td><td>Auto-create indexes on common fields (<code>user_id</code>, <code>email</code>, <code>created_at</code>, etc.)</td></tr>
+            <tr><td><code>collections</code></td><td>No</td><td>array</td><td>Limit seeding to specific collections. If omitted, seeds all</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>MongoDB does not require a schema file. Mimic generates document shapes from the domain description and persona, making it the fastest database to get started with. Set <code>"autoCreateIndexes": true</code> to automatically index common query fields.</p>
+
+      <div class="callout info">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <p><strong>Multi-database:</strong> You can define multiple databases of different types in the same config. <code>mimic seed</code> populates them all in one command with consistent user IDs across databases. See the <a href="#example-fintech-multi">fintech-multi-db example</a>.</p>
+      </div>
+
+      <h4>Schema source availability</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>PostgreSQL</th><th>MySQL</th><th>SQLite</th><th>MongoDB</th></tr></thead>
+          <tbody>
+            <tr><td><code>prisma</code></td><td style="color: var(--green);">Yes</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+            <tr><td><code>sql</code></td><td style="color: var(--green);">Yes</td><td style="color: var(--green);">Yes</td><td>&mdash;</td><td>&mdash;</td></tr>
+            <tr><td><code>introspect</code></td><td style="color: var(--green);">Yes</td><td style="color: var(--green);">Yes</td><td>&mdash;</td><td>&mdash;</td></tr>
+            <tr><td>Schema-free</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td style="color: var(--green);">Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Seed strategies</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Strategy</th><th>Behaviour</th><th>Available on</th></tr></thead>
+          <tbody>
+            <tr><td><code>truncate-and-insert</code></td><td>Clears all rows, then inserts fresh data. Idempotent</td><td>Postgres, MySQL, SQLite</td></tr>
+            <tr><td><code>delete-and-insert</code></td><td>Deletes all documents, then inserts. Idempotent</td><td>MongoDB</td></tr>
+            <tr><td><code>drop-and-insert</code></td><td>Drops collection entirely, recreates, then inserts</td><td>MongoDB</td></tr>
+            <tr><td><code>append</code></td><td>Adds rows/documents without removing existing data</td><td>All</td></tr>
+            <tr><td><code>upsert</code></td><td>Inserts or updates based on primary key / <code>_id</code></td><td>Postgres, MySQL, MongoDB</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ─── TEST ────────────────────────────────── -->
+      <h3 id="config-test">test</h3>
+      <p>Defines test scenarios that <code>mimic test</code> runs against your agent. Each scenario sends a goal to the agent and verifies the response against expected outcomes &mdash; which tools were called, whether the response contains expected keywords, and whether the response is factually accurate.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span></div>
+        <pre><code><span class="yk">"test"</span>: {
+  <span class="yk">"agent"</span>: <span class="str">"http://localhost:3000/chat"</span>,
+  <span class="yk">"mode"</span>: <span class="str">"text"</span>,
+  <span class="yk">"evaluator"</span>: <span class="str">"both"</span>,
+  <span class="yk">"scenarios"</span>: [
+    {
+      <span class="yk">"name"</span>: <span class="str">"monthly-spending"</span>,
+      <span class="yk">"persona"</span>: <span class="str">"young-professional"</span>,
+      <span class="yk">"goal"</span>: <span class="str">"Ask about total spending last month"</span>,
+      <span class="yk">"expect"</span>: {
+        <span class="yk">"tools_called"</span>: [<span class="str">"get_transactions"</span>],
+        <span class="yk">"response_contains"</span>: [<span class="str">"spending"</span>, <span class="str">"total"</span>],
+        <span class="yk">"response_accurate"</span>: <span class="ty">true</span>,
+        <span class="yk">"no_hallucination"</span>: <span class="ty">true</span>,
+        <span class="yk">"max_latency_ms"</span>: <span class="ty">5000</span>
+      }
+    }
+  ]
+}</code></pre>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>agent</code></td><td>Yes</td><td>string (URL)</td><td>Your agent's chat endpoint. Must accept <code>POST { "message": "..." }</code></td></tr>
+            <tr><td><code>mode</code></td><td>No</td><td>string</td><td><code>"text"</code> (default) or <code>"voice"</code></td></tr>
+            <tr><td><code>evaluator</code></td><td>No</td><td>string</td><td><code>"keyword"</code>, <code>"llm"</code>, or <code>"both"</code> (default)</td></tr>
+            <tr><td><code>scenarios</code></td><td>No</td><td>array</td><td>List of test scenario objects (see below)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Scenario fields</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>name</code></td><td>Yes</td><td>string</td><td>Unique scenario identifier</td></tr>
+            <tr><td><code>persona</code></td><td>No</td><td>string</td><td>Which persona's data to test against</td></tr>
+            <tr><td><code>goal</code></td><td>Yes</td><td>string</td><td>What the test asks the agent to do</td></tr>
+            <tr><td><code>input</code></td><td>No</td><td>string</td><td>Explicit input string (if omitted, <code>goal</code> is used)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Expectation fields</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>tools_called</code></td><td>array of strings</td><td>Agent must have called these tools</td></tr>
+            <tr><td><code>response_contains</code></td><td>array of strings</td><td>Response must contain these substrings</td></tr>
+            <tr><td><code>response_accurate</code></td><td>boolean</td><td>LLM checks factual accuracy against seeded data</td></tr>
+            <tr><td><code>no_hallucination</code></td><td>boolean</td><td>LLM checks that response doesn't fabricate data</td></tr>
+            <tr><td><code>max_latency_ms</code></td><td>number</td><td>Response must arrive within this many milliseconds</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr>
+
+      <!-- ─── ENV VARS ────────────────────────────── -->
+      <h3 id="env-vars">Environment Variables</h3>
+      <p>Any string value in <code>mimic.json</code> can reference an environment variable using the <code>$VARIABLE_NAME</code> syntax. Variables are resolved at config load time.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span></div>
+        <pre><code><span class="cm">// In mimic.json:</span>
+<span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>
+
+<span class="cm">// Resolved from your shell:</span>
+<span class="cm">// export DATABASE_URL="postgresql://user:pass@localhost:5432/mydb"</span></code></pre>
+      </div>
+
+      <p>Common environment variables used across examples:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Variable</th><th>Used by</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>DATABASE_URL</code></td><td>Postgres, MySQL</td><td>Database connection string</td></tr>
+            <tr><td><code>MONGO_URL</code></td><td>MongoDB</td><td>MongoDB connection string</td></tr>
+            <tr><td><code>ANTHROPIC_API_KEY</code></td><td>LLM provider</td><td>Required for blueprint generation with Anthropic models</td></tr>
+            <tr><td><code>OPENAI_API_KEY</code></td><td>LLM provider</td><td>Required when using <code>"provider": "openai"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></span>
+        <p>Missing environment variables cause a <code>ConfigInvalidError</code> at load time with a clear message telling you which variable is missing. Never hardcode secrets in <code>mimic.json</code> &mdash; always use <code>$VARIABLE_NAME</code> references.</p>
       </div>
 
       <!-- ────────────────────────────────────────── -->
@@ -1524,6 +1935,479 @@ MCP Server (@mimicailab/mcp-jira)
       <div class="callout info">
         <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
         <p>Pre-built personas work fully offline &mdash; no API keys or secrets needed in your CI environment. Deterministic seeding guarantees identical data in every pipeline run.</p>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
+      <!-- EXAMPLES                                    -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="examples-overview">
+        <span class="eyebrow">Examples</span>
+        Working Examples
+      </h2>
+      <p class="lead">
+        Every example ships with a <code>mimic.json</code> config, a database schema, and a fully wired AI agent.
+        Clone, seed, and chat &mdash; each example works end-to-end out of the box.
+      </p>
+
+      <p>Mimic ships with five working examples that demonstrate different database backends, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
+      <ol>
+        <li><strong>Define personas</strong> in <code>mimic.json</code> &mdash; describe who generates the data</li>
+        <li><strong>Provide a schema</strong> &mdash; SQL DDL, Prisma schema, or nothing at all (MongoDB auto-discovers)</li>
+        <li><strong>Seed the database</strong> with <code>mimic seed</code> &mdash; persona-consistent synthetic data</li>
+        <li><strong>Run the agent</strong> &mdash; a tool-equipped AI agent queries the seeded data</li>
+      </ol>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Example</th><th>Database</th><th>Domain</th><th>Agent SDK</th><th>Key Feature</th></tr></thead>
+          <tbody>
+            <tr><td><code>tasks-sqlite</code></td><td>SQLite</td><td>Task management</td><td>Vercel AI SDK</td><td>Zero-infrastructure &mdash; no Docker required</td></tr>
+            <tr><td><code>ecommerce-mysql</code></td><td>MySQL</td><td>E-commerce storefront</td><td>Vercel AI SDK</td><td>Relational schema with FKs, categories, orders</td></tr>
+            <tr><td><code>blog-mongodb</code></td><td>MongoDB</td><td>Technical blog</td><td>Vercel AI SDK</td><td>Schema-free &mdash; no DDL files needed</td></tr>
+            <tr><td><code>fintech-multi-db</code></td><td>PostgreSQL + MongoDB</td><td>Personal finance</td><td>OpenAI Agents SDK</td><td>Multi-database seeding + MCP tools</td></tr>
+            <tr><td><code>finance-assistant</code></td><td>PostgreSQL (Prisma)</td><td>Personal finance</td><td>Vercel AI SDK</td><td>Prisma schema + <code>mimic test</code> scenarios</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ─── TASKS SQLITE ────────────────────────── -->
+      <h3 id="example-tasks-sqlite">Tasks &mdash; SQLite</h3>
+      <p>The simplest way to get started. No Docker, no external database servers &mdash; SQLite is file-based, so you just need Node.js and an Anthropic API key.</p>
+      <p><strong>Domain:</strong> A project and task management app with projects, tasks, labels, and comments. Two personas generate different usage patterns: a <strong>busy-developer</strong> (heavy task creator, 3 active projects, extensive label usage) and a <strong>project-manager</strong> (milestone-focused, delegates across 8 team members, tracks blockers).</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/tasks-sqlite/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"project and task management app"</span>,
+  <span class="yk">"llm"</span>: { <span class="yk">"provider"</span>: <span class="str">"anthropic"</span>, <span class="yk">"model"</span>: <span class="str">"claude-haiku-4-5"</span> },
+  <span class="yk">"personas"</span>: [
+    {
+      <span class="yk">"name"</span>: <span class="str">"busy-developer"</span>,
+      <span class="yk">"description"</span>: <span class="str">"29yo full-stack dev, manages 3 active projects, heavy task creator, uses labels extensively"</span>
+    },
+    {
+      <span class="yk">"name"</span>: <span class="str">"project-manager"</span>,
+      <span class="yk">"description"</span>: <span class="str">"35yo PM, oversees team of 8, focuses on milestones and deadlines, tracks blockers"</span>
+    }
+  ],
+  <span class="yk">"generate"</span>: { <span class="yk">"volume"</span>: <span class="str">"3 months"</span>, <span class="yk">"seed"</span>: <span class="ty">42</span> },
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"local"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"sqlite"</span>,
+      <span class="yk">"path"</span>: <span class="str">"./tasks.db"</span>,
+      <span class="yk">"walMode"</span>: <span class="ty">true</span>,
+      <span class="yk">"seedStrategy"</span>: <span class="str">"truncate-and-insert"</span>
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h4>Schema</h4>
+      <p>Five tables capture the task management domain: <code>projects</code>, <code>tasks</code> (with status and priority enums), <code>labels</code>, <code>task_labels</code> (many-to-many), and <code>comments</code>.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">sql</span><span>examples/tasks-sqlite/schema.sql</span></div>
+        <pre><code><span class="kw">CREATE TABLE</span> projects (
+  id          <span class="ty">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  name        <span class="ty">TEXT NOT NULL</span>,
+  description <span class="ty">TEXT</span>,
+  status      <span class="ty">TEXT CHECK</span>(status <span class="kw">IN</span> (<span class="str">'active'</span>, <span class="str">'completed'</span>, <span class="str">'archived'</span>)) <span class="kw">DEFAULT</span> <span class="str">'active'</span>,
+  created_at  <span class="ty">TEXT DEFAULT</span> (datetime(<span class="str">'now'</span>)),
+  updated_at  <span class="ty">TEXT DEFAULT</span> (datetime(<span class="str">'now'</span>))
+);
+
+<span class="kw">CREATE TABLE</span> tasks (
+  id              <span class="ty">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  project_id      <span class="ty">INTEGER NOT NULL REFERENCES</span> projects(id),
+  title           <span class="ty">TEXT NOT NULL</span>,
+  status          <span class="ty">TEXT CHECK</span>(status <span class="kw">IN</span> (<span class="str">'todo'</span>, <span class="str">'in_progress'</span>, <span class="str">'review'</span>, <span class="str">'done'</span>, <span class="str">'blocked'</span>)),
+  priority        <span class="ty">TEXT CHECK</span>(priority <span class="kw">IN</span> (<span class="str">'low'</span>, <span class="str">'medium'</span>, <span class="str">'high'</span>, <span class="str">'urgent'</span>)),
+  assignee        <span class="ty">TEXT</span>,
+  due_date        <span class="ty">TEXT</span>,
+  estimated_hours <span class="ty">REAL</span>,
+  actual_hours    <span class="ty">REAL</span>,
+  <span class="cm">-- ...timestamps</span>
+);
+
+<span class="kw">CREATE TABLE</span> labels ( id <span class="ty">INTEGER PRIMARY KEY</span>, name <span class="ty">TEXT UNIQUE</span>, color <span class="ty">TEXT</span> );
+<span class="kw">CREATE TABLE</span> task_labels ( task_id <span class="ty">INTEGER</span>, label_id <span class="ty">INTEGER</span>, <span class="kw">PRIMARY KEY</span> (task_id, label_id) );
+<span class="kw">CREATE TABLE</span> comments ( id <span class="ty">INTEGER PRIMARY KEY</span>, task_id <span class="ty">INTEGER</span>, author <span class="ty">TEXT</span>, body <span class="ty">TEXT</span>, created_at <span class="ty">TEXT</span> );</code></pre>
+      </div>
+
+      <h4>Agent</h4>
+      <p>The agent uses the <strong>Vercel AI SDK</strong> with <code>better-sqlite3</code> for read-only queries. It exposes six tools to the LLM: <code>list_projects</code>, <code>search_tasks</code>, <code>get_task_details</code>, <code>get_project_tasks</code>, <code>get_task_comments</code>, and <code>get_blocked_tasks</code>. All queries are prepared statements &mdash; no string interpolation, no SQL injection risk.</p>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="cm"># No Docker needed &mdash; SQLite is file-based</span>
+<span class="prompt">$</span> cd examples/tasks-sqlite
+<span class="prompt">$</span> ./init-db.sh                       <span class="cm"># Create the SQLite database</span>
+<span class="prompt">$</span> mimic run                           <span class="cm"># Generate blueprints</span>
+<span class="prompt">$</span> mimic seed --verbose                <span class="cm"># Seed tasks.db</span>
+
+<span class="cm"># Start the agent</span>
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="cm"># Chat with it</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3002/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What projects are currently active?"}'</span> | jq .
+
+<span class="prompt">$</span> curl -s -X POST http://localhost:3002/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Show me all blocked tasks"}'</span> | jq .</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Best for:</strong> Getting started quickly, local development, demos, and environments where you can't run Docker. Cleanup is just <code>rm tasks.db</code>.</p>
+      </div>
+
+      <!-- ─── ECOMMERCE MYSQL ─────────────────────── -->
+      <h3 id="example-ecommerce-mysql">E-Commerce &mdash; MySQL</h3>
+      <p>A full relational e-commerce storefront with customers, categories (self-referencing for sub-categories), products, orders, order items, and reviews. Demonstrates Mimic with a traditional relational MySQL schema including foreign keys, unique constraints, and CHECK constraints.</p>
+      <p><strong>Personas:</strong> A <strong>power-shopper</strong> (34yo marketing exec, frequent buyer, $120K salary, loves electronics and fashion &mdash; generates ~25-40 orders over 6 months) and a <strong>casual-browser</strong> (22yo grad student, budget-conscious, mostly books &mdash; generates ~8-12 orders).</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/ecommerce-mysql/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"e-commerce storefront"</span>,
+  <span class="yk">"personas"</span>: [
+    { <span class="yk">"name"</span>: <span class="str">"power-shopper"</span>,  <span class="yk">"description"</span>: <span class="str">"34yo marketing exec, frequent online buyer, $120K salary"</span> },
+    { <span class="yk">"name"</span>: <span class="str">"casual-browser"</span>, <span class="yk">"description"</span>: <span class="str">"22yo grad student, occasional buyer, budget-conscious"</span> }
+  ],
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"mysql"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+      <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"introspect"</span> },
+      <span class="yk">"seedStrategy"</span>: <span class="str">"truncate-and-insert"</span>
+    }
+  }
+}</code></pre>
+      </div>
+
+      <h4>Schema highlights</h4>
+      <p>Six tables with full relational integrity. Categories support self-referencing parent-child hierarchy. Products have unique SKUs and slugs. Orders track status through a lifecycle (<code>pending</code> &rarr; <code>confirmed</code> &rarr; <code>shipped</code> &rarr; <code>delivered</code> or <code>cancelled</code>). Reviews enforce a 1-5 rating CHECK constraint.</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">sql</span><span>examples/ecommerce-mysql/schema.sql (excerpt)</span></div>
+        <pre><code><span class="kw">CREATE TABLE</span> customers ( id <span class="ty">INT AUTO_INCREMENT PRIMARY KEY</span>, email <span class="ty">VARCHAR(255) UNIQUE</span>, ... );
+<span class="kw">CREATE TABLE</span> categories ( id <span class="ty">INT AUTO_INCREMENT PRIMARY KEY</span>, slug <span class="ty">VARCHAR(120) UNIQUE</span>, parent_id <span class="ty">INT REFERENCES</span> categories(id) );
+<span class="kw">CREATE TABLE</span> products ( id <span class="ty">INT AUTO_INCREMENT PRIMARY KEY</span>, category_id <span class="ty">INT</span>, price <span class="ty">DECIMAL(10,2)</span>, sku <span class="ty">VARCHAR(50) UNIQUE</span> );
+<span class="kw">CREATE TABLE</span> orders ( id <span class="ty">INT AUTO_INCREMENT PRIMARY KEY</span>, customer_id <span class="ty">INT</span>, status <span class="ty">ENUM</span>(<span class="str">'pending'</span>,<span class="str">'confirmed'</span>,<span class="str">'shipped'</span>,<span class="str">'delivered'</span>,<span class="str">'cancelled'</span>) );
+<span class="kw">CREATE TABLE</span> order_items ( order_id <span class="ty">INT</span>, product_id <span class="ty">INT</span>, quantity <span class="ty">INT</span>, unit_price <span class="ty">DECIMAL(10,2)</span> );
+<span class="kw">CREATE TABLE</span> reviews ( product_id <span class="ty">INT</span>, customer_id <span class="ty">INT</span>, rating <span class="ty">TINYINT CHECK</span>(rating <span class="kw">BETWEEN</span> <span class="ty">1</span> <span class="kw">AND</span> <span class="ty">5</span>) );</code></pre>
+      </div>
+
+      <h4>Agent tools</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Tool</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>search_products</code></td><td>Search by name, category, price range; filter in-stock only</td></tr>
+            <tr><td><code>get_orders</code></td><td>Customer order history with status and date filters</td></tr>
+            <tr><td><code>get_order_details</code></td><td>Full order breakdown with line items and product info</td></tr>
+            <tr><td><code>get_customer_info</code></td><td>Customer profile with total order count and lifetime spend</td></tr>
+            <tr><td><code>get_reviews</code></td><td>Product reviews with optional rating filter and averages</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/ecommerce-mysql
+<span class="prompt">$</span> docker compose up -d               <span class="cm"># Start MySQL</span>
+<span class="prompt">$</span> export DATABASE_URL=<span class="str">"mysql://mimic:mimic@localhost:3306/mimic_ecommerce"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose
+
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="prompt">$</span> curl -s -X POST http://localhost:3001/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What electronics do you have under $50?"}'</span> | jq .
+
+<span class="prompt">$</span> curl -s -X POST http://localhost:3001/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What are the highest rated products?"}'</span> | jq .</code></pre>
+      </div>
+
+      <!-- ─── BLOG MONGODB ────────────────────────── -->
+      <h3 id="example-blog-mongodb">Blog &mdash; MongoDB</h3>
+      <p>Demonstrates Mimic's <strong>schema-free</strong> mode. No Prisma files, no SQL DDL &mdash; just describe your domain and personas in <code>mimic.json</code> and Mimic figures out the document shapes automatically. This makes MongoDB the fastest way to get started.</p>
+      <p><strong>Personas:</strong> A <strong>prolific-writer</strong> (32yo senior engineer, writes 2-3 posts/week on distributed systems and Rust, ~50-70 posts over 6 months) and a <strong>casual-reader</strong> (24yo junior dev, reads daily, bookmarks tutorials, ~80-120 bookmarks).</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/blog-mongodb/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"technical blog and content platform"</span>,
+  <span class="yk">"personas"</span>: [
+    { <span class="yk">"name"</span>: <span class="str">"prolific-writer"</span>, <span class="yk">"description"</span>: <span class="str">"32yo senior engineer, writes 2-3 posts/week on distributed systems and Rust"</span> },
+    { <span class="yk">"name"</span>: <span class="str">"casual-reader"</span>,   <span class="yk">"description"</span>: <span class="str">"24yo junior dev, reads daily, comments occasionally, bookmarks tutorials"</span> }
+  ],
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"mongodb"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$MONGO_URL"</span>,
+      <span class="yk">"database"</span>: <span class="str">"mimic_blog"</span>,
+      <span class="yk">"seedStrategy"</span>: <span class="str">"delete-and-insert"</span>,
+      <span class="yk">"autoCreateIndexes"</span>: <span class="ty">true</span>
+    }
+  }
+}</code></pre>
+      </div>
+
+      <p>Notice there is <strong>no schema file</strong>. Mimic auto-discovers collections from the database and generates documents matching the domain description. Collections created: <code>users</code>, <code>posts</code>, <code>comments</code>, <code>bookmarks</code>.</p>
+
+      <h4>Agent tools</h4>
+      <p>The agent leverages MongoDB's aggregation pipeline and <code>$lookup</code> for join-like queries:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Tool</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>search_posts</code></td><td>Full-text search with optional tag, author, and date range filters</td></tr>
+            <tr><td><code>get_post</code></td><td>Retrieve a single post by ID with full body content</td></tr>
+            <tr><td><code>get_comments</code></td><td>Paginated comments for a post, with author info via <code>$lookup</code></td></tr>
+            <tr><td><code>get_author_posts</code></td><td>All posts by an author (by ID or username), plus their profile</td></tr>
+            <tr><td><code>get_popular_posts</code></td><td>Posts ranked by engagement score (views + 5&times; likes + 10&times; comments)</td></tr>
+            <tr><td><code>search_by_tag</code></td><td>Posts matching tags (AND/OR mode), with tag frequency breakdown</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/blog-mongodb
+<span class="prompt">$</span> docker compose up -d               <span class="cm"># Start MongoDB</span>
+<span class="prompt">$</span> export MONGO_URL=<span class="str">"mongodb://localhost:27017"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose   <span class="cm"># No schema file needed!</span>
+
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="prompt">$</span> curl -X POST http://localhost:3003/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What are the most popular posts about Rust?"}'</span></code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Schema-free mode:</strong> MongoDB is the fastest way to prototype with Mimic. No schema files, no migrations &mdash; just define personas and <code>mimic seed</code>. Mimic generates documents that match your domain description.</p>
+      </div>
+
+      <!-- ─── FINTECH MULTI-DB ────────────────────── -->
+      <h3 id="example-fintech-multi">Fintech &mdash; Multi-Database</h3>
+      <p>The flagship example demonstrating Mimic's multi-database capabilities. A personal finance platform where <strong>structured financial data</strong> (users, accounts, transactions) lives in PostgreSQL and <strong>semi-structured activity data</strong> (activity logs, preferences, notifications) lives in MongoDB &mdash; with a single AI agent querying both transparently.</p>
+
+      <h4>Architecture</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span><span>multi-database architecture</span></div>
+        <pre><code>                      +---------------------+
+                      |    AI Agent (:3004)  |
+                      |  OpenAI Agents SDK   |
+                      |  + Claude Haiku      |
+                      +----------+----------+
+                                 |
+                +----------------+----------------+
+                |                                 |
+          MCP (stdio)                      Direct Driver
+                |                                 |
+       +--------+--------+             +----------+----------+
+       |   PostgreSQL    |             |      MongoDB        |
+       |   (port 5432)  |             |   (port 27017)      |
+       |                 |             |                     |
+       |  users          |             |  activity_logs      |
+       |  accounts       |             |  user_preferences   |
+       |  transactions   |             |  notifications      |
+       +-----------------+             +---------------------+</code></pre>
+      </div>
+
+      <p><strong>How it works:</strong> The agent uses the <strong>OpenAI Agents JS SDK</strong> with Claude as the model. It spawns <code>mimic host --transport stdio</code> as a subprocess for auto-discovered PostgreSQL MCP tools, and connects directly to MongoDB for document-based tools. The AI model decides which database to query based on the user's question.</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/fintech-multi-db/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"personal finance and banking platform"</span>,
+  <span class="yk">"personas"</span>: [
+    { <span class="yk">"name"</span>: <span class="str">"active-trader"</span>, <span class="yk">"description"</span>: <span class="str">"31yo software engineer, $140K salary, active stock trader, 5+ bank accounts"</span> },
+    { <span class="yk">"name"</span>: <span class="str">"saver"</span>,          <span class="yk">"description"</span>: <span class="str">"27yo teacher, $55K salary, focuses on saving, tracks every dollar"</span> }
+  ],
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"postgres"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"postgres"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+      <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"introspect"</span> },
+      <span class="yk">"seedStrategy"</span>: <span class="str">"truncate-and-insert"</span>
+    },
+    <span class="yk">"mongodb"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"mongodb"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$MONGO_URL"</span>,
+      <span class="yk">"database"</span>: <span class="str">"mimic_fintech"</span>,
+      <span class="yk">"seedStrategy"</span>: <span class="str">"delete-and-insert"</span>,
+      <span class="yk">"autoCreateIndexes"</span>: <span class="ty">true</span>
+    }
+  }
+}</code></pre>
+      </div>
+      <p>Both databases are seeded from the same generated data set with a single <code>mimic seed</code> command, ensuring consistent user IDs across databases.</p>
+
+      <h4>What gets seeded</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Database</th><th>Table / Collection</th><th>Active Trader</th><th>Saver</th></tr></thead>
+          <tbody>
+            <tr><td>PostgreSQL</td><td><code>users</code></td><td>1 row</td><td>1 row</td></tr>
+            <tr><td>PostgreSQL</td><td><code>accounts</code></td><td>5+ rows</td><td>2-3 rows</td></tr>
+            <tr><td>PostgreSQL</td><td><code>transactions</code></td><td>500+ rows</td><td>100+ rows</td></tr>
+            <tr><td>MongoDB</td><td><code>activity_logs</code></td><td colspan="2">Login events, page views, transfers, settings changes</td></tr>
+            <tr><td>MongoDB</td><td><code>user_preferences</code></td><td colspan="2">Notification settings, budget goals, feature flags</td></tr>
+            <tr><td>MongoDB</td><td><code>notifications</code></td><td colspan="2">Alerts, warnings, promotions, info messages</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Agent tools</h4>
+      <p>The agent combines two tool sources &mdash; auto-discovered MCP tools from PostgreSQL and hand-written MongoDB tools:</p>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>Tool</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_transactions</code></td><td>Query with date range, category, merchant filters</td></tr>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_accounts</code></td><td>List accounts, filter by type or institution</td></tr>
+            <tr><td style="color: var(--amber);">Direct (Mongo)</td><td><code>get_activity_log</code></td><td>Query activity events by user, action, date range</td></tr>
+            <tr><td style="color: var(--amber);">Direct (Mongo)</td><td><code>get_user_preferences</code></td><td>Notification settings, display prefs, budget goals</td></tr>
+            <tr><td style="color: var(--amber);">Direct (Mongo)</td><td><code>get_notifications</code></td><td>Alerts with read/unread and type filtering</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/fintech-multi-db
+<span class="prompt">$</span> docker compose up -d               <span class="cm"># Starts PostgreSQL + MongoDB</span>
+<span class="prompt">$</span> export DATABASE_URL=<span class="str">"postgresql://mimic:mimic@localhost:5432/mimic_fintech"</span>
+<span class="prompt">$</span> export MONGO_URL=<span class="str">"mongodb://localhost:27017"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose   <span class="cm"># Seeds BOTH databases</span>
+
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="cm"># Query PostgreSQL (transactions)</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3004/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What are my account balances?"}'</span> | jq
+
+<span class="cm"># Query MongoDB (activity)</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3004/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Show my unread notifications"}'</span> | jq
+
+<span class="cm"># Cross-database query (both!)</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3004/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "How much did I spend on dining last month, and do I have any alerts about it?"}'</span> | jq</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <p><strong>Cross-database queries:</strong> Ask about spending <em>and</em> notifications in the same question. The agent decides which database to query and combines results from both PostgreSQL and MongoDB into a single response.</p>
+      </div>
+
+      <!-- ─── FINANCE ASSISTANT ───────────────────── -->
+      <h3 id="example-finance-assistant">Finance Assistant &mdash; PostgreSQL + Prisma</h3>
+      <p>The original Mimic example and the only one that includes <strong>test scenarios</strong>. Uses a Prisma schema to define the database structure (no raw SQL needed) and demonstrates <code>mimic test</code> with scenario-based evaluation.</p>
+      <p><strong>Personas:</strong> A <strong>young-professional</strong> (28yo product designer, $95K salary, Austin TX) and a <strong>college-student</strong> (21yo CS student, part-time barista, tight budget).</p>
+
+      <h4>Schema (Prisma)</h4>
+      <p>Instead of SQL DDL, this example uses a Prisma schema that Mimic parses with <code>prisma-ast</code>:</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">prisma</span><span>examples/finance-assistant/prisma/schema.prisma</span></div>
+        <pre><code><span class="kw">enum</span> <span class="ty">AccountType</span> { CHECKING  SAVINGS  CREDIT }
+<span class="kw">enum</span> <span class="ty">TransactionCategory</span> { INCOME  RENT  GROCERIES  DINING  ENTERTAINMENT  <span class="cm">// ...12 more</span> }
+<span class="kw">enum</span> <span class="ty">TransactionStatus</span>   { PENDING  POSTED  CANCELLED }
+
+<span class="kw">model</span> <span class="ty">User</span> {
+  id        <span class="ty">Int</span>       <span class="fn">@id</span> <span class="fn">@default</span>(autoincrement())
+  email     <span class="ty">String</span>    <span class="fn">@unique</span>
+  firstName <span class="ty">String</span>    <span class="fn">@map</span>(<span class="str">"first_name"</span>)
+  accounts  <span class="ty">Account</span>[]
+  <span class="fn">@@map</span>(<span class="str">"users"</span>)
+}
+
+<span class="kw">model</span> <span class="ty">Account</span> {
+  id            <span class="ty">Int</span>          <span class="fn">@id</span> <span class="fn">@default</span>(autoincrement())
+  userId        <span class="ty">Int</span>          <span class="fn">@map</span>(<span class="str">"user_id"</span>)
+  name          <span class="ty">String</span>       <span class="cm">/// e.g. "Chase Checking"</span>
+  type          <span class="ty">AccountType</span>
+  balance       <span class="ty">Decimal</span>      <span class="fn">@db.Decimal</span>(12, 2)
+  transactions  <span class="ty">Transaction</span>[]
+  <span class="fn">@@map</span>(<span class="str">"accounts"</span>)
+}
+
+<span class="kw">model</span> <span class="ty">Transaction</span> {
+  id       <span class="ty">Int</span>                    <span class="fn">@id</span> <span class="fn">@default</span>(autoincrement())
+  amount   <span class="ty">Decimal</span>                <span class="fn">@db.Decimal</span>(12, 2)  <span class="cm">/// +credit, -debit</span>
+  category <span class="ty">TransactionCategory</span>
+  merchant <span class="ty">String</span>
+  status   <span class="ty">TransactionStatus</span>      <span class="fn">@default</span>(POSTED)
+  <span class="fn">@@map</span>(<span class="str">"transactions"</span>)
+}</code></pre>
+      </div>
+
+      <h4>Test scenarios</h4>
+      <p>This is the only example that defines <code>mimic test</code> scenarios. Each scenario specifies a persona, a goal for the agent, and expected outcomes:</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>mimic.json &mdash; test section</span></div>
+        <pre><code><span class="yk">"test"</span>: {
+  <span class="yk">"agent"</span>: <span class="str">"http://localhost:3000/chat"</span>,
+  <span class="yk">"scenarios"</span>: [
+    {
+      <span class="yk">"name"</span>: <span class="str">"monthly-spending"</span>,
+      <span class="yk">"persona"</span>: <span class="str">"young-professional"</span>,
+      <span class="yk">"goal"</span>: <span class="str">"Ask about total spending last month"</span>,
+      <span class="yk">"expect"</span>: {
+        <span class="yk">"tools_called"</span>: [<span class="str">"get_transactions"</span>],
+        <span class="yk">"response_accurate"</span>: <span class="ty">true</span>,
+        <span class="yk">"no_hallucination"</span>: <span class="ty">true</span>
+      }
+    },
+    {
+      <span class="yk">"name"</span>: <span class="str">"category-breakdown"</span>,
+      <span class="yk">"persona"</span>: <span class="str">"young-professional"</span>,
+      <span class="yk">"goal"</span>: <span class="str">"Ask for a breakdown of spending by category"</span>,
+      <span class="yk">"expect"</span>: {
+        <span class="yk">"tools_called"</span>: [<span class="str">"get_transactions_summary"</span>],
+        <span class="yk">"response_contains"</span>: [<span class="str">"dining"</span>, <span class="str">"groceries"</span>],
+        <span class="yk">"response_accurate"</span>: <span class="ty">true</span>
+      }
+    }
+  ]
+}</code></pre>
+      </div>
+
+      <p>Run the test suite with <code>mimic test</code>. Scenarios verify that the agent calls the right tools and returns accurate, non-hallucinated responses grounded in the seeded data.</p>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/finance-assistant
+<span class="prompt">$</span> export DATABASE_URL=<span class="str">"postgresql://localhost:5432/mimic_finance"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose
+
+<span class="cm"># Start the agent</span>
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="cm"># Run test scenarios</span>
+<span class="prompt">$</span> mimic test --verbose</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Prisma + testing:</strong> This example shows the full Mimic workflow: Prisma schema &rarr; persona-driven data generation &rarr; seeding &rarr; agent testing with <code>mimic test</code>. Use it as a template when you want to add evaluation to your agent development cycle.</p>
       </div>
 
       <!-- ────────────────────────────────────────── -->

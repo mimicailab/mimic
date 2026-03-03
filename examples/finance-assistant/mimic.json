@@ -3,7 +3,7 @@
 
   "llm": {
     "provider": "anthropic",
-    "model": "claude-haiku-4-5"
+    "model": "claude-sonnet-4-6"
   },
 
   "personas": [
@@ -30,6 +30,13 @@
         "source": "prisma",
         "path": "./prisma/schema.prisma"
       }
+    }
+  },
+
+  "apis": {
+    "plaid": {
+      "enabled": true,
+      "mcp": true
     }
   },
 

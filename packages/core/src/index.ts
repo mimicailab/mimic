@@ -105,9 +105,7 @@ export { BlueprintExpander } from './generate/expander.js';
 export { BlueprintCache } from './generate/blueprint-cache.js';
 export { SeededRandom } from './generate/seed-random.js';
 
-// Seed
-export { PgSeeder } from './seed/pg-seeder.js';
-export { MongoSeeder } from './seed/mongo-seeder.js';
+// Seed (adapters are now in @mimicailab/adapter-* packages)
 export { VectorSeeder } from './seed/vector-seeder.js';
 
 // MCP
@@ -156,4 +154,4 @@ export { registerDefaults } from './adapter/defaults.js';
 
 // Register built-in adapters on import
 import { registerDefaults as _registerDefaults } from './adapter/defaults.js';
-_registerDefaults();
+void _registerDefaults();

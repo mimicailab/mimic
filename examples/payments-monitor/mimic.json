@@ -1,0 +1,40 @@
+{
+  "domain": "Payment operations dashboard for a SaaS platform. Monitors payment health, failed charges, subscription churn, refund rates, and revenue metrics in real-time.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "healthy-business",
+      "description": "A healthy SaaS business with 95% payment success rate, <2% monthly churn, steady MRR growth. 500 active subscriptions, mostly card payments. 6 months of clean operations data."
+    },
+    {
+      "name": "struggling-business",
+      "description": "A business experiencing payment issues: 15% failure rate, 8% monthly churn, rising refund rate. Card declines, expired cards, insufficient funds. Needs dunning and recovery workflows. 6 months of degrading metrics."
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": { "source": "prisma", "path": "./prisma/schema.prisma" },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "stripe": {
+      "enabled": true,
+      "mcp": true
+    }
+  }
+}

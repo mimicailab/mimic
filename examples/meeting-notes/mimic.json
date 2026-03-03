@@ -1,0 +1,40 @@
+{
+  "domain": "Team meeting management and note-taking platform. Records meeting notes, action items, decisions, and posts summaries to Slack channels for team visibility.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "engineering-team",
+      "description": "A 10-person engineering team with daily standups, weekly sprint planning, and bi-weekly retros. 3 months of meeting history with action items, blockers, and technical decisions. Active Slack workspace with #engineering, #standup, #general channels."
+    },
+    {
+      "name": "cross-functional",
+      "description": "A product/engineering/design team with weekly syncs, monthly all-hands, and ad-hoc design reviews. Broader meeting types, more stakeholders, decision tracking across teams. 3 months of data."
+    }
+  ],
+
+  "generate": {
+    "volume": "3 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": { "source": "prisma", "path": "./prisma/schema.prisma" },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "slack": {
+      "enabled": true,
+      "mcp": true
+    }
+  }
+}

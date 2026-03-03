@@ -1,6 +1,6 @@
 {
   "name": "@mimicailab/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CLI for Mimic — generate, seed, serve, and test synthetic data for AI agents",
   "type": "module",
   "license": "Apache-2.0",
@@ -36,6 +36,10 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^7.4.0",
+    "@mimicailab/adapter-mongodb": "workspace:*",
+    "@mimicailab/adapter-mysql": "workspace:*",
+    "@mimicailab/adapter-postgres": "workspace:*",
+    "@mimicailab/adapter-sqlite": "workspace:*",
     "@mimicailab/blueprints": "workspace:*",
     "@mimicailab/core": "workspace:*",
     "chalk": "^5.4.1",
@@ -43,6 +47,11 @@
     "commander": "^13.1.0",
     "ora": "^8.2.0",
     "pg": "^8.13.3"
+  },
+  "optionalDependencies": {
+    "@mimicailab/adapter-stripe": "workspace:*",
+    "@mimicailab/adapter-plaid": "workspace:*",
+    "@mimicailab/adapter-slack": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "^8.11.11",

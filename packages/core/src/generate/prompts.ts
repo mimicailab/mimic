@@ -13,6 +13,8 @@ export interface BuildPromptOptions {
   schema: SchemaModel;
   persona: { name: string; description: string };
   domain: string;
+  /** Configured API adapters — when present, the LLM generates apiEntities */
+  apis?: Record<string, { adapter?: string; config?: Record<string, unknown> }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,7 +39,14 @@ Rules:
 7. For pattern fields (recurring/variable/periodic/event), include ALL REQUIRED columns from the target table. If a column varies per row, put it in \`randomFields\` with a realistic range. If it has a fixed value, put it in \`fields\`.
 8. Foreign-key values in patterns should reference entity IDs using the placeholder format \`{{table_name.column_name}}\` so the expander can resolve them.
 9. Keep annotations minimal — they are for the expander's benefit (e.g. \`startBalance\`, currency).
-10. Output **only** valid JSON matching the provided Zod schema.  No markdown, no commentary.`;
+10. Output **only** valid JSON matching the provided Zod schema.  No markdown, no commentary.
+11. If API services are listed under CONFIGURED APIs, produce an \`apiEntities\` object alongside \`entities\`.
+    - \`apiEntities\` is keyed by adapter ID (e.g. "stripe", "slack"), then by resource type, then an array of entity seed objects.
+    - Entity seeds are compact "DNA" — the expander will add timestamps and metadata. Include IDs that match any cross-platform ID columns in the database entities (e.g. if a DB customer row has stripe_customer_id "cus_001", the Stripe customer entity must use id "cus_001").
+    - For **Stripe**: resource types are \`customers\`, \`products\`, \`prices\`, \`subscriptions\`, \`invoices\`. Amounts in cents. Include fields: id, name, email, amount/unit_amount, currency, status, interval.
+    - For **Plaid**: resource types are \`accounts\` and \`transactions\`. For accounts: id, institution/name, type/subtype, balance. For transactions: id, account_id (must reference an account id), amount (negative=debit, positive=credit), date (YYYY-MM-DD), merchant, category. Generate a realistic volume of transactions covering the full time period — this is the primary data source for the persona's financial history.
+    - For **Slack**: resource types are \`channels\`, \`users\`. Include fields: id, name, purpose/real_name.
+    - If no database schema is provided, generate apiEntities based solely on the persona and domain description.`;
 
 // ---------------------------------------------------------------------------
 // User prompt construction
@@ -47,10 +56,12 @@ Rules:
  * Build the system + user prompts for blueprint generation.
  */
 export function buildPrompt(options: BuildPromptOptions): PromptPair {
-  const { schema, persona, domain } = options;
-  const schemaDump = formatSchema(schema);
+  const { schema, persona, domain, apis } = options;
 
-  const requiredSummary = formatRequiredColumns(schema);
+  const hasTables = schema.tables.length > 0;
+  const schemaDump = hasTables ? formatSchema(schema) : '';
+  const requiredSummary = hasTables ? formatRequiredColumns(schema) : '';
+  const apiSection = apis && Object.keys(apis).length > 0 ? formatApis(apis) : '';
 
   const user = [
     `Domain: ${domain}`,
@@ -58,11 +69,11 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
     `Persona: "${persona.name}"`,
     persona.description,
     '',
-    '--- DATABASE SCHEMA ---',
-    schemaDump,
-    '--- END SCHEMA ---',
-    '',
+    ...(hasTables
+      ? ['--- DATABASE SCHEMA ---', schemaDump, '--- END SCHEMA ---', '']
+      : []),
     ...(requiredSummary ? [requiredSummary, ''] : []),
+    ...(apiSection ? [apiSection, ''] : []),
     'Generate a complete blueprint for this persona.  Follow the system instructions exactly.',
   ].join('\n');
 
@@ -153,6 +164,23 @@ function formatTable(table: TableInfo): string {
     }
   }
 
+  return lines.join('\n');
+}
+
+function formatApis(
+  apis: Record<string, { adapter?: string; config?: Record<string, unknown> }>,
+): string {
+  const lines: string[] = ['--- CONFIGURED APIs ---'];
+  for (const [name, apiConfig] of Object.entries(apis)) {
+    const adapterId = apiConfig.adapter ?? name;
+    lines.push(`  ${adapterId}`);
+  }
+  lines.push('--- END APIs ---');
+  lines.push('');
+  lines.push(
+    'Generate apiEntities for each configured API above. ' +
+      'Ensure data consistency between database entities and API entities.',
+  );
   return lines.join('\n');
 }
 

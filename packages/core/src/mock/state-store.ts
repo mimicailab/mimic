@@ -32,6 +32,17 @@ export class StateStore {
     }
   }
 
+  /** Filter resources in a namespace by predicate */
+  filter<T = unknown>(namespace: string, predicate: (item: T, key: string) => boolean): T[] {
+    const ns = this.state.get(namespace);
+    if (!ns) return [];
+    const result: T[] = [];
+    for (const [key, value] of ns) {
+      if (predicate(value as T, key)) result.push(value as T);
+    }
+    return result;
+  }
+
   /** Delete a resource */
   delete(namespace: string, key: string): boolean {
     return this.state.get(namespace)?.delete(key) ?? false;

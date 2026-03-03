@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 import { from as copyFrom } from 'pg-copy-streams';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import type { Row } from '../types/index.js';
+import type { Row } from '@mimicailab/core';
 
 /**
  * Escape a string value for the PostgreSQL COPY TEXT format.
