@@ -48,6 +48,11 @@
     "ora": "^8.2.0",
     "pg": "^8.13.3"
   },
+  "optionalDependencies": {
+    "@mimicailab/adapter-stripe": "workspace:*",
+    "@mimicailab/adapter-plaid": "workspace:*",
+    "@mimicailab/adapter-slack": "workspace:*"
+  },
   "devDependencies": {
     "@types/pg": "^8.11.11",
     "tsup": "^8.3.6",

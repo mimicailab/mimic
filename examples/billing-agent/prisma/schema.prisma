@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model customers {
+  id                 Int             @id @default(autoincrement())
+  name               String
+  email              String          @unique
+  company            String?
+  stripe_customer_id String?         @unique
+  plan               String          @default("starter") // starter, pro, enterprise
+  status             String          @default("active") // active, churned, past_due
+  mrr_cents          Int             @default(0)
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+  subscriptions      subscriptions[]
+  invoices           invoices[]
+  payments           payments[]
+}
+
+model subscriptions {
+  id                     Int       @id @default(autoincrement())
+  customer_id            Int
+  stripe_subscription_id String?   @unique
+  plan                   String
+  status                 String    @default("active") // active, past_due, canceled, trialing
+  interval               String    @default("month") // month, year
+  amount_cents           Int
+  current_period_start   DateTime
+  current_period_end     DateTime
+  canceled_at            DateTime?
+  created_at             DateTime  @default(now())
+  customer               customers @relation(fields: [customer_id], references: [id])
+}
+
+model invoices {
+  id                Int       @id @default(autoincrement())
+  customer_id       Int
+  stripe_invoice_id String?   @unique
+  amount_cents      Int
+  status            String    @default("draft") // draft, open, paid, void, uncollectible
+  due_date          DateTime
+  paid_at           DateTime?
+  created_at        DateTime  @default(now())
+  customer          customers @relation(fields: [customer_id], references: [id])
+}
+
+model payments {
+  id                Int       @id @default(autoincrement())
+  customer_id       Int
+  stripe_payment_id String?   @unique
+  amount_cents      Int
+  currency          String    @default("usd")
+  status            String    @default("succeeded") // succeeded, failed, refunded
+  payment_method    String    @default("card")
+  created_at        DateTime  @default(now())
+  customer          customers @relation(fields: [customer_id], references: [id])
+}

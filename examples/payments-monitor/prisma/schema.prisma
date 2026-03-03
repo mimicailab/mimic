@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model customers {
+  id              Int             @id @default(autoincrement())
+  email           String          @unique
+  name            String
+  plan            String          @default("pro")
+  status          String          @default("active")
+  stripe_id       String?         @unique
+  created_at      DateTime        @default(now())
+  charges         charges[]
+  subscriptions   subscriptions[]
+}
+
+model charges {
+  id               Int       @id @default(autoincrement())
+  customer_id      Int
+  amount_cents     Int
+  currency         String    @default("usd")
+  status           String    // succeeded, failed, refunded, disputed
+  failure_code     String?   // card_declined, expired_card, insufficient_funds
+  failure_message  String?
+  refunded         Boolean   @default(false)
+  stripe_charge_id String?
+  created_at       DateTime  @default(now())
+  customer         customers @relation(fields: [customer_id], references: [id])
+}
+
+model subscriptions {
+  id              Int       @id @default(autoincrement())
+  customer_id     Int
+  plan            String
+  status          String    // active, past_due, canceled, unpaid
+  mrr_cents       Int
+  interval        String    @default("month")
+  cancel_reason   String?
+  canceled_at     DateTime?
+  created_at      DateTime  @default(now())
+  customer        customers @relation(fields: [customer_id], references: [id])
+}
+
+model payment_events {
+  id              Int       @id @default(autoincrement())
+  event_type      String    // charge.succeeded, charge.failed, subscription.canceled, refund.created
+  payload         String    // JSON string
+  processed       Boolean   @default(false)
+  created_at      DateTime  @default(now())
+}
+
+model daily_metrics {
+  id               Int      @id @default(autoincrement())
+  date             DateTime @unique
+  total_charges    Int      @default(0)
+  successful       Int      @default(0)
+  failed           Int      @default(0)
+  refunded         Int      @default(0)
+  revenue_cents    Int      @default(0)
+  new_subscribers  Int      @default(0)
+  churned          Int      @default(0)
+  active_mrr_cents Int      @default(0)
+}

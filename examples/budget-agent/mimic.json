@@ -1,0 +1,40 @@
+{
+  "domain": "Personal finance and budgeting app. Users link bank accounts via Plaid to track spending, set budget goals, and analyze transaction patterns across categories.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5"
+  },
+
+  "personas": [
+    {
+      "name": "budget-conscious",
+      "description": "A young professional tracking every dollar. Has a checking and savings account, spends on restaurants, groceries, subscriptions, and transport. Sets strict monthly budgets per category. 3 months of transaction history with some overspending patterns."
+    },
+    {
+      "name": "high-earner",
+      "description": "A senior engineer with multiple accounts (checking, savings, credit card, investment). Higher spending across dining, travel, and electronics. Loose budgets, more focused on savings rate. 6 months of data."
+    }
+  ],
+
+  "generate": {
+    "volume": "3 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": { "source": "prisma", "path": "./prisma/schema.prisma" },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "plaid": {
+      "enabled": true,
+      "mcp": true
+    }
+  }
+}

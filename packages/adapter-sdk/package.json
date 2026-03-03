@@ -1,0 +1,51 @@
+{
+  "name": "@mimicailab/adapter-sdk",
+  "version": "0.2.0",
+  "description": "SDK for building Mimic API mock adapters — base class, test helpers, and shared utilities",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Mimic AI Lab",
+  "homepage": "https://github.com/mimicailab/mimic",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mimicailab/mimic.git",
+    "directory": "packages/adapter-sdk"
+  },
+  "keywords": [
+    "mimic",
+    "adapter",
+    "sdk",
+    "api-mock",
+    "testing"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mimicailab/core": "workspace:*",
+    "@fastify/formbody": "^8.0.2",
+    "fastify": "^5.7.4"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}

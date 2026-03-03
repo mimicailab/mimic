@@ -115,6 +115,8 @@ export const MimicConfigSchema = z.object({
         adapter: z.string().optional(),
         version: z.string().optional(),
         port: z.number().optional(),
+        enabled: z.boolean().default(true),
+        mcp: z.boolean().default(false),
         config: z.record(z.unknown()).optional(),
       }),
     )

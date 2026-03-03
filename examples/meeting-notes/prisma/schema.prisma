@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model meetings {
+  id              Int       @id @default(autoincrement())
+  title           String
+  type            String    // standup, sprint-planning, retro, sync, all-hands, design-review
+  date            DateTime
+  duration_mins   Int       @default(30)
+  status          String    @default("scheduled")  // scheduled, in-progress, completed, cancelled
+  summary         String?
+  slack_channel   String?   // Slack channel ID where summary was posted
+  slack_thread_ts String?   // Thread timestamp of posted summary
+  created_at      DateTime  @default(now())
+  participants    meeting_participants[]
+  action_items    action_items[]
+  decisions       decisions[]
+}
+
+model team_members {
+  id              Int       @id @default(autoincrement())
+  name            String
+  email           String    @unique
+  role            String    // engineer, designer, pm, engineering-manager
+  slack_user_id   String?
+  created_at      DateTime  @default(now())
+  participations  meeting_participants[]
+  action_items    action_items[]
+}
+
+model meeting_participants {
+  id              Int       @id @default(autoincrement())
+  meeting_id      Int
+  member_id       Int
+  attended        Boolean   @default(true)
+  meeting         meetings  @relation(fields: [meeting_id], references: [id])
+  member          team_members @relation(fields: [member_id], references: [id])
+
+  @@unique([meeting_id, member_id])
+}
+
+model action_items {
+  id              Int       @id @default(autoincrement())
+  meeting_id      Int
+  assignee_id     Int?
+  description     String
+  status          String    @default("open")  // open, in-progress, done, cancelled
+  due_date        DateTime?
+  completed_at    DateTime?
+  created_at      DateTime  @default(now())
+  meeting         meetings  @relation(fields: [meeting_id], references: [id])
+  assignee        team_members? @relation(fields: [assignee_id], references: [id])
+}
+
+model decisions {
+  id              Int       @id @default(autoincrement())
+  meeting_id      Int
+  description     String
+  context         String?
+  decided_by      String?
+  created_at      DateTime  @default(now())
+  meeting         meetings  @relation(fields: [meeting_id], references: [id])
+}

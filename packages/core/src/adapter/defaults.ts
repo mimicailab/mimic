@@ -14,14 +14,15 @@ export async function registerDefaults(): Promise<void> {
 
   // Dynamically load adapter packages — silently skip if not installed.
   // Variable names prevent TypeScript from statically resolving the modules.
-  const adapterPackages = [
+  // ── Database adapters ──────────────────────────────────────────────────
+  const dbAdapterPackages = [
     '@mimicailab/adapter-postgres',
     '@mimicailab/adapter-mysql',
     '@mimicailab/adapter-sqlite',
     '@mimicailab/adapter-mongodb',
   ];
 
-  for (const pkg of adapterPackages) {
+  for (const pkg of dbAdapterPackages) {
     try {
       const mod = await import(/* @vite-ignore */ pkg);
       const AdapterClass = mod.PgSeeder ?? mod.MySQLSeeder ?? mod.SQLiteSeeder ?? mod.MongoSeeder;
@@ -33,6 +34,12 @@ export async function registerDefaults(): Promise<void> {
       // Adapter package not installed — skip silently
     }
   }
+
+  // API mock adapters are NOT auto-registered here.
+  // Users add them explicitly via `mimic adapters add <id>`, which:
+  //   1. Installs the npm package
+  //   2. Adds the adapter to mimic.json apis section
+  // The `mimic host` command then loads only configured adapters from config.
 
   // ── Vector (stub, stays in core) ────────────────────────────────────────
   const vectorManifest: AdapterManifest = {

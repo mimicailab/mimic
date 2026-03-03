@@ -8,6 +8,7 @@ import { registerHostCommand } from './commands/host.js';
 import { registerTestCommand } from './commands/test.js';
 import { registerInspectCommand } from './commands/inspect.js';
 import { registerCleanCommand } from './commands/clean.js';
+import { registerAdaptersCommand } from './commands/adapters.js';
 
 const program = new Command();
 
@@ -29,6 +30,7 @@ registerHostCommand(program);
 registerTestCommand(program);
 registerInspectCommand(program);
 registerCleanCommand(program);
+registerAdaptersCommand(program);
 
 // ---------------------------------------------------------------------------
 // Global error handling
