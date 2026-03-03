@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-sqlite",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "SQLite database adapter for Mimic — prepared statements, WAL mode, PRAGMA introspection",
   "type": "module",
   "license": "Apache-2.0",
