@@ -105,7 +105,7 @@ export { BlueprintExpander } from './generate/expander.js';
 export { BlueprintCache } from './generate/blueprint-cache.js';
 export { SeededRandom } from './generate/seed-random.js';
 
-// Seed (adapters are now in @mimicailab/adapter-* packages)
+// Seed (adapters are now in @mimicai/adapter-* packages)
 export { VectorSeeder } from './seed/vector-seeder.js';
 
 // MCP

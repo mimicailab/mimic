@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
-import type { SchemaModel } from '@mimicailab/core';
-import { logger } from '@mimicailab/core';
+import type { SchemaModel } from '@mimicai/core';
+import { logger } from '@mimicai/core';
 
 const { debug } = logger;
 

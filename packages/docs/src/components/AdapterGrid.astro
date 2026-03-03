@@ -1,0 +1,27 @@
+---
+interface AdapterItem {
+  name: string;
+  routes: string;
+  shipped?: boolean;
+}
+
+interface Props {
+  items: AdapterItem[];
+}
+
+const { items } = Astro.props;
+---
+<div class="adapter-doc-grid">
+  {items.map((item) => (
+    <div
+      class="adapter-doc-item"
+      style={item.shipped ? 'border-color: var(--green);' : ''}
+    >
+      <span
+        class="adapter-doc-name"
+        style={item.shipped ? 'color: var(--green);' : ''}
+      >{item.name}</span>
+      <span class="adapter-doc-routes">{item.routes}</span>
+    </div>
+  ))}
+</div>

@@ -11,12 +11,12 @@ import {
   MimicError,
   parseSchema,
   readJson,
-} from '@mimicailab/core';
-import type { MimicConfig, SchemaModel } from '@mimicailab/core';
-import { PgSeeder } from '@mimicailab/adapter-postgres';
-import { MySQLSeeder } from '@mimicailab/adapter-mysql';
-import { SQLiteSeeder } from '@mimicailab/adapter-sqlite';
-import { MongoSeeder } from '@mimicailab/adapter-mongodb';
+} from '@mimicai/core';
+import type { MimicConfig, SchemaModel } from '@mimicai/core';
+import { PgSeeder } from '@mimicai/adapter-postgres';
+import { MySQLSeeder } from '@mimicai/adapter-mysql';
+import { SQLiteSeeder } from '@mimicai/adapter-sqlite';
+import { MongoSeeder } from '@mimicai/adapter-mongodb';
 
 // ---------------------------------------------------------------------------
 // Command registration

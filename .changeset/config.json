@@ -7,17 +7,17 @@
   "commit": false,
   "fixed": [
     [
-      "@mimicailab/core",
-      "@mimicailab/cli",
-      "@mimicailab/blueprints",
-      "@mimicailab/adapter-sdk",
-      "@mimicailab/adapter-postgres",
-      "@mimicailab/adapter-mysql",
-      "@mimicailab/adapter-mongodb",
-      "@mimicailab/adapter-sqlite",
-      "@mimicailab/adapter-plaid",
-      "@mimicailab/adapter-slack",
-      "@mimicailab/adapter-stripe"
+      "@mimicai/core",
+      "@mimicai/cli",
+      "@mimicai/blueprints",
+      "@mimicai/adapter-sdk",
+      "@mimicai/adapter-postgres",
+      "@mimicai/adapter-mysql",
+      "@mimicai/adapter-mongodb",
+      "@mimicai/adapter-sqlite",
+      "@mimicai/adapter-plaid",
+      "@mimicai/adapter-slack",
+      "@mimicai/adapter-stripe"
     ]
   ],
   "linked": [],

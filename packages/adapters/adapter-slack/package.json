@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/adapter-slack",
+  "name": "@mimicai/adapter-slack",
   "version": "0.2.0",
   "description": "Slack API mock adapter for Mimic — channels, messages, reactions, file uploads",
   "type": "module",
@@ -32,8 +32,8 @@
     "mimic-mcp-slack": "./dist/bin/mcp.js"
   },
   "dependencies": {
-    "@mimicailab/adapter-sdk": "workspace:*",
-    "@mimicailab/core": "workspace:*",
+    "@mimicai/adapter-sdk": "workspace:*",
+    "@mimicai/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.11.0",
     "fastify": "^5.7.4",
     "zod": "^3.24.2"

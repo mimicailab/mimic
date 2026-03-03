@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/adapter-mongodb",
+  "name": "@mimicai/adapter-mongodb",
   "version": "0.2.0",
   "description": "MongoDB database adapter for Mimic — insertMany batching, schema inference, auto-indexing",
   "type": "module",
@@ -12,7 +12,7 @@
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js", "require": "./dist/index.cjs" } },
   "files": ["dist"],
   "scripts": { "build": "tsup", "dev": "tsup --watch", "test": "vitest run", "typecheck": "tsc --noEmit", "clean": "rm -rf dist" },
-  "dependencies": { "@mimicailab/core": "workspace:*" },
+  "dependencies": { "@mimicai/core": "workspace:*" },
   "peerDependencies": { "mongodb": "^6.0.0" },
   "peerDependenciesMeta": { "mongodb": { "optional": true } },
   "devDependencies": { "tsup": "^8.3.6", "vitest": "^3.0.5", "typescript": "^5.7.3" }

@@ -70,10 +70,10 @@ docs/                     # Documentation
 
 ```bash
 # Start the mock server in dev mode (auto-reload)
-pnpm --filter @mimicailab/mock-server dev
+pnpm --filter @mimicai/mock-server dev
 
 # Run a specific adapter's tests
-pnpm --filter @mimicailab/adapter-jira test
+pnpm --filter @mimicai/adapter-jira test
 
 # Lint everything
 pnpm lint
@@ -117,7 +117,7 @@ See [docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) for the full walkthrough, inc
 
 ### Adapter quality bar
 
-For an adapter to be merged into the main repo and published as `@mimicailab/adapter-*`, it must meet these standards:
+For an adapter to be merged into the main repo and published as `@mimicai/adapter-*`, it must meet these standards:
 
 1. **Minimum 8 routes** covering core CRUD operations for the platform's primary resources
 2. **Realistic seed data** — at least 3-5 seeded records per primary resource, with realistic field values

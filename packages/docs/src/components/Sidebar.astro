@@ -1,0 +1,148 @@
+---
+interface SidebarSection {
+  id: string;
+  title: string;
+}
+
+interface SidebarGroup {
+  title: string;
+  slug: string;
+  sections: SidebarSection[];
+}
+
+interface Props {
+  currentSlug: string;
+}
+
+const { currentSlug } = Astro.props;
+
+// Static navigation structure matching the docs content collection
+const groups: SidebarGroup[] = [
+  {
+    title: 'Getting Started',
+    slug: 'getting-started',
+    sections: [
+      { id: 'introduction', title: 'Introduction' },
+      { id: 'installation', title: 'Installation' },
+      { id: 'quickstart', title: 'Quickstart' },
+    ],
+  },
+  {
+    title: 'Core Concepts',
+    slug: 'concepts',
+    sections: [
+      { id: 'personas', title: 'Personas & Blueprints' },
+      { id: 'adapters', title: 'Adapters' },
+      { id: 'mock-server', title: 'Mock Server' },
+      { id: 'state-store', title: 'State Store' },
+    ],
+  },
+  {
+    title: 'Configuration',
+    slug: 'configuration',
+    sections: [
+      { id: 'config-file', title: 'mimic.json' },
+      { id: 'config-domain', title: 'domain' },
+      { id: 'config-personas', title: 'personas' },
+      { id: 'config-llm', title: 'llm' },
+      { id: 'config-generate', title: 'generate' },
+      { id: 'config-databases', title: 'databases' },
+      { id: 'config-test', title: 'test' },
+      { id: 'env-vars', title: 'Environment Variables' },
+    ],
+  },
+  {
+    title: 'CLI Reference',
+    slug: 'cli',
+    sections: [
+      { id: 'cli-init', title: 'mimic init' },
+      { id: 'cli-seed', title: 'mimic seed' },
+      { id: 'cli-host', title: 'mimic host' },
+      { id: 'cli-test', title: 'mimic test' },
+      { id: 'cli-inspect', title: 'mimic inspect' },
+      { id: 'cli-clean', title: 'mimic clean' },
+      { id: 'cli-generate', title: 'mimic generate' },
+    ],
+  },
+  {
+    title: 'Adapters',
+    slug: 'adapters',
+    sections: [
+      { id: 'adapter-list', title: 'Adapter Catalog' },
+      { id: 'adapter-databases', title: 'Database Adapters' },
+      { id: 'adapter-api', title: 'API Mock Adapters' },
+      { id: 'adapter-sdk', title: 'Adapter SDK' },
+      { id: 'adapter-dev', title: 'Build an Adapter' },
+    ],
+  },
+  {
+    title: 'MCP Servers',
+    slug: 'mcp',
+    sections: [
+      { id: 'mcp-overview', title: 'Overview' },
+      { id: 'mcp-setup', title: 'Setup & Config' },
+      { id: 'mcp-parity', title: 'Official Parity' },
+      { id: 'mcp-catalog', title: 'Server Catalog' },
+      { id: 'mcp-build', title: 'Build an MCP Server' },
+    ],
+  },
+  {
+    title: 'Architecture',
+    slug: 'architecture',
+    sections: [
+      { id: 'arch-overview', title: 'System Overview' },
+      { id: 'arch-data-flow', title: 'Data Flow' },
+      { id: 'arch-consistency', title: 'Cross-Surface Consistency' },
+      { id: 'arch-packages', title: 'Package Graph' },
+    ],
+  },
+  {
+    title: 'Guides',
+    slug: 'guides',
+    sections: [
+      { id: 'guide-finance', title: 'Finance Agent' },
+      { id: 'guide-support', title: 'Support Agent' },
+      { id: 'guide-cicd', title: 'CI/CD' },
+    ],
+  },
+  {
+    title: 'Examples',
+    slug: 'examples',
+    sections: [
+      { id: 'examples-overview', title: 'Overview' },
+      { id: 'example-tasks-sqlite', title: 'Tasks (SQLite)' },
+      { id: 'example-ecommerce-mysql', title: 'E-Commerce (MySQL)' },
+      { id: 'example-blog-mongodb', title: 'Blog (MongoDB)' },
+      { id: 'example-fintech-multi', title: 'Fintech (Multi-DB)' },
+      { id: 'example-finance-assistant', title: 'Finance Assistant' },
+      { id: 'example-billing-agent', title: 'Billing Agent (Stripe)' },
+      { id: 'example-budget-agent', title: 'Budget Agent (Plaid)' },
+      { id: 'example-payments-monitor', title: 'Payments Monitor' },
+      { id: 'example-meeting-notes', title: 'Meeting Notes (Slack)' },
+    ],
+  },
+];
+---
+<aside class="sidebar" id="sidebar">
+  {groups.map((group) => (
+    <div class="sidebar-group">
+      <div class="sidebar-group-title">{group.title}</div>
+      {group.sections.map((section, i) => {
+        const isCurrentPage = group.slug === currentSlug;
+        const href = isCurrentPage
+          ? `#${section.id}`
+          : `/docs/${group.slug}#${section.id}`;
+        const isActive = isCurrentPage && i === 0;
+        return (
+          <a
+            href={href}
+            class={`sidebar-link${isActive ? ' active' : ''}`}
+            data-section-id={section.id}
+          >
+            {section.title}
+          </a>
+        );
+      })}
+    </div>
+  ))}
+</aside>

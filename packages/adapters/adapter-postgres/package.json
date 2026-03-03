@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/adapter-postgres",
+  "name": "@mimicai/adapter-postgres",
   "version": "0.2.0",
   "description": "PostgreSQL database adapter for Mimic — batch INSERT, COPY protocol, upsert support",
   "type": "module",
@@ -39,7 +39,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@mimicailab/core": "workspace:*",
+    "@mimicai/core": "workspace:*",
     "pg": "^8.13.3",
     "pg-copy-streams": "^6.0.6"
   },

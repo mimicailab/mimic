@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { EndpointDefinition, ExpandedData } from '@mimicailab/core';
-import type { StateStore } from '@mimicailab/core';
+import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter } from '../base-api-mock-adapter.js';
 import { buildTestServer, type TestServer } from '../test-helpers.js';
 

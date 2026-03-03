@@ -16,10 +16,10 @@ export async function registerDefaults(): Promise<void> {
   // Variable names prevent TypeScript from statically resolving the modules.
   // ── Database adapters ──────────────────────────────────────────────────
   const dbAdapterPackages = [
-    '@mimicailab/adapter-postgres',
-    '@mimicailab/adapter-mysql',
-    '@mimicailab/adapter-sqlite',
-    '@mimicailab/adapter-mongodb',
+    '@mimicai/adapter-postgres',
+    '@mimicai/adapter-mysql',
+    '@mimicai/adapter-sqlite',
+    '@mimicai/adapter-mongodb',
   ];
 
   for (const pkg of dbAdapterPackages) {

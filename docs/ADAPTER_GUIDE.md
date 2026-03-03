@@ -28,7 +28,7 @@ packages/oss/adapter-my-platform/
 │   └── index.ts           # Adapter class (routes, seed, config)
 ├── __tests__/
 │   └── adapter.test.ts    # Integration tests
-├── package.json           # @mimicailab/adapter-my-platform
+├── package.json           # @mimicai/adapter-my-platform
 ├── tsconfig.json
 └── README.md
 ```
@@ -38,7 +38,7 @@ packages/oss/adapter-my-platform/
 Every adapter implements the `ApiMockAdapter` interface:
 
 ```typescript
-import { ApiMockAdapter, EndpointDefinition } from '@mimicailab/adapter-sdk';
+import { ApiMockAdapter, EndpointDefinition } from '@mimicai/adapter-sdk';
 import { FastifyInstance, FastifyRequest } from 'fastify';
 
 export interface MyPlatformConfig {
@@ -222,7 +222,7 @@ Every platform has quirks. Here are common patterns to get right:
 ## Writing Tests
 
 ```typescript
-import { buildTestServer } from '@mimicailab/adapter-sdk/testing';
+import { buildTestServer } from '@mimicai/adapter-sdk/testing';
 import { MyPlatformAdapter } from '../src';
 
 describe('MyPlatform Adapter', () => {
@@ -275,14 +275,14 @@ describe('MyPlatform Adapter', () => {
 - [ ] `getEndpoints()` returns all route definitions
 - [ ] Tests cover list, create, get, update operations
 - [ ] README documents endpoints, auth, and seed data
-- [ ] `package.json` has correct name: `@mimicailab/adapter-{id}`
+- [ ] `package.json` has correct name: `@mimicai/adapter-{id}`
 - [ ] TypeScript strict mode, no `any` without comments
 
 ## What Happens After You Submit
 
 1. A maintainer reviews your PR within 48 hours
 2. We may suggest changes — usually around response shape accuracy or seed data realism
-3. Once approved, we merge and publish to npm as `@mimicailab/adapter-{id}`
+3. Once approved, we merge and publish to npm as `@mimicai/adapter-{id}`
 4. A corresponding MCP server is auto-generated from your `getEndpoints()` definitions
 5. You get credited in CONTRIBUTORS.md and shouted out on social media
 6. Your adapter is now used by every Mimic user who tests against that platform

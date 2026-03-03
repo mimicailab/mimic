@@ -10,8 +10,8 @@ import type {
   ForeignKey,
   ExpandedData,
   Row,
-} from '@mimicailab/core';
-import { DatabaseConnectionError, SeedingError, logger } from '@mimicailab/core';
+} from '@mimicai/core';
+import { DatabaseConnectionError, SeedingError, logger } from '@mimicai/core';
 const { debug, success } = logger;
 
 // ---------------------------------------------------------------------------

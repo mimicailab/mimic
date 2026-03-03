@@ -1,0 +1,89 @@
+---
+import TopNav from '../components/TopNav.astro';
+import Sidebar from '../components/Sidebar.astro';
+import FooterNav from '../components/FooterNav.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  currentSlug: string;
+  prev?: { slug: string; title: string };
+  next?: { slug: string; title: string };
+}
+
+const { title, description, currentSlug, prev, next } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} &mdash; Mimic Docs</title>
+  <meta name="description" content={description} />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM-readable docs" />
+</head>
+<body>
+  <TopNav badge="docs" />
+  <Sidebar currentSlug={currentSlug} />
+
+  <main class="main">
+    <div class="doc-content">
+      <slot />
+      <FooterNav prev={prev} next={next} />
+    </div>
+  </main>
+
+  <script>
+    // Sidebar toggle on mobile
+    document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+      document.getElementById('sidebar')?.classList.toggle('open');
+    });
+
+    // Active sidebar link tracking via IntersectionObserver
+    const sections = document.querySelectorAll('[id]');
+    const links = document.querySelectorAll('.sidebar-link');
+
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector(
+            `.sidebar-link[data-section-id="${entry.target.id}"]`
+          );
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+
+    sections.forEach(s => {
+      if (document.querySelector(`.sidebar-link[data-section-id="${s.id}"]`)) {
+        obs.observe(s);
+      }
+    });
+
+    // Close sidebar on mobile when clicking a link
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+          document.getElementById('sidebar')?.classList.remove('open');
+        }
+      });
+    });
+
+    // Code copy buttons
+    document.querySelectorAll('.code-copy').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.closest('.code-block')?.querySelector('pre')?.textContent || '';
+        navigator.clipboard.writeText(code).then(() => {
+          (btn as HTMLElement).textContent = 'Copied!';
+          setTimeout(() => (btn as HTMLElement).textContent = 'Copy', 1500);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

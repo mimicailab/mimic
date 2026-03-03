@@ -1,4 +1,4 @@
-import type { AdapterManifest } from '@mimicailab/adapter-sdk';
+import type { AdapterManifest } from '@mimicai/adapter-sdk';
 
 export { SlackAdapter } from './slack-adapter.js';
 export { SlackConfigSchema, type SlackConfig } from './config.js';

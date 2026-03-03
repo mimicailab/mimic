@@ -10,8 +10,8 @@ import {
   ensureDir,
   logger,
   MimicError,
-} from '@mimicailab/core';
-import { listBuiltinBlueprints } from '@mimicailab/blueprints';
+} from '@mimicai/core';
+import { listBuiltinBlueprints } from '@mimicai/blueprints';
 
 // ---------------------------------------------------------------------------
 // Command registration

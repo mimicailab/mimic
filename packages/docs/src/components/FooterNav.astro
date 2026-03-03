@@ -1,0 +1,36 @@
+---
+interface Props {
+  prev?: { slug: string; title: string };
+  next?: { slug: string; title: string };
+}
+
+const { prev, next } = Astro.props;
+---
+<div class="doc-footer">
+  <div class="doc-footer-nav">
+    {prev ? (
+      <a href={`/docs/${prev.slug}`}>
+        <span class="doc-footer-label">&larr; Previous</span>
+        <span class="doc-footer-title">{prev.title}</span>
+      </a>
+    ) : (
+      <a href="/">
+        <span class="doc-footer-label">&larr; Back</span>
+        <span class="doc-footer-title">Home</span>
+      </a>
+    )}
+  </div>
+  <div class="doc-footer-nav">
+    {next ? (
+      <a href={`/docs/${next.slug}`} style="text-align: right;">
+        <span class="doc-footer-label">Next &rarr;</span>
+        <span class="doc-footer-title">{next.title}</span>
+      </a>
+    ) : (
+      <a href="https://github.com/mimicailab/mimic" style="text-align: right;">
+        <span class="doc-footer-label">Source</span>
+        <span class="doc-footer-title">GitHub &rarr;</span>
+      </a>
+    )}
+  </div>
+</div>

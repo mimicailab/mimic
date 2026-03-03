@@ -1,4 +1,4 @@
-import type { AdapterManifest } from '@mimicailab/core';
+import type { AdapterManifest } from '@mimicai/core';
 
 export { SQLiteSeeder } from './sqlite-seeder.js';
 export type { SQLiteConfig, BetterSQLite3Database } from './sqlite-seeder.js';

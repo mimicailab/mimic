@@ -1,15 +1,15 @@
 ---
-'@mimicailab/core': minor
-'@mimicailab/cli': minor
-'@mimicailab/blueprints': minor
-'@mimicailab/adapter-sdk': minor
-'@mimicailab/adapter-postgres': minor
-'@mimicailab/adapter-mysql': minor
-'@mimicailab/adapter-mongodb': minor
-'@mimicailab/adapter-sqlite': minor
-'@mimicailab/adapter-plaid': minor
-'@mimicailab/adapter-slack': minor
-'@mimicailab/adapter-stripe': minor
+'@mimicai/core': minor
+'@mimicai/cli': minor
+'@mimicai/blueprints': minor
+'@mimicai/adapter-sdk': minor
+'@mimicai/adapter-postgres': minor
+'@mimicai/adapter-mysql': minor
+'@mimicai/adapter-mongodb': minor
+'@mimicai/adapter-sqlite': minor
+'@mimicai/adapter-plaid': minor
+'@mimicai/adapter-slack': minor
+'@mimicai/adapter-stripe': minor
 ---
 
 Initial public release of Mimic — persona-driven synthetic data generation for AI agent testing.

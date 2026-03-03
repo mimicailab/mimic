@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/blueprints",
+  "name": "@mimicai/blueprints",
   "version": "0.2.0",
   "description": "Pre-built persona blueprints for Mimic — finance, calendar, and support domains",
   "type": "module",
@@ -29,7 +29,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@mimicailab/core": "workspace:*"
+    "@mimicai/core": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.3.6",

@@ -1,4 +1,4 @@
-import type { AdapterManifest } from '@mimicailab/core';
+import type { AdapterManifest } from '@mimicai/core';
 
 export { MongoSeeder } from './mongo-seeder.js';
 export type { MongoConfig } from './mongo-seeder.js';

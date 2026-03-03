@@ -84,7 +84,7 @@ The mock server is a Fastify instance that:
 
 MCP servers are lightweight wrappers that translate MCP tool calls into HTTP requests against the mock server. They use the `@modelcontextprotocol/sdk` and expose tools derived from each adapter's `getEndpoints()` definitions.
 
-Each MCP server is a standalone npm package (`@mimicailab/mcp-{id}`) that can be run via `npx` with any MCP client.
+Each MCP server is a standalone npm package (`@mimicai/mcp-{id}`) that can be run via `npx` with any MCP client.
 
 ## Data Flow
 
@@ -128,7 +128,7 @@ Mock Server
 ```
 Agent calls MCP tool: search_jql({ jql: "project = MIM" })
 
-MCP Server (@mimicailab/mcp-jira)
+MCP Server (@mimicai/mcp-jira)
   │
   ├─ Validate params with zod schema
   │
@@ -166,22 +166,22 @@ This consistency is achieved through a two-phase generation process:
 ## Package Dependency Graph
 
 ```
-@mimicailab/cli
-  ├── @mimicailab/mock-server
-  │     ├── @mimicailab/adapter-sdk
-  │     ├── @mimicailab/adapter-stripe
-  │     ├── @mimicailab/adapter-jira
+@mimicai/cli
+  ├── @mimicai/mock-server
+  │     ├── @mimicai/adapter-sdk
+  │     ├── @mimicai/adapter-stripe
+  │     ├── @mimicai/adapter-jira
   │     └── ... (all adapters)
-  ├── @mimicailab/blueprints
-  └── @mimicailab/core (Pro - optional)
+  ├── @mimicai/blueprints
+  └── @mimicai/core (Pro - optional)
         ├── blueprint-engine
         ├── consistency
         └── test-advanced
 
-@mimicailab/mcp-jira (standalone)
+@mimicai/mcp-jira (standalone)
   └── @modelcontextprotocol/sdk
 
-@mimicailab/adapter-sdk (standalone)
+@mimicai/adapter-sdk (standalone)
   └── zod, fastify (peer deps)
 ```
 

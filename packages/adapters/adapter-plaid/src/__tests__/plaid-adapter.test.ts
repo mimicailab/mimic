@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import type { ExpandedData } from '@mimicailab/adapter-sdk';
-import { buildTestServer, type TestServer } from '@mimicailab/adapter-sdk';
+import type { ExpandedData } from '@mimicai/adapter-sdk';
+import { buildTestServer, type TestServer } from '@mimicai/adapter-sdk';
 import { PlaidAdapter } from '../plaid-adapter.js';
 
 function apiResponse(body: Record<string, unknown>) {

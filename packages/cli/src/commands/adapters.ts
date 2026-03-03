@@ -2,8 +2,8 @@ import { execSync } from 'node:child_process';
 import { Command } from 'commander';
 import chalk from 'chalk';
 
-import { loadConfig, logger } from '@mimicailab/core';
-import type { ApiMockAdapter, AdapterManifest } from '@mimicailab/core';
+import { loadConfig, logger } from '@mimicai/core';
+import type { ApiMockAdapter, AdapterManifest } from '@mimicai/core';
 import { readConfig, writeConfig } from '../utils/config-writer.js';
 import { detectPackageManager, installCmd, uninstallCmd } from '../utils/package-manager.js';
 
@@ -71,7 +71,7 @@ async function addAdapter(
   opts: { port?: number; install?: boolean },
 ): Promise<void> {
   const cwd = process.cwd();
-  const pkg = `@mimicailab/adapter-${id}`;
+  const pkg = `@mimicai/adapter-${id}`;
 
   // 1. Install the npm package
   if (opts.install !== false) {
@@ -141,7 +141,7 @@ async function removeAdapter(
   opts: { uninstall?: boolean },
 ): Promise<void> {
   const cwd = process.cwd();
-  const pkg = `@mimicailab/adapter-${id}`;
+  const pkg = `@mimicai/adapter-${id}`;
 
   // 1. Remove from mimic.json
   let config: Record<string, unknown>;
@@ -235,7 +235,7 @@ async function listAdapters(): Promise<void> {
     for (const [name, apiConfig] of Object.entries(config.apis)) {
       const cfg = apiConfig as Record<string, unknown>;
       const adapterId = cfg.adapter as string || name;
-      const pkg = `@mimicailab/adapter-${adapterId}`;
+      const pkg = `@mimicai/adapter-${adapterId}`;
       const enabled = cfg.enabled !== false;
 
       let installStatus: string;
@@ -274,7 +274,7 @@ async function listAdapters(): Promise<void> {
 async function inspectAdapter(id: string): Promise<void> {
   const cwd = process.cwd();
   const pm = detectPackageManager(cwd);
-  const pkg = `@mimicailab/adapter-${id}`;
+  const pkg = `@mimicai/adapter-${id}`;
 
   let mod: Record<string, unknown>;
   try {

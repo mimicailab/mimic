@@ -13,8 +13,8 @@ import {
   MockServer,
   parseSchema,
   generateTools,
-} from '@mimicailab/core';
-import type { SchemaModel, ExpandedData, ApiMockAdapter } from '@mimicailab/core';
+} from '@mimicai/core';
+import type { SchemaModel, ExpandedData, ApiMockAdapter } from '@mimicai/core';
 import { resolveEnvVars } from '../utils/env.js';
 
 // ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ async function runHost(opts: HostOptions): Promise<void> {
         const adapterId = cfg.adapter as string || apiName;
 
         let mod: Record<string, unknown>;
-        const pkg = `@mimicailab/adapter-${adapterId}`;
+        const pkg = `@mimicai/adapter-${adapterId}`;
         try {
           mod = await import(/* @vite-ignore */ pkg);
         } catch {
@@ -209,7 +209,7 @@ async function runHost(opts: HostOptions): Promise<void> {
         }) as (new () => ApiMockAdapter) | undefined;
 
         if (!AdapterClass) {
-          logger.warn(`No ApiMockAdapter found in @mimicailab/adapter-${adapterId}, skipping`);
+          logger.warn(`No ApiMockAdapter found in @mimicai/adapter-${adapterId}, skipping`);
           continue;
         }
 

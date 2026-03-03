@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@mimicailab/cli"><img src="https://img.shields.io/npm/v/@mimicailab/cli?style=flat-square&color=blue" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/@mimicai/cli"><img src="https://img.shields.io/npm/v/@mimicai/cli?style=flat-square&color=blue" alt="npm" /></a>
   <a href="https://github.com/mimicailab/mimic/blob/main/LICENSE-APACHE-2.0"><img src="https://img.shields.io/badge/license-Apache%202.0-green?style=flat-square" alt="License" /></a>
   <a href="https://github.com/mimicailab/mimic/stargazers"><img src="https://img.shields.io/github/stars/mimicailab/mimic?style=flat-square" alt="Stars" /></a>
   <a href="https://discord.gg/mimic"><img src="https://img.shields.io/discord/000000000?style=flat-square&label=Discord&color=5865F2" alt="Discord" /></a>
@@ -33,9 +33,9 @@ Your AI agent talks to Plaid for bank data, Stripe for payments, Jira for ticket
 Mimic replaces all of that with a single, consistent synthetic environment. One persona generates coherent data across every surface — the same user has the same bank accounts in Plaid, the same payment history in Stripe, the same tickets in Jira, and the same rows in PostgreSQL.
 
 ```bash
-npx @mimicailab/cli init
-npx @mimicailab/cli seed --persona finance-alex
-npx @mimicailab/cli host
+npx @mimicai/cli init
+npx @mimicai/cli seed --persona finance-alex
+npx @mimicai/cli host
 ```
 
 That's it. Your agent now has a fully populated local environment with realistic, cross-surface consistent data — databases seeded, API mocks running, MCP servers ready.
@@ -45,7 +45,7 @@ That's it. Your agent now has a fully populated local environment with realistic
 ### Install
 
 ```bash
-npm install -g @mimicailab/cli
+npm install -g @mimicai/cli
 ```
 
 ### Initialise a project
@@ -95,8 +95,8 @@ Starts a local Fastify server exposing all your configured API mocks and MCP ser
   ✓ Plaid API        → http://localhost:4000/plaid
   ✓ Stripe API       → http://localhost:4000/stripe/v1
   ✓ Jira API         → http://localhost:4000/jira/rest/api/3
-  ✓ Slack MCP        → stdio: npx @mimicailab/mcp-slack
-  ✓ Notion MCP       → stdio: npx @mimicailab/mcp-notion
+  ✓ Slack MCP        → stdio: npx @mimicai/mcp-slack
+  ✓ Notion MCP       → stdio: npx @mimicai/mcp-notion
   ✓ Ready in 1.2s
 ```
 
@@ -176,30 +176,30 @@ Mimic supports **65+ adapters** across 8 categories, with more added by the comm
 
 | Adapter | Package | Routes | Key Features |
 |---------|---------|--------|-------------|
-| Stripe | `@mimicailab/adapter-stripe` | 29 | Payments, customers, subscriptions, invoices, webhooks |
-| Plaid | `@mimicailab/adapter-plaid` | 15 | Link flow, accounts, transactions, identity, balance |
-| Square | `@mimicailab/adapter-square` | 16 | Payments, orders, customers, catalog, inventory |
-| Wise | `@mimicailab/adapter-wise` | 14 | Quotes, transfers, multi-currency, recipients |
-| Adyen | `@mimicailab/adapter-adyen` | 12 | Payments, captures, refunds, modifications |
-| Coinbase | `@mimicailab/adapter-coinbase` | 12 | Wallets, trades, prices, transfers |
-| PayPal | `@mimicailab/adapter-paypal` | 13 | Orders, captures, payouts, disputes |
-| Brex | `@mimicailab/adapter-brex` | 10 | Cards, transactions, expenses |
-| Ramp | `@mimicailab/adapter-ramp` | 10 | Cards, transactions, receipts |
-| Mercury | `@mimicailab/adapter-mercury` | 9 | Accounts, transactions, recipients |
-| Moov | `@mimicailab/adapter-moov` | 8 | Wallets, transfers, payment methods |
-| GoCardless | `@mimicailab/adapter-gocardless` | 11 | Mandates, payments, subscriptions |
-| Dwolla | `@mimicailab/adapter-dwolla` | 10 | Transfers, customers, funding sources |
-| Paystack | `@mimicailab/adapter-paystack` | 9 | Transactions, transfers, recipients |
-| Flutterwave | `@mimicailab/adapter-flutterwave` | 8 | Charges, transfers, virtual accounts |
-| Rapyd | `@mimicailab/adapter-rapyd` | 8 | Payments, wallets, checkouts |
-| Marqeta | `@mimicailab/adapter-marqeta` | 12 | Cards, transactions, simulations |
-| Lithic | `@mimicailab/adapter-lithic` | 10 | Cards, auth simulations, spend rules |
-| Increase | `@mimicailab/adapter-increase` | 11 | ACH, wire, check, real-time payments |
-| Column | `@mimicailab/adapter-column` | 9 | Bank accounts, transfers, loans |
-| Revolut Business | `@mimicailab/adapter-revolut` | 10 | Accounts, payments, exchanges |
-| Airwallex | `@mimicailab/adapter-airwallex` | 9 | Payment intents, beneficiaries, FX |
-| Checkout.com | `@mimicailab/adapter-checkoutcom` | 10 | Payments, captures, refunds |
-| Paddle | `@mimicailab/adapter-paddle` | 10 | Subscriptions, transactions, prices |
+| Stripe | `@mimicai/adapter-stripe` | 29 | Payments, customers, subscriptions, invoices, webhooks |
+| Plaid | `@mimicai/adapter-plaid` | 15 | Link flow, accounts, transactions, identity, balance |
+| Square | `@mimicai/adapter-square` | 16 | Payments, orders, customers, catalog, inventory |
+| Wise | `@mimicai/adapter-wise` | 14 | Quotes, transfers, multi-currency, recipients |
+| Adyen | `@mimicai/adapter-adyen` | 12 | Payments, captures, refunds, modifications |
+| Coinbase | `@mimicai/adapter-coinbase` | 12 | Wallets, trades, prices, transfers |
+| PayPal | `@mimicai/adapter-paypal` | 13 | Orders, captures, payouts, disputes |
+| Brex | `@mimicai/adapter-brex` | 10 | Cards, transactions, expenses |
+| Ramp | `@mimicai/adapter-ramp` | 10 | Cards, transactions, receipts |
+| Mercury | `@mimicai/adapter-mercury` | 9 | Accounts, transactions, recipients |
+| Moov | `@mimicai/adapter-moov` | 8 | Wallets, transfers, payment methods |
+| GoCardless | `@mimicai/adapter-gocardless` | 11 | Mandates, payments, subscriptions |
+| Dwolla | `@mimicai/adapter-dwolla` | 10 | Transfers, customers, funding sources |
+| Paystack | `@mimicai/adapter-paystack` | 9 | Transactions, transfers, recipients |
+| Flutterwave | `@mimicai/adapter-flutterwave` | 8 | Charges, transfers, virtual accounts |
+| Rapyd | `@mimicai/adapter-rapyd` | 8 | Payments, wallets, checkouts |
+| Marqeta | `@mimicai/adapter-marqeta` | 12 | Cards, transactions, simulations |
+| Lithic | `@mimicai/adapter-lithic` | 10 | Cards, auth simulations, spend rules |
+| Increase | `@mimicai/adapter-increase` | 11 | ACH, wire, check, real-time payments |
+| Column | `@mimicai/adapter-column` | 9 | Bank accounts, transfers, loans |
+| Revolut Business | `@mimicai/adapter-revolut` | 10 | Accounts, payments, exchanges |
+| Airwallex | `@mimicai/adapter-airwallex` | 9 | Payment intents, beneficiaries, FX |
+| Checkout.com | `@mimicai/adapter-checkoutcom` | 10 | Payments, captures, refunds |
+| Paddle | `@mimicai/adapter-paddle` | 10 | Subscriptions, transactions, prices |
 
 </details>
 
@@ -208,17 +208,17 @@ Mimic supports **65+ adapters** across 8 categories, with more added by the comm
 
 | Adapter | Package | Routes | Key Features |
 |---------|---------|--------|-------------|
-| Slack | `@mimicailab/adapter-slack` | 19 | Channels, messages, users, reactions, files, threads |
-| Twilio | `@mimicailab/adapter-twilio` | 14 | SMS, calls, recordings, conversations |
-| SendGrid | `@mimicailab/adapter-sendgrid` | 11 | Emails, contacts, campaigns, stats |
-| Discord | `@mimicailab/adapter-discord` | 13 | Guilds, channels, messages, members |
-| MS Teams | `@mimicailab/adapter-teams` | 12 | Teams, channels, messages, memberships |
-| WhatsApp Business | `@mimicailab/adapter-whatsapp` | 9 | Messages, templates, media |
-| Telegram | `@mimicailab/adapter-telegram` | 11 | Messages, updates, webhooks |
-| Mailgun | `@mimicailab/adapter-mailgun` | 10 | Messages, events, routes |
-| Postmark | `@mimicailab/adapter-postmark` | 9 | Emails, templates, stats |
-| Vonage | `@mimicailab/adapter-vonage` | 8 | SMS, voice, verify |
-| MessageBird | `@mimicailab/adapter-messagebird` | 7 | Messages, contacts, conversations |
+| Slack | `@mimicai/adapter-slack` | 19 | Channels, messages, users, reactions, files, threads |
+| Twilio | `@mimicai/adapter-twilio` | 14 | SMS, calls, recordings, conversations |
+| SendGrid | `@mimicai/adapter-sendgrid` | 11 | Emails, contacts, campaigns, stats |
+| Discord | `@mimicai/adapter-discord` | 13 | Guilds, channels, messages, members |
+| MS Teams | `@mimicai/adapter-teams` | 12 | Teams, channels, messages, memberships |
+| WhatsApp Business | `@mimicai/adapter-whatsapp` | 9 | Messages, templates, media |
+| Telegram | `@mimicai/adapter-telegram` | 11 | Messages, updates, webhooks |
+| Mailgun | `@mimicai/adapter-mailgun` | 10 | Messages, events, routes |
+| Postmark | `@mimicai/adapter-postmark` | 9 | Emails, templates, stats |
+| Vonage | `@mimicai/adapter-vonage` | 8 | SMS, voice, verify |
+| MessageBird | `@mimicai/adapter-messagebird` | 7 | Messages, contacts, conversations |
 
 </details>
 
@@ -227,12 +227,12 @@ Mimic supports **65+ adapters** across 8 categories, with more added by the comm
 
 | Adapter | Package | Routes | Key Features |
 |---------|---------|--------|-------------|
-| Google Calendar | `@mimicailab/adapter-gcal` | 10 | Events, calendars, attendees, free/busy |
-| Calendly | `@mimicailab/adapter-calendly` | 11 | Events, event types, invitees, scheduling |
-| Cal.com | `@mimicailab/adapter-calcom` | 12 | Bookings, event types, availability, webhooks |
-| Nylas | `@mimicailab/adapter-nylas` | 9 | Events, calendars, availability |
-| Cronofy | `@mimicailab/adapter-cronofy` | 10 | Events, calendars, availability, conferencing |
-| Acuity | `@mimicailab/adapter-acuity` | 9 | Appointments, calendars, availability |
+| Google Calendar | `@mimicai/adapter-gcal` | 10 | Events, calendars, attendees, free/busy |
+| Calendly | `@mimicai/adapter-calendly` | 11 | Events, event types, invitees, scheduling |
+| Cal.com | `@mimicai/adapter-calcom` | 12 | Bookings, event types, availability, webhooks |
+| Nylas | `@mimicai/adapter-nylas` | 9 | Events, calendars, availability |
+| Cronofy | `@mimicai/adapter-cronofy` | 10 | Events, calendars, availability, conferencing |
+| Acuity | `@mimicai/adapter-acuity` | 9 | Appointments, calendars, availability |
 
 </details>
 
@@ -241,13 +241,13 @@ Mimic supports **65+ adapters** across 8 categories, with more added by the comm
 
 | Adapter | Package | Routes | Key Features |
 |---------|---------|--------|-------------|
-| Salesforce | `@mimicailab/adapter-salesforce` | 16 | SOQL, SOSL, records, describe, composite |
-| HubSpot | `@mimicailab/adapter-hubspot` | 16 | Contacts, deals, companies, pipelines, search |
-| Pipedrive | `@mimicailab/adapter-pipedrive` | 14 | Deals, persons, organizations, activities |
-| Zoho CRM | `@mimicailab/adapter-zoho-crm` | 13 | Records, search, COQL, modules |
-| Close | `@mimicailab/adapter-close` | 14 | Leads, activities, opportunities, sequences |
-| Attio | `@mimicailab/adapter-attio` | 12 | Records, objects, lists, attributes |
-| Dynamics 365 | `@mimicailab/adapter-dynamics365` | 11 | OData, entities, metadata, batch |
+| Salesforce | `@mimicai/adapter-salesforce` | 16 | SOQL, SOSL, records, describe, composite |
+| HubSpot | `@mimicai/adapter-hubspot` | 16 | Contacts, deals, companies, pipelines, search |
+| Pipedrive | `@mimicai/adapter-pipedrive` | 14 | Deals, persons, organizations, activities |
+| Zoho CRM | `@mimicai/adapter-zoho-crm` | 13 | Records, search, COQL, modules |
+| Close | `@mimicai/adapter-close` | 14 | Leads, activities, opportunities, sequences |
+| Attio | `@mimicai/adapter-attio` | 12 | Records, objects, lists, attributes |
+| Dynamics 365 | `@mimicai/adapter-dynamics365` | 11 | OData, entities, metadata, batch |
 
 </details>
 
@@ -256,14 +256,14 @@ Mimic supports **65+ adapters** across 8 categories, with more added by the comm
 
 | Adapter | Package | Routes | Key Features |
 |---------|---------|--------|-------------|
-| Zendesk | `@mimicailab/adapter-zendesk` | 24 | Tickets, comments, search, views, macros |
-| Jira | `@mimicailab/adapter-jira` | 21 | Issues, JQL, sprints, boards, transitions |
-| Linear | `@mimicailab/adapter-linear` | 20 | Issues, cycles, projects, workflow states |
-| Intercom | `@mimicailab/adapter-intercom` | 25 | Conversations, contacts, companies, articles |
-| PagerDuty | `@mimicailab/adapter-pagerduty` | 17 | Incidents, on-call, escalation, services |
-| Freshdesk | `@mimicailab/adapter-freshdesk` | 18 | Tickets, conversations, contacts, search |
-| ServiceNow | `@mimicailab/adapter-servicenow` | 9 | Table API, incidents, catalog items |
-| Shortcut | `@mimicailab/adapter-shortcut` | 22 | Stories, epics, iterations, labels |
+| Zendesk | `@mimicai/adapter-zendesk` | 24 | Tickets, comments, search, views, macros |
+| Jira | `@mimicai/adapter-jira` | 21 | Issues, JQL, sprints, boards, transitions |
+| Linear | `@mimicai/adapter-linear` | 20 | Issues, cycles, projects, workflow states |
+| Intercom | `@mimicai/adapter-intercom` | 25 | Conversations, contacts, companies, articles |
+| PagerDuty | `@mimicai/adapter-pagerduty` | 17 | Incidents, on-call, escalation, services |
+| Freshdesk | `@mimicai/adapter-freshdesk` | 18 | Tickets, conversations, contacts, search |
+| ServiceNow | `@mimicai/adapter-servicenow` | 9 | Table API, incidents, catalog items |
+| Shortcut | `@mimicai/adapter-shortcut` | 22 | Stories, epics, iterations, labels |
 
 </details>
 
@@ -272,18 +272,18 @@ Mimic supports **65+ adapters** across 8 categories, with more added by the comm
 
 | Adapter | Package | Routes | Key Features |
 |---------|---------|--------|-------------|
-| Notion | `@mimicailab/adapter-notion` | 19 | Pages, databases, query/filter engine, blocks, search |
-| Asana | `@mimicailab/adapter-asana` | 22 | Tasks, projects, sections, subtasks, stories |
-| Trello | `@mimicailab/adapter-trello` | 23 | Boards, lists, cards, checklists, comments |
-| Monday.com | `@mimicailab/adapter-monday` | 19 | Boards, items, column values, groups, updates |
-| Airtable | `@mimicailab/adapter-airtable` | 11 | Records, filterByFormula, upsert, tables |
-| ClickUp | `@mimicailab/adapter-clickup` | 20 | Tasks, spaces, folders, lists, time tracking |
-| Todoist | `@mimicailab/adapter-todoist` | 18 | Tasks, projects, sections, labels, comments |
-| Basecamp | `@mimicailab/adapter-basecamp` | 23 | Projects, to-dos, messages, campfire, comments |
+| Notion | `@mimicai/adapter-notion` | 19 | Pages, databases, query/filter engine, blocks, search |
+| Asana | `@mimicai/adapter-asana` | 22 | Tasks, projects, sections, subtasks, stories |
+| Trello | `@mimicai/adapter-trello` | 23 | Boards, lists, cards, checklists, comments |
+| Monday.com | `@mimicai/adapter-monday` | 19 | Boards, items, column values, groups, updates |
+| Airtable | `@mimicai/adapter-airtable` | 11 | Records, filterByFormula, upsert, tables |
+| ClickUp | `@mimicai/adapter-clickup` | 20 | Tasks, spaces, folders, lists, time tracking |
+| Todoist | `@mimicai/adapter-todoist` | 18 | Tasks, projects, sections, labels, comments |
+| Basecamp | `@mimicai/adapter-basecamp` | 23 | Projects, to-dos, messages, campfire, comments |
 
 </details>
 
-> **Building an adapter?** See the [Adapter Development Guide](docs/ADAPTER_GUIDE.md) and the [@mimicailab/adapter-sdk](packages/oss/adapter-sdk/).
+> **Building an adapter?** See the [Adapter Development Guide](docs/ADAPTER_GUIDE.md) and the [@mimicai/adapter-sdk](packages/oss/adapter-sdk/).
 
 ## MCP Servers
 
@@ -294,12 +294,12 @@ Every API mock adapter has a corresponding MCP server, so AI agents using the Mo
   "mcpServers": {
     "mimic-jira": {
       "command": "npx",
-      "args": ["-y", "@mimicailab/mcp-jira"],
+      "args": ["-y", "@mimicai/mcp-jira"],
       "env": { "MIMIC_BASE_URL": "http://localhost:4000" }
     },
     "mimic-slack": {
       "command": "npx",
-      "args": ["-y", "@mimicailab/mcp-slack"],
+      "args": ["-y", "@mimicai/mcp-slack"],
       "env": { "MIMIC_BASE_URL": "http://localhost:4000" }
     }
   }
@@ -316,8 +316,8 @@ See the [MCP Server Guide](docs/MCP_GUIDE.md) for the full list and configuratio
 mimic/
 ├── packages/
 │   ├── oss/                          # Apache 2.0
-│   │   ├── cli/                      # @mimicailab/cli
-│   │   ├── adapter-sdk/              # @mimicailab/adapter-sdk
+│   │   ├── cli/                      # @mimicai/cli
+│   │   ├── adapter-sdk/              # @mimicai/adapter-sdk
 │   │   ├── adapter-postgres/         # Database adapters
 │   │   ├── adapter-stripe/           # API mock adapters (65+)
 │   │   ├── adapter-jira/
@@ -432,9 +432,9 @@ mimic host --adapters jira,slack,zendesk &
 # In your Claude/Cursor MCP config:
 # {
 #   "mcpServers": {
-#     "jira":    { "command": "npx", "args": ["-y", "@mimicailab/mcp-jira"] },
-#     "slack":   { "command": "npx", "args": ["-y", "@mimicailab/mcp-slack"] },
-#     "zendesk": { "command": "npx", "args": ["-y", "@mimicailab/mcp-zendesk"] }
+#     "jira":    { "command": "npx", "args": ["-y", "@mimicai/mcp-jira"] },
+#     "slack":   { "command": "npx", "args": ["-y", "@mimicai/mcp-slack"] },
+#     "zendesk": { "command": "npx", "args": ["-y", "@mimicai/mcp-zendesk"] }
 #   }
 # }
 ```
@@ -444,8 +444,8 @@ mimic host --adapters jira,slack,zendesk &
 ```yaml
 - name: Start Mimic
   run: |
-    npx @mimicailab/cli seed --persona finance-alex
-    npx @mimicailab/cli host --background
+    npx @mimicai/cli seed --persona finance-alex
+    npx @mimicai/cli host --background
 
 - name: Run agent tests
   run: npm test
@@ -454,7 +454,7 @@ mimic host --adapters jira,slack,zendesk &
     STRIPE_API_BASE: http://localhost:4000/stripe/v1
 
 - name: Stop Mimic
-  run: npx @mimicailab/cli clean
+  run: npx @mimicai/cli clean
 ```
 
 ## Free vs Pro

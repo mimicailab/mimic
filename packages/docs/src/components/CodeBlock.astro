@@ -1,0 +1,21 @@
+---
+interface Props {
+  lang: string;
+  label?: string;
+  code?: string;
+}
+
+const { lang, label, code } = Astro.props;
+---
+<div class="code-block">
+  <div class="code-bar">
+    <span class="code-bar-lang">{lang}</span>
+    {label && <span>{label}</span>}
+    <button class="code-copy">Copy</button>
+  </div>
+  {code ? (
+    <pre><code set:html={code} /></pre>
+  ) : (
+    <pre><code><slot /></code></pre>
+  )}
+</div>

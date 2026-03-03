@@ -5,8 +5,8 @@ import type {
   AdapterResult,
   EndpointDefinition,
   ExpandedData,
-} from '@mimicailab/core';
-import type { StateStore } from '@mimicailab/core';
+} from '@mimicai/core';
+import type { StateStore } from '@mimicai/core';
 
 /**
  * Abstract base class for API mock adapters.

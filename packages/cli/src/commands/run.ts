@@ -17,9 +17,9 @@ import {
   LLMClient,
   CostTracker,
   providerConfigFromMimic,
-} from '@mimicailab/core';
-import type { Blueprint, MimicConfig, ExpandedData, SchemaModel } from '@mimicailab/core';
-import { loadBlueprint, isBuiltinBlueprint } from '@mimicailab/blueprints';
+} from '@mimicai/core';
+import type { Blueprint, MimicConfig, ExpandedData, SchemaModel } from '@mimicai/core';
+import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
 import { resolveEnvVars } from '../utils/env.js';
 
 // ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     const cachedPath = join(blueprintDir, `${persona.name}.json`);
 
     if (persona.blueprint && isBuiltinBlueprint(persona.blueprint)) {
-      // Load from @mimicailab/blueprints
+      // Load from @mimicai/blueprints
       const spin = logger.spinner('Loading built-in blueprint...');
       try {
         blueprint = await loadBlueprint(persona.blueprint);
@@ -304,7 +304,7 @@ async function resolveSchema(config: MimicConfig, cwd: string): Promise<SchemaMo
         }
       }
       case 'mysql': {
-        const { MySQLSeeder } = await import('@mimicailab/adapter-mysql');
+        const { MySQLSeeder } = await import('@mimicai/adapter-mysql');
         const seeder = new MySQLSeeder();
         const url = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
         await seeder.init({ url }, { config, blueprints: new Map(), logger });
@@ -315,7 +315,7 @@ async function resolveSchema(config: MimicConfig, cwd: string): Promise<SchemaMo
         }
       }
       case 'sqlite': {
-        const { SQLiteSeeder } = await import('@mimicailab/adapter-sqlite');
+        const { SQLiteSeeder } = await import('@mimicai/adapter-sqlite');
         const seeder = new SQLiteSeeder();
         const path = (dbConfig as Record<string, unknown>).path as string;
         await seeder.init({ path }, { config, blueprints: new Map(), logger });
@@ -326,7 +326,7 @@ async function resolveSchema(config: MimicConfig, cwd: string): Promise<SchemaMo
         }
       }
       case 'mongodb': {
-        const { MongoSeeder } = await import('@mimicailab/adapter-mongodb');
+        const { MongoSeeder } = await import('@mimicai/adapter-mongodb');
         const seeder = new MongoSeeder();
         const url = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
         const database = (dbConfig as Record<string, unknown>).database as string | undefined;

@@ -38,7 +38,7 @@ importers:
       '@fastify/formbody':
         specifier: ^8.0.2
         version: 8.0.2
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../core
       fastify:
@@ -57,7 +57,7 @@ importers:
 
   packages/adapters/adapter-mongodb:
     dependencies:
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../../core
       mongodb:
@@ -76,7 +76,7 @@ importers:
 
   packages/adapters/adapter-mysql:
     dependencies:
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../../core
       mysql2:
@@ -95,10 +95,10 @@ importers:
 
   packages/adapters/adapter-plaid:
     dependencies:
-      '@mimicailab/adapter-sdk':
+      '@mimicai/adapter-sdk':
         specifier: workspace:*
         version: link:../../adapter-sdk
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../../core
       '@modelcontextprotocol/sdk':
@@ -123,7 +123,7 @@ importers:
 
   packages/adapters/adapter-postgres:
     dependencies:
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../../core
       pg:
@@ -151,10 +151,10 @@ importers:
 
   packages/adapters/adapter-slack:
     dependencies:
-      '@mimicailab/adapter-sdk':
+      '@mimicai/adapter-sdk':
         specifier: workspace:*
         version: link:../../adapter-sdk
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../../core
       '@modelcontextprotocol/sdk':
@@ -179,7 +179,7 @@ importers:
 
   packages/adapters/adapter-sqlite:
     dependencies:
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../../core
       better-sqlite3:
@@ -201,10 +201,10 @@ importers:
 
   packages/adapters/adapter-stripe:
     dependencies:
-      '@mimicailab/adapter-sdk':
+      '@mimicai/adapter-sdk':
         specifier: workspace:*
         version: link:../../adapter-sdk
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../../core
       '@modelcontextprotocol/sdk':
@@ -229,7 +229,7 @@ importers:
 
   packages/blueprints:
     dependencies:
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -245,22 +245,22 @@ importers:
       '@inquirer/prompts':
         specifier: ^7.4.0
         version: 7.10.1(@types/node@25.3.3)
-      '@mimicailab/adapter-mongodb':
+      '@mimicai/adapter-mongodb':
         specifier: workspace:*
         version: link:../adapters/adapter-mongodb
-      '@mimicailab/adapter-mysql':
+      '@mimicai/adapter-mysql':
         specifier: workspace:*
         version: link:../adapters/adapter-mysql
-      '@mimicailab/adapter-postgres':
+      '@mimicai/adapter-postgres':
         specifier: workspace:*
         version: link:../adapters/adapter-postgres
-      '@mimicailab/adapter-sqlite':
+      '@mimicai/adapter-sqlite':
         specifier: workspace:*
         version: link:../adapters/adapter-sqlite
-      '@mimicailab/blueprints':
+      '@mimicai/blueprints':
         specifier: workspace:*
         version: link:../blueprints
-      '@mimicailab/core':
+      '@mimicai/core':
         specifier: workspace:*
         version: link:../core
       chalk:
@@ -289,13 +289,13 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
     optionalDependencies:
-      '@mimicailab/adapter-plaid':
+      '@mimicai/adapter-plaid':
         specifier: workspace:*
         version: link:../adapters/adapter-plaid
-      '@mimicailab/adapter-slack':
+      '@mimicai/adapter-slack':
         specifier: workspace:*
         version: link:../adapters/adapter-slack
-      '@mimicailab/adapter-stripe':
+      '@mimicai/adapter-stripe':
         specifier: workspace:*
         version: link:../adapters/adapter-stripe
 
