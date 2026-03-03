@@ -25,6 +25,8 @@ export interface PersonaData {
   entities: Record<string, EntityData[]>;
   patterns: DataPattern[];
   annotations: Record<string, unknown>;
+  /** API entity seeds, keyed by adapter ID then resource type */
+  apiEntities?: Record<string, Record<string, EntityData[]>>;
 }
 
 /** A single entity row to insert */

@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
 // Sub-schemas  (mirror types/blueprint.ts exactly)
+//
+// NOTE: Using Anthropic's jsonTool structured output mode which supports
+// z.record() and z.unknown() but NOT min/max on integers.
 // ---------------------------------------------------------------------------
 
 const RandomSpecSchema = z.object({
@@ -28,8 +31,8 @@ const RecurringSchema = z.object({
       'quarterly',
       'yearly',
     ]),
-    dayOfMonth: z.number().int().min(1).max(31).optional(),
-    dayOfWeek: z.number().int().min(0).max(6).optional(),
+    dayOfMonth: z.number().int().optional().describe('Day of month (1-31)'),
+    dayOfWeek: z.number().int().optional().describe('Day of week (0=Sun, 6=Sat)'),
   }),
 });
 
@@ -47,47 +50,26 @@ const PeriodicSchema = z.object({
 
 const EventSchema = z.object({
   fields: z.record(z.unknown()),
-  probability: z.number().min(0).max(1),
+  probability: z.number().describe('Probability between 0 and 1'),
 });
 
-const DataPatternSchema = z.discriminatedUnion('type', [
-  z.object({
-    targetTable: z.string(),
-    type: z.literal('recurring'),
-    recurring: RecurringSchema,
-    variable: VariableSchema.optional(),
-    periodic: PeriodicSchema.optional(),
-    event: EventSchema.optional(),
-  }),
-  z.object({
-    targetTable: z.string(),
-    type: z.literal('variable'),
-    recurring: RecurringSchema.optional(),
-    variable: VariableSchema,
-    periodic: PeriodicSchema.optional(),
-    event: EventSchema.optional(),
-  }),
-  z.object({
-    targetTable: z.string(),
-    type: z.literal('periodic'),
-    recurring: RecurringSchema.optional(),
-    variable: VariableSchema.optional(),
-    periodic: PeriodicSchema,
-    event: EventSchema.optional(),
-  }),
-  z.object({
-    targetTable: z.string(),
-    type: z.literal('event'),
-    recurring: RecurringSchema.optional(),
-    variable: VariableSchema.optional(),
-    periodic: PeriodicSchema.optional(),
-    event: EventSchema,
-  }),
-]);
+/**
+ * Data pattern schema — uses a permissive object with all sub-schemas optional.
+ * The downstream expander code checks `type` at runtime and uses the relevant
+ * sub-object.
+ */
+const DataPatternSchema = z.object({
+  targetTable: z.string(),
+  type: z.enum(['recurring', 'variable', 'periodic', 'event']),
+  recurring: RecurringSchema.optional(),
+  variable: VariableSchema.optional(),
+  periodic: PeriodicSchema.optional(),
+  event: EventSchema.optional(),
+});
 
 const PersonaProfileSchema = z.object({
   name: z.string(),
-  age: z.number().int().min(1).max(150),
+  age: z.number().int().describe('Age in years'),
   occupation: z.string(),
   location: z.string(),
   salary: z.number().optional(),
@@ -98,6 +80,10 @@ const PersonaDataSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
   annotations: z.record(z.unknown()),
+  apiEntities: z
+    .record(z.record(z.array(z.record(z.unknown()))))
+    .optional()
+    .describe('API entity seeds keyed by adapter ID then resource type'),
 });
 
 // ---------------------------------------------------------------------------

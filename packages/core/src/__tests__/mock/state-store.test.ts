@@ -79,6 +79,24 @@ describe('StateStore', () => {
     expect(result?.status).toBe('pending');
   });
 
+  it('should filter resources by predicate', () => {
+    store.set('messages', 'm1', { channel: 'C01', text: 'hello' });
+    store.set('messages', 'm2', { channel: 'C02', text: 'world' });
+    store.set('messages', 'm3', { channel: 'C01', text: 'goodbye' });
+    const filtered = store.filter<{ channel: string; text: string }>(
+      'messages',
+      (m) => m.channel === 'C01',
+    );
+    expect(filtered).toHaveLength(2);
+    expect(filtered.map((m) => m.text)).toContain('hello');
+    expect(filtered.map((m) => m.text)).toContain('goodbye');
+  });
+
+  it('should return empty array when filtering empty namespace', () => {
+    const filtered = store.filter('empty', () => true);
+    expect(filtered).toEqual([]);
+  });
+
   it('should isolate namespaces', () => {
     store.set('ns1', 'key', { value: 'one' });
     store.set('ns2', 'key', { value: 'two' });

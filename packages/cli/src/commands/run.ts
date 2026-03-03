@@ -141,6 +141,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
           { name: persona.name, description: persona.description },
           config.domain,
           { force: opts.generate },
+          config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
         );
         spin.succeed('Blueprint generated');
 
@@ -172,7 +173,16 @@ async function runGenerate(opts: RunOptions): Promise<void> {
       for (const [table, rows] of Object.entries(expanded.tables)) {
         tableCounts[table] = (rows as unknown[]).length;
       }
-      summary.push({ persona: persona.name, tables: tableCounts });
+
+      // Collect API response stats
+      const apiCounts: Record<string, number> = {};
+      for (const [adapterId, responseSet] of Object.entries(expanded.apiResponses)) {
+        const total = Object.values(responseSet.responses)
+          .reduce((sum: number, arr) => sum + (arr as unknown[]).length, 0);
+        if (total > 0) apiCounts[adapterId] = total;
+      }
+
+      summary.push({ persona: persona.name, tables: tableCounts, apis: apiCounts });
 
       expandSpin.succeed('Data expanded');
     } catch (err) {
@@ -196,11 +206,18 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     console.log();
     console.log(`  ${chalk.bold(entry.persona)}`);
     const tableNames = Object.keys(entry.tables);
-    if (tableNames.length === 0) {
+    if (tableNames.length === 0 && !entry.apis) {
       logger.info('  (no tables)');
     } else {
       for (const table of tableNames) {
         logger.info(`  ${chalk.dim(table)}: ${chalk.yellow(String(entry.tables[table]))} rows`);
+      }
+    }
+
+    // Show API entity counts
+    if (entry.apis) {
+      for (const [adapterId, count] of Object.entries(entry.apis)) {
+        logger.info(`  ${chalk.dim(`api:${adapterId}`)}: ${chalk.yellow(String(count))} entities`);
       }
     }
   }
@@ -254,10 +271,14 @@ function resolvePersonas(
 async function resolveSchema(config: MimicConfig, cwd: string): Promise<SchemaModel> {
   const databases = config.databases;
   if (!databases || Object.keys(databases).length === 0) {
+    // API-only setup — return empty schema so LLM generates only apiEntities
+    if (config.apis && Object.keys(config.apis).length > 0) {
+      return { tables: [], enums: [], insertionOrder: [] };
+    }
     throw new MimicError(
-      'No database configured',
+      'No database or API configured',
       'CONFIG_INVALID',
-      "Add a 'databases' section to mimic.json with a schema source",
+      "Add a 'databases' or 'apis' section to mimic.json",
     );
   }
 

@@ -8,6 +8,9 @@ import type {
   ColumnInfo,
   ExpandedData,
   Row,
+  EntityData,
+  ApiResponseSet,
+  ApiResponse,
 } from '../types/index.js';
 import { SeededRandom } from './seed-random.js';
 import { logger } from '../utils/logger.js';
@@ -124,12 +127,29 @@ export class BlueprintExpander {
       }
     }
 
+    // ------------------------------------------------------------------
+    // 5. API entities → apiResponses
+    // ------------------------------------------------------------------
+    const apiResponses: Record<string, ApiResponseSet> = {};
+
+    if (blueprint.data.apiEntities) {
+      for (const [adapterId, resources] of Object.entries(
+        blueprint.data.apiEntities,
+      )) {
+        apiResponses[adapterId] = this.expandApiEntities(
+          adapterId,
+          resources,
+          blueprint.personaId,
+        );
+      }
+    }
+
     return {
       personaId: blueprint.personaId,
       blueprint,
       tables,
       documents: {},
-      apiResponses: {},
+      apiResponses,
       files: [],
       events: [],
     };
@@ -320,6 +340,49 @@ export class BlueprintExpander {
       default:
         return null;
     }
+  }
+  // -----------------------------------------------------------------------
+  // API entity expansion
+  // -----------------------------------------------------------------------
+
+  /**
+   * Expand compact API entity seeds into ApiResponseSet objects.
+   *
+   * Each entity becomes an ApiResponse with a stateKey matching the
+   * adapter's StateStore namespace convention (e.g. "stripe_customers").
+   * The LLM generates IDs that match cross-platform references in DB entities.
+   */
+  private expandApiEntities(
+    adapterId: string,
+    resources: Record<string, EntityData[]>,
+    personaId: string,
+  ): ApiResponseSet {
+    const responses: Record<string, ApiResponse[]> = {};
+
+    for (const [resourceType, entities] of Object.entries(resources)) {
+      const expanded: ApiResponse[] = [];
+
+      for (const entity of entities) {
+        const body: Record<string, unknown> = { ...entity };
+
+        // Add created timestamp if not present
+        if (body.created === undefined && body.created_at === undefined) {
+          body.created = Math.floor(Date.now() / 1000);
+        }
+
+        expanded.push({
+          statusCode: 200,
+          headers: { 'content-type': 'application/json' },
+          body,
+          personaId,
+          stateKey: `${adapterId}_${resourceType}`,
+        });
+      }
+
+      responses[resourceType] = expanded;
+    }
+
+    return { adapterId, responses };
   }
 }
 
