@@ -7,85 +7,124 @@ This guide walks you through building a new API mock adapter for Mimic. By the e
 An adapter does three things:
 
 1. **Declares routes** that mirror the real platform's API endpoints
-2. **Seeds realistic data** into an in-memory state store on first request
+2. **Seeds realistic data** into an in-memory state store
 3. **Handles requests** with response shapes matching the real API
 
-Every adapter runs inside Mimic's Fastify mock server at a unique base path (e.g., `/stripe/v1`, `/jira/rest/api/3`).
+Every adapter runs inside Mimic's Fastify mock server at a unique base path (e.g., `/stripe/v1`, `/plaid`).
 
-## Scaffold a New Adapter
+## Getting Started
+
+Copy an existing adapter as a starting point — `adapter-stripe` and `adapter-plaid` are the best reference implementations.
 
 ```bash
-pnpm mimic:create-adapter my-platform
+cp -r packages/adapters/adapter-stripe packages/adapters/adapter-my-platform
 ```
 
-This generates the boilerplate at `packages/oss/adapter-my-platform/`. You can also copy an existing adapter as a starting point — `adapter-jira` and `adapter-stripe` are the best reference implementations.
+Then update the package name, class name, and routes.
 
 ## Adapter Structure
 
 ```
-packages/oss/adapter-my-platform/
+packages/adapters/adapter-my-platform/
 ├── src/
-│   └── index.ts           # Adapter class (routes, seed, config)
-├── __tests__/
-│   └── adapter.test.ts    # Integration tests
-├── package.json           # @mimicai/adapter-my-platform
+│   ├── my-platform-adapter.ts    # Adapter class (routes, seed, config)
+│   ├── config.ts                 # Zod config schema
+│   ├── index.ts                  # Exports & manifest
+│   ├── bin/
+│   │   └── mcp.ts                # MCP server entry point
+│   └── __tests__/
+│       └── my-platform-adapter.test.ts
+├── package.json                  # @mimicai/adapter-my-platform
 ├── tsconfig.json
+├── tsup.config.ts
 └── README.md
 ```
 
-## The Adapter Interface
+## The Base Class
 
-Every adapter implements the `ApiMockAdapter` interface:
+Every adapter extends `BaseApiMockAdapter` from the adapter SDK:
 
 ```typescript
-import { ApiMockAdapter, EndpointDefinition } from '@mimicai/adapter-sdk';
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import {
+  BaseApiMockAdapter,
+  type EndpointDefinition,
+  type ExpandedData,
+  type StateStore,
+  generateId,
+  resolvePersonaFromBearer,
+} from '@mimicai/adapter-sdk';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 export interface MyPlatformConfig {
-  // Platform-specific configuration
+  // Platform-specific configuration (validated with Zod)
 }
 
-export class MyPlatformAdapter implements ApiMockAdapter<MyPlatformConfig> {
+export class MyPlatformAdapter extends BaseApiMockAdapter<MyPlatformConfig> {
   readonly id = 'my-platform';
   readonly name = 'My Platform API';
-  readonly type = 'api-mock' as const;
   readonly basePath = '/my-platform';
 
-  private config!: MyPlatformConfig;
-
-  // Extract persona ID from auth header
   resolvePersona(req: FastifyRequest): string | null {
-    const auth = req.headers.authorization;
-    if (!auth) return null;
-    const match = auth.replace('Bearer ', '').match(/^mp_([a-z0-9-]+)/);
-    return match ? match[1] : null;
+    return resolvePersonaFromBearer(req);
   }
 
-  // Register all routes on the Fastify server
   async registerRoutes(
     server: FastifyInstance,
     data: Map<string, ExpandedData>,
-    state: StateStore
+    store: StateStore,
   ): Promise<void> {
-    // ... route implementations
+    this.seedFromApiResponses(data, store);
+
+    server.get('/my-platform/items', async (req, reply) => {
+      const items = store.list('mp_items');
+      return reply.send({ data: items });
+    });
+
+    server.post('/my-platform/items', async (req, reply) => {
+      const id = generateId('item');
+      const item = { id, ...(req.body as object), created_at: new Date().toISOString() };
+      store.set('mp_items', id, item);
+      return reply.status(201).send({ data: item });
+    });
   }
 
-  // Declare endpoints for documentation + MCP generation
   getEndpoints(): EndpointDefinition[] {
     return [
       { method: 'GET', path: '/my-platform/items', description: 'List items' },
       { method: 'POST', path: '/my-platform/items', description: 'Create item' },
-      // ...
     ];
+  }
+
+  private seedFromApiResponses(data: Map<string, ExpandedData>, store: StateStore): void {
+    if (store.list('mp_items').length > 0) return;
+    // Hydrate store from pre-generated data or create default seed data
   }
 }
 ```
+
+### Key methods
+
+| Method | Purpose |
+|--------|---------|
+| `resolvePersona(req)` | Extract persona ID from the request (auth header, body, etc.) |
+| `registerRoutes(server, data, store)` | Mount all Fastify route handlers |
+| `getEndpoints()` | Declare all routes for docs and MCP generation |
+
+### Inherited lifecycle methods
+
+| Method | Purpose |
+|--------|---------|
+| `init(config, context)` | Called once on startup — stores config and context |
+| `apply(data, context)` | No-op for API mocks (data is served via HTTP) |
+| `clean(context)` | Clean up adapter state |
+| `healthcheck(context)` | Verify adapter is operational |
+| `dispose()` | Release resources on shutdown |
 
 ## Implementing Routes
 
 ### Step 1: Plan Your Endpoints
 
-Study the real platform's API documentation. You don't need to mock everything — focus on the endpoints AI agents actually call. A good adapter covers:
+Study the real platform's API documentation. Focus on the endpoints AI agents actually call:
 
 - **List** the primary resource (with filtering and pagination)
 - **Get** a single resource by ID
@@ -93,92 +132,85 @@ Study the real platform's API documentation. You don't need to mock everything �
 - **Update** an existing resource
 - **Delete** or archive a resource
 - **Search** if the platform has a search endpoint
-- **1-2 domain-specific actions** (e.g., Jira transitions, PagerDuty acknowledge)
 
-Aim for 8-20 routes. More is fine; fewer than 8 usually means important operations are missing.
+Aim for 8-20 routes.
 
 ### Step 2: Seed Realistic Data
 
-Use the lazy-seed pattern — populate the state store on the first request:
+Populate the state store from pre-generated data or default values:
 
 ```typescript
-const seedData = () => {
-  if (state.list('mp_items').length > 0) return; // Already seeded
+private seedFromApiResponses(data: Map<string, ExpandedData>, store: StateStore): void {
+  if (store.list('mp_items').length > 0) return;
 
+  // Check for pre-generated data from persona blueprint
+  const apiData = data.get('my-platform');
+  if (apiData?.responses) {
+    for (const [key, value] of Object.entries(apiData.responses)) {
+      store.set('mp_items', key, value);
+    }
+    return;
+  }
+
+  // Fallback: default seed data
   const items = [
     { title: 'Fix login bug', status: 'open', priority: 'high' },
     { title: 'Write API docs', status: 'in_progress', priority: 'medium' },
     { title: 'Add dark mode', status: 'backlog', priority: 'low' },
-    // ... at least 3-5 items with realistic values
   ];
 
-  items.forEach((item, i) => {
-    const id = generateId();
-    state.set('mp_items', id, {
-      id,
-      ...item,
-      created_at: isoAgo(14 - i),
-      updated_at: isoAgo(Math.max(1, 7 - i)),
-    });
+  items.forEach((item) => {
+    const id = generateId('item');
+    store.set('mp_items', id, { id, ...item, created_at: new Date().toISOString() });
   });
-};
+}
 ```
 
-Seed data should feel real. Use realistic names, emails, dates, and values. Don't use "test", "foo", "bar", or sequential numbers where a real user wouldn't see them.
+Seed data should feel real. Use realistic names, emails, dates, and values.
 
 ### Step 3: Match Real Response Shapes
 
-This is critical. Study real API responses and match their structure exactly.
+Study real API responses and match their structure exactly.
 
 ```typescript
 // BAD — inventing your own response shape
-return reply.send({ items: state.list('mp_items') });
+return reply.send({ items: store.list('mp_items') });
 
 // GOOD — matching the real API's response shape
-// If the real API wraps responses in { data: [...] }:
-return reply.send({ data: state.list('mp_items') });
+return reply.send({ data: store.list('mp_items') });
 
-// If the real API returns bare arrays:
-return reply.send(state.list('mp_items'));
-
-// If the real API uses pagination:
+// With pagination:
+const { items, hasMore } = paginate(store.list('mp_items'), { offset, limit });
 return reply.send({
-  results: items.slice(offset, offset + limit),
-  next_cursor: hasMore ? lastId : null,
+  results: items,
+  next_cursor: hasMore ? items[items.length - 1].id : null,
   has_more: hasMore,
 });
 ```
 
-Get the wrapper objects, field names, timestamp formats, ID formats, and error shapes right. Agents are trained on real API documentation — if your mock returns a different shape, the agent breaks.
-
 ### Step 4: Implement Authentication
 
-Match the platform's auth pattern:
+Match the platform's auth pattern using helpers from the SDK:
 
 ```typescript
-// Bearer token (most common)
+import { resolvePersonaFromBearer, resolvePersonaFromBody } from '@mimicai/adapter-sdk';
+
+// Bearer token (most common — Stripe, Slack, etc.)
+resolvePersona(req: FastifyRequest): string | null {
+  return resolvePersonaFromBearer(req);
+}
+
+// Body-based auth (Plaid)
+resolvePersona(req: FastifyRequest): string | null {
+  return resolvePersonaFromBody(req);
+}
+
+// Custom auth (e.g., Stripe's sk_test_ prefix)
 resolvePersona(req: FastifyRequest): string | null {
   const auth = req.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return null;
-  return auth.replace('Bearer ', '').slice(0, 8);
-}
-
-// Basic auth (Freshdesk, Jira)
-resolvePersona(req: FastifyRequest): string | null {
-  const auth = req.headers.authorization;
-  if (!auth?.startsWith('Basic ')) return null;
-  const decoded = Buffer.from(auth.replace('Basic ', ''), 'base64').toString();
-  return decoded.split(':')[0].slice(0, 8);
-}
-
-// API key in header (Monday.com)
-resolvePersona(req: FastifyRequest): string | null {
-  return (req.headers['api-key'] as string)?.slice(0, 8) || null;
-}
-
-// Query parameter (Trello)
-resolvePersona(req: FastifyRequest): string | null {
-  return (req.query as any).token?.slice(0, 8) || null;
+  if (!auth?.startsWith('Bearer sk_test_')) return null;
+  const match = auth.match(/^Bearer\s+sk_test_([a-z0-9-]+)_/);
+  return match ? match[1] : null;
 }
 ```
 
@@ -192,103 +224,124 @@ return reply.status(404).send({
   error: { type: 'invalid_request_error', message: 'No such customer: cus_xxx' }
 });
 
-// Jira-style errors
-return reply.status(400).send({
-  errorMessages: ['Field "summary" is required'],
-  errors: {}
-});
+// Slack-style errors
+return reply.status(200).send({ ok: false, error: 'channel_not_found' });
 
-// Notion-style errors
-return reply.status(404).send({
-  object: 'error', status: 404, code: 'object_not_found',
-  message: 'Could not find page with ID xxx'
-});
+// Generic REST errors
+return reply.status(404).send({ message: 'Not found' });
 ```
 
-## Platform-Specific Patterns to Watch For
+## Adapter Manifest
 
-Every platform has quirks. Here are common patterns to get right:
+Every adapter exports a manifest for the adapter registry:
 
-**ID formats** — Stripe uses `cus_xxx`, Jira uses `MIM-1`, Trello uses 24-char hex, Notion uses UUIDs, Asana uses 16-digit numeric strings. Match them.
+```typescript
+import type { AdapterManifest } from '@mimicai/adapter-sdk';
 
-**Timestamp formats** — Most APIs use ISO 8601, but ClickUp uses millisecond timestamps, Intercom uses Unix seconds, and some APIs use date-only strings for certain fields.
-
-**Pagination** — Cursor-based (`next_cursor`, `has_more`), offset-based (`offset`, `limit`, `total`), or page-based (`page`, `per_page`). Match the platform.
-
-**Wrapped vs bare responses** — Stripe wraps in `{ data: [...] }`, Asana in `{ data: {...} }`, Notion in `{ object: 'list', results: [...] }`, but Trello and Freshdesk return bare arrays. Match the platform.
-
-**Update methods** — Most APIs use PUT or PATCH, but Todoist uses `POST /tasks/:id` for updates, and Jira returns 204 No Content on updates.
+export const manifest: AdapterManifest = {
+  id: 'my-platform',
+  name: 'My Platform API',
+  type: 'api-mock',
+  description: 'My Platform mock adapter for testing',
+};
+```
 
 ## Writing Tests
 
-```typescript
-import { buildTestServer } from '@mimicai/adapter-sdk/testing';
-import { MyPlatformAdapter } from '../src';
+Use `buildTestServer` from the adapter SDK:
 
-describe('MyPlatform Adapter', () => {
-  let server: FastifyInstance;
+```typescript
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { buildTestServer, type TestServer } from '@mimicai/adapter-sdk';
+import { MyPlatformAdapter } from '../my-platform-adapter.js';
+
+describe('MyPlatformAdapter', () => {
+  let ts: TestServer;
+  let adapter: MyPlatformAdapter;
 
   beforeAll(async () => {
-    server = await buildTestServer(new MyPlatformAdapter());
+    adapter = new MyPlatformAdapter();
+    ts = await buildTestServer(adapter);
   });
 
-  afterAll(() => server.close());
+  afterAll(async () => {
+    await ts.close();
+  });
+
+  it('has correct metadata', () => {
+    expect(adapter.id).toBe('my-platform');
+    expect(adapter.type).toBe('api-mock');
+    expect(adapter.basePath).toBe('/my-platform');
+  });
 
   it('lists items', async () => {
-    const res = await server.inject({ method: 'GET', url: '/my-platform/items' });
+    const res = await ts.server.inject({
+      method: 'GET',
+      url: '/my-platform/items',
+    });
     expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.payload);
+    const body = res.json();
     expect(body.data).toBeInstanceOf(Array);
     expect(body.data.length).toBeGreaterThan(0);
   });
 
   it('creates an item', async () => {
-    const res = await server.inject({
+    const res = await ts.server.inject({
       method: 'POST',
       url: '/my-platform/items',
-      payload: { title: 'New item', priority: 'high' },
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ title: 'New item', priority: 'high' }),
     });
     expect(res.statusCode).toBe(201);
-    const body = JSON.parse(res.payload);
+    const body = res.json();
     expect(body.data.title).toBe('New item');
     expect(body.data.id).toBeDefined();
   });
 
   it('returns 404 for missing item', async () => {
-    const res = await server.inject({ method: 'GET', url: '/my-platform/items/nonexistent' });
+    const res = await ts.server.inject({
+      method: 'GET',
+      url: '/my-platform/items/nonexistent',
+    });
     expect(res.statusCode).toBe(404);
   });
 });
 ```
 
+## SDK Utilities
+
+The adapter SDK re-exports useful helpers from `@mimicai/core`:
+
+| Helper | Description |
+|--------|-------------|
+| `generateId(prefix?)` | Generate a unique ID, optionally prefixed (e.g., `cus_abc123`) |
+| `paginate(items, opts)` | Paginate a list with offset/limit |
+| `filterByDate(items, field, start, end)` | Filter by date range |
+| `resolvePersonaFromBearer(req)` | Extract persona from Bearer token |
+| `resolvePersonaFromBody(req)` | Extract persona from request body |
+| `StateStore` | In-memory key-value store class |
+| `unixNow()` | Current Unix timestamp in seconds |
+| `toDateStr(val)` | Normalize to ISO date string |
+| `capitalize(str)` | Capitalize first letter |
+
 ## Checklist Before Submitting
 
-- [ ] Adapter implements `ApiMockAdapter` interface
+- [ ] Adapter extends `BaseApiMockAdapter`
 - [ ] `resolvePersona()` matches the platform's auth pattern
 - [ ] 8+ routes covering core CRUD operations
 - [ ] Realistic seed data (3-5 records per primary resource)
 - [ ] Response shapes match the real API (test against real docs)
 - [ ] Error responses match the real API's error format
 - [ ] Correct ID format for the platform
-- [ ] Correct timestamp format for the platform
 - [ ] Correct pagination style for the platform
 - [ ] `getEndpoints()` returns all route definitions
-- [ ] Tests cover list, create, get, update operations
+- [ ] Exports a `manifest` object
+- [ ] Tests use `buildTestServer` from `@mimicai/adapter-sdk`
 - [ ] README documents endpoints, auth, and seed data
-- [ ] `package.json` has correct name: `@mimicai/adapter-{id}`
-- [ ] TypeScript strict mode, no `any` without comments
+- [ ] `package.json` named `@mimicai/adapter-{id}`
 
-## What Happens After You Submit
+## Reference Implementations
 
-1. A maintainer reviews your PR within 48 hours
-2. We may suggest changes — usually around response shape accuracy or seed data realism
-3. Once approved, we merge and publish to npm as `@mimicai/adapter-{id}`
-4. A corresponding MCP server is auto-generated from your `getEndpoints()` definitions
-5. You get credited in CONTRIBUTORS.md and shouted out on social media
-6. Your adapter is now used by every Mimic user who tests against that platform
-
-## Need Help?
-
-- Look at `adapter-jira` and `adapter-stripe` as reference implementations
-- Ask in [Discord #adapter-dev](https://discord.gg/mimic)
-- Open a draft PR early if you want feedback on your approach
+- [`adapter-stripe`](../packages/adapters/adapter-stripe/) — Full Stripe API mock with 29 endpoints, webhooks, Zod config
+- [`adapter-plaid`](../packages/adapters/adapter-plaid/) — Plaid API mock with link flow, transactions, formatters
+- [`adapter-slack`](../packages/adapters/adapter-slack/) — Slack Web API mock with channels, messages, reactions
