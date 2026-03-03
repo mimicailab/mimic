@@ -103,7 +103,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const engine = new BlueprintEngine(llmClient, cache, costTracker);
   const expander = new BlueprintExpander(seed);
 
-  const summary: { persona: string; tables: Record<string, number> }[] = [];
+  const summary: { persona: string; tables: Record<string, number>; apis?: Record<string, number> }[] = [];
 
   for (const persona of targetPersonas) {
     logger.step(`Persona: ${chalk.bold(persona.name)}`);
