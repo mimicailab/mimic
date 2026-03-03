@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-plaid",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Plaid API mock adapter for Mimic — bank accounts, transactions, identity, auth",
   "type": "module",
   "license": "Apache-2.0",

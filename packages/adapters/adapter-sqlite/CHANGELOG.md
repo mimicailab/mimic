@@ -1,5 +1,14 @@
 # @mimicailab/adapter-sqlite
 
+## 0.3.1
+
+### Patch Changes
+
+- [#10](https://github.com/mimicailab/mimic/pull/10) [`7eb52cd`](https://github.com/mimicailab/mimic/commit/7eb52cd539f27fa21f07967e7dacdc85cc389b59) Thanks [@ajollie](https://github.com/ajollie)! - Add README.md to all packages and update documentation to match actual codebase.
+
+- Updated dependencies [[`7eb52cd`](https://github.com/mimicailab/mimic/commit/7eb52cd539f27fa21f07967e7dacdc85cc389b59)]:
+  - @mimicai/core@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes
