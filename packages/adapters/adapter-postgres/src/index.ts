@@ -1,4 +1,4 @@
-import type { AdapterManifest } from '@mimicailab/core';
+import type { AdapterManifest } from '@mimicai/core';
 
 // ---------------------------------------------------------------------------
 // Re-export the PgSeeder class and its public types

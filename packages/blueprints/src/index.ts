@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Blueprint } from '@mimicailab/core';
+import type { Blueprint } from '@mimicai/core';
 
 // ---------------------------------------------------------------------------
 // Constants

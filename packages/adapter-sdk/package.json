@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/adapter-sdk",
+  "name": "@mimicai/adapter-sdk",
   "version": "0.3.0",
   "description": "SDK for building Mimic API mock adapters — base class, test helpers, and shared utilities",
   "type": "module",
@@ -39,7 +39,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@mimicailab/core": "workspace:*",
+    "@mimicai/core": "workspace:*",
     "@fastify/formbody": "^8.0.2",
     "fastify": "^5.7.4"
   },

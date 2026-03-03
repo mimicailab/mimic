@@ -709,6 +709,7 @@
       <a href="#adapter-list" class="sidebar-link">Adapter Catalog</a>
       <a href="#adapter-databases" class="sidebar-link">Database Adapters</a>
       <a href="#adapter-api" class="sidebar-link">API Mock Adapters</a>
+      <a href="#adapter-sdk" class="sidebar-link">Adapter SDK</a>
       <a href="#adapter-dev" class="sidebar-link">Build an Adapter</a>
     </div>
     <div class="sidebar-group">
@@ -740,6 +741,10 @@
       <a href="#example-blog-mongodb" class="sidebar-link">Blog (MongoDB)</a>
       <a href="#example-fintech-multi" class="sidebar-link">Fintech (Multi-DB)</a>
       <a href="#example-finance-assistant" class="sidebar-link">Finance Assistant</a>
+      <a href="#example-billing-agent" class="sidebar-link">Billing Agent (Stripe)</a>
+      <a href="#example-budget-agent" class="sidebar-link">Budget Agent (Plaid)</a>
+      <a href="#example-payments-monitor" class="sidebar-link">Payments Monitor</a>
+      <a href="#example-meeting-notes" class="sidebar-link">Meeting Notes (Slack)</a>
     </div>
   </aside>
 
@@ -765,14 +770,14 @@
 
       <div class="code-block">
         <div class="code-bar"><span class="code-bar-lang">bash</span></div>
-        <pre><code><span class="prompt">$</span> npm install -g @mimicailab/cli</code></pre>
+        <pre><code><span class="prompt">$</span> npm install -g @mimicai/cli</code></pre>
       </div>
 
       <p>Or run directly with <code>npx</code> — no install needed:</p>
 
       <div class="code-block">
         <div class="code-bar"><span class="code-bar-lang">bash</span></div>
-        <pre><code><span class="prompt">$</span> npx @mimicailab/cli init</code></pre>
+        <pre><code><span class="prompt">$</span> npx @mimicai/cli init</code></pre>
       </div>
 
       <p><strong>Requirements:</strong> Node.js 18+ (Node 22 recommended). No other dependencies.</p>
@@ -1462,20 +1467,38 @@
         <table class="doc-table">
           <thead><tr><th>Adapter</th><th>Package</th><th>Status</th><th>What it does</th></tr></thead>
           <tbody>
-            <tr><td>PostgreSQL</td><td><code>@mimicailab/adapter-postgres</code></td><td>Stable</td><td>Seeds tables via COPY FROM STDIN, FK-aware ordering</td></tr>
-            <tr><td>MongoDB</td><td><code>@mimicailab/adapter-mongodb</code></td><td>Stable</td><td>Seeds collections with embedded documents</td></tr>
-            <tr><td>MySQL</td><td><code>@mimicailab/adapter-mysql</code></td><td>Stable</td><td>Seeds tables with relational integrity</td></tr>
-            <tr><td>Pinecone</td><td><code>@mimicailab/adapter-pinecone</code></td><td>Stable</td><td>Seeds vector embeddings for RAG testing</td></tr>
-            <tr><td>Redis</td><td><code>@mimicailab/adapter-redis</code></td><td>Stable</td><td>Seeds key-value pairs, sorted sets, streams</td></tr>
+            <tr><td>PostgreSQL</td><td><code>@mimicai/adapter-postgres</code></td><td style="color: var(--green);">Shipped</td><td>Seeds tables via COPY FROM STDIN, FK-aware ordering</td></tr>
+            <tr><td>MongoDB</td><td><code>@mimicai/adapter-mongodb</code></td><td style="color: var(--green);">Shipped</td><td>Seeds collections with embedded documents</td></tr>
+            <tr><td>MySQL</td><td><code>@mimicai/adapter-mysql</code></td><td style="color: var(--green);">Shipped</td><td>Seeds tables with relational integrity</td></tr>
+            <tr><td>SQLite</td><td><code>@mimicai/adapter-sqlite</code></td><td style="color: var(--green);">Shipped</td><td>File-based database seeding, WAL mode support</td></tr>
+            <tr><td>Pinecone</td><td><code>@mimicai/adapter-pinecone</code></td><td>Planned</td><td>Seeds vector embeddings for RAG testing</td></tr>
+            <tr><td>Redis</td><td><code>@mimicai/adapter-redis</code></td><td>Planned</td><td>Seeds key-value pairs, sorted sets, streams</td></tr>
           </tbody>
         </table>
       </div>
 
       <h3 id="adapter-api">API Mock Adapters</h3>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Shipped in v0.2.0:</strong> Stripe, Plaid, and Slack adapters are the first three API mock adapters shipped as publishable packages with full MCP server support, dedicated test suites, and working example agents. Each includes a standalone MCP binary (<code>adapter-{name}/src/bin/mcp.ts</code>) and is built on the <code>@mimicai/adapter-sdk</code>.</p>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Adapter</th><th>Package</th><th>MCP Tools</th><th>Status</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td>17</td><td style="color: var(--green);">Shipped</td><td>Customers, payment intents, charges, refunds, subscriptions, invoices, products, prices, balance</td></tr>
+            <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td>10</td><td style="color: var(--green);">Shipped</td><td>Bank accounts, transactions, identity, auth, balance, link tokens</td></tr>
+            <tr><td><strong>Slack</strong></td><td><code>@mimicai/adapter-slack</code></td><td>12</td><td style="color: var(--green);">Shipped</td><td>Channels, messages, threads, reactions, users, search, team info</td></tr>
+          </tbody>
+        </table>
+      </div>
+
       <h4>Fintech / Payments (24 adapters)</h4>
       <div class="adapter-doc-grid">
-        <div class="adapter-doc-item"><span class="adapter-doc-name">Stripe</span><span class="adapter-doc-routes">29 routes</span></div>
-        <div class="adapter-doc-item"><span class="adapter-doc-name">Plaid</span><span class="adapter-doc-routes">15 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Stripe</span><span class="adapter-doc-routes">29 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Plaid</span><span class="adapter-doc-routes">15 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Square</span><span class="adapter-doc-routes">16 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Wise</span><span class="adapter-doc-routes">14 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Adyen</span><span class="adapter-doc-routes">12 routes</span></div>
@@ -1494,7 +1517,7 @@
 
       <h4>Communication (11 adapters)</h4>
       <div class="adapter-doc-grid">
-        <div class="adapter-doc-item"><span class="adapter-doc-name">Slack</span><span class="adapter-doc-routes">19 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Slack</span><span class="adapter-doc-routes">19 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Twilio</span><span class="adapter-doc-routes">14 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">SendGrid</span><span class="adapter-doc-routes">11 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Discord</span><span class="adapter-doc-routes">13 routes</span></div>
@@ -1553,25 +1576,65 @@
       </div>
 
       <!-- ────────────────────────────────────────── -->
+      <!-- ADAPTER SDK                                -->
+      <!-- ────────────────────────────────────────── -->
+      <h2 id="adapter-sdk">Adapter SDK</h2>
+      <p>The <code>@mimicai/adapter-sdk</code> package provides the base class and utilities for building API mock adapters. It re-exports core types and adds test helpers, format helpers, and <code>BaseApiMockAdapter</code> &mdash; an abstract class that handles the adapter lifecycle so you only implement API-specific logic.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> npm install @mimicai/adapter-sdk</code></pre>
+      </div>
+
+      <h3>Exports</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Export</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>BaseApiMockAdapter</code></td><td>Abstract class</td><td>Extend this to build adapters. Provides default <code>init</code>, <code>apply</code>, <code>clean</code>, <code>healthcheck</code>, <code>dispose</code></td></tr>
+            <tr><td><code>buildTestServer</code></td><td>Function</td><td>Spins up an in-memory Fastify instance with your adapter for unit testing</td></tr>
+            <tr><td><code>generateId</code></td><td>Function</td><td>Generate prefixed IDs matching real platform formats (e.g. <code>cus_xxx</code>, <code>pi_xxx</code>)</td></tr>
+            <tr><td><code>paginate</code></td><td>Function</td><td>Cursor-based or offset-based pagination helper</td></tr>
+            <tr><td><code>filterByDate</code></td><td>Function</td><td>Date range filtering for collections</td></tr>
+            <tr><td><code>resolvePersonaFromBearer</code></td><td>Function</td><td>Extract persona ID from <code>Authorization: Bearer</code> header</td></tr>
+            <tr><td><code>resolvePersonaFromBody</code></td><td>Function</td><td>Extract persona ID from request body</td></tr>
+            <tr><td><code>StateStore</code></td><td>Class</td><td>In-memory key-value store for mock data</td></tr>
+            <tr><td><code>unixNow</code>, <code>toDateStr</code>, <code>capitalize</code></td><td>Utilities</td><td>Formatting helpers for response generation</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Abstract methods to implement</h3>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Method</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>registerRoutes(server, data, stateStore)</code></td><td>Mount Fastify routes that handle API requests</td></tr>
+            <tr><td><code>getEndpoints()</code></td><td>Return endpoint definitions for docs and MCP auto-generation</td></tr>
+            <tr><td><code>resolvePersona(req)</code></td><td>Extract persona from request (via auth header, body, or query)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ────────────────────────────────────────── -->
       <!-- ADAPTER DEV                                -->
       <!-- ────────────────────────────────────────── -->
       <h2 id="adapter-dev">Build an Adapter</h2>
-      <p>Every adapter implements the <code>ApiMockAdapter</code> interface. Scaffold a new one with:</p>
+      <p>Every adapter extends <code>BaseApiMockAdapter</code> from the adapter SDK. Scaffold a new one with:</p>
 
       <div class="code-block">
         <div class="code-bar"><span class="code-bar-lang">bash</span></div>
         <pre><code><span class="prompt">$</span> pnpm mimic:create-adapter my-platform</code></pre>
       </div>
 
-      <h3>The Adapter Interface</h3>
+      <h3>The Adapter Base Class</h3>
       <div class="code-block">
         <div class="code-bar"><span class="code-bar-lang">typescript</span><span>src/index.ts</span></div>
-        <pre><code><span class="kw">import</span> { <span class="ty">ApiMockAdapter</span>, <span class="ty">EndpointDefinition</span> } <span class="kw">from</span> <span class="str">'@mimicailab/adapter-sdk'</span>;
+        <pre><code><span class="kw">import</span> { <span class="ty">BaseApiMockAdapter</span>, <span class="ty">EndpointDefinition</span> } <span class="kw">from</span> <span class="str">'@mimicai/adapter-sdk'</span>;
 
-<span class="kw">export class</span> <span class="ty">MyPlatformAdapter</span> <span class="kw">implements</span> <span class="ty">ApiMockAdapter</span> {
+<span class="kw">export class</span> <span class="ty">MyPlatformAdapter</span> <span class="kw">extends</span> <span class="ty">BaseApiMockAdapter</span> {
   <span class="kw">readonly</span> id <span class="op">=</span> <span class="str">'my-platform'</span>;
   <span class="kw">readonly</span> name <span class="op">=</span> <span class="str">'My Platform API'</span>;
-  <span class="kw">readonly</span> type <span class="op">=</span> <span class="str">'api-mock'</span>;
   <span class="kw">readonly</span> basePath <span class="op">=</span> <span class="str">'/my-platform'</span>;
 
   <span class="cm">// Extract persona ID from auth header</span>
@@ -1629,10 +1692,10 @@
       <h3>With Claude Code</h3>
       <div class="code-block">
         <div class="code-bar"><span class="code-bar-lang">bash</span></div>
-        <pre><code><span class="prompt">$</span> claude mcp add mimic-jira -- npx -y @mimicailab/mcp-jira
+        <pre><code><span class="prompt">$</span> claude mcp add mimic-jira -- npx -y @mimicai/mcp-jira
 
 <span class="cm"># With custom URL</span>
-<span class="prompt">$</span> claude mcp add <span class="flag">--env MIMIC_BASE_URL=http://localhost:4000</span> mimic-jira -- npx -y @mimicailab/mcp-jira</code></pre>
+<span class="prompt">$</span> claude mcp add <span class="flag">--env MIMIC_BASE_URL=http://localhost:4000</span> mimic-jira -- npx -y @mimicai/mcp-jira</code></pre>
       </div>
 
       <h3>With Cursor / VS Code</h3>
@@ -1642,12 +1705,12 @@
   <span class="yk">"mcpServers"</span>: {
     <span class="yk">"mimic-jira"</span>: {
       <span class="yk">"command"</span>: <span class="str">"npx"</span>,
-      <span class="yk">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@mimicailab/mcp-jira"</span>],
+      <span class="yk">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@mimicai/mcp-jira"</span>],
       <span class="yk">"env"</span>: { <span class="yk">"MIMIC_BASE_URL"</span>: <span class="str">"http://localhost:4000"</span> }
     },
     <span class="yk">"mimic-slack"</span>: {
       <span class="yk">"command"</span>: <span class="str">"npx"</span>,
-      <span class="yk">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@mimicailab/mcp-slack"</span>],
+      <span class="yk">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"@mimicai/mcp-slack"</span>],
       <span class="yk">"env"</span>: { <span class="yk">"MIMIC_BASE_URL"</span>: <span class="str">"http://localhost:4000"</span> }
     }
   }
@@ -1673,12 +1736,12 @@
         <table class="doc-table">
           <thead><tr><th>Platform</th><th>Official MCP</th><th>Mimic MCP</th><th>Parity</th></tr></thead>
           <tbody>
-            <tr><td>Jira</td><td>Atlassian MCP</td><td><code>@mimicailab/mcp-jira</code></td><td style="color: var(--green);">Matched</td></tr>
-            <tr><td>Slack</td><td>Claude.ai connector</td><td><code>@mimicailab/mcp-slack</code></td><td style="color: var(--green);">Matched</td></tr>
-            <tr><td>Asana</td><td>mcp.asana.com/sse</td><td><code>@mimicailab/mcp-asana</code></td><td style="color: var(--green);">Matched</td></tr>
-            <tr><td>HubSpot</td><td>mcp.hubspot.com</td><td><code>@mimicailab/mcp-hubspot</code></td><td style="color: var(--green);">Matched</td></tr>
-            <tr><td>GitHub</td><td>@mcp/server-github</td><td><code>@mimicailab/mcp-github</code></td><td style="color: var(--green);">Matched</td></tr>
-            <tr><td>GitLab</td><td>Official GitLab MCP</td><td><code>@mimicailab/mcp-gitlab</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>Jira</td><td>Atlassian MCP</td><td><code>@mimicai/mcp-jira</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>Slack</td><td>Claude.ai connector</td><td><code>@mimicai/mcp-slack</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>Asana</td><td>mcp.asana.com/sse</td><td><code>@mimicai/mcp-asana</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>HubSpot</td><td>mcp.hubspot.com</td><td><code>@mimicai/mcp-hubspot</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>GitHub</td><td>@mcp/server-github</td><td><code>@mimicai/mcp-github</code></td><td style="color: var(--green);">Matched</td></tr>
+            <tr><td>GitLab</td><td>Official GitLab MCP</td><td><code>@mimicai/mcp-gitlab</code></td><td style="color: var(--green);">Matched</td></tr>
           </tbody>
         </table>
       </div>
@@ -1686,25 +1749,25 @@
       <h2 id="mcp-catalog">MCP Server Catalog</h2>
       <div class="doc-table-wrap">
         <table class="doc-table">
-          <thead><tr><th>Package</th><th>Tools</th><th>Primary Tools</th></tr></thead>
+          <thead><tr><th>Package</th><th>Tools</th><th>Status</th><th>Primary Tools</th></tr></thead>
           <tbody>
-            <tr><td><code>@mimicailab/mcp-stripe</code></td><td>12</td><td>create_payment_intent, list_charges, create_customer</td></tr>
-            <tr><td><code>@mimicailab/mcp-plaid</code></td><td>10</td><td>create_link_token, get_accounts, get_transactions</td></tr>
-            <tr><td><code>@mimicailab/mcp-slack</code></td><td>10</td><td>post_message, list_channels, search_messages</td></tr>
-            <tr><td><code>@mimicailab/mcp-jira</code></td><td>10</td><td>create_issue, search_jql, transition_issue</td></tr>
-            <tr><td><code>@mimicailab/mcp-salesforce</code></td><td>10</td><td>query_soql, create_record, update_record</td></tr>
-            <tr><td><code>@mimicailab/mcp-hubspot</code></td><td>10</td><td>search_contacts, create_deal, list_companies</td></tr>
-            <tr><td><code>@mimicailab/mcp-notion</code></td><td>10</td><td>query_database, create_page, search</td></tr>
-            <tr><td><code>@mimicailab/mcp-zendesk</code></td><td>8</td><td>create_ticket, update_ticket, search_tickets</td></tr>
-            <tr><td><code>@mimicailab/mcp-linear</code></td><td>8</td><td>create_issue, update_issue, list_issues</td></tr>
-            <tr><td><code>@mimicailab/mcp-asana</code></td><td>8</td><td>list_tasks, create_task, update_task</td></tr>
-            <tr><td><code>@mimicailab/mcp-pagerduty</code></td><td>8</td><td>create_incident, acknowledge, resolve</td></tr>
-            <tr><td><code>@mimicailab/mcp-trello</code></td><td>8</td><td>list_cards, create_card, move_card</td></tr>
-            <tr><td><code>@mimicailab/mcp-twilio</code></td><td>8</td><td>send_sms, make_call, list_messages</td></tr>
-            <tr><td><code>@mimicailab/mcp-sendgrid</code></td><td>6</td><td>send_email, list_contacts, get_stats</td></tr>
-            <tr><td><code>@mimicailab/mcp-airtable</code></td><td>6</td><td>list_records, create_records, update_records</td></tr>
-            <tr><td><code>@mimicailab/mcp-pipedrive</code></td><td>8</td><td>list_deals, create_person, search</td></tr>
-            <tr><td><code>@mimicailab/mcp-square</code></td><td>8</td><td>create_payment, list_orders, create_customer</td></tr>
+            <tr><td><code>@mimicai/mcp-stripe</code></td><td>17</td><td style="color: var(--green);">Shipped</td><td>create_customer, create_payment_intent, list_subscriptions, create_refund</td></tr>
+            <tr><td><code>@mimicai/mcp-plaid</code></td><td>10</td><td style="color: var(--green);">Shipped</td><td>create_link_token, get_accounts, get_transactions</td></tr>
+            <tr><td><code>@mimicai/mcp-slack</code></td><td>12</td><td style="color: var(--green);">Shipped</td><td>slack_post_message, slack_list_channels, slack_search_messages</td></tr>
+            <tr><td><code>@mimicai/mcp-jira</code></td><td>10</td><td>Planned</td><td>create_issue, search_jql, transition_issue</td></tr>
+            <tr><td><code>@mimicai/mcp-salesforce</code></td><td>10</td><td>query_soql, create_record, update_record</td></tr>
+            <tr><td><code>@mimicai/mcp-hubspot</code></td><td>10</td><td>search_contacts, create_deal, list_companies</td></tr>
+            <tr><td><code>@mimicai/mcp-notion</code></td><td>10</td><td>query_database, create_page, search</td></tr>
+            <tr><td><code>@mimicai/mcp-zendesk</code></td><td>8</td><td>create_ticket, update_ticket, search_tickets</td></tr>
+            <tr><td><code>@mimicai/mcp-linear</code></td><td>8</td><td>create_issue, update_issue, list_issues</td></tr>
+            <tr><td><code>@mimicai/mcp-asana</code></td><td>8</td><td>list_tasks, create_task, update_task</td></tr>
+            <tr><td><code>@mimicai/mcp-pagerduty</code></td><td>8</td><td>create_incident, acknowledge, resolve</td></tr>
+            <tr><td><code>@mimicai/mcp-trello</code></td><td>8</td><td>list_cards, create_card, move_card</td></tr>
+            <tr><td><code>@mimicai/mcp-twilio</code></td><td>8</td><td>send_sms, make_call, list_messages</td></tr>
+            <tr><td><code>@mimicai/mcp-sendgrid</code></td><td>6</td><td>send_email, list_contacts, get_stats</td></tr>
+            <tr><td><code>@mimicai/mcp-airtable</code></td><td>6</td><td>list_records, create_records, update_records</td></tr>
+            <tr><td><code>@mimicai/mcp-pipedrive</code></td><td>8</td><td>list_deals, create_person, search</td></tr>
+            <tr><td><code>@mimicai/mcp-square</code></td><td>8</td><td>create_payment, list_orders, create_customer</td></tr>
           </tbody>
         </table>
       </div>
@@ -1824,7 +1887,7 @@ Mock Server
         <div class="code-bar"><span class="code-bar-lang">text</span></div>
         <pre><code>Agent calls MCP tool: search_jql({ jql: "project = MIM" })
 
-MCP Server (@mimicailab/mcp-jira)
+MCP Server (@mimicai/mcp-jira)
   ├─ Validate params with Zod schema
   ├─ Translate to HTTP:
   │   POST http://localhost:4000/jira/rest/api/3/search
@@ -1851,22 +1914,27 @@ MCP Server (@mimicailab/mcp-jira)
       <h2 id="arch-packages">Package Dependency Graph</h2>
       <div class="code-block">
         <div class="code-bar"><span class="code-bar-lang">text</span></div>
-        <pre><code>@mimicailab/cli
-  ├── @mimicailab/mock-server
-  │     ├── @mimicailab/adapter-sdk
-  │     ├── @mimicailab/adapter-stripe
-  │     ├── @mimicailab/adapter-jira
-  │     └── ... (all adapters)
-  ├── @mimicailab/blueprints
-  └── @mimicailab/core (Pro - optional)
-        ├── blueprint-engine
-        ├── consistency
-        └── test-advanced
+        <pre><code>@mimicai/cli
+  ├── @mimicai/core
+  │     ├── adapter system, state store, mock server
+  │     ├── blueprint engine, consistency, test runner
+  │     └── schema parsing (prisma-ast, pgsql-parser)
+  ├── @mimicai/adapter-sdk
+  │     └── BaseApiMockAdapter, test helpers, format helpers
+  ├── @mimicai/adapter-postgres    (shipped)
+  ├── @mimicai/adapter-mongodb     (shipped)
+  ├── @mimicai/adapter-mysql       (shipped)
+  ├── @mimicai/adapter-sqlite      (shipped)
+  ├── @mimicai/adapter-stripe      (shipped, + MCP)
+  ├── @mimicai/adapter-plaid       (shipped, + MCP)
+  ├── @mimicai/adapter-slack       (shipped, + MCP)
+  └── @mimicai/blueprints
+        └── pre-built personas (JSON)
 
-@mimicailab/mcp-jira (standalone)
+@mimicai/mcp-stripe (standalone binary)
   └── @modelcontextprotocol/sdk
 
-@mimicailab/adapter-sdk (standalone)
+@mimicai/adapter-sdk (standalone)
   └── zod, fastify (peer deps)</code></pre>
       </div>
 
@@ -1895,9 +1963,9 @@ MCP Server (@mimicailab/mcp-jira)
         <pre><code><span class="prompt">$</span> mimic host <span class="flag">--adapters jira,slack,zendesk</span> &amp;
 
 <span class="cm"># In your Claude/Cursor MCP config, add:</span>
-<span class="cm">#   "mimic-jira":    npx -y @mimicailab/mcp-jira</span>
-<span class="cm">#   "mimic-slack":   npx -y @mimicailab/mcp-slack</span>
-<span class="cm">#   "mimic-zendesk": npx -y @mimicailab/mcp-zendesk</span>
+<span class="cm">#   "mimic-jira":    npx -y @mimicai/mcp-jira</span>
+<span class="cm">#   "mimic-slack":   npx -y @mimicai/mcp-slack</span>
+<span class="cm">#   "mimic-zendesk": npx -y @mimicai/mcp-zendesk</span>
 
 <span class="cm"># Agent now has realistic tickets, messages, and support data</span></code></pre>
       </div>
@@ -1919,8 +1987,8 @@ MCP Server (@mimicailab/mcp-jira)
 
       - <span class="yk">name:</span> <span class="ys">Start Mimic</span>
         <span class="yk">run:</span> |
-          npx @mimicailab/cli seed --persona finance-alex
-          npx @mimicailab/cli host --background
+          npx @mimicai/cli seed --persona finance-alex
+          npx @mimicai/cli host --background
 
       - <span class="yk">name:</span> <span class="ys">Run agent tests</span>
         <span class="yk">run:</span> <span class="ys">npm test</span>
@@ -1929,7 +1997,7 @@ MCP Server (@mimicailab/mcp-jira)
           <span class="yk">STRIPE_API_BASE:</span> <span class="ys">http://localhost:4000/stripe/v1</span>
 
       - <span class="yk">name:</span> <span class="ys">Cleanup</span>
-        <span class="yk">run:</span> <span class="ys">npx @mimicailab/cli clean</span></code></pre>
+        <span class="yk">run:</span> <span class="ys">npx @mimicai/cli clean</span></code></pre>
       </div>
 
       <div class="callout info">
@@ -1949,7 +2017,7 @@ MCP Server (@mimicailab/mcp-jira)
         Clone, seed, and chat &mdash; each example works end-to-end out of the box.
       </p>
 
-      <p>Mimic ships with five working examples that demonstrate different database backends, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
+      <p>Mimic ships with nine working examples that demonstrate different database backends, API mock adapters, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
       <ol>
         <li><strong>Define personas</strong> in <code>mimic.json</code> &mdash; describe who generates the data</li>
         <li><strong>Provide a schema</strong> &mdash; SQL DDL, Prisma schema, or nothing at all (MongoDB auto-discovers)</li>
@@ -1959,13 +2027,17 @@ MCP Server (@mimicailab/mcp-jira)
 
       <div class="doc-table-wrap">
         <table class="doc-table">
-          <thead><tr><th>Example</th><th>Database</th><th>Domain</th><th>Agent SDK</th><th>Key Feature</th></tr></thead>
+          <thead><tr><th>Example</th><th>Database</th><th>API Adapter</th><th>Domain</th><th>Agent SDK</th><th>Key Feature</th></tr></thead>
           <tbody>
-            <tr><td><code>tasks-sqlite</code></td><td>SQLite</td><td>Task management</td><td>Vercel AI SDK</td><td>Zero-infrastructure &mdash; no Docker required</td></tr>
-            <tr><td><code>ecommerce-mysql</code></td><td>MySQL</td><td>E-commerce storefront</td><td>Vercel AI SDK</td><td>Relational schema with FKs, categories, orders</td></tr>
-            <tr><td><code>blog-mongodb</code></td><td>MongoDB</td><td>Technical blog</td><td>Vercel AI SDK</td><td>Schema-free &mdash; no DDL files needed</td></tr>
-            <tr><td><code>fintech-multi-db</code></td><td>PostgreSQL + MongoDB</td><td>Personal finance</td><td>OpenAI Agents SDK</td><td>Multi-database seeding + MCP tools</td></tr>
-            <tr><td><code>finance-assistant</code></td><td>PostgreSQL (Prisma)</td><td>Personal finance</td><td>Vercel AI SDK</td><td>Prisma schema + <code>mimic test</code> scenarios</td></tr>
+            <tr><td><code>tasks-sqlite</code></td><td>SQLite</td><td>&mdash;</td><td>Task management</td><td>Vercel AI SDK</td><td>Zero-infrastructure &mdash; no Docker required</td></tr>
+            <tr><td><code>ecommerce-mysql</code></td><td>MySQL</td><td>&mdash;</td><td>E-commerce storefront</td><td>Vercel AI SDK</td><td>Relational schema with FKs, categories, orders</td></tr>
+            <tr><td><code>blog-mongodb</code></td><td>MongoDB</td><td>&mdash;</td><td>Technical blog</td><td>Vercel AI SDK</td><td>Schema-free &mdash; no DDL files needed</td></tr>
+            <tr><td><code>fintech-multi-db</code></td><td>PostgreSQL + MongoDB</td><td>&mdash;</td><td>Personal finance</td><td>OpenAI Agents SDK</td><td>Multi-database seeding + MCP tools</td></tr>
+            <tr><td><code>finance-assistant</code></td><td>PostgreSQL (Prisma)</td><td>&mdash;</td><td>Personal finance</td><td>Vercel AI SDK</td><td>Prisma schema + <code>mimic test</code> scenarios</td></tr>
+            <tr><td><code>billing-agent</code></td><td>PostgreSQL (Prisma)</td><td>Stripe</td><td>SaaS billing</td><td>OpenAI Agents SDK</td><td>Stripe MCP + HTTP dual-mode, cross-surface data</td></tr>
+            <tr><td><code>budget-agent</code></td><td>PostgreSQL (Prisma)</td><td>Plaid</td><td>Personal budgeting</td><td>OpenAI Agents SDK</td><td>Plaid bank accounts + budgets + savings goals</td></tr>
+            <tr><td><code>payments-monitor</code></td><td>PostgreSQL (Prisma)</td><td>Stripe</td><td>Payment operations</td><td>OpenAI Agents SDK</td><td>Revenue metrics, failure analysis, dunning</td></tr>
+            <tr><td><code>meeting-notes</code></td><td>PostgreSQL (Prisma)</td><td>Slack</td><td>Team meetings</td><td>OpenAI Agents SDK</td><td>Meeting summaries posted to Slack channels</td></tr>
           </tbody>
         </table>
       </div>
@@ -2408,6 +2480,324 @@ MCP Server (@mimicailab/mcp-jira)
       <div class="callout tip">
         <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
         <p><strong>Prisma + testing:</strong> This example shows the full Mimic workflow: Prisma schema &rarr; persona-driven data generation &rarr; seeding &rarr; agent testing with <code>mimic test</code>. Use it as a template when you want to add evaluation to your agent development cycle.</p>
+      </div>
+
+      <!-- ─── BILLING AGENT ─────────────────────── -->
+      <h3 id="example-billing-agent">Billing Agent &mdash; PostgreSQL + Stripe</h3>
+      <p>A SaaS billing and subscription management agent that combines <strong>PostgreSQL</strong> (customer records, subscriptions, invoices, payments) with the <strong>Stripe API mock adapter</strong>. Demonstrates Mimic's cross-surface data consistency &mdash; the same customers appear in both the database and Stripe with matching IDs.</p>
+      <p><strong>Personas:</strong> A <strong>growth-startup</strong> (50 customers across 3 tiers, mix of monthly/annual subscriptions, some past-due invoices, increasing MRR) and an <strong>established-saas</strong> (200+ customers, low churn, mostly enterprise annual contracts, clean billing history).</p>
+
+      <h4>Architecture</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">text</span><span>dual-surface architecture</span></div>
+        <pre><code>                    +-------------------------+
+                    |   Billing Agent (:3010)  |
+                    |   OpenAI Agents SDK      |
+                    |   + Claude Haiku         |
+                    +-----------+-------------+
+                                |
+                   +------------+------------+
+                   |                         |
+             MCP (stdio)              MCP or HTTP
+                   |                         |
+          +--------+--------+     +----------+----------+
+          |   PostgreSQL    |     |   Stripe Mock API   |
+          |  (via Mimic)    |     |   (Mimic adapter)   |
+          |                 |     |                     |
+          |  customers      |     |  /v1/customers      |
+          |  subscriptions  |     |  /v1/charges        |
+          |  invoices       |     |  /v1/subscriptions  |
+          |  payments       |     |  /v1/invoices       |
+          +-----------------+     +---------------------+</code></pre>
+      </div>
+
+      <p><strong>Dual Stripe mode:</strong> The agent supports two approaches for interacting with Stripe &mdash; set <code>USE_HTTP_STRIPE=true</code> for direct HTTP tool calls, or leave it unset (default) to use the Stripe MCP server. Both approaches connect to the same Mimic mock adapter.</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/billing-agent/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"SaaS billing and subscription management platform"</span>,
+  <span class="yk">"personas"</span>: [
+    { <span class="yk">"name"</span>: <span class="str">"growth-startup"</span>, <span class="yk">"description"</span>: <span class="str">"50 customers across 3 pricing tiers, mix of monthly/annual, some past-due invoices"</span> },
+    { <span class="yk">"name"</span>: <span class="str">"established-saas"</span>, <span class="yk">"description"</span>: <span class="str">"200+ customers, low churn, mostly enterprise annual contracts"</span> }
+  ],
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"postgres"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+      <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"prisma"</span>, <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span> }
+    }
+  },
+  <span class="yk">"apis"</span>: { <span class="yk">"stripe"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> } }
+}</code></pre>
+      </div>
+
+      <h4>Schema highlights</h4>
+      <p>Four tables with Stripe ID cross-references: <code>customers</code> (with <code>stripe_customer_id</code>), <code>subscriptions</code> (with <code>stripe_subscription_id</code>), <code>invoices</code> (with <code>stripe_invoice_id</code>), and <code>payments</code> (with <code>stripe_payment_id</code>). This enables the agent to correlate database records with Stripe API objects.</p>
+
+      <h4>Agent tools</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>Tool</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_customers</code></td><td>Query customers by name, email, plan, or status</td></tr>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_subscriptions</code></td><td>List subscriptions with status and billing info</td></tr>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_invoices</code></td><td>Invoice history with payment status</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (MCP/HTTP)</td><td><code>stripe_create_charge</code></td><td>Create a charge against a Stripe customer</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (MCP/HTTP)</td><td><code>stripe_create_refund</code></td><td>Issue full or partial refund on a charge</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (MCP/HTTP)</td><td><code>stripe_list_subscriptions</code></td><td>List subscriptions via Stripe API</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (MCP/HTTP)</td><td><code>stripe_get_balance</code></td><td>Retrieve account balance</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (MCP/HTTP)</td><td><code>stripe_list_invoices</code></td><td>List invoices via Stripe API</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/billing-agent
+<span class="prompt">$</span> docker compose up -d               <span class="cm"># Start PostgreSQL</span>
+<span class="prompt">$</span> export DATABASE_URL=<span class="str">"postgresql://mimic:mimic@localhost:5433/mimic_billing"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose   <span class="cm"># Seed database + Stripe mock</span>
+<span class="prompt">$</span> mimic host --background             <span class="cm"># Start Stripe mock API</span>
+
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="cm"># Query billing data</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3010/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Show customers with past-due invoices"}'</span> | jq .
+
+<span class="cm"># Issue a refund via Stripe</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3010/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Refund the last charge for customer cus_001"}'</span> | jq .</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Cross-surface consistency:</strong> Customers in PostgreSQL have matching <code>stripe_customer_id</code> values. The agent queries the database for customer info, then uses the Stripe ID to perform payment operations &mdash; exactly how a real billing agent works.</p>
+      </div>
+
+      <!-- ─── BUDGET AGENT ──────────────────────── -->
+      <h3 id="example-budget-agent">Budget Agent &mdash; PostgreSQL + Plaid</h3>
+      <p>A personal budgeting assistant that combines <strong>PostgreSQL</strong> (budgets, savings goals) with the <strong>Plaid API mock adapter</strong> (linked bank accounts, transactions). Demonstrates how to build agents that bridge internal application data with external financial APIs.</p>
+      <p><strong>Personas:</strong> A <strong>budget-conscious</strong> professional (tracks every dollar, strict monthly budgets, some overspending patterns) and a <strong>high-earner</strong> engineer (multiple accounts including investment, loose budgets, focused on savings rate).</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/budget-agent/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"Personal finance and budgeting app"</span>,
+  <span class="yk">"personas"</span>: [
+    { <span class="yk">"name"</span>: <span class="str">"budget-conscious"</span>, <span class="yk">"description"</span>: <span class="str">"Young professional tracking every dollar, strict monthly budgets"</span> },
+    { <span class="yk">"name"</span>: <span class="str">"high-earner"</span>, <span class="yk">"description"</span>: <span class="str">"Senior engineer, multiple accounts, focused on savings rate"</span> }
+  ],
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"postgres"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+      <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"prisma"</span>, <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span> }
+    }
+  },
+  <span class="yk">"apis"</span>: { <span class="yk">"plaid"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> } }
+}</code></pre>
+      </div>
+
+      <h4>Schema highlights</h4>
+      <p>Four tables covering the budgeting domain: <code>accounts</code> (with <code>plaid_account_id</code> cross-reference), <code>transactions</code> (with <code>plaid_txn_id</code>), <code>budgets</code> (per-category monthly limits with unique constraint on category+month), and <code>savings_goals</code> (target amounts with progress tracking).</p>
+
+      <h4>Agent tools</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>Tool</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_budgets</code></td><td>Query budget status per category and month</td></tr>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_savings_goals</code></td><td>Check savings goal progress</td></tr>
+            <tr><td style="color: var(--cyan);">MCP (Postgres)</td><td><code>get_transactions</code></td><td>Stored transaction history from database</td></tr>
+            <tr><td style="color: var(--green);">Plaid (MCP/HTTP)</td><td><code>get_plaid_accounts</code></td><td>Fetch linked bank accounts and balances</td></tr>
+            <tr><td style="color: var(--green);">Plaid (MCP/HTTP)</td><td><code>get_plaid_transactions</code></td><td>Fetch recent transactions with date filters</td></tr>
+            <tr><td style="color: var(--green);">Plaid (MCP/HTTP)</td><td><code>get_plaid_balance</code></td><td>Real-time balance for a specific account</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/budget-agent
+<span class="prompt">$</span> docker compose up -d               <span class="cm"># Start PostgreSQL</span>
+<span class="prompt">$</span> export DATABASE_URL=<span class="str">"postgresql://mimic:mimic@localhost:5434/mimic_budget"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose   <span class="cm"># Seed database + Plaid mock</span>
+<span class="prompt">$</span> mimic host --background             <span class="cm"># Start Plaid mock API</span>
+
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="prompt">$</span> curl -s -X POST http://localhost:3011/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Am I over budget on dining this month?"}'</span> | jq .
+
+<span class="prompt">$</span> curl -s -X POST http://localhost:3011/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "How is my emergency fund savings goal going?"}'</span> | jq .</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <p><strong>Plaid integration:</strong> Accounts have matching <code>plaid_account_id</code> values, so the agent can correlate Plaid bank data with internal budget tracking. Ask about spending patterns, and the agent fetches live transactions from Plaid while checking budgets from PostgreSQL.</p>
+      </div>
+
+      <!-- ─── PAYMENTS MONITOR ──────────────────── -->
+      <h3 id="example-payments-monitor">Payments Monitor &mdash; PostgreSQL + Stripe</h3>
+      <p>A payment operations monitoring agent for SaaS platforms. Combines <strong>PostgreSQL</strong> (payment metrics, charges, subscriptions, daily aggregates) with the <strong>Stripe API</strong> (live payment operations). Built for ops teams who need to monitor payment health, investigate failures, and take action on at-risk subscriptions.</p>
+      <p><strong>Personas:</strong> A <strong>healthy-business</strong> (95% payment success rate, &lt;2% churn, steady MRR growth, 500 active subscriptions) and a <strong>struggling-business</strong> (15% failure rate, 8% churn, rising refunds, needs dunning and recovery workflows).</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/payments-monitor/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"Payment operations dashboard for a SaaS platform"</span>,
+  <span class="yk">"personas"</span>: [
+    { <span class="yk">"name"</span>: <span class="str">"healthy-business"</span>, <span class="yk">"description"</span>: <span class="str">"95% success rate, <2% churn, 500 subscriptions"</span> },
+    { <span class="yk">"name"</span>: <span class="str">"struggling-business"</span>, <span class="yk">"description"</span>: <span class="str">"15% failure rate, 8% churn, needs dunning workflows"</span> }
+  ],
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"postgres"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+      <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"prisma"</span>, <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span> }
+    }
+  },
+  <span class="yk">"apis"</span>: { <span class="yk">"stripe"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> } }
+}</code></pre>
+      </div>
+
+      <h4>Schema highlights</h4>
+      <p>Five tables for payment operations: <code>customers</code> (with <code>stripe_id</code>), <code>charges</code> (with failure codes like <code>card_declined</code>, <code>expired_card</code>, <code>insufficient_funds</code>), <code>subscriptions</code> (with cancel reasons), <code>payment_events</code> (webhook-style event log), and <code>daily_metrics</code> (pre-aggregated success rates, revenue, churn by day).</p>
+
+      <h4>Agent tools</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>Tool</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_payment_success_rate</code></td><td>Success rate for a date or range from daily_metrics</td></tr>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_failed_charges</code></td><td>List failed charges with failure reasons and customer info</td></tr>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_mrr_and_churn</code></td><td>Current MRR, churn rate, and churned subscriptions</td></tr>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_at_risk_subscriptions</code></td><td>Past-due or unpaid subscriptions needing outreach</td></tr>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_revenue_timeline</code></td><td>Daily revenue and charge metrics for trend analysis</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (HTTP)</td><td><code>retry_failed_payment</code></td><td>Retry a failed charge via Stripe API</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (HTTP)</td><td><code>issue_refund</code></td><td>Issue full or partial refund</td></tr>
+            <tr><td style="color: var(--amber);">Stripe (HTTP)</td><td><code>get_stripe_balance</code></td><td>Check current Stripe account balance</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/payments-monitor
+<span class="prompt">$</span> docker compose up -d               <span class="cm"># Start PostgreSQL</span>
+<span class="prompt">$</span> export DATABASE_URL=<span class="str">"postgresql://mimic:mimic@localhost:5435/mimic_payments"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose
+
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="cm"># Monitor payment health</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3012/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What is the payment success rate this week?"}'</span> | jq .
+
+<span class="cm"># Investigate failures</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3012/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Show me the most common failure reasons and which customers are affected"}'</span> | jq .
+
+<span class="cm"># Check churn</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3012/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What is our MRR and churn rate?"}'</span> | jq .</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <p><strong>Persona contrast:</strong> Switch between the <code>healthy-business</code> and <code>struggling-business</code> personas to see radically different payment data. The healthy business shows clean metrics; the struggling one surfaces failure patterns, at-risk subscriptions, and churn spikes &mdash; perfect for testing monitoring and alerting agents.</p>
+      </div>
+
+      <!-- ─── MEETING NOTES ─────────────────────── -->
+      <h3 id="example-meeting-notes">Meeting Notes &mdash; PostgreSQL + Slack</h3>
+      <p>A team meeting management agent that combines <strong>PostgreSQL</strong> (meetings, action items, decisions, team members) with the <strong>Slack API mock adapter</strong> (posting summaries, searching messages, listing channels). Demonstrates how agents can bridge internal data with communication platforms.</p>
+      <p><strong>Personas:</strong> An <strong>engineering-team</strong> (10-person team with daily standups, weekly sprint planning, bi-weekly retros, active Slack workspace) and a <strong>cross-functional</strong> team (product/engineering/design with weekly syncs, monthly all-hands, design reviews).</p>
+
+      <h4>Config</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/meeting-notes/mimic.json</span></div>
+        <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"Team meeting management and note-taking platform"</span>,
+  <span class="yk">"personas"</span>: [
+    { <span class="yk">"name"</span>: <span class="str">"engineering-team"</span>, <span class="yk">"description"</span>: <span class="str">"10-person team, daily standups, sprint planning, retros"</span> },
+    { <span class="yk">"name"</span>: <span class="str">"cross-functional"</span>, <span class="yk">"description"</span>: <span class="str">"Product/eng/design team, weekly syncs, monthly all-hands"</span> }
+  ],
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: {
+      <span class="yk">"type"</span>: <span class="str">"postgres"</span>,
+      <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>,
+      <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"prisma"</span>, <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span> }
+    }
+  },
+  <span class="yk">"apis"</span>: { <span class="yk">"slack"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> } }
+}</code></pre>
+      </div>
+
+      <h4>Schema highlights</h4>
+      <p>Five tables capturing the meeting domain: <code>meetings</code> (with type enum: standup, sprint-planning, retro, sync, all-hands, design-review; includes <code>slack_channel</code> and <code>slack_thread_ts</code> for cross-referencing), <code>team_members</code> (with <code>slack_user_id</code>), <code>meeting_participants</code> (attendance tracking), <code>action_items</code> (with status lifecycle), and <code>decisions</code> (with context and attribution).</p>
+
+      <h4>Agent tools</h4>
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Source</th><th>Tool</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_recent_meetings</code></td><td>List meetings with participant/action item counts</td></tr>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>search_action_items</code></td><td>Search by status, assignee, or keyword</td></tr>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_meeting_decisions</code></td><td>Decisions with context and attribution</td></tr>
+            <tr><td style="color: var(--cyan);">Direct (Postgres)</td><td><code>get_team_members</code></td><td>Team info with attendance stats and open items</td></tr>
+            <tr><td style="color: var(--pink);">Slack (HTTP)</td><td><code>list_slack_channels</code></td><td>Available channels for posting summaries</td></tr>
+            <tr><td style="color: var(--pink);">Slack (HTTP)</td><td><code>post_meeting_summary</code></td><td>Compose and post formatted summary to a channel</td></tr>
+            <tr><td style="color: var(--pink);">Slack (HTTP)</td><td><code>search_slack</code></td><td>Search messages for prior discussions</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Quick start</h4>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> cd examples/meeting-notes
+<span class="prompt">$</span> docker compose up -d               <span class="cm"># Start PostgreSQL</span>
+<span class="prompt">$</span> export DATABASE_URL=<span class="str">"postgresql://mimic:mimic@localhost:5436/mimic_meetings"</span>
+<span class="prompt">$</span> mimic run && mimic seed --verbose
+<span class="prompt">$</span> mimic host --background             <span class="cm"># Start Slack mock API</span>
+
+<span class="prompt">$</span> cd agent && npm install && npm start
+
+<span class="cm"># Review meetings</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3013/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What were the key decisions from last sprint planning?"}'</span> | jq .
+
+<span class="cm"># Track action items</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3013/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Show all open action items assigned to engineers"}'</span> | jq .
+
+<span class="cm"># Post to Slack</span>
+<span class="prompt">$</span> curl -s -X POST http://localhost:3013/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Post the summary of meeting #5 to the #engineering channel"}'</span> | jq .</code></pre>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <p><strong>Slack integration:</strong> Meeting records in PostgreSQL have <code>slack_channel</code> and <code>slack_thread_ts</code> fields that update when summaries are posted. Team members have <code>slack_user_id</code> for mention support. The agent composes rich Slack Block Kit messages with headers, action items, and decisions.</p>
       </div>
 
       <!-- ────────────────────────────────────────── -->

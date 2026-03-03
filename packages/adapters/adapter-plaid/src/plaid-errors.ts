@@ -1,4 +1,4 @@
-import { generateId } from '@mimicailab/adapter-sdk';
+import { generateId } from '@mimicai/adapter-sdk';
 
 export function plaidError(code: string) {
   return {

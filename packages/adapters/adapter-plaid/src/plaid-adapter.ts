@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { EndpointDefinition, ExpandedData, AdapterContext } from '@mimicailab/core';
-import type { StateStore } from '@mimicailab/core';
+import type { EndpointDefinition, ExpandedData, AdapterContext } from '@mimicai/core';
+import type { StateStore } from '@mimicai/core';
 import {
   BaseApiMockAdapter,
   generateId,
   filterByDate,
   unixNow,
-} from '@mimicailab/adapter-sdk';
+} from '@mimicai/adapter-sdk';
 import { PlaidConfigSchema, type PlaidConfig } from './config.js';
 import { plaidError } from './plaid-errors.js';
 import { formatPlaidAccount, formatPlaidTransaction } from './formatters.js';

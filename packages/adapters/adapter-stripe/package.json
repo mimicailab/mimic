@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/adapter-stripe",
+  "name": "@mimicai/adapter-stripe",
   "version": "0.3.0",
   "description": "Stripe API mock adapter for Mimic — payments, billing, subscriptions, invoices",
   "type": "module",
@@ -42,8 +42,8 @@
     "mimic-mcp-stripe": "./dist/bin/mcp.js"
   },
   "dependencies": {
-    "@mimicailab/adapter-sdk": "workspace:*",
-    "@mimicailab/core": "workspace:*",
+    "@mimicai/adapter-sdk": "workspace:*",
+    "@mimicai/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.11.0",
     "fastify": "^5.7.4",
     "zod": "^3.24.2"

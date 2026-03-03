@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MongoSeeder } from '../mongo-seeder.js';
-import type { ExpandedData, AdapterContext, MimicConfig } from '@mimicailab/core';
+import type { ExpandedData, AdapterContext, MimicConfig } from '@mimicai/core';
 
 // ---------------------------------------------------------------------------
 // Mock mongodb driver

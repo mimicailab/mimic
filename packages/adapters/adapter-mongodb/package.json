@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/adapter-mongodb",
+  "name": "@mimicai/adapter-mongodb",
   "version": "0.3.0",
   "description": "MongoDB database adapter for Mimic — insertMany batching, schema inference, auto-indexing",
   "type": "module",
@@ -39,7 +39,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@mimicailab/core": "workspace:*"
+    "@mimicai/core": "workspace:*"
   },
   "peerDependencies": {
     "mongodb": "^6.0.0"

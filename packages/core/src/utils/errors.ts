@@ -67,7 +67,7 @@ export class AdapterNotFoundError extends MimicError {
     super(
       `Adapter "${adapterId}" not found`,
       'ADAPTER_NOT_FOUND',
-      `Install it: pnpm add @mimicailab/adapter-${adapterId}`,
+      `Install it: pnpm add @mimicai/adapter-${adapterId}`,
     );
     this.name = 'AdapterNotFoundError';
   }

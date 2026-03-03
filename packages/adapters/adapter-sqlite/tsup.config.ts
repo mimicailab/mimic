@@ -8,5 +8,5 @@ export default defineConfig({
   sourcemap: true,
   target: 'node22',
   outDir: 'dist',
-  external: ['@mimicailab/core'],
+  external: ['@mimicai/core'],
 });

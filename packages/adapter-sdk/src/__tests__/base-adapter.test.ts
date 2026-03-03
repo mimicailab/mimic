@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { EndpointDefinition, ExpandedData, AdapterContext } from '@mimicailab/core';
-import type { StateStore } from '@mimicailab/core';
+import type { EndpointDefinition, ExpandedData, AdapterContext } from '@mimicai/core';
+import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter } from '../base-api-mock-adapter.js';
 
 class TestAdapter extends BaseApiMockAdapter<{ name: string }> {

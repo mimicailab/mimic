@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { buildTestServer, type TestServer } from '@mimicailab/adapter-sdk';
-import type { ExpandedData, Blueprint } from '@mimicailab/core';
+import { buildTestServer, type TestServer } from '@mimicai/adapter-sdk';
+import type { ExpandedData, Blueprint } from '@mimicai/core';
 import { StripeAdapter } from '../stripe-adapter.js';
 
 describe('StripeAdapter', () => {

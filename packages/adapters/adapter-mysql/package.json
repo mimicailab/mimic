@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/adapter-mysql",
+  "name": "@mimicai/adapter-mysql",
   "version": "0.3.0",
   "description": "MySQL database adapter for Mimic — batch INSERT, upsert, INFORMATION_SCHEMA introspection",
   "type": "module",
@@ -39,7 +39,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@mimicailab/core": "workspace:*"
+    "@mimicai/core": "workspace:*"
   },
   "peerDependencies": {
     "mysql2": "^3.0.0"

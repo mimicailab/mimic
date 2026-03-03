@@ -15,7 +15,7 @@ export { plaidError } from './plaid-errors.js';
 export { createPlaidMcpServer, startPlaidMcpServer } from './mcp.js';
 
 // ── Manifest ───────────────────────────────────────────────────────────────
-import type { AdapterManifest } from '@mimicailab/adapter-sdk';
+import type { AdapterManifest } from '@mimicai/adapter-sdk';
 import { PlaidConfigSchema } from './config.js';
 
 export const manifest: AdapterManifest = {

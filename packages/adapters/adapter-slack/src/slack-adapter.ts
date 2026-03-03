@@ -1,13 +1,13 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { EndpointDefinition, ExpandedData } from '@mimicailab/core';
-import type { StateStore } from '@mimicailab/core';
+import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { StateStore } from '@mimicai/core';
 import {
   BaseApiMockAdapter,
   generateId,
   unixNow,
-} from '@mimicailab/adapter-sdk';
+} from '@mimicai/adapter-sdk';
 import { SlackConfigSchema, type SlackConfig } from './config.js';
-import type { AdapterContext } from '@mimicailab/core';
+import type { AdapterContext } from '@mimicai/core';
 
 // ── Namespace constants ─────────────────────────────────────────────────────
 const NS_CHANNELS = 'slack_channels';

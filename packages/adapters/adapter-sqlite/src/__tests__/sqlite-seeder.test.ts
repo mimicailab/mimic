@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SQLiteSeeder } from '../sqlite-seeder.js';
 import type { BetterSQLite3Database } from '../sqlite-seeder.js';
-import type { SchemaModel, ExpandedData, AdapterContext, MimicConfig } from '@mimicailab/core';
+import type { SchemaModel, ExpandedData, AdapterContext, MimicConfig } from '@mimicai/core';
 
 // ---------------------------------------------------------------------------
 // In-memory SQLite mock

@@ -17,7 +17,7 @@ export {
   resolvePersonaFromBody,
   StateStore,
   MockServer,
-} from '@mimicailab/core';
+} from '@mimicai/core';
 
 export type {
   ApiMockAdapter,
@@ -27,4 +27,4 @@ export type {
   AdapterResult,
   ExpandedData,
   PaginatedResult,
-} from '@mimicailab/core';
+} from '@mimicai/core';

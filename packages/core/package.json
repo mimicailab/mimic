@@ -1,5 +1,5 @@
 {
-  "name": "@mimicailab/core",
+  "name": "@mimicai/core",
   "version": "0.3.0",
   "description": "Core engine for Mimic — persona-driven synthetic data generation, schema parsing, database seeding, and MCP server",
   "type": "module",

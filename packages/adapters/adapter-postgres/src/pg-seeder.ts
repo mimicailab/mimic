@@ -5,10 +5,10 @@ import type {
   AdapterContext,
   AdapterResult,
   InspectResult,
-} from '@mimicailab/core';
-import type { SchemaModel, TableInfo, ColumnInfo, ExpandedData, Row } from '@mimicailab/core';
-import { DatabaseConnectionError, SeedingError, logger } from '@mimicailab/core';
-import { introspectDatabase } from '@mimicailab/core';
+} from '@mimicai/core';
+import type { SchemaModel, TableInfo, ColumnInfo, ExpandedData, Row } from '@mimicai/core';
+import { DatabaseConnectionError, SeedingError, logger } from '@mimicai/core';
+import { introspectDatabase } from '@mimicai/core';
 import { batchInsert } from './batch-insert.js';
 import { bulkCopy } from './bulk-copy.js';
 import { syncSequences } from './sequence-sync.js';

@@ -37,8 +37,8 @@ export class AdapterRegistry {
     if (this.adapters.has(id)) return this.adapters.get(id)!;
     if (npmPackage) return this.loadExternal(npmPackage);
 
-    // Convention: @mimicailab/adapter-{id}
-    return this.loadExternal(`@mimicailab/adapter-${id}`);
+    // Convention: @mimicai/adapter-{id}
+    return this.loadExternal(`@mimicai/adapter-${id}`);
   }
 
   getAdapter(id: string): Adapter | undefined {

@@ -1,0 +1,15 @@
+---
+interface Props {
+  items: string[];
+}
+
+const { items } = Astro.props;
+---
+<ul class="checklist">
+  {items.map((item) => (
+    <li>
+      <span class="checklist-box"></span>
+      <Fragment set:html={item} />
+    </li>
+  ))}
+</ul>

@@ -1,4 +1,4 @@
-import type { AdapterManifest } from '@mimicailab/core';
+import type { AdapterManifest } from '@mimicai/core';
 
 export { MySQLSeeder } from './mysql-seeder.js';
 export type { MySQLConfig } from './mysql-seeder.js';

@@ -16,7 +16,7 @@ import {
   LLMClient,
   CostTracker,
   providerConfigFromMimic,
-} from '@mimicailab/core';
+} from '@mimicai/core';
 import type {
   MimicConfig,
   ExpandedData,
@@ -24,7 +24,7 @@ import type {
   TestResult,
   TestScenario,
   TestExpectation,
-} from '@mimicailab/core';
+} from '@mimicai/core';
 
 // ---------------------------------------------------------------------------
 // Command registration

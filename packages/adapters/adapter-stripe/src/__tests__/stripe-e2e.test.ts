@@ -3,7 +3,7 @@
  * Tests the full lifecycle: customers, payment intents, subscriptions, invoices, refunds.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { buildTestServer, type TestServer } from '@mimicailab/adapter-sdk';
+import { buildTestServer, type TestServer } from '@mimicai/adapter-sdk';
 import { StripeAdapter } from '../stripe-adapter.js';
 
 describe('Stripe E2E Lifecycle', () => {

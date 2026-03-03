@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import formbody from '@fastify/formbody';
-import type { ApiMockAdapter, ExpandedData } from '@mimicailab/core';
-import { StateStore } from '@mimicailab/core';
+import type { ApiMockAdapter, ExpandedData } from '@mimicai/core';
+import { StateStore } from '@mimicai/core';
 
 export interface TestServer {
   /** The Fastify instance — use `server.inject()` for in-process requests. */

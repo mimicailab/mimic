@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MySQLSeeder } from '../mysql-seeder.js';
-import type { SchemaModel, ExpandedData, AdapterContext, MimicConfig } from '@mimicailab/core';
+import type { SchemaModel, ExpandedData, AdapterContext, MimicConfig } from '@mimicai/core';
 
 // ---------------------------------------------------------------------------
 // Mock mysql2/promise — we test the seeder logic, not the mysql driver

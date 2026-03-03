@@ -1,4 +1,4 @@
-import { toDateStr, capitalize } from '@mimicailab/adapter-sdk';
+import { toDateStr, capitalize } from '@mimicai/adapter-sdk';
 import type { PlaidConfig } from './config.js';
 
 const CONFIDENCE_LEVELS = ['VERY_HIGH', 'HIGH', 'MEDIUM', 'LOW'] as const;

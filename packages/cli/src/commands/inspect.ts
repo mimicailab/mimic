@@ -11,12 +11,12 @@ import {
   fileExists,
   MimicError,
   parseSchema,
-} from '@mimicailab/core';
-import type { ExpandedData, Blueprint, SchemaModel, InspectResult } from '@mimicailab/core';
-import { PgSeeder } from '@mimicailab/adapter-postgres';
-import { MySQLSeeder } from '@mimicailab/adapter-mysql';
-import { SQLiteSeeder } from '@mimicailab/adapter-sqlite';
-import { MongoSeeder } from '@mimicailab/adapter-mongodb';
+} from '@mimicai/core';
+import type { ExpandedData, Blueprint, SchemaModel, InspectResult } from '@mimicai/core';
+import { PgSeeder } from '@mimicai/adapter-postgres';
+import { MySQLSeeder } from '@mimicai/adapter-mysql';
+import { SQLiteSeeder } from '@mimicai/adapter-sqlite';
+import { MongoSeeder } from '@mimicai/adapter-mongodb';
 import { resolveEnvVars } from '../utils/env.js';
 
 // ---------------------------------------------------------------------------
@@ -460,7 +460,7 @@ async function inspectDb(opts: DbOptions): Promise<void> {
 async function inspectLiveDb(
   dbType: string,
   dbConfig: Record<string, unknown>,
-  config: import('@mimicailab/core').MimicConfig,
+  config: import('@mimicai/core').MimicConfig,
 ): Promise<InspectResult> {
   const ctx = { config, blueprints: new Map() as Map<string, Blueprint>, logger };
 
@@ -516,7 +516,7 @@ async function inspectLiveDb(
 async function introspectViaAdapter(
   dbType: string,
   dbConfig: Record<string, unknown>,
-  config: import('@mimicailab/core').MimicConfig,
+  config: import('@mimicai/core').MimicConfig,
 ): Promise<SchemaModel> {
   const ctx = { config, blueprints: new Map() as Map<string, Blueprint>, logger };
 

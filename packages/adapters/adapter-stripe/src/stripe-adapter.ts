@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { EndpointDefinition, ExpandedData } from '@mimicailab/core';
-import type { StateStore } from '@mimicailab/core';
-import { BaseApiMockAdapter, generateId, unixNow } from '@mimicailab/adapter-sdk';
+import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { StateStore } from '@mimicai/core';
+import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
 import { stripeError } from './stripe-errors.js';
 

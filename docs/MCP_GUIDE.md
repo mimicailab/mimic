@@ -19,10 +19,10 @@ This matters because many agent frameworks (Claude, Cursor, Copilot, custom agen
 
 ```bash
 # Add Mimic Jira MCP server
-claude mcp add mimic-jira -- npx -y @mimicailab/mcp-jira
+claude mcp add mimic-jira -- npx -y @mimicai/mcp-jira
 
 # With custom Mimic server URL
-claude mcp add --env MIMIC_BASE_URL=http://localhost:4000 mimic-jira -- npx -y @mimicailab/mcp-jira
+claude mcp add --env MIMIC_BASE_URL=http://localhost:4000 mimic-jira -- npx -y @mimicai/mcp-jira
 ```
 
 ### With Cursor / VS Code
@@ -34,14 +34,14 @@ Add to your MCP configuration file:
   "mcpServers": {
     "mimic-jira": {
       "command": "npx",
-      "args": ["-y", "@mimicailab/mcp-jira"],
+      "args": ["-y", "@mimicai/mcp-jira"],
       "env": {
         "MIMIC_BASE_URL": "http://localhost:4000"
       }
     },
     "mimic-slack": {
       "command": "npx",
-      "args": ["-y", "@mimicailab/mcp-slack"],
+      "args": ["-y", "@mimicai/mcp-slack"],
       "env": {
         "MIMIC_BASE_URL": "http://localhost:4000"
       }
@@ -68,9 +68,9 @@ surfaces:
 
 ```bash
 mimic host
-# ✓ Jira MCP     → stdio: npx @mimicailab/mcp-jira
-# ✓ Slack MCP    → stdio: npx @mimicailab/mcp-slack
-# ✓ Notion MCP   → stdio: npx @mimicailab/mcp-notion
+# ✓ Jira MCP     → stdio: npx @mimicai/mcp-jira
+# ✓ Slack MCP    → stdio: npx @mimicai/mcp-slack
+# ✓ Notion MCP   → stdio: npx @mimicai/mcp-notion
 ```
 
 ## Available MCP Servers
@@ -81,43 +81,43 @@ Every adapter with a full implementation has a corresponding MCP server. Here's 
 
 | Package | Tools | Primary Tools |
 |---------|-------|--------------|
-| `@mimicailab/mcp-stripe` | 12 | create_payment_intent, list_charges, create_customer, list_subscriptions |
-| `@mimicailab/mcp-plaid` | 10 | create_link_token, get_accounts, get_transactions, get_balance |
-| `@mimicailab/mcp-square` | 8 | create_payment, list_orders, create_customer |
+| `@mimicai/mcp-stripe` | 12 | create_payment_intent, list_charges, create_customer, list_subscriptions |
+| `@mimicai/mcp-plaid` | 10 | create_link_token, get_accounts, get_transactions, get_balance |
+| `@mimicai/mcp-square` | 8 | create_payment, list_orders, create_customer |
 
 ### Communication
 
 | Package | Tools | Primary Tools |
 |---------|-------|--------------|
-| `@mimicailab/mcp-slack` | 10 | post_message, list_channels, search_messages, list_users |
-| `@mimicailab/mcp-twilio` | 8 | send_sms, make_call, list_messages |
-| `@mimicailab/mcp-sendgrid` | 6 | send_email, list_contacts, get_stats |
+| `@mimicai/mcp-slack` | 10 | post_message, list_channels, search_messages, list_users |
+| `@mimicai/mcp-twilio` | 8 | send_sms, make_call, list_messages |
+| `@mimicai/mcp-sendgrid` | 6 | send_email, list_contacts, get_stats |
 
 ### CRM
 
 | Package | Tools | Primary Tools |
 |---------|-------|--------------|
-| `@mimicailab/mcp-salesforce` | 10 | query_soql, create_record, update_record, describe_object |
-| `@mimicailab/mcp-hubspot` | 10 | search_contacts, create_deal, list_companies, update_contact |
-| `@mimicailab/mcp-pipedrive` | 8 | list_deals, create_person, search |
+| `@mimicai/mcp-salesforce` | 10 | query_soql, create_record, update_record, describe_object |
+| `@mimicai/mcp-hubspot` | 10 | search_contacts, create_deal, list_companies, update_contact |
+| `@mimicai/mcp-pipedrive` | 8 | list_deals, create_person, search |
 
 ### Ticketing
 
 | Package | Tools | Primary Tools |
 |---------|-------|--------------|
-| `@mimicailab/mcp-jira` | 10 | create_issue, search_jql, transition_issue, add_comment |
-| `@mimicailab/mcp-zendesk` | 8 | create_ticket, update_ticket, search_tickets, add_comment |
-| `@mimicailab/mcp-linear` | 8 | create_issue, update_issue, list_issues, list_cycles |
-| `@mimicailab/mcp-pagerduty` | 8 | create_incident, acknowledge_incident, resolve_incident |
+| `@mimicai/mcp-jira` | 10 | create_issue, search_jql, transition_issue, add_comment |
+| `@mimicai/mcp-zendesk` | 8 | create_ticket, update_ticket, search_tickets, add_comment |
+| `@mimicai/mcp-linear` | 8 | create_issue, update_issue, list_issues, list_cycles |
+| `@mimicai/mcp-pagerduty` | 8 | create_incident, acknowledge_incident, resolve_incident |
 
 ### Project Management
 
 | Package | Tools | Primary Tools |
 |---------|-------|--------------|
-| `@mimicailab/mcp-notion` | 10 | query_database, create_page, update_page, search, append_blocks |
-| `@mimicailab/mcp-asana` | 8 | list_tasks, create_task, update_task, search_tasks |
-| `@mimicailab/mcp-trello` | 8 | list_cards, create_card, move_card, add_comment |
-| `@mimicailab/mcp-airtable` | 6 | list_records, create_records, update_records |
+| `@mimicai/mcp-notion` | 10 | query_database, create_page, update_page, search, append_blocks |
+| `@mimicai/mcp-asana` | 8 | list_tasks, create_task, update_task, search_tasks |
+| `@mimicai/mcp-trello` | 8 | list_cards, create_card, move_card, add_comment |
+| `@mimicai/mcp-airtable` | 6 | list_records, create_records, update_records |
 
 ## Official MCP Parity
 
@@ -125,12 +125,12 @@ For platforms that ship their own official MCP servers, Mimic MCP servers match 
 
 | Platform | Official MCP | Mimic MCP | Tool Parity |
 |----------|-------------|-----------|-------------|
-| Jira | Atlassian MCP | `@mimicailab/mcp-jira` | ✅ Matched |
-| Slack | Claude.ai connector | `@mimicailab/mcp-slack` | ✅ Matched |
-| Asana | `mcp.asana.com/sse` | `@mimicailab/mcp-asana` | ✅ Matched |
-| HubSpot | `mcp.hubspot.com` | `@mimicailab/mcp-hubspot` | ✅ Matched |
-| GitHub | `@modelcontextprotocol/server-github` | `@mimicailab/mcp-github` | ✅ Matched |
-| GitLab | Official GitLab MCP | `@mimicailab/mcp-gitlab` | ✅ Matched |
+| Jira | Atlassian MCP | `@mimicai/mcp-jira` | ✅ Matched |
+| Slack | Claude.ai connector | `@mimicai/mcp-slack` | ✅ Matched |
+| Asana | `mcp.asana.com/sse` | `@mimicai/mcp-asana` | ✅ Matched |
+| HubSpot | `mcp.hubspot.com` | `@mimicai/mcp-hubspot` | ✅ Matched |
+| GitHub | `@modelcontextprotocol/server-github` | `@mimicai/mcp-github` | ✅ Matched |
+| GitLab | Official GitLab MCP | `@mimicai/mcp-gitlab` | ✅ Matched |
 
 ## Building a New MCP Server
 
