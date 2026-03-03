@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-stripe",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Stripe API mock adapter for Mimic — payments, billing, subscriptions, invoices",
   "type": "module",
   "license": "Apache-2.0",
@@ -11,8 +11,16 @@
     "url": "https://github.com/mimicailab/mimic.git",
     "directory": "packages/adapters/adapter-stripe"
   },
-  "keywords": ["mimic", "adapter", "stripe", "api-mock", "payments"],
-  "engines": { "node": ">=22" },
+  "keywords": [
+    "mimic",
+    "adapter",
+    "stripe",
+    "api-mock",
+    "payments"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,7 +28,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
