@@ -1,19 +1,57 @@
 {
   "name": "@mimicailab/adapter-mysql",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MySQL database adapter for Mimic — batch INSERT, upsert, INFORMATION_SCHEMA introspection",
   "type": "module",
   "license": "Apache-2.0",
   "author": "Mimic AI Lab",
   "homepage": "https://github.com/mimicailab/mimic",
-  "repository": { "type": "git", "url": "https://github.com/mimicailab/mimic.git", "directory": "packages/adapters/adapter-mysql" },
-  "keywords": ["mimic", "adapter", "mysql", "database", "seeding"],
-  "engines": { "node": ">=22" },
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js", "require": "./dist/index.cjs" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsup", "dev": "tsup --watch", "test": "vitest run", "typecheck": "tsc --noEmit", "clean": "rm -rf dist" },
-  "dependencies": { "@mimicailab/core": "workspace:*" },
-  "peerDependencies": { "mysql2": "^3.0.0" },
-  "peerDependenciesMeta": { "mysql2": { "optional": true } },
-  "devDependencies": { "tsup": "^8.3.6", "vitest": "^3.0.5", "typescript": "^5.7.3" }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mimicailab/mimic.git",
+    "directory": "packages/adapters/adapter-mysql"
+  },
+  "keywords": [
+    "mimic",
+    "adapter",
+    "mysql",
+    "database",
+    "seeding"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mimicailab/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "mysql2": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "mysql2": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "tsup": "^8.3.6",
+    "vitest": "^3.0.5",
+    "typescript": "^5.7.3"
+  }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@mimicailab/adapter-plaid",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Plaid API mock adapter for Mimic — bank accounts, transactions, identity, auth",
   "type": "module",
   "license": "Apache-2.0",
@@ -11,8 +11,16 @@
     "url": "https://github.com/mimicailab/mimic.git",
     "directory": "packages/adapters/adapter-plaid"
   },
-  "keywords": ["mimic", "adapter", "plaid", "api-mock", "banking"],
-  "engines": { "node": ">=22" },
+  "keywords": [
+    "mimic",
+    "adapter",
+    "plaid",
+    "api-mock",
+    "banking"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,7 +28,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",

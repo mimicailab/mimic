@@ -1,6 +1,6 @@
 {
   "name": "@mimicailab/adapter-slack",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Slack API mock adapter for Mimic — channels, messages, reactions, file uploads",
   "type": "module",
   "license": "Apache-2.0",
@@ -11,8 +11,16 @@
     "url": "https://github.com/mimicailab/mimic.git",
     "directory": "packages/adapters/adapter-slack"
   },
-  "keywords": ["mimic", "adapter", "slack", "api-mock", "messaging"],
-  "engines": { "node": ">=22" },
+  "keywords": [
+    "mimic",
+    "adapter",
+    "slack",
+    "api-mock",
+    "messaging"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,7 +28,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
