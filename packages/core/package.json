@@ -1,6 +1,6 @@
 {
   "name": "@mimicailab/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Core engine for Mimic — persona-driven synthetic data generation, schema parsing, database seeding, and MCP server",
   "type": "module",
   "license": "Apache-2.0",
