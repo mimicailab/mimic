@@ -16,26 +16,45 @@ const MODEL = process.env.MODEL ?? 'claude-haiku-4-5';
 const DATABASE_URL =
   process.env.DATABASE_URL ??
   'postgresql://mimic:mimic@localhost:5432/mimic_finance';
+const PLAID_API_URL =
+  process.env.PLAID_API_URL ?? 'http://localhost:4100';
 
 // ---------------------------------------------------------------------------
-// MCP Server (spawns `mimic host --transport stdio`)
+// MCP Server — Mimic (Postgres via `mimic host --transport stdio`)
 // ---------------------------------------------------------------------------
 
-// Resolve the local CLI binary — works whether running from the repo or after
-// `npm link`. Falls back to MIMIC_CLI env var if set.
 const MIMIC_CLI =
   process.env.MIMIC_CLI ??
   resolve(__dirname, '..', '..', '..', 'packages', 'cli', 'dist', 'bin', 'mimic.js');
 
-const mcpServer = new MCPServerStdio({
+const mimicMcpServer = new MCPServerStdio({
   name: 'mimic',
   command: 'node',
-  args: [MIMIC_CLI, 'host', '--transport', 'stdio'],
+  args: [MIMIC_CLI, 'host', '--transport', 'stdio', '--no-api'],
   env: {
     ...process.env as Record<string, string>,
     DATABASE_URL,
   },
   cwd: resolve(__dirname, '..'),
+  cacheToolsList: true,
+});
+
+// ---------------------------------------------------------------------------
+// MCP Server — Plaid (via Mimic Plaid MCP server)
+// ---------------------------------------------------------------------------
+
+const PLAID_MCP_BIN =
+  process.env.PLAID_MCP_BIN ??
+  resolve(__dirname, '..', '..', '..', 'packages', 'adapters', 'adapter-plaid', 'dist', 'bin', 'mcp.js');
+
+const plaidMcpServer = new MCPServerStdio({
+  name: 'plaid',
+  command: 'node',
+  args: [PLAID_MCP_BIN],
+  env: {
+    ...process.env as Record<string, string>,
+    MIMIC_BASE_URL: PLAID_API_URL,
+  },
   cacheToolsList: true,
 });
 
@@ -53,13 +72,22 @@ const agent = new Agent({
   name: 'Finance Assistant',
   instructions: [
     'You are a helpful personal finance assistant.',
-    'Use the available tools to answer questions about the user\'s financial data.',
+    'You have access to TWO data sources:',
+    '',
+    '1. PostgreSQL (via MCP tools prefixed get_): Contains user records, accounts,',
+    '   transactions with categories, and financial history.',
+    '',
+    '2. Plaid API (via MCP tools like get_accounts, get_transactions, get_balances):',
+    '   Provides real-time bank account data, transaction feeds, and identity info.',
+    '   Use access token format: access-{persona-name}-token for Plaid calls.',
+    '',
+    'Use both sources to give comprehensive answers.',
     'Be precise with numbers and dates.',
     'When asked about spending, always use real data from the tools — never guess.',
     'Format currency amounts with $ and two decimal places.',
-  ].join(' '),
+  ].join('\n'),
   model,
-  mcpServers: [mcpServer],
+  mcpServers: [mimicMcpServer, plaidMcpServer],
 });
 
 // ---------------------------------------------------------------------------
@@ -138,21 +166,35 @@ const server = createServer(async (req, res) => {
 // ---------------------------------------------------------------------------
 
 async function start() {
-  console.log('Connecting to Mimic MCP server...');
-  await mcpServer.connect();
-  console.log('MCP server connected.');
+  console.log('=== Finance Assistant ===\n');
+
+  console.log('Connecting to Mimic MCP server (PostgreSQL)...');
+  await mimicMcpServer.connect();
+  console.log('Mimic MCP server connected.');
+
+  console.log('Connecting to Plaid MCP server...');
+  await plaidMcpServer.connect();
+  console.log('Plaid MCP server connected.\n');
 
   server.listen(PORT, () => {
-    console.log(`Finance assistant agent running on http://localhost:${PORT}`);
+    console.log(`Finance assistant running on http://localhost:${PORT}`);
     console.log(`Model: ${MODEL}`);
+    console.log('');
+    console.log('Data sources:');
+    console.log(`  PostgreSQL: ${DATABASE_URL.replace(/:[^:@]+@/, ':***@')} (via MCP)`);
+    console.log(`  Plaid:      ${PLAID_API_URL} (via MCP)`);
+    console.log('');
     console.log('POST /chat with { "message": "..." }');
+    console.log('');
   });
 }
 
 async function shutdown() {
   console.log('\nShutting down...');
   server.close();
-  await mcpServer.close();
+  await mimicMcpServer.close();
+  await plaidMcpServer.close();
+  console.log('All connections closed.');
   process.exit(0);
 }
 
