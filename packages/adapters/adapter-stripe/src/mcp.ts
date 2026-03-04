@@ -38,16 +38,11 @@ function text(msg: string) {
 // ---------------------------------------------------------------------------
 
 /**
- * Create a Mimic MCP server for Stripe.
- * Call `.connect(transport)` to start it.
+ * Register all Stripe MCP tools on the given McpServer.
+ * Shared implementation used by both the standalone server and
+ * the unified MimicMcpServer registration via `mcp: true`.
  */
-export function createStripeMcpServer(baseUrl: string = 'http://localhost:4100'): McpServer {
-  const server = new McpServer({
-    name: 'mimic-stripe',
-    version: '0.2.0',
-    description: 'Mimic MCP server for Stripe — payments, billing, subscriptions against mock data',
-  });
-
+export function registerStripeTools(server: McpServer, baseUrl: string = 'http://localhost:4100'): void {
   const call = makeCall(baseUrl);
 
   // 1. create_customer
@@ -213,6 +208,19 @@ export function createStripeMcpServer(baseUrl: string = 'http://localhost:4100')
     return text(`Balance — Available: ${avail} | Pending: ${pending}`);
   });
 
+}
+
+/**
+ * Create a standalone Mimic MCP server for Stripe.
+ * Call `.connect(transport)` to start it.
+ */
+export function createStripeMcpServer(baseUrl: string = 'http://localhost:4100'): McpServer {
+  const server = new McpServer({
+    name: 'mimic-stripe',
+    version: '0.2.0',
+    description: 'Mimic MCP server for Stripe — payments, billing, subscriptions against mock data',
+  });
+  registerStripeTools(server, baseUrl);
   return server;
 }
 

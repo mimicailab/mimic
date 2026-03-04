@@ -1,4 +1,4 @@
-import { generateText, Output } from 'ai';
+import { generateText, streamText, Output } from 'ai';
 import type { z } from 'zod';
 import { createProvider, type ProviderConfig } from './providers.js';
 import { CostTracker, type CostCategory } from './cost-tracker.js';
@@ -112,42 +112,44 @@ export class LLMClient {
     logger.debug(`LLM [${label}] calling ${this.config.model} (structured output)`);
 
     try {
+      // Use streamText to avoid HTTP timeouts on large structured outputs.
+      // The streaming connection stays alive while the LLM generates tokens.
+      const stream = streamText({
+        model: this.model,
+        output: Output.object({
+          schema: opts.schema,
+        }),
+        system: opts.system,
+        prompt: opts.prompt,
+        temperature: opts.temperature ?? this.config.temperature ?? 0.7,
+        maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
+        maxOutputTokens: 32768,
+        providerOptions: {
+          anthropic: { structuredOutputMode: 'jsonTool' },
+        },
+      });
+
+      // Consume the stream and collect the final result
       let result;
       try {
-        result = await generateText({
-          model: this.model,
-          output: Output.object({
-            schema: opts.schema,
-          }),
-          system: opts.system,
-          prompt: opts.prompt,
-          temperature: opts.temperature ?? this.config.temperature ?? 0.7,
-          maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
-          providerOptions: {
-            anthropic: { structuredOutputMode: 'jsonTool' },
-          },
-        });
+        result = await stream;
+        // Wait for the stream to fully complete
+        await result.output;
       } catch (sdkErr: unknown) {
-        // Output.object validation failed — try to extract what the LLM returned
+        // Output.object validation failed — try to extract from raw text
         const errObj = sdkErr as { text?: string; output?: unknown; cause?: { value?: unknown } };
         const rawText = errObj.text ?? '';
         if (rawText) {
           logger.debug(`LLM [${label}] SDK error, raw text: ${rawText.substring(0, 500)}`);
           try {
             let raw = JSON.parse(rawText);
-            // jsonTool mode wraps output in {"data": ...} or {"json": ...}
             if (raw.data && !opts.schema.safeParse(raw).success) {
               raw = raw.data;
             } else if (raw.json && !opts.schema.safeParse(raw).success) {
               raw = raw.json;
             }
             const validation = opts.schema.safeParse(raw);
-            if (!validation.success) {
-              const issues = validation.error.issues.map((i: { path: unknown[]; message: string }) =>
-                `${(i.path as string[]).join('.')}: ${i.message}`);
-              logger.debug(`LLM [${label}] Zod validation issues:\n  ${issues.join('\n  ')}`);
-            } else {
-              // Zod passes but Output.object() didn't — return it directly
+            if (validation.success) {
               logger.debug(`LLM [${label}] Zod passed on manual parse, using result`);
               const err2 = sdkErr as { usage?: { inputTokens?: number; outputTokens?: number } };
               return {
@@ -156,17 +158,24 @@ export class LLMClient {
                 completionTokens: err2.usage?.outputTokens ?? 0,
               };
             }
-          } catch { /* not parseable */ }
+            const issues = validation.error.issues.map((i: { path: unknown[]; message: string }) =>
+              `${(i.path as string[]).join('.')}: ${i.message}`);
+            logger.debug(`LLM [${label}] Zod validation issues:\n  ${issues.join('\n  ')}`);
+          } catch (parseErr) {
+            logger.debug(`LLM [${label}] manual JSON parse failed: ${parseErr}`);
+          }
         }
         throw sdkErr;
       }
 
-      if (!result.output) {
+      const output = await result.output;
+      if (!output) {
         throw new Error('No object generated: response did not match schema.');
       }
 
-      const promptTokens = result.usage?.inputTokens ?? 0;
-      const completionTokens = result.usage?.outputTokens ?? 0;
+      const usage = await result.usage;
+      const promptTokens = usage?.inputTokens ?? 0;
+      const completionTokens = usage?.outputTokens ?? 0;
 
       this.costTracker.record({
         label,
@@ -181,7 +190,7 @@ export class LLMClient {
       );
 
       return {
-        object: result.output as z.infer<T>,
+        object: output as z.infer<T>,
         promptTokens,
         completionTokens,
       };

@@ -35,16 +35,16 @@ function dollars(n: number | null | undefined): string {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createPlaidMcpServer(
+/**
+ * Register all Plaid MCP tools on the given McpServer.
+ * Shared implementation used by both the standalone server and
+ * the unified MimicMcpServer registration via `mcp: true`.
+ */
+export function registerPlaidTools(
+  server: McpServer,
   baseUrl: string = 'http://localhost:4100',
   accessToken: string = 'access-test-user-sandbox123',
-): McpServer {
-  const server = new McpServer({
-    name: 'mimic-plaid',
-    version: '0.2.0',
-    description: 'Mimic MCP server for Plaid — bank accounts, transactions, balances, identity against mock data',
-  });
-
+): void {
   const call = makeCall(baseUrl, accessToken);
 
   // 1. create_link_token
@@ -157,6 +157,22 @@ export function createPlaidMcpServer(
     return text(`Liabilities: ${credit} credit, ${student} student loans, ${mortgage} mortgages`);
   });
 
+}
+
+/**
+ * Create a standalone Mimic MCP server for Plaid.
+ * Call `.connect(transport)` to start it.
+ */
+export function createPlaidMcpServer(
+  baseUrl: string = 'http://localhost:4100',
+  accessToken: string = 'access-test-user-sandbox123',
+): McpServer {
+  const server = new McpServer({
+    name: 'mimic-plaid',
+    version: '0.2.0',
+    description: 'Mimic MCP server for Plaid — bank accounts, transactions, balances, identity against mock data',
+  });
+  registerPlaidTools(server, baseUrl, accessToken);
   return server;
 }
 

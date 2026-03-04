@@ -40,13 +40,12 @@ function text(value: string) {
 // Factory
 // ---------------------------------------------------------------------------
 
-export function createSlackMcpServer(baseUrl: string = 'http://localhost:4100'): McpServer {
-  const server = new McpServer({
-    name: 'mimic-slack',
-    version: '0.2.0',
-    description: 'Mimic MCP server for Slack — channels, messages, reactions against mock data',
-  });
-
+/**
+ * Register all Slack MCP tools on the given McpServer.
+ * Shared implementation used by both the standalone server and
+ * the unified MimicMcpServer registration via `mcp: true`.
+ */
+export function registerSlackTools(server: McpServer, baseUrl: string = 'http://localhost:4100'): void {
   const { callGet, callPost } = makeHelpers(baseUrl);
 
   // 1. slack_list_channels
@@ -166,6 +165,19 @@ export function createSlackMcpServer(baseUrl: string = 'http://localhost:4100'):
     return text(`Name: ${team.name}\nID: ${team.id}\nDomain: ${team.domain}`);
   });
 
+}
+
+/**
+ * Create a standalone Mimic MCP server for Slack.
+ * Call `.connect(transport)` to start it.
+ */
+export function createSlackMcpServer(baseUrl: string = 'http://localhost:4100'): McpServer {
+  const server = new McpServer({
+    name: 'mimic-slack',
+    version: '0.2.0',
+    description: 'Mimic MCP server for Slack — channels, messages, reactions against mock data',
+  });
+  registerSlackTools(server, baseUrl);
   return server;
 }
 

@@ -76,6 +76,36 @@ const PersonaProfileSchema = z.object({
   description: z.string(),
 });
 
+// ---------------------------------------------------------------------------
+// Archetype schemas
+// ---------------------------------------------------------------------------
+
+const FieldVariationSchema = z.object({
+  type: z.enum([
+    'firstName', 'lastName', 'fullName', 'email', 'phone', 'companyName',
+    'pick', 'range', 'decimal_range', 'uuid', 'derived', 'sequence',
+  ]),
+  values: z.array(z.unknown()).optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  template: z.string().optional().describe('For derived: template with {{fieldName}} placeholders'),
+  prefix: z.string().optional().describe('For sequence: prefix string, e.g. "cus_p1_"'),
+});
+
+const EntityArchetypeSchema = z.object({
+  label: z.string().describe('Human-readable label, e.g. "starter-plan"'),
+  weight: z.number().describe('Fraction 0-1, all weights for a table should sum to ~1.0'),
+  fields: z.record(z.unknown()).describe('Constant fields shared by all clones of this archetype'),
+  vary: z.record(FieldVariationSchema).describe('Fields that get randomized per clone'),
+});
+
+const EntityArchetypeConfigSchema = z.object({
+  count: z.number().int().describe('Target number of entities to generate'),
+  archetypes: z.array(EntityArchetypeSchema),
+});
+
+// ---------------------------------------------------------------------------
+
 const PersonaDataSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
@@ -84,6 +114,32 @@ const PersonaDataSchema = z.object({
     .record(z.record(z.array(z.record(z.unknown()))))
     .optional()
     .describe('API entity seeds keyed by adapter ID then resource type'),
+  entityArchetypes: z
+    .record(EntityArchetypeConfigSchema)
+    .optional()
+    .describe('Archetype definitions for scalable entity generation, keyed by table name'),
+  apiEntityArchetypes: z
+    .record(z.record(EntityArchetypeConfigSchema))
+    .optional()
+    .describe('API entity archetypes keyed by adapter ID then resource type'),
+});
+
+/** PersonaData variant where apiEntityArchetypes is required (used when APIs are configured) */
+const PersonaDataWithApisSchema = z.object({
+  entities: z.record(z.array(z.record(z.unknown()))),
+  patterns: z.array(DataPatternSchema),
+  annotations: z.record(z.unknown()),
+  apiEntities: z
+    .record(z.record(z.array(z.record(z.unknown()))))
+    .optional()
+    .describe('API entity seeds keyed by adapter ID then resource type — use for small reference data like products, prices (<10 items)'),
+  entityArchetypes: z
+    .record(EntityArchetypeConfigSchema)
+    .optional()
+    .describe('Archetype definitions for scalable entity generation, keyed by table name'),
+  apiEntityArchetypes: z
+    .record(z.record(EntityArchetypeConfigSchema))
+    .describe('REQUIRED: API entity archetypes keyed by adapter ID then resource type. Use for resource types with 10+ entities (customers, subscriptions, invoices, etc.)'),
 });
 
 // ---------------------------------------------------------------------------
@@ -115,6 +171,19 @@ export const BlueprintLLMOutputSchema = z.object({
 
   persona: PersonaProfileSchema.describe('Detailed persona profile'),
   data: PersonaDataSchema.describe('Domain-specific entities and data patterns'),
+});
+
+/**
+ * Variant of BlueprintLLMOutputSchema where apiEntityArchetypes is REQUIRED.
+ * Used when APIs are configured — forces the LLM to generate API entity data
+ * in structured output (jsonTool) mode where optional fields are easily skipped.
+ */
+export const BlueprintLLMOutputWithApisSchema = z.object({
+  personaId: z.string().describe('A kebab-case unique identifier for this persona, e.g. "sarah-chen"'),
+  domain: z.string().describe('The domain this data belongs to, e.g. "personal-finance"'),
+
+  persona: PersonaProfileSchema.describe('Detailed persona profile'),
+  data: PersonaDataWithApisSchema.describe('Domain-specific entities, data patterns, and API entity archetypes'),
 });
 
 export type BlueprintLLMOutput = z.infer<typeof BlueprintLLMOutputSchema>;

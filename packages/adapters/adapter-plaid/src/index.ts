@@ -12,7 +12,7 @@ export { formatPlaidAccount, formatPlaidTransaction } from './formatters.js';
 export { plaidError } from './plaid-errors.js';
 
 // ── MCP ───────────────────────────────────────────────────────────────────
-export { createPlaidMcpServer, startPlaidMcpServer } from './mcp.js';
+export { registerPlaidTools, createPlaidMcpServer, startPlaidMcpServer } from './mcp.js';
 
 // ── Manifest ───────────────────────────────────────────────────────────────
 import type { AdapterManifest } from '@mimicai/adapter-sdk';

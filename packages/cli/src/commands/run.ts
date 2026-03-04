@@ -101,80 +101,77 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const llmClient = new LLMClient(providerConfigFromMimic(config), costTracker);
   const cache = new BlueprintCache(blueprintDir);
   const engine = new BlueprintEngine(llmClient, cache, costTracker);
-  const expander = new BlueprintExpander(seed);
 
   const summary: { persona: string; tables: Record<string, number>; apis?: Record<string, number> }[] = [];
 
-  for (const persona of targetPersonas) {
-    logger.step(`Persona: ${chalk.bold(persona.name)}`);
+  // ── Phase 1: Obtain all blueprints (parallel for LLM calls) ──────────
+  const blueprintSpin = logger.spinner(
+    `Generating blueprints for ${targetPersonas.length} persona(s)...`,
+  );
 
-    // ── 1. Obtain blueprint ───────────────────────────────────────────────
-    let blueprint: Blueprint;
-    const cachedPath = join(blueprintDir, `${persona.name}.json`);
+  const blueprintResults: { persona: PersonaEntry; blueprint: Blueprint; personaIndex: number }[] = [];
 
-    if (persona.blueprint && isBuiltinBlueprint(persona.blueprint)) {
-      // Load from @mimicai/blueprints
-      const spin = logger.spinner('Loading built-in blueprint...');
-      try {
+  try {
+    const blueprintPromises = targetPersonas.map(async (persona, i) => {
+      const personaIndex = i + 1;
+      const cachedPath = join(blueprintDir, `${persona.name}.json`);
+
+      let blueprint: Blueprint;
+
+      if (persona.blueprint && isBuiltinBlueprint(persona.blueprint)) {
         blueprint = await loadBlueprint(persona.blueprint);
-        spin.succeed(`Loaded built-in blueprint: ${chalk.cyan(persona.blueprint)}`);
-      } catch (err) {
-        spin.fail('Failed to load built-in blueprint');
-        throw err;
-      }
-    } else if (!opts.generate && (await fileExists(cachedPath))) {
-      // Load from cache
-      const spin = logger.spinner('Loading cached blueprint...');
-      try {
+      } else if (!opts.generate && (await fileExists(cachedPath))) {
         blueprint = await readJson<Blueprint>(cachedPath);
-        spin.succeed('Loaded cached blueprint');
-      } catch (err) {
-        spin.fail('Failed to load cached blueprint');
-        throw err;
-      }
-    } else {
-      // Generate via LLM (BlueprintEngine)
-      const spin = logger.spinner('Generating blueprint via LLM...');
-      try {
+      } else {
         blueprint = await engine.generate(
           schema,
           { name: persona.name, description: persona.description },
           config.domain,
-          { force: opts.generate },
+          { force: opts.generate, personaIndex, totalPersonas: targetPersonas.length, volume: config.generate.volume },
           config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
         );
-        spin.succeed('Blueprint generated');
 
-        // Cache the generated blueprint
         if (!opts.dryRun) {
           await writeJson(cachedPath, blueprint);
           logger.debug(`Cached blueprint to ${cachedPath}`);
         }
-      } catch (err) {
-        spin.fail('Blueprint generation failed');
-        throw err;
       }
-    }
 
-    // ── 2. Expand blueprint into rows ─────────────────────────────────────
+      return { persona, blueprint, personaIndex };
+    });
+
+    const results = await Promise.all(blueprintPromises);
+    blueprintResults.push(...results);
+    blueprintSpin.succeed(
+      `Blueprints ready for ${targetPersonas.length} persona(s)`,
+    );
+  } catch (err) {
+    blueprintSpin.fail('Blueprint generation failed');
+    throw err;
+  }
+
+  // ── Phase 2: Expand blueprints (sequential, deterministic) ───────────
+  for (const { persona, blueprint, personaIndex } of blueprintResults) {
+    logger.step(`Expanding: ${chalk.bold(persona.name)}`);
+
+    // Each persona gets its own expander with a derived seed for independence
+    const expander = new BlueprintExpander(seed + personaIndex);
+
     const expandSpin = logger.spinner('Expanding blueprint into rows...');
     try {
       const expanded = expander.expand(blueprint, schema, config.generate.volume);
 
-      // ── 3. Write expanded data ──────────────────────────────────────────
       if (!opts.dryRun) {
         const outPath = join(dataDir, `${persona.name}.json`);
         await writeJson(outPath, expanded);
         logger.debug(`Wrote expanded data to ${outPath}`);
       }
 
-      // Collect summary stats
       const tableCounts: Record<string, number> = {};
       for (const [table, rows] of Object.entries(expanded.tables)) {
         tableCounts[table] = (rows as unknown[]).length;
       }
 
-      // Collect API response stats
       const apiCounts: Record<string, number> = {};
       for (const [adapterId, responseSet] of Object.entries(expanded.apiResponses)) {
         const total = Object.values(responseSet.responses)

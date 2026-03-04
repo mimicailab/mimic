@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import {
@@ -8,6 +9,7 @@ import {
 } from '@mimicai/adapter-sdk';
 import { SlackConfigSchema, type SlackConfig } from './config.js';
 import type { AdapterContext } from '@mimicai/core';
+import { registerSlackTools } from './mcp.js';
 
 // ── Namespace constants ─────────────────────────────────────────────────────
 const NS_CHANNELS = 'slack_channels';
@@ -73,6 +75,10 @@ export class SlackAdapter extends BaseApiMockAdapter<SlackConfig> {
   async init(config: SlackConfig, context: AdapterContext): Promise<void> {
     await super.init(config, context);
     this.config = SlackConfigSchema.parse(config);
+  }
+
+  registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
+    registerSlackTools(mcpServer, mockBaseUrl);
   }
 
   resolvePersona(_req: FastifyRequest): string | null {

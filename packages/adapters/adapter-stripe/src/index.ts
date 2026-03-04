@@ -1,7 +1,7 @@
 export { StripeAdapter } from './stripe-adapter.js';
 export { StripeConfigSchema } from './config.js';
 export type { StripeConfig } from './config.js';
-export { createStripeMcpServer, startStripeMcpServer } from './mcp.js';
+export { registerStripeTools, createStripeMcpServer, startStripeMcpServer } from './mcp.js';
 
 import type { AdapterManifest } from '@mimicai/adapter-sdk';
 
