@@ -19,6 +19,7 @@
   <a href="#what-is-mimic">What is Mimic?</a> ·
   <a href="#adapters">Adapters</a> ·
   <a href="#mcp-servers">MCP Servers</a> ·
+  <a href="#examples">Examples</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
@@ -30,6 +31,7 @@ Mimic replaces all of that with a single, consistent synthetic environment. One 
 
 ```bash
 npx @mimicai/cli init
+npx @mimicai/cli run
 npx @mimicai/cli seed
 npx @mimicai/cli host
 ```
@@ -50,7 +52,7 @@ npm install -g @mimicai/cli
 mimic init
 ```
 
-This creates a `mimic.json` config file in the current directory. Edit it to declare which surfaces your agent uses:
+This creates a `mimic.json` config file. Edit it to declare which surfaces your agent uses:
 
 ```json
 {
@@ -61,24 +63,24 @@ This creates a `mimic.json` config file in the current directory. Edit it to dec
       "blueprint": "young-professional"
     }
   ],
-  "databases": [
-    {
-      "adapter": "postgres",
-      "connectionString": "postgresql://localhost:5432/testdb"
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": { "source": "prisma", "path": "./prisma/schema.prisma" }
     }
-  ],
-  "apis": [
-    { "adapter": "plaid" },
-    { "adapter": "stripe" },
-    { "adapter": "slack" }
-  ]
+  },
+  "apis": {
+    "stripe": { "enabled": true, "mcp": true },
+    "plaid": { "enabled": true, "mcp": true }
+  }
 }
 ```
 
 ### Generate and seed
 
 ```bash
-mimic run        # Generate persona blueprint
+mimic run        # Generate persona blueprint + API mock data
 mimic seed       # Seed databases with persona-consistent data
 ```
 
@@ -90,17 +92,16 @@ Populates your PostgreSQL (or MongoDB, MySQL, SQLite) with persona-consistent da
 mimic host
 ```
 
-Starts a local server exposing all your configured API mocks and MCP servers:
+Starts a local server exposing all your configured API mocks and MCP tools through a single connection:
 
 ```
-  Plaid API        -> http://localhost:4000/plaid
-  Stripe API       -> http://localhost:4000/stripe/v1
-  Slack API        -> http://localhost:4000/slack
-  MCP Server       -> stdio
-  Ready in 1.2s
+  Mock API server  -> http://localhost:4100
+    Stripe         -> http://localhost:4100/stripe/v1
+    Plaid          -> http://localhost:4100/plaid
+  MCP Server       -> stdio (database + API adapter tools)
 ```
 
-Point your agent at `localhost:4000` instead of production APIs. Everything just works.
+When `mcp: true` is set on an API adapter, its tools are registered alongside database tools in the unified MCP server. Your agent connects once and gets everything.
 
 ### Run tests
 
@@ -144,10 +145,14 @@ Mimic is a **synthetic environment engine** for AI agent development. It solves 
               |            |           |            |
               v            v           v            v
           Real DB     Mock API    Mock API     Mock API
-          seeded    :4000/plaid :4000/stripe :4000/slack
+          seeded    :4100/plaid :4100/stripe :4100/slack
+                           |
+                           v
+                    Unified MCP Server
+                  (database + API tools)
 ```
 
-Pre-built personas ship with the package — no LLM calls needed for basic use. Just `mimic seed` and go.
+Pre-built personas ship with the package — no LLM calls needed for basic use. For custom domains, Mimic uses an LLM to generate realistic persona blueprints and API mock data.
 
 ## Adapters
 
@@ -164,7 +169,7 @@ Pre-built personas ship with the package — no LLM calls needed for basic use. 
 
 | Adapter | Package | Key Features |
 |---------|---------|-------------|
-| Stripe | `@mimicai/adapter-stripe` | Payments, customers, subscriptions, invoices, webhooks |
+| Stripe | `@mimicai/adapter-stripe` | Payments, customers, subscriptions, invoices, products, prices |
 | Plaid | `@mimicai/adapter-plaid` | Link flow, accounts, transactions, identity, balance |
 | Slack | `@mimicai/adapter-slack` | Channels, messages, users, reactions, threads |
 
@@ -172,7 +177,28 @@ Pre-built personas ship with the package — no LLM calls needed for basic use. 
 
 ## MCP Servers
 
-Every API mock adapter includes a built-in MCP server, so AI agents using the Model Context Protocol can connect directly:
+`mimic host` runs a unified MCP server that exposes all tools through a single connection:
+
+- **Database tools** — auto-generated from your schema (`get_customers`, `get_invoices_summary`, etc.)
+- **API adapter tools** — registered when `mcp: true` is set (`create_customer`, `list_subscriptions`, `retrieve_balance`, etc.)
+
+### Claude Desktop / Claude Code
+
+```json
+{
+  "mcpServers": {
+    "mimic": {
+      "command": "npx",
+      "args": ["@mimicai/cli", "host", "--transport", "stdio"],
+      "cwd": "/path/to/your/project"
+    }
+  }
+}
+```
+
+### Standalone adapter MCP servers
+
+Each API adapter can also run as a standalone MCP server:
 
 ```json
 {
@@ -188,6 +214,13 @@ Every API mock adapter includes a built-in MCP server, so AI agents using the Mo
   }
 }
 ```
+
+## Examples
+
+| Example | Description |
+|---------|-------------|
+| [billing-agent](examples/billing-agent/) | SaaS billing agent with PostgreSQL + Stripe mock, Next.js chat UI, 25 MCP tools |
+| [tasks-sqlite](examples/tasks-sqlite/) | Task management agent with SQLite, streaming chat UI |
 
 ## Project Structure
 
@@ -208,7 +241,8 @@ mimic/
 │   │   └── adapter-slack/
 │   └── docs/                     # Documentation site
 ├── examples/
-├── docs/
+│   ├── billing-agent/            # Billing agent (PG + Stripe + chat UI)
+│   └── tasks-sqlite/             # Tasks agent (SQLite + chat UI)
 ├── turbo.json
 └── pnpm-workspace.yaml
 ```
@@ -219,35 +253,31 @@ mimic/
 
 ```json
 {
-  "domain": "fintech agent testing",
+  "domain": "SaaS billing and subscription management",
   "llm": {
     "provider": "anthropic",
-    "model": "claude-sonnet-4-5-20250514"
+    "model": "claude-sonnet-4-6"
   },
   "personas": [
     {
-      "name": "finance-alex",
-      "blueprint": "young-professional"
+      "name": "growth-startup",
+      "description": "Fast-growing startup with 50 customers across 3 tiers"
     }
   ],
   "generate": {
-    "volume": 50,
+    "volume": "6 months",
     "seed": 42
   },
-  "databases": [
-    {
-      "adapter": "postgres",
-      "connectionString": "postgresql://localhost:5432/testdb",
-      "schema": "prisma"
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": { "source": "prisma", "path": "./prisma/schema.prisma" },
+      "seedStrategy": "truncate-and-insert"
     }
-  ],
-  "apis": [
-    { "adapter": "plaid" },
-    { "adapter": "stripe" },
-    { "adapter": "slack" }
-  ],
-  "test": {
-    "scenarios": "tests/"
+  },
+  "apis": {
+    "stripe": { "enabled": true, "mcp": true }
   }
 }
 ```
@@ -263,43 +293,6 @@ mimic test                    Run test scenarios
 mimic inspect                 View schema, data, or blueprint information
 mimic clean                   Remove all seeded data
 mimic adapters                Manage API mock adapters
-```
-
-## Examples
-
-### Testing a finance agent
-
-```bash
-mimic init
-mimic run
-mimic seed
-mimic host &
-
-# Your agent connects to:
-#   Plaid    -> http://localhost:4000/plaid
-#   Stripe   -> http://localhost:4000/stripe/v1
-#   Postgres -> postgresql://localhost:5432/testdb (seeded)
-
-python my_finance_agent.py --test
-mimic clean
-```
-
-### In CI/CD (GitHub Actions)
-
-```yaml
-- name: Start Mimic
-  run: |
-    npx @mimicai/cli seed
-    npx @mimicai/cli host --background
-
-- name: Run agent tests
-  run: npm test
-  env:
-    PLAID_BASE_URL: http://localhost:4000/plaid
-    STRIPE_API_BASE: http://localhost:4000/stripe/v1
-
-- name: Stop Mimic
-  run: npx @mimicai/cli clean
 ```
 
 ## Packages
