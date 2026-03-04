@@ -1413,23 +1413,7 @@
     <div class="nav-inner">
       <div class="nav-left">
         <a class="nav-logo" href="#">
-          <svg viewBox="0 0 200 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Brackets -->
-            <path d="M6 4H16V10H12V8H10V40H12V38H16V44H6V4Z" fill="currentColor"/>
-            <path d="M54 4H44V10H48V8H50V40H48V38H44V44H54V4Z" fill="currentColor"/>
-            <!-- M nodes and lines -->
-            <line x1="16" y1="36" x2="22" y2="16" stroke="currentColor" stroke-width="2.5"/>
-            <line x1="22" y1="16" x2="30" y2="28" stroke="currentColor" stroke-width="2.5"/>
-            <line x1="30" y1="28" x2="38" y2="16" stroke="currentColor" stroke-width="2.5"/>
-            <line x1="38" y1="16" x2="44" y2="36" stroke="currentColor" stroke-width="2.5"/>
-            <circle cx="16" cy="36" r="4.5" fill="currentColor"/>
-            <circle cx="22" cy="16" r="4.5" fill="currentColor"/>
-            <circle cx="30" cy="28" r="4.5" fill="currentColor"/>
-            <circle cx="38" cy="16" r="4.5" fill="currentColor"/>
-            <circle cx="44" cy="36" r="4.5" fill="currentColor"/>
-            <!-- Text -->
-            <text x="66" y="36" fill="currentColor" font-family="'JetBrains Mono', monospace" font-size="30" font-weight="700" letter-spacing="-0.5">Mimic</text>
-          </svg>
+          <img src="/assets/logo.svg" alt="Mimic" style="height:32px;width:auto;" />
         </a>
         <ul class="nav-links" id="navLinks">
           <li><a href="#how-it-works">How It Works</a></li>
@@ -1465,7 +1449,7 @@
         <span class="badge-icon" style="color: var(--accent-bright);">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </span>
-        v0.1.0
+        v0.4.0
       </span>
     </div>
 
@@ -2168,15 +2152,15 @@
         <div class="price-card">
           <div class="price-tier-label">Community</div>
           <div class="price-number">Free</div>
-          <div class="price-tagline">Everything to get started</div>
+          <div class="price-tagline">Open source, forever free</div>
           <ul class="price-list">
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> CLI + all 65+ adapters</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> All MCP servers</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 3 pre-built personas</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 3 custom blueprints/mo</li>
-            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 500 test runs/mo</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Full CLI &amp; local generation</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> PostgreSQL seeding</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> MCP server</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Pre-built personas</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Community support</li>
           </ul>
-          <a href="#cta" class="price-action outline">Get Started</a>
+          <a href="https://github.com/mimicailab/mimic" class="price-action outline" target="_blank" rel="noopener">Get Started on GitHub</a>
         </div>
         <div class="price-card pop">
           <div class="price-tier-label">Pro</div>
@@ -2190,7 +2174,7 @@
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> LLM-powered evaluation</li>
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> CI/CD integration</li>
           </ul>
-          <a href="https://mimic.dev/pricing" class="price-action accent">Start Free Trial</a>
+          <button class="price-action accent" onclick="openWaitlist('Pro')">Join Waitlist</button>
         </div>
         <div class="price-card">
           <div class="price-tier-label">Enterprise</div>
@@ -2204,7 +2188,7 @@
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Custom persona building</li>
             <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Dedicated SLA</li>
           </ul>
-          <a href="https://mimic.dev/contact" class="price-action white">Contact Sales</a>
+          <button class="price-action white" onclick="openWaitlist('Enterprise')">Join Waitlist</button>
         </div>
       </div>
     </div>
@@ -2233,29 +2217,148 @@
   <footer>
     <div class="footer-inner">
       <div class="footer-left">
-        <svg viewBox="0 0 60 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:18px;width:auto;">
-          <path d="M6 4H16V10H12V8H10V40H12V38H16V44H6V4Z" fill="currentColor"/>
-          <path d="M54 4H44V10H48V8H50V40H48V38H44V44H54V4Z" fill="currentColor"/>
-          <line x1="16" y1="36" x2="22" y2="16" stroke="currentColor" stroke-width="2.5"/>
-          <line x1="22" y1="16" x2="30" y2="28" stroke="currentColor" stroke-width="2.5"/>
-          <line x1="30" y1="28" x2="38" y2="16" stroke="currentColor" stroke-width="2.5"/>
-          <line x1="38" y1="16" x2="44" y2="36" stroke="currentColor" stroke-width="2.5"/>
-          <circle cx="16" cy="36" r="4.5" fill="currentColor"/>
-          <circle cx="22" cy="16" r="4.5" fill="currentColor"/>
-          <circle cx="30" cy="28" r="4.5" fill="currentColor"/>
-          <circle cx="38" cy="16" r="4.5" fill="currentColor"/>
-          <circle cx="44" cy="36" r="4.5" fill="currentColor"/>
-        </svg>
-        Mimic &middot; Apache 2.0 + ELv2
+        <img src="/assets/logo.svg" alt="Mimic" style="height:22px;width:auto;" />
+        &middot; Apache 2.0 + ELv2
       </div>
       <ul class="footer-links">
         <li><a href="/docs/getting-started">Docs</a></li>
         <li><a href="https://github.com/mimicailab/mimic">GitHub</a></li>
         <li><a href="https://discord.gg/xbwG2KPr">Discord</a></li>
         <li><a href="https://twitter.com/mimic_data">Twitter</a></li>
+        <li><a href="https://www.npmjs.com/org/mimicai">npm</a></li>
       </ul>
     </div>
   </footer>
+
+  <!-- ─── WAITLIST MODAL ─────────────────────────── -->
+  <div class="waitlist-overlay" id="waitlistOverlay" onclick="if(event.target===this)closeWaitlist()">
+    <div class="waitlist-dialog">
+      <button class="waitlist-close" onclick="closeWaitlist()" aria-label="Close">&times;</button>
+      <h3 class="waitlist-title">Join the <span id="waitlistTier">Pro</span> Waitlist</h3>
+      <p class="waitlist-desc">Mimic Cloud is coming soon. Be the first to know when it launches.</p>
+      <form class="waitlist-form" id="waitlistForm" onsubmit="submitWaitlist(event)">
+        <label class="waitlist-label">
+          <span>Name <span class="required">*</span></span>
+          <input type="text" name="name" required placeholder="Jane Doe" class="waitlist-input" />
+        </label>
+        <label class="waitlist-label">
+          <span>Email <span class="required">*</span></span>
+          <input type="email" name="email" required placeholder="jane@company.com" class="waitlist-input" />
+        </label>
+        <label class="waitlist-label">
+          <span>What agent are you building? <span class="optional">(optional)</span></span>
+          <input type="text" name="agent" placeholder="e.g. Customer support bot, coding assistant..." class="waitlist-input" />
+        </label>
+        <input type="hidden" name="tier" id="waitlistTierInput" value="" />
+        <button type="submit" class="waitlist-submit">Join Waitlist</button>
+      </form>
+      <div class="waitlist-success" id="waitlistSuccess" style="display:none;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+        <p>You're on the list! We'll be in touch soon.</p>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .waitlist-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+    .waitlist-overlay.open {
+      display: flex;
+    }
+    .waitlist-dialog {
+      background: #1a1a2e;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 440px;
+      width: 90%;
+      position: relative;
+      animation: waitlistIn 0.25s ease-out;
+    }
+    @keyframes waitlistIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .waitlist-close {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .waitlist-close:hover { color: var(--text); }
+    .waitlist-title {
+      font-size: 1.35rem;
+      margin: 0 0 6px;
+      color: var(--text);
+    }
+    .waitlist-title span { color: var(--accent-bright); }
+    .waitlist-desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      margin: 0 0 24px;
+    }
+    .waitlist-form { display: flex; flex-direction: column; gap: 16px; }
+    .waitlist-label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e2e2e2;
+      letter-spacing: 0.01em;
+    }
+    .waitlist-label .required { color: #f87171; display: inline; }
+    .waitlist-label .optional { color: #888; font-weight: 400; display: inline; }
+    .waitlist-input {
+      padding: 11px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.4);
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .waitlist-input:focus { border-color: var(--accent-bright); }
+    .waitlist-input::placeholder { color: #666; }
+    .waitlist-submit {
+      margin-top: 4px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .waitlist-submit:hover { background: var(--accent-bright); }
+    .waitlist-success {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .waitlist-success p {
+      margin: 16px 0 0;
+      color: var(--text);
+      font-size: 1.05rem;
+    }
+  </style>
 
   <!-- ─── SCROLL REVEAL ────────────────────────── -->
   <script>
@@ -2263,6 +2366,48 @@
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
     }, { threshold: 0.08 });
     document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+
+    /* ── Waitlist dialog ── */
+    function openWaitlist(tier) {
+      document.getElementById('waitlistTier').textContent = tier;
+      document.getElementById('waitlistTierInput').value = tier;
+      document.getElementById('waitlistForm').style.display = '';
+      document.getElementById('waitlistSuccess').style.display = 'none';
+      document.getElementById('waitlistOverlay').classList.add('open');
+    }
+    function closeWaitlist() {
+      document.getElementById('waitlistOverlay').classList.remove('open');
+    }
+    async function submitWaitlist(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector('.waitlist-submit');
+      const data = Object.fromEntries(new FormData(form));
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+      try {
+        const res = await fetch('https://cltot91flc.execute-api.eu-west-2.amazonaws.com/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: data.email,
+            name: data.name,
+            tier: data.tier || '',
+            agent: data.agent || ''
+          })
+        });
+        if (!res.ok) throw new Error('Request failed');
+        form.style.display = 'none';
+        document.getElementById('waitlistSuccess').style.display = '';
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Join Waitlist';
+        alert('Something went wrong. Please try again.');
+      }
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeWaitlist();
+    });
   </script>
 </body>
 </html>
