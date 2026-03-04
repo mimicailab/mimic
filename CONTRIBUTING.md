@@ -44,36 +44,31 @@ pnpm test
 
 ```
 packages/
-  oss/
-    cli/                  # CLI commands (init, seed, host, test, etc.)
-    adapter-sdk/          # Base classes and helpers for building adapters
-    adapter-postgres/     # Database adapter example
-    adapter-stripe/       # API mock adapter example
-    adapter-jira/         # API mock adapter example
-    mcp-servers/          # MCP server wrappers
-      shared/             # Shared MCP utilities
-      stripe/             # MCP wrapper for Stripe adapter
-      jira/               # MCP wrapper for Jira adapter
-    mock-server/          # Fastify server that hosts all mock adapters
-    blueprints/           # Pre-built persona files (JSON)
-  commercial/             # ELv2-licensed (see LICENSING.md)
-    blueprint-engine/
-    consistency/
-    test-advanced/
-    dashboard/
-    enterprise/
+  core/                   # Engine: types, schema, generate, seed, MCP, test, LLM, adapter, utils
+  cli/                    # CLI binary with 8 commands (init, run, seed, host, test, inspect, clean, adapters)
+  adapter-sdk/            # Base classes and helpers for building adapters
+  blueprints/             # Pre-built persona files (JSON)
+  adapters/
+    adapter-postgres/     # PostgreSQL database adapter
+    adapter-mysql/        # MySQL database adapter
+    adapter-sqlite/       # SQLite database adapter
+    adapter-mongodb/      # MongoDB database adapter
+    adapter-stripe/       # Stripe API mock adapter (with MCP server)
+    adapter-plaid/        # Plaid API mock adapter (with MCP server)
+    adapter-slack/        # Slack API mock adapter (with MCP server)
+  docs/                   # Astro documentation site
 examples/                 # Example projects using Mimic
-docs/                     # Documentation
+docs/                     # Architecture and guide documents
 ```
 
 ### Development Workflow
 
 ```bash
-# Start the mock server in dev mode (auto-reload)
-pnpm --filter @mimicai/mock-server dev
-
 # Run a specific adapter's tests
-pnpm --filter @mimicai/adapter-jira test
+pnpm --filter @mimicai/adapter-stripe test
+
+# Run all tests
+pnpm test
 
 # Lint everything
 pnpm lint
@@ -88,21 +83,25 @@ This is the most common and highest-impact contribution. Each adapter mocks a si
 
 ### Quick version
 
-```bash
-# Scaffold a new adapter
-pnpm mimic:create-adapter my-platform
+Create a new adapter directory under `packages/adapters/`:
 
-# This creates:
-# packages/oss/adapter-my-platform/
-#   ├── src/
-#   │   ├── index.ts        # Adapter class
-#   │   ├── seed.ts         # Seed data factory
-#   │   └── routes.ts       # Route handlers
-#   ├── __tests__/
-#   │   └── adapter.test.ts
-#   ├── package.json
-#   └── README.md
 ```
+packages/adapters/adapter-my-platform/
+├── src/
+│   ├── my-platform-adapter.ts    # Adapter class extending BaseApiMockAdapter
+│   ├── config.ts                 # Zod config schema
+│   ├── index.ts                  # Exports & manifest
+│   ├── bin/
+│   │   └── mcp.ts                # MCP server entry point
+│   └── __tests__/
+│       └── my-platform-adapter.test.ts
+├── package.json
+├── tsconfig.json
+├── tsup.config.ts
+└── README.md
+```
+
+Use `adapter-stripe` as a reference implementation.
 
 ### Detailed guide
 
@@ -124,7 +123,7 @@ For an adapter to be merged into the main repo and published as `@mimicai/adapte
 3. **Correct response shapes** — responses must match the real API's structure (wrapped objects, pagination, error formats)
 4. **Authentication pattern** — implement the platform's auth style (Bearer, Basic, API key, etc.)
 5. **TypeScript** — all adapters are written in TypeScript with strict mode
-6. **Tests** — at least one integration test per route group (list, create, get, update)
+6. **Tests** — at least one integration test per route group (list, create, get, update), using `buildTestServer` from `@mimicai/adapter-sdk`
 7. **README** — document the adapter's endpoints, auth pattern, seed data, and any quirks
 
 Community adapters that don't meet this bar can still be published as independent npm packages using the adapter SDK.
@@ -136,7 +135,7 @@ Community adapters that don't meet this bar can still be published as independen
    git checkout -b feat/adapter-hubspot
    ```
 
-2. **Make your changes.** Follow existing patterns in the codebase. If you're unsure, look at `adapter-jira` or `adapter-stripe` as reference implementations.
+2. **Make your changes.** Follow existing patterns in the codebase. Look at `adapter-stripe` as the reference implementation.
 
 3. **Write tests.** Run them locally:
    ```bash
@@ -169,7 +168,6 @@ Community adapters that don't meet this bar can still be published as independen
 
 Every adapter contribution gets:
 
-- Your name in `CONTRIBUTORS.md`
 - Social media shoutout on [@mimicailab](https://twitter.com/mimic_data)
 - "Mimic Adapter Author" badge on your GitHub profile (via org invitation)
 - Free Pro tier for the duration you actively maintain the adapter
@@ -202,7 +200,7 @@ For feature requests and architectural proposals, open a [GitHub Discussion](htt
 
 ## License
 
-By contributing to Mimic, you agree that your contributions to files under `packages/oss/` will be licensed under [Apache 2.0](LICENSE-APACHE-2.0). Contributions to files under `packages/commercial/` will be licensed under [Elastic License v2](LICENSE-ELv2).
+By contributing to Mimic, you agree that your contributions will be licensed under [Apache 2.0](LICENSE-APACHE-2.0).
 
 We require a Contributor License Agreement (CLA) for all contributions. The CLA bot will prompt you on your first PR — it's a one-time click.
 

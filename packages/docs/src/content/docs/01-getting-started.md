@@ -90,13 +90,13 @@ Populates your PostgreSQL (or MongoDB, MySQL, SQLite) with persona-consistent da
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="prompt">$</span> mimic host
 &#8203;
-<span class="ok">&#10003;</span> <span class="out">Stripe API    &rarr; http://localhost:4000/stripe/v1</span>
-<span class="ok">&#10003;</span> <span class="out">Plaid API     &rarr; http://localhost:4000/plaid</span>
+<span class="ok">&#10003;</span> <span class="out">Stripe API    &rarr; http://localhost:4100/stripe/v1</span>
+<span class="ok">&#10003;</span> <span class="out">Plaid API     &rarr; http://localhost:4100/plaid</span>
 <span class="ok">&#10003;</span> <span class="out">Slack MCP     &rarr; stdio ready</span>
 <span class="ok">&#10003;</span> <span class="out">Ready in 1.2s</span></code></pre>
 </div>
 
-Point your agent at `localhost:4000` instead of production APIs. Everything just works.
+Point your agent at `localhost:4100` instead of production APIs. Everything just works.
 
 ### 4. Run tests
 
