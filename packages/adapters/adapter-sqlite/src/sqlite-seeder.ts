@@ -135,13 +135,17 @@ export class SQLiteSeeder implements DatabaseAdapter<SQLiteConfig> {
   private introspectWithDb(db: BetterSQLite3Database): SchemaModel {
     // Get all tables (excluding sqlite internal tables)
     const tableRows = db.prepare(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
-    ).all() as Array<{ name: string }>;
+      `SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
+    ).all() as Array<{ name: string; sql: string }>;
 
     const tables: TableInfo[] = [];
 
     for (const tableRow of tableRows) {
       const tableName = tableRow.name;
+      const createSQL = tableRow.sql ?? '';
+
+      // Extract CHECK(col IN (...)) constraints from the CREATE TABLE SQL
+      const checkEnumMap = extractCheckEnumValues(createSQL);
 
       // Get column info
       const columnRows = db.pragma(`table_info("${tableName}")`) as SQLitePragmaColumn[];
@@ -164,6 +168,7 @@ export class SQLiteSeeder implements DatabaseAdapter<SQLiteConfig> {
 
       const columns: ColumnInfo[] = columnRows.map((col) => {
         const isAutoIncrement = col.pk === 1 && (col.type.toUpperCase().includes('INTEGER'));
+        const enumValues = checkEnumMap.get(col.name);
         return {
           name: col.name,
           type: mapSQLiteType(col.type),
@@ -176,7 +181,7 @@ export class SQLiteSeeder implements DatabaseAdapter<SQLiteConfig> {
           maxLength: undefined,
           precision: undefined,
           scale: undefined,
-          enumValues: undefined,
+          enumValues,
           comment: undefined,
         };
       });
@@ -299,7 +304,7 @@ export class SQLiteSeeder implements DatabaseAdapter<SQLiteConfig> {
 
         const colList = columns.map((c) => `"${c}"`).join(', ');
         const placeholders = columns.map(() => '?').join(', ');
-        const sql = `INSERT INTO "${tableName}" (${colList}) VALUES (${placeholders})`;
+        const sql = `INSERT OR IGNORE INTO "${tableName}" (${colList}) VALUES (${placeholders})`;
         const stmt = db.prepare(sql);
 
         debug(`INSERT "${tableName}" -- ${mergedRows.length} rows`);
@@ -472,6 +477,30 @@ interface SQLitePragmaIndexInfo {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Extract CHECK(col IN ('a', 'b', 'c')) constraints from a CREATE TABLE SQL
+ * statement. Returns a map of column name → allowed values.
+ *
+ * Handles patterns like:
+ *   CHECK(status IN ('active', 'completed', 'archived'))
+ *   CHECK (priority IN ('low','medium','high','urgent'))
+ */
+function extractCheckEnumValues(createSQL: string): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+  // Match: CHECK ( colName IN ( 'val1', 'val2', ... ) )
+  const checkPattern = /CHECK\s*\(\s*(\w+)\s+IN\s*\(\s*([^)]+)\s*\)\s*\)/gi;
+  let match: RegExpExecArray | null;
+  while ((match = checkPattern.exec(createSQL)) !== null) {
+    const colName = match[1];
+    const valuesStr = match[2];
+    const values = [...valuesStr.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    if (values.length > 0) {
+      result.set(colName, values);
+    }
+  }
+  return result;
+}
 
 function normalizeAction(action?: string): 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION' | undefined {
   switch (action?.toUpperCase()) {
