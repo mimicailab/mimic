@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-sdk",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "SDK for building Mimic API mock adapters — base class, test helpers, and shared utilities",
   "type": "module",
   "license": "Apache-2.0",

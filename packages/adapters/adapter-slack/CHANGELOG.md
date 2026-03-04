@@ -1,5 +1,13 @@
 # @mimicailab/adapter-slack
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [[`2ee93d5`](https://github.com/mimicailab/mimic/commit/2ee93d546e4d71589a022332eaeed735aaea09dc)]:
+  - @mimicai/core@0.4.0
+  - @mimicai/adapter-sdk@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes
