@@ -1,10 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Agent, run } from '@openai/agents';
-import { tool } from '@openai/agents';
+import { streamText, tool, stepCountIs, type ModelMessage } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { aisdk } from '@openai/agents-extensions/ai-sdk';
 import Database from 'better-sqlite3';
 import { z } from 'zod';
 
@@ -238,142 +236,7 @@ const stmtGetBlockedTasksByProject = db.prepare(`
 `);
 
 // ---------------------------------------------------------------------------
-// Claude model via Vercel AI SDK adapter
-// ---------------------------------------------------------------------------
-
-const model = aisdk(anthropic(MODEL));
-
-// ---------------------------------------------------------------------------
-// Tool definitions
-// ---------------------------------------------------------------------------
-
-const listProjects = tool({
-  name: 'list_projects',
-  description:
-    'List all projects with their task counts. Optionally filter by status (active, completed, archived).',
-  parameters: z.object({
-    status: z
-      .enum(['active', 'completed', 'archived'])
-      .optional()
-      .describe('Filter projects by status'),
-  }),
-  execute: async ({ status }) => {
-    const rows = status
-      ? stmtListProjectsByStatus.all(status)
-      : stmtListProjects.all();
-    return JSON.stringify({ projects: rows, count: rows.length });
-  },
-});
-
-const searchTasks = tool({
-  name: 'search_tasks',
-  description:
-    'Search tasks by keyword in title or description. Optionally filter by status and/or priority.',
-  parameters: z.object({
-    query: z.string().describe('Search keyword to match against task title or description'),
-    status: z
-      .enum(['todo', 'in_progress', 'review', 'done', 'blocked'])
-      .optional()
-      .describe('Filter by task status'),
-    priority: z
-      .enum(['low', 'medium', 'high', 'urgent'])
-      .optional()
-      .describe('Filter by task priority'),
-    limit: z
-      .number()
-      .int()
-      .min(1)
-      .max(100)
-      .default(20)
-      .describe('Maximum number of results to return'),
-  }),
-  execute: async ({ query, status, priority, limit }) => {
-    const pattern = `%${query}%`;
-    let rows: unknown[];
-
-    if (status && priority) {
-      rows = stmtSearchTasksByStatusAndPriority.all(pattern, pattern, status, priority, limit);
-    } else if (status) {
-      rows = stmtSearchTasksByStatus.all(pattern, pattern, status, limit);
-    } else if (priority) {
-      rows = stmtSearchTasksByPriority.all(pattern, pattern, priority, limit);
-    } else {
-      rows = stmtSearchTasks.all(pattern, pattern, limit);
-    }
-
-    return JSON.stringify({ tasks: rows, count: rows.length });
-  },
-});
-
-const getTaskDetails = tool({
-  name: 'get_task_details',
-  description:
-    'Get full details for a specific task by ID, including its project name and labels.',
-  parameters: z.object({
-    task_id: z.number().int().positive().describe('The ID of the task to retrieve'),
-  }),
-  execute: async ({ task_id }) => {
-    const row = stmtGetTaskDetails.get(task_id);
-    if (!row) {
-      return JSON.stringify({ error: `Task with ID ${task_id} not found` });
-    }
-    return JSON.stringify({ task: row });
-  },
-});
-
-const getProjectTasks = tool({
-  name: 'get_project_tasks',
-  description:
-    'Get all tasks for a specific project, ordered by priority (urgent first). Optionally filter by status.',
-  parameters: z.object({
-    project_id: z.number().int().positive().describe('The project ID'),
-    status: z
-      .enum(['todo', 'in_progress', 'review', 'done', 'blocked'])
-      .optional()
-      .describe('Filter by task status'),
-  }),
-  execute: async ({ project_id, status }) => {
-    const rows = status
-      ? stmtGetProjectTasksByStatus.all(project_id, status)
-      : stmtGetProjectTasks.all(project_id);
-    return JSON.stringify({ tasks: rows, count: rows.length });
-  },
-});
-
-const getTaskComments = tool({
-  name: 'get_task_comments',
-  description: 'Get all comments for a specific task, ordered chronologically.',
-  parameters: z.object({
-    task_id: z.number().int().positive().describe('The task ID'),
-  }),
-  execute: async ({ task_id }) => {
-    const rows = stmtGetTaskComments.all(task_id);
-    return JSON.stringify({ comments: rows, count: rows.length });
-  },
-});
-
-const getBlockedTasks = tool({
-  name: 'get_blocked_tasks',
-  description:
-    'Get all tasks that are currently blocked. Optionally filter by project ID. Results are ordered by priority and due date.',
-  parameters: z.object({
-    project_id: z
-      .number()
-      .int()
-      .positive()
-      .optional()
-      .describe('Optionally filter blocked tasks by project ID'),
-  }),
-  execute: async ({ project_id }) => {
-    const rows = project_id
-      ? stmtGetBlockedTasksByProject.all(project_id)
-      : stmtGetBlockedTasks.all();
-    return JSON.stringify({ blocked_tasks: rows, count: rows.length });
-  },
-});
-
-// ---------------------------------------------------------------------------
-// Agent definition
+// System prompt
 // ---------------------------------------------------------------------------
 
 const SYSTEM_PROMPT = [
@@ -385,44 +248,133 @@ const SYSTEM_PROMPT = [
   'Format responses clearly with bullet points or tables where appropriate.',
 ].join(' ');
 
-const agent = new Agent({
-  name: 'Task Management Assistant',
-  instructions: SYSTEM_PROMPT,
-  model,
-  tools: [listProjects, searchTasks, getTaskDetails, getProjectTasks, getTaskComments, getBlockedTasks],
-});
-
 // ---------------------------------------------------------------------------
-// Chat handler
+// Tool definitions (Vercel AI SDK format)
 // ---------------------------------------------------------------------------
 
-async function handleChat(message: string): Promise<{
-  text: string;
-  toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
-}> {
-  const result = await run(agent, message);
+const tools = {
+  list_projects: tool({
+    description:
+      'List all projects with their task counts. Optionally filter by status (active, completed, archived).',
+    inputSchema: z.object({
+      status: z
+        .enum(['active', 'completed', 'archived'])
+        .optional()
+        .describe('Filter projects by status'),
+    }),
+    execute: async ({ status }) => {
+      const rows = status
+        ? stmtListProjectsByStatus.all(status)
+        : stmtListProjects.all();
+      return { projects: rows, count: rows.length };
+    },
+  }),
 
-  const toolCalls: Array<{ name: string; arguments: Record<string, unknown> }> = [];
-  for (const item of result.newItems) {
-    if (item.type === 'tool_call_item') {
-      toolCalls.push({
-        name: item.rawItem.name ?? '',
-        arguments:
-          typeof item.rawItem.arguments === 'string'
-            ? JSON.parse(item.rawItem.arguments)
-            : (item.rawItem.arguments as Record<string, unknown>) ?? {},
-      });
-    }
-  }
+  search_tasks: tool({
+    description:
+      'Search tasks by keyword in title or description. Optionally filter by status and/or priority.',
+    inputSchema: z.object({
+      query: z.string().describe('Search keyword to match against task title or description'),
+      status: z
+        .enum(['todo', 'in_progress', 'review', 'done', 'blocked'])
+        .optional()
+        .describe('Filter by task status'),
+      priority: z
+        .enum(['low', 'medium', 'high', 'urgent'])
+        .optional()
+        .describe('Filter by task priority'),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .default(20)
+        .describe('Maximum number of results to return'),
+    }),
+    execute: async ({ query, status, priority, limit }) => {
+      const pattern = `%${query}%`;
+      let rows: unknown[];
 
-  return {
-    text: result.finalOutput ?? '',
-    toolCalls,
-  };
-}
+      if (status && priority) {
+        rows = stmtSearchTasksByStatusAndPriority.all(pattern, pattern, status, priority, limit);
+      } else if (status) {
+        rows = stmtSearchTasksByStatus.all(pattern, pattern, status, limit);
+      } else if (priority) {
+        rows = stmtSearchTasksByPriority.all(pattern, pattern, priority, limit);
+      } else {
+        rows = stmtSearchTasks.all(pattern, pattern, limit);
+      }
+
+      return { tasks: rows, count: rows.length };
+    },
+  }),
+
+  get_task_details: tool({
+    description:
+      'Get full details for a specific task by ID, including its project name and labels.',
+    inputSchema: z.object({
+      task_id: z.number().int().positive().describe('The ID of the task to retrieve'),
+    }),
+    execute: async ({ task_id }) => {
+      const row = stmtGetTaskDetails.get(task_id);
+      if (!row) {
+        return { error: `Task with ID ${task_id} not found` };
+      }
+      return { task: row };
+    },
+  }),
+
+  get_project_tasks: tool({
+    description:
+      'Get all tasks for a specific project, ordered by priority (urgent first). Optionally filter by status.',
+    inputSchema: z.object({
+      project_id: z.number().int().positive().describe('The project ID'),
+      status: z
+        .enum(['todo', 'in_progress', 'review', 'done', 'blocked'])
+        .optional()
+        .describe('Filter by task status'),
+    }),
+    execute: async ({ project_id, status }) => {
+      const rows = status
+        ? stmtGetProjectTasksByStatus.all(project_id, status)
+        : stmtGetProjectTasks.all(project_id);
+      return { tasks: rows, count: rows.length };
+    },
+  }),
+
+  get_task_comments: tool({
+    description: 'Get all comments for a specific task, ordered chronologically.',
+    inputSchema: z.object({
+      task_id: z.number().int().positive().describe('The task ID'),
+    }),
+    execute: async ({ task_id }) => {
+      const rows = stmtGetTaskComments.all(task_id);
+      return { comments: rows, count: rows.length };
+    },
+  }),
+
+  get_blocked_tasks: tool({
+    description:
+      'Get all tasks that are currently blocked. Optionally filter by project ID. Results are ordered by priority and due date.',
+    inputSchema: z.object({
+      project_id: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Optionally filter blocked tasks by project ID'),
+    }),
+    execute: async ({ project_id }) => {
+      const rows = project_id
+        ? stmtGetBlockedTasksByProject.all(project_id)
+        : stmtGetBlockedTasks.all();
+      return { blocked_tasks: rows, count: rows.length };
+    },
+  }),
+};
 
 // ---------------------------------------------------------------------------
-// HTTP server
+// HTTP server — POST /chat (streaming) + GET /health
 // ---------------------------------------------------------------------------
 
 async function readBody(req: IncomingMessage): Promise<string> {
@@ -456,20 +408,32 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // POST /chat
+  // POST /chat — streaming endpoint compatible with Vercel AI SDK useChat
   if (req.method === 'POST' && req.url === '/chat') {
     try {
       const body = await readBody(req);
       const parsed = JSON.parse(body);
-      const message = parsed?.message;
 
-      if (!message || typeof message !== 'string') {
-        json(res, 400, { error: 'Request body must include a "message" string field' });
+      // Accept either { messages } (useChat format) or { message } (simple format)
+      let messages: ModelMessage[];
+      if (parsed.messages && Array.isArray(parsed.messages)) {
+        messages = parsed.messages;
+      } else if (parsed.message && typeof parsed.message === 'string') {
+        messages = [{ role: 'user', content: parsed.message }];
+      } else {
+        json(res, 400, { error: 'Request body must include "messages" array or "message" string' });
         return;
       }
 
-      const result = await handleChat(message);
-      json(res, 200, result);
+      const result = streamText({
+        model: anthropic(MODEL),
+        system: SYSTEM_PROMPT,
+        messages,
+        tools,
+        stopWhen: stepCountIs(5),
+      });
+
+      result.pipeUIMessageStreamToResponse(res);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('Chat error:', errorMessage);
@@ -504,5 +468,6 @@ server.listen(PORT, () => {
   console.log('');
   console.log('Endpoints:');
   console.log('  GET  /health');
-  console.log('  POST /chat   { "message": "..." }');
+  console.log('  POST /chat   { "messages": [...] }  (streaming, AI SDK data protocol)');
+  console.log('  POST /chat   { "message": "..." }   (streaming, simple format)');
 });

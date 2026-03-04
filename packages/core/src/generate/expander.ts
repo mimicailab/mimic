@@ -9,10 +9,13 @@ import type {
   ExpandedData,
   Row,
   EntityData,
+  EntityArchetype,
+  EntityArchetypeConfig,
   ApiResponseSet,
   ApiResponse,
 } from '../types/index.js';
 import { SeededRandom } from './seed-random.js';
+import { FieldGenerator } from './field-generators.js';
 import { logger } from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
@@ -43,9 +46,11 @@ interface IdTracker {
  */
 export class BlueprintExpander {
   private readonly rng: SeededRandom;
+  private readonly fieldGen: FieldGenerator;
 
   constructor(seed: number) {
     this.rng = new SeededRandom(seed);
+    this.fieldGen = new FieldGenerator(this.rng, seed);
   }
 
   // -----------------------------------------------------------------------
@@ -92,6 +97,40 @@ export class BlueprintExpander {
     }
 
     // ------------------------------------------------------------------
+    // 1b. Archetype expansion — scale entities from compact templates
+    // ------------------------------------------------------------------
+    if (blueprint.data.entityArchetypes) {
+      for (const tableName of schema.insertionOrder) {
+        const config = blueprint.data.entityArchetypes[tableName];
+        if (!config) continue;
+
+        const tableInfo = tableIndex.get(tableName);
+        const existingRows = tables[tableName] ?? [];
+        const archetypeRows = this.expandArchetypes(
+          config,
+          tableName,
+          tableInfo,
+          idTracker,
+        );
+        tables[tableName] = [...existingRows, ...archetypeRows];
+      }
+
+      // Also expand archetype tables not in insertionOrder
+      for (const [tableName, config] of Object.entries(blueprint.data.entityArchetypes)) {
+        if (schema.insertionOrder.includes(tableName)) continue;
+        const tableInfo = tableIndex.get(tableName);
+        const existingRows = tables[tableName] ?? [];
+        const archetypeRows = this.expandArchetypes(
+          config,
+          tableName,
+          tableInfo,
+          idTracker,
+        );
+        tables[tableName] = [...existingRows, ...archetypeRows];
+      }
+    }
+
+    // ------------------------------------------------------------------
     // 2. Patterns — expand into transactional rows
     // ------------------------------------------------------------------
     for (const pattern of blueprint.data.patterns) {
@@ -132,15 +171,45 @@ export class BlueprintExpander {
     // ------------------------------------------------------------------
     const apiResponses: Record<string, ApiResponseSet> = {};
 
+    // 5a. Expand apiEntityArchetypes (scalable)
+    if (blueprint.data.apiEntityArchetypes) {
+      for (const [adapterId, resources] of Object.entries(
+        blueprint.data.apiEntityArchetypes,
+      )) {
+        apiResponses[adapterId] = this.expandApiArchetypes(
+          adapterId,
+          resources,
+          blueprint.personaId,
+          range,
+        );
+      }
+    }
+
+    // 5b. Pass through static apiEntities (small reference data)
     if (blueprint.data.apiEntities) {
       for (const [adapterId, resources] of Object.entries(
         blueprint.data.apiEntities,
       )) {
-        apiResponses[adapterId] = this.expandApiEntities(
+        const staticSet = this.expandApiEntities(
           adapterId,
           resources,
           blueprint.personaId,
         );
+
+        // Merge with any archetype-expanded responses for this adapter
+        if (apiResponses[adapterId]) {
+          for (const [resourceType, responses] of Object.entries(
+            staticSet.responses,
+          )) {
+            const existing = apiResponses[adapterId]!.responses[resourceType] ?? [];
+            apiResponses[adapterId]!.responses[resourceType] = [
+              ...existing,
+              ...responses,
+            ];
+          }
+        } else {
+          apiResponses[adapterId] = staticSet;
+        }
       }
     }
 
@@ -342,6 +411,50 @@ export class BlueprintExpander {
     }
   }
   // -----------------------------------------------------------------------
+  // Archetype expansion
+  // -----------------------------------------------------------------------
+
+  /**
+   * Expand archetypes into full entity rows by cloning templates with
+   * randomized field variations. Respects distribution weights.
+   */
+  private expandArchetypes(
+    config: EntityArchetypeConfig,
+    tableName: string,
+    tableInfo: TableInfo | undefined,
+    idTracker: IdTracker,
+  ): Row[] {
+    const { count, archetypes } = config;
+    const distribution = distributeByWeight(archetypes, count);
+    const rows: Row[] = [];
+
+    logger.debug(
+      `Expanding ${count} entities for "${tableName}" from ${archetypes.length} archetype(s)`,
+    );
+
+    for (let arcIdx = 0; arcIdx < archetypes.length; arcIdx++) {
+      const archetype = archetypes[arcIdx]!;
+      const archetypeCount = distribution[arcIdx]!;
+
+      for (let i = 0; i < archetypeCount; i++) {
+        const row = this.fieldGen.applyVariations(
+          archetype.vary,
+          archetype.fields,
+          i,
+          tableName,
+        );
+
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        resolveReferences(row, idTracker, this.rng);
+        rows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+    }
+
+    return rows;
+  }
+
+  // -----------------------------------------------------------------------
   // API entity expansion
   // -----------------------------------------------------------------------
 
@@ -352,6 +465,80 @@ export class BlueprintExpander {
    * adapter's StateStore namespace convention (e.g. "stripe_customers").
    * The LLM generates IDs that match cross-platform references in DB entities.
    */
+  /**
+   * Expand API entity archetypes into full ApiResponseSet objects.
+   *
+   * Uses the same archetype expansion logic as DB entities — distributes
+   * count by weight, clones with field variations via FieldGenerator.
+   * Generic: works for any adapter (Stripe, Plaid, Slack, etc.).
+   */
+  private expandApiArchetypes(
+    adapterId: string,
+    resources: Record<string, EntityArchetypeConfig>,
+    personaId: string,
+    range: TimeRange,
+  ): ApiResponseSet {
+    const responses: Record<string, ApiResponse[]> = {};
+    const startSec = Math.floor(range.start.getTime() / 1000);
+    const endSec = Math.floor(range.end.getTime() / 1000);
+
+    for (const [resourceType, config] of Object.entries(resources)) {
+      const { count, archetypes } = config;
+      const distribution = distributeByWeight(archetypes, count);
+      const expanded: ApiResponse[] = [];
+
+      logger.debug(
+        `Expanding ${count} API entities for "${adapterId}.${resourceType}" from ${archetypes.length} archetype(s)`,
+      );
+
+      let globalIdx = 0;
+      for (let arcIdx = 0; arcIdx < archetypes.length; arcIdx++) {
+        const archetype = archetypes[arcIdx]!;
+        const archetypeCount = distribution[arcIdx]!;
+
+        for (let i = 0; i < archetypeCount; i++) {
+          const row = this.fieldGen.applyVariations(
+            archetype.vary,
+            archetype.fields,
+            i,
+            `${adapterId}.${resourceType}`,
+          );
+
+          // Ensure created timestamp falls within the configured date range
+          const createdKey = row.created !== undefined ? 'created' : row.created_at !== undefined ? 'created_at' : null;
+          if (createdKey) {
+            const ts = row[createdKey] as number;
+            if (ts < startSec || ts > endSec) {
+              row[createdKey] = startSec + Math.floor(this.rng.next() * (endSec - startSec));
+            }
+          } else {
+            row.created = startSec + Math.floor(this.rng.next() * (endSec - startSec));
+          }
+
+          expanded.push({
+            statusCode: 200,
+            headers: { 'content-type': 'application/json' },
+            body: row,
+            personaId,
+            stateKey: `${adapterId}_${resourceType}`,
+          });
+          globalIdx++;
+        }
+      }
+
+      // Sort by created timestamp for chronological consistency
+      expanded.sort((a, b) => {
+        const ca = (a.body as Record<string, unknown>).created as number ?? 0;
+        const cb = (b.body as Record<string, unknown>).created as number ?? 0;
+        return ca - cb;
+      });
+
+      responses[resourceType] = expanded;
+    }
+
+    return { adapterId, responses };
+  }
+
   private expandApiEntities(
     adapterId: string,
     resources: Record<string, EntityData[]>,
@@ -627,10 +814,14 @@ function trackRow(
 
 /**
  * Resolve `{{table_name.column_name}}` placeholder references in row values.
+ *
+ * When `rng` is provided, references are resolved to a random matching ID
+ * (used during archetype expansion to distribute child rows across parents).
+ * Without `rng`, the first matching ID is used (original deterministic behaviour).
  */
 const REF_PATTERN = /^\{\{(\w+)\.(\w+)\}\}$/;
 
-function resolveReferences(row: Row, idTracker: IdTracker): void {
+function resolveReferences(row: Row, idTracker: IdTracker, rng?: SeededRandom): void {
   for (const [key, value] of Object.entries(row)) {
     if (typeof value !== 'string') continue;
 
@@ -643,9 +834,8 @@ function resolveReferences(row: Row, idTracker: IdTracker): void {
     const lookupMap = idTracker.lookup.get(lookupKey);
 
     if (lookupMap && lookupMap.size > 0) {
-      // Pick the first matching ID (deterministic for single-persona)
-      const firstValue = lookupMap.values().next().value;
-      row[key] = firstValue;
+      const values = [...lookupMap.values()];
+      row[key] = rng ? rng.pick(values) : values[0];
     }
   }
 }
@@ -714,6 +904,32 @@ function sortChronologically(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Distribute a total count across archetypes proportionally to their weights.
+ * Handles rounding by adjusting the largest bucket.
+ */
+function distributeByWeight(
+  archetypes: EntityArchetype[],
+  totalCount: number,
+): number[] {
+  if (archetypes.length === 0) return [];
+  if (archetypes.length === 1) return [totalCount];
+
+  const totalWeight = archetypes.reduce((sum, a) => sum + a.weight, 0);
+  const counts = archetypes.map((a) =>
+    Math.round((a.weight / totalWeight) * totalCount),
+  );
+
+  // Adjust for rounding errors
+  const diff = totalCount - counts.reduce((s, c) => s + c, 0);
+  if (diff !== 0) {
+    const maxIdx = counts.indexOf(Math.max(...counts));
+    counts[maxIdx] += diff;
+  }
+
+  return counts;
+}
 
 function indexTables(schema: SchemaModel): Map<string, TableInfo> {
   const map = new Map<string, TableInfo>();

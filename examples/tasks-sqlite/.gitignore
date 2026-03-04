@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+node_modules/
+*.db
+*.db-shm
+*.db-wal
+.mimic/

@@ -19,6 +19,9 @@ export type {
   DataPattern,
   RandomSpec,
   FrequencySpec,
+  FieldVariation,
+  EntityArchetype,
+  EntityArchetypeConfig,
 } from './blueprint.js';
 
 export type {

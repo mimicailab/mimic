@@ -1,9 +1,11 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
 import { stripeError } from './stripe-errors.js';
+import { registerStripeTools } from './mcp.js';
 
 // ---------------------------------------------------------------------------
 // Namespace constants
@@ -47,6 +49,10 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
     '2025-09-30.clover',
     '2026-02-25.clover',
   ];
+
+  registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
+    registerStripeTools(mcpServer, mockBaseUrl);
+  }
 
   resolvePersona(req: FastifyRequest): string | null {
     const auth = req.headers.authorization;

@@ -80,6 +80,10 @@ That's it. Two fields and you can run `mimic run` to generate blueprints. Add a 
     }
   },
 &#8203;
+  <span class="yk">"apis"</span>: {
+    <span class="yk">"stripe"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> }
+  },
+&#8203;
   <span class="yk">"test"</span>: {
     <span class="yk">"agent"</span>: <span class="str">"http://localhost:3000/chat"</span>,
     <span class="yk">"scenarios"</span>: [
@@ -108,6 +112,7 @@ That's it. Two fields and you can run `mimic run` to generate blueprints. Add a 
       <tr><td><code>llm</code></td><td>No</td><td>object</td><td>LLM provider and model for blueprint generation</td></tr>
       <tr><td><code>generate</code></td><td>No</td><td>object</td><td>Volume, seed, and per-table row overrides</td></tr>
       <tr><td><code>databases</code></td><td>No</td><td>object</td><td>Named database targets to seed</td></tr>
+      <tr><td><code>apis</code></td><td>No</td><td>object</td><td>API mock adapters to enable (Stripe, Plaid, Slack, etc.)</td></tr>
       <tr><td><code>test</code></td><td>No</td><td>object</td><td>Agent endpoint and test scenarios</td></tr>
     </tbody>
   </table>
@@ -376,6 +381,37 @@ MongoDB does not require a schema file. Mimic generates document shapes from the
     </tbody>
   </table>
 </div>
+
+<h3 id="config-apis">apis</h3>
+
+A named map of API mock adapters. Each key is the adapter ID (e.g. `"stripe"`, `"plaid"`, `"slack"`), and the value configures the adapter's behaviour. When `mimic host` runs, enabled adapters are registered as Fastify routes on the mock server. When `mcp: true`, the adapter's tools are also registered on the unified MCP server.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">json</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="yk">"apis"</span>: {
+  <span class="yk">"stripe"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+  <span class="yk">"plaid"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+  <span class="yk">"slack"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">false</span> }
+}</code></pre>
+</div>
+
+<div class="doc-table-wrap">
+  <table class="doc-table">
+    <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>adapter</code></td><td>No</td><td>string</td><td>key name</td><td>Maps to the <code>@mimicai/adapter-&lt;name&gt;</code> package. If omitted, uses the key</td></tr>
+      <tr><td><code>version</code></td><td>No</td><td>string</td><td>&mdash;</td><td>API version (e.g. <code>"v1"</code>)</td></tr>
+      <tr><td><code>port</code></td><td>No</td><td>number</td><td>&mdash;</td><td>Override per-adapter port</td></tr>
+      <tr><td><code>enabled</code></td><td>No</td><td>boolean</td><td><code>true</code></td><td>Set to <code>false</code> to skip this adapter during <code>mimic host</code></td></tr>
+      <tr><td><code>mcp</code></td><td>No</td><td>boolean</td><td><code>false</code></td><td>Register this adapter's tools on the unified MCP server</td></tr>
+      <tr><td><code>config</code></td><td>No</td><td>object</td><td>&mdash;</td><td>Adapter-specific configuration</td></tr>
+    </tbody>
+  </table>
+</div>
+
+Use `mimic adapters add stripe` to install and configure an adapter, or add the entry to `mimic.json` by hand.
+
+---
 
 <h3 id="config-test">test</h3>
 

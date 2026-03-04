@@ -1,5 +1,6 @@
 import type { ZodSchema } from 'zod';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { SchemaModel } from './schema.js';
 import type { Blueprint } from './blueprint.js';
 import type { ExpandedData } from './dataset.js';
@@ -58,6 +59,9 @@ export interface ApiMockAdapter<TConfig = unknown> extends Adapter<TConfig> {
 
   /** Resolve persona from an incoming request (e.g. via auth header or body) */
   resolvePersona(req: FastifyRequest): string | null;
+
+  /** Register MCP tools on a shared MCP server (called when mcp: true in config) */
+  registerMcpTools?(mcpServer: McpServer, mockBaseUrl: string): void;
 }
 
 /** Additional interface for event emitter adapters */

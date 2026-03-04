@@ -9,114 +9,219 @@ next: { slug: "adapters", title: "Adapters" }
 
 <h2 id="cli-init">mimic init</h2>
 
-Initialise a new Mimic project in the current directory.
+Interactive wizard to create a `mimic.json` configuration.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
-  <pre><code><span class="prompt">$</span> mimic init [options]
-&#8203;
-<span class="cm">Options:</span>
-  <span class="flag">--persona</span> &lt;name&gt;     Pre-select a persona (default: finance-alex)
-  <span class="flag">--force</span>              Overwrite existing .mimic/ directory</code></pre>
+  <pre><code><span class="prompt">$</span> mimic init</code></pre>
 </div>
 
-Creates `.mimic/config.yaml`, `.mimic/blueprints/`, and `.mimic/scenarios/`. If a Prisma schema or SQL files are detected, surfaces are auto-configured.
+Walks you through domain, schema source, database URL, persona selection, and LLM provider. Creates `mimic.json` plus `.mimic/data/` and `.mimic/blueprints/` directories.
+
+<h2 id="cli-run">mimic run</h2>
+
+Generate blueprints and expand persona data.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic run [options]
+&#8203;
+<span class="cm">Options:</span>
+  <span class="flag">-g, --generate</span>           Force LLM regeneration of blueprints
+  <span class="flag">-d, --dry-run</span>            Show what would be generated without writing files
+  <span class="flag">-p, --persona</span> &lt;names...&gt; Limit to specific personas
+  <span class="flag">-s, --seed</span> &lt;number&gt;      Override random seed
+  <span class="flag">--verbose</span>                Enable verbose logging</code></pre>
+</div>
+
+Parses your database schema, generates persona blueprints via LLM (or loads from cache), and expands them into concrete rows. Output is written to `.mimic/data/` as JSON files per persona. Blueprints are cached in `.mimic/blueprints/` &mdash; use `-g` to force regeneration.
 
 <h2 id="cli-seed">mimic seed</h2>
 
-Seed databases with persona-consistent data.
+Push expanded data to configured databases.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="prompt">$</span> mimic seed [options]
 &#8203;
 <span class="cm">Options:</span>
-  <span class="flag">--persona</span> &lt;name&gt;     Override the persona from config
-  <span class="flag">--tables</span> &lt;list&gt;      Comma-separated list of tables to seed
-  <span class="flag">--rows</span> &lt;n&gt;           Number of rows per table (default: varies by persona)
-  <span class="flag">--clean-first</span>        Truncate before seeding
-  <span class="flag">--dry-run</span>            Print SQL without executing</code></pre>
+  <span class="flag">-p, --persona</span> &lt;names...&gt; Limit to specific personas
+  <span class="flag">-s, --strategy</span> &lt;strategy&gt; Override seed strategy (depends on database type)
+  <span class="flag">-d, --database</span> &lt;name&gt;    Seed a specific database entry
+  <span class="flag">--verbose</span>                Enable verbose logging
+  <span class="flag">--json</span>                   Output results as JSON</code></pre>
 </div>
 
-Uses COPY FROM STDIN for PostgreSQL (&ge;500 rows) for ~714K rows/sec throughput. Handles foreign key ordering via topological sort. Atomic transactions &mdash; all or nothing.
+Loads expanded data from `.mimic/data/` and pushes it to your configured databases. Uses COPY FROM STDIN for PostgreSQL (&ge;500 rows) for high throughput. Handles foreign key ordering via topological sort. Atomic transactions &mdash; all or nothing.
 
 <h2 id="cli-host">mimic host</h2>
 
-Start the mock API server and MCP servers.
+Start the mock API server and MCP server.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="prompt">$</span> mimic host [options]
 &#8203;
 <span class="cm">Options:</span>
-  <span class="flag">--port</span> &lt;n&gt;           Server port (default: 4000)
-  <span class="flag">--adapters</span> &lt;list&gt;    Comma-separated adapter IDs to load
-  <span class="flag">--background</span>         Run as background process
-  <span class="flag">--cors</span>               Enable CORS (default: true)
-  <span class="flag">--watch</span>              Reload on config changes</code></pre>
+  <span class="flag">-t, --transport</span> &lt;transport&gt;  MCP transport: stdio or sse (default: stdio)
+  <span class="flag">-P, --port</span> &lt;number&gt;          Port for SSE transport (default: 4200)
+  <span class="flag">-p, --api-port</span> &lt;number&gt;      Port for mock API server (default: 4100)
+  <span class="flag">--no-api</span>                     Skip starting the mock API server (MCP only)
+  <span class="flag">--verbose</span>                    Enable verbose logging</code></pre>
 </div>
 
-Starts a Fastify server with all configured API mocks mounted at their base paths. MCP servers are available via stdio or HTTP transport as configured.
+Starts a Fastify server with all configured API mocks mounted at their base paths. Also starts a unified MCP server that exposes both database tools (auto-generated from schema) and API adapter tools (when `mcp: true` is set in config).
 
 <h2 id="cli-test">mimic test</h2>
 
-Run test scenarios against the mock environment.
+Run test scenarios against your AI agent.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="prompt">$</span> mimic test [options]
 &#8203;
 <span class="cm">Options:</span>
-  <span class="flag">--scenario</span> &lt;file&gt;    Path to specific scenario file
-  <span class="flag">--eval</span> &lt;mode&gt;        Evaluation mode: keyword | llm (Pro)
-  <span class="flag">--workers</span> &lt;n&gt;        Parallel test workers (Pro)
-  <span class="flag">--verbose</span>            Show detailed output</code></pre>
+  <span class="flag">-S, --scenario</span> &lt;names...&gt; Limit to specific scenarios
+  <span class="flag">-p, --persona</span> &lt;names...&gt;  Limit to specific personas
+  <span class="flag">-f, --format</span> &lt;format&gt;     Output format: cli, json, junit (default: cli)
+  <span class="flag">-o, --output</span> &lt;path&gt;       Write report to file
+  <span class="flag">--ci</span>                      CI mode: exit code 1 on failure
+  <span class="flag">-t, --timeout</span> &lt;ms&gt;        Per-scenario timeout in ms
+  <span class="flag">--verbose</span>                 Enable verbose logging
+  <span class="flag">--full</span>                    Full pipeline: run &rarr; seed &rarr; host (background) &rarr; test &rarr; stop</code></pre>
 </div>
 
-Reads scenarios from `.mimic/scenarios/`. Each scenario defines synthetic user inputs and expected outcomes. Supports keyword matching (free) and LLM-as-judge evaluation (Pro).
+Reads scenarios from the `test` section of `mimic.json`. Each scenario sends a goal to the agent and verifies the response &mdash; which tools were called, whether the response contains expected keywords, and whether it's factually accurate. Supports keyword matching and LLM-as-judge evaluation.
 
 <h2 id="cli-inspect">mimic inspect</h2>
 
-View seeded data across all surfaces.
+Show schema, data, or blueprint information.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
-  <pre><code><span class="prompt">$</span> mimic inspect [options]
-&#8203;
-<span class="cm">Options:</span>
-  <span class="flag">--surface</span> &lt;name&gt;     Inspect a specific surface (e.g., postgres, stripe)
-  <span class="flag">--format</span> &lt;fmt&gt;       Output format: table | json (default: table)</code></pre>
+  <pre><code><span class="prompt">$</span> mimic inspect &lt;subcommand&gt;</code></pre>
 </div>
+
+#### inspect schema
+
+Parse and display the database schema.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic inspect schema [--verbose]</code></pre>
+</div>
+
+Shows tables, columns, primary/foreign keys, and enums. Use `--verbose` for per-table column details.
+
+#### inspect data
+
+Show row counts per persona per table.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic inspect data [-p &lt;names...&gt;] [--verbose]</code></pre>
+</div>
+
+Displays a persona &times; table grid showing how many rows each persona generated.
+
+#### inspect blueprints
+
+List cached blueprints.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic inspect blueprints [--verbose]</code></pre>
+</div>
+
+Shows persona name, occupation, and generation timestamp for each cached blueprint in `.mimic/blueprints/`.
+
+#### inspect db
+
+Query live database(s) for row/document counts.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic inspect db [-d &lt;name&gt;] [--verbose]</code></pre>
+</div>
+
+Connects to your configured databases and reports current row counts. Use `-d` to inspect a specific database entry.
 
 <h2 id="cli-clean">mimic clean</h2>
 
-Remove all seeded data and stop running servers.
+Truncate database tables and remove generated data.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="prompt">$</span> mimic clean [options]
 &#8203;
 <span class="cm">Options:</span>
-  <span class="flag">--databases-only</span>     Only truncate database tables
-  <span class="flag">--keep-config</span>        Don't remove .mimic/ directory</code></pre>
+  <span class="flag">-y, --yes</span>                Skip confirmation prompt
+  <span class="flag">--keep-blueprints</span>        Keep cached blueprints in .mimic/blueprints/
+  <span class="flag">-d, --database</span> &lt;name&gt;    Clean a specific database entry
+  <span class="flag">--verbose</span>                Enable verbose logging</code></pre>
 </div>
 
-<h2 id="cli-generate">mimic generate</h2>
+Truncates all Mimic-seeded tables in configured databases, removes `.mimic/data/`, and removes `.mimic/blueprints/` (unless `--keep-blueprints` is set).
 
-Generate a custom persona blueprint using the Blueprint Engine. **Requires Pro.**
+<h2 id="cli-adapters">mimic adapters</h2>
+
+Manage API mock adapters.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
-  <pre><code><span class="prompt">$</span> mimic generate [options]
-&#8203;
-<span class="cm">Options:</span>
-  <span class="flag">--description</span> &lt;text&gt;  Natural language persona description
-  <span class="flag">--domain</span> &lt;name&gt;       Target domain: finance | support | devops | healthcare
-  <span class="flag">--output</span> &lt;path&gt;       Save blueprint to file
-  <span class="flag">--model</span> &lt;id&gt;          LLM model to use (default: claude-haiku-4-5)</code></pre>
+  <pre><code><span class="prompt">$</span> mimic adapters &lt;subcommand&gt;</code></pre>
 </div>
 
-<div class="callout info">
-  <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
-  <div><p>Community tier gets 3 custom blueprints per month. Pro tier gets unlimited. Custom blueprints cost ~$0.02-$0.05 per generation via LLM.</p></div>
+#### adapters add
+
+Install an adapter package and add it to `mimic.json`.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic adapters add &lt;id&gt; [--port &lt;number&gt;] [--no-install]</code></pre>
 </div>
+
+Installs the adapter npm package, adds an entry to the `apis` section in `mimic.json`, and shows available endpoints. Use `--no-install` to skip npm install and just update config.
+
+#### adapters remove
+
+Remove an adapter from `mimic.json` and uninstall the package.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic adapters remove &lt;id&gt; [--no-uninstall]</code></pre>
+</div>
+
+#### adapters enable / disable
+
+Toggle an adapter without removing it.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic adapters enable &lt;id&gt;
+<span class="prompt">$</span> mimic adapters disable &lt;id&gt;</code></pre>
+</div>
+
+Disabled adapters are skipped by `mimic host`.
+
+#### adapters list
+
+List all configured adapters with their status.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic adapters list</code></pre>
+</div>
+
+Shows databases and API adapters, installation status, and enabled/disabled state.
+
+#### adapters inspect
+
+Show details and endpoints for an adapter.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic adapters inspect &lt;id&gt;</code></pre>
+</div>
+
+Displays the adapter manifest (name, type, version, description) and lists all endpoints with their descriptions.

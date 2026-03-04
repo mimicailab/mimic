@@ -126,14 +126,14 @@ function inputSchemaToZod(
  */
 export class MimicMcpServer {
   private readonly mcpServer: McpServer;
-  private readonly queryBuilder: QueryBuilder;
+  private readonly queryBuilder: QueryBuilder | null;
   private readonly tableMap: Map<string, TableInfo>;
   private httpServer: HttpServer | null = null;
   private sseTransports: Map<string, SSEServerTransport> = new Map();
 
   constructor(
-    private readonly schema: SchemaModel,
-    private readonly pool: Pool,
+    private readonly schema?: SchemaModel,
+    private readonly pool?: Pool,
     private readonly config?: MimicConfig,
   ) {
     this.mcpServer = new McpServer({
@@ -141,10 +141,22 @@ export class MimicMcpServer {
       version: '0.1.0',
     });
 
-    this.queryBuilder = new QueryBuilder(pool);
-    this.tableMap = buildTableMap(schema);
+    if (schema && pool) {
+      this.queryBuilder = new QueryBuilder(pool);
+      this.tableMap = buildTableMap(schema);
+      this.registerTools();
+    } else {
+      this.queryBuilder = null;
+      this.tableMap = new Map();
+    }
+  }
 
-    this.registerTools();
+  /**
+   * Allow external code (e.g. API adapters with mcp: true) to register
+   * additional tools on the underlying MCP server.
+   */
+  registerExternalTools(registrar: (mcpServer: McpServer) => void): void {
+    registrar(this.mcpServer);
   }
 
   // -----------------------------------------------------------------------
@@ -152,7 +164,7 @@ export class MimicMcpServer {
   // -----------------------------------------------------------------------
 
   private registerTools(): void {
-    const tools = generateTools(this.schema);
+    const tools = generateTools(this.schema!);
 
     for (const tool of tools) {
       const zodShape = inputSchemaToZod(tool);
@@ -191,7 +203,7 @@ export class MimicMcpServer {
     const mode = modeFromToolName(toolName);
 
     try {
-      const rows = await this.queryBuilder.execute(
+      const rows = await this.queryBuilder!.execute(
         tableName,
         tableInfo,
         args,

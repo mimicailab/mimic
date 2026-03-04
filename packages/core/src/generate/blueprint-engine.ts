@@ -3,7 +3,7 @@ import type { Blueprint, SchemaModel } from '../types/index.js';
 import type { LLMClient } from '../llm/client.js';
 import type { CostTracker } from '../llm/cost-tracker.js';
 import { BlueprintCache } from './blueprint-cache.js';
-import { BlueprintLLMOutputSchema, type BlueprintLLMOutput } from './blueprint-zod.js';
+import { BlueprintLLMOutputSchema, BlueprintLLMOutputWithApisSchema, type BlueprintLLMOutput } from './blueprint-zod.js';
 import { buildPrompt } from './prompts.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
@@ -19,6 +19,12 @@ export interface GenerateOptions {
   temperature?: number;
   /** Maximum retries for the LLM call. */
   maxRetries?: number;
+  /** 1-based index of this persona in the generation batch. */
+  personaIndex?: number;
+  /** Total number of personas being generated. */
+  totalPersonas?: number;
+  /** Volume string from config (e.g. "6 months") — passed to prompt for date range. */
+  volume?: string;
 }
 
 export interface PersonaInput {
@@ -86,12 +92,27 @@ export class BlueprintEngine {
       `Generating blueprint for "${persona.name}" in domain "${domain}"...`,
     );
 
-    const { system, user } = buildPrompt({ schema, persona, domain, apis });
+    const { system, user } = buildPrompt({
+      schema,
+      persona,
+      domain,
+      apis,
+      currentDate: new Date().toISOString().split('T')[0],
+      volume: options.volume,
+      personaIndex: options.personaIndex,
+      totalPersonas: options.totalPersonas,
+    });
+
+    // Use the API-aware schema when APIs are configured — this makes
+    // apiEntityArchetypes required in the tool definition, forcing the LLM
+    // to generate API entity data instead of silently skipping optional fields.
+    const hasApis = apis && Object.keys(apis).length > 0;
+    const llmSchema = hasApis ? BlueprintLLMOutputWithApisSchema : BlueprintLLMOutputSchema;
 
     let llmOutput: BlueprintLLMOutput;
     try {
       const result = await this.llmClient.generateObject({
-        schema: BlueprintLLMOutputSchema,
+        schema: llmSchema,
         schemaName: 'Blueprint',
         schemaDescription:
           'A persona-driven data blueprint containing entity seeds and data patterns',

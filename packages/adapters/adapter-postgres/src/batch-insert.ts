@@ -56,7 +56,7 @@ function buildInsertSql(
     valueTuples.push(`(${placeholders.join(', ')})`);
   }
 
-  return `INSERT INTO "${table}" (${quotedCols}) VALUES ${valueTuples.join(', ')}`;
+  return `INSERT INTO "${table}" (${quotedCols}) VALUES ${valueTuples.join(', ')} ON CONFLICT DO NOTHING`;
 }
 
 /**

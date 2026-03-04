@@ -96,7 +96,10 @@ async function runHost(opts: HostOptions): Promise<void> {
   let mcpServer: MimicMcpServer | null = null;
   let mockServer: MockServer | null = null;
 
-  // ── MCP Server (database) ───────────────────────────────────────────────
+  // Track adapter instances for MCP tool registration after mock server starts
+  const adapterInstances = new Map<string, ApiMockAdapter>();
+
+  // ── 1. Create MCP Server (database tools) — but don't start transport yet ─
   if (hasDatabase) {
     const [dbName, dbConfig] = Object.entries(databases!)[0]!;
     const dbUrl = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
@@ -145,11 +148,9 @@ async function runHost(opts: HostOptions): Promise<void> {
       throw err;
     }
 
-    const mcpSpin = logger.spinner('Starting MCP server...');
     try {
       mcpServer = new MimicMcpServer(schema, pool, config);
-      await mcpServer.start(transport as 'stdio' | 'sse', port);
-      mcpSpin.succeed('MCP server started');
+      logger.debug('MCP server created (database tools registered)');
 
       console.log();
       logger.header('Available MCP Tools');
@@ -158,7 +159,6 @@ async function runHost(opts: HostOptions): Promise<void> {
         logger.info(`${chalk.bold(tool.name)}  — ${tool.description.slice(0, 60)}`);
       }
     } catch (err) {
-      mcpSpin.fail('Failed to start MCP server');
       await pool.end();
       throw new McpServerError(
         `MCP server failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -168,7 +168,7 @@ async function runHost(opts: HostOptions): Promise<void> {
     }
   }
 
-  // ── Mock API Server ─────────────────────────────────────────────────────
+  // ── 2. Start Mock API Server ──────────────────────────────────────────────
   if (hasApis) {
     const apiSpin = logger.spinner('Starting mock API server...');
     try {
@@ -217,6 +217,9 @@ async function runHost(opts: HostOptions): Promise<void> {
         const adapterConfig = (apiConfig as Record<string, unknown>).config ?? {};
         await adapter.init(adapterConfig, { config, blueprints: new Map(), logger: console });
         await mockServer.registerAdapter(adapter, dataMap, { basePath: adapter.basePath });
+
+        // Save instance for MCP tool registration
+        adapterInstances.set(apiName, adapter);
       }
 
       await mockServer.start(apiPort);
@@ -235,9 +238,50 @@ async function runHost(opts: HostOptions): Promise<void> {
     }
   }
 
+  // ── 3. Register adapter MCP tools (mcp: true) ────────────────────────────
+  if (hasApis) {
+    const mockBaseUrl = `http://localhost:${apiPort}`;
+
+    for (const [apiName, apiConfig] of Object.entries(apis!)) {
+      const cfg = apiConfig as Record<string, unknown>;
+      if (!cfg.mcp || cfg.enabled === false) continue;
+
+      const adapter = adapterInstances.get(apiName);
+      if (!adapter || typeof adapter.registerMcpTools !== 'function') continue;
+
+      // Create MCP server if not already created (API-only, no database)
+      if (!mcpServer) {
+        mcpServer = new MimicMcpServer(undefined, undefined, config);
+      }
+
+      mcpServer.registerExternalTools((srv) => adapter.registerMcpTools!(srv, mockBaseUrl));
+
+      const adapterId = (cfg.adapter as string) || apiName;
+      logger.success(`Registered ${chalk.yellow(adapterId)} MCP tools`);
+    }
+  }
+
+  // ── 4. Start MCP transport (after all tools are registered) ───────────────
+  if (mcpServer) {
+    const mcpSpin = logger.spinner('Starting MCP transport...');
+    try {
+      await mcpServer.start(transport as 'stdio' | 'sse', port);
+      mcpSpin.succeed(`MCP server started (${transport})`);
+    } catch (err) {
+      mcpSpin.fail('Failed to start MCP transport');
+      if (mockServer) await mockServer.stop();
+      if (pool) await pool.end();
+      throw new McpServerError(
+        `MCP server failed: ${err instanceof Error ? err.message : String(err)}`,
+        undefined,
+        err instanceof Error ? err : undefined,
+      );
+    }
+  }
+
   // ── Print connection info ─────────────────────────────────────────────
   console.log();
-  if (hasDatabase && transport === 'stdio') {
+  if (mcpServer && transport === 'stdio') {
     logger.header('Claude Desktop Configuration');
     console.log(chalk.dim('  Add to ~/.claude/claude_desktop_config.json:'));
     console.log();
@@ -251,7 +295,7 @@ async function runHost(opts: HostOptions): Promise<void> {
       ),
     );
     console.log();
-  } else if (hasDatabase && transport === 'sse') {
+  } else if (mcpServer && transport === 'sse') {
     logger.header('MCP Connection');
     logger.info(`URL: ${chalk.cyan(`http://localhost:${port}/sse`)}`);
     console.log();

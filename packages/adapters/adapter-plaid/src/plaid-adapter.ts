@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, ExpandedData, AdapterContext } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import {
@@ -10,6 +11,7 @@ import {
 import { PlaidConfigSchema, type PlaidConfig } from './config.js';
 import { plaidError } from './plaid-errors.js';
 import { formatPlaidAccount, formatPlaidTransaction } from './formatters.js';
+import { registerPlaidTools } from './mcp.js';
 
 // ---------------------------------------------------------------------------
 // Namespace constants
@@ -37,6 +39,10 @@ export class PlaidAdapter extends BaseApiMockAdapter<PlaidConfig> {
   async init(config: PlaidConfig, context: AdapterContext): Promise<void> {
     await super.init(config, context);
     this.config = PlaidConfigSchema.parse(config);
+  }
+
+  registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
+    registerPlaidTools(mcpServer, mockBaseUrl);
   }
 
   resolvePersona(req: FastifyRequest): string | null {
