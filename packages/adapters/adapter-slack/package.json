@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-slack",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Slack API mock adapter for Mimic — channels, messages, reactions, file uploads",
   "type": "module",
   "license": "Apache-2.0",

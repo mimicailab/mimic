@@ -1,5 +1,17 @@
 # @mimicailab/cli
 
+## 0.4.0
+
+### Patch Changes
+
+- Updated dependencies [[`2ee93d5`](https://github.com/mimicailab/mimic/commit/2ee93d546e4d71589a022332eaeed735aaea09dc)]:
+  - @mimicai/core@0.4.0
+  - @mimicai/adapter-mongodb@0.4.0
+  - @mimicai/adapter-mysql@0.4.0
+  - @mimicai/adapter-postgres@0.4.0
+  - @mimicai/adapter-sqlite@0.4.0
+  - @mimicai/blueprints@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes
