@@ -56,3 +56,7 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.DOCS_CLOUDFRONT_ID }} \
             --paths "/*"
+
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.MIMICAI_CO_CLOUDFRONT_ID }} \
+            --paths "/*"
