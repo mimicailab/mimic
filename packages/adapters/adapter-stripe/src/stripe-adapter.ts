@@ -17,9 +17,13 @@ const NS = {
   charges: 'stripe_charges',
   subs: 'stripe_subs',
   invoices: 'stripe_invoices',
+  invoiceItems: 'stripe_invoice_items',
   refunds: 'stripe_refunds',
   products: 'stripe_products',
   prices: 'stripe_prices',
+  coupons: 'stripe_coupons',
+  disputes: 'stripe_disputes',
+  paymentLinks: 'stripe_payment_links',
   events: 'stripe_events',
 } as const;
 
@@ -165,6 +169,21 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
       };
       store.set(NS.pis, pi.id, pi);
       return reply.code(200).send(pi);
+    });
+
+    server.get('/stripe/v1/payment_intents', async (req, reply) => {
+      const query = req.query as Record<string, string>;
+      let pis = store.list<Record<string, unknown>>(NS.pis);
+
+      if (query.customer) {
+        pis = pis.filter((p) => p.customer === query.customer);
+      }
+
+      const limit = query.limit ? Math.min(parseInt(query.limit, 10), 100) : 10;
+      const page = pis.slice(0, limit);
+      const hasMore = limit < pis.length;
+
+      return reply.code(200).send(listWrap(page, 'payment_intents', hasMore));
     });
 
     server.get('/stripe/v1/payment_intents/:id', async (req, reply) => {
@@ -537,6 +556,193 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
       return reply.code(200).send(listWrap(prices, 'prices'));
     });
 
+    // ── Coupons ──────────────────────────────────────────────────────────
+
+    server.post('/stripe/v1/coupons', async (req, reply) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const now = unixNow();
+      const coupon = {
+        id: (body.id as string) || generateId('', 8).slice(1),
+        object: 'coupon',
+        percent_off: body.percent_off != null ? Number(body.percent_off) : null,
+        amount_off: body.amount_off != null ? Number(body.amount_off) : null,
+        currency: body.currency ?? (body.amount_off != null ? 'usd' : null),
+        duration: body.duration ?? 'once',
+        duration_in_months: body.duration_in_months ?? null,
+        max_redemptions: body.max_redemptions ?? null,
+        times_redeemed: 0,
+        valid: true,
+        created: now,
+        livemode: false,
+        metadata: body.metadata ?? {},
+      };
+      store.set(NS.coupons, coupon.id, coupon);
+      return reply.code(200).send(coupon);
+    });
+
+    server.get('/stripe/v1/coupons', async (_req, reply) => {
+      const coupons = store.list(NS.coupons);
+      return reply.code(200).send(listWrap(coupons, 'coupons'));
+    });
+
+    server.get('/stripe/v1/coupons/:id', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const coupon = store.get(NS.coupons, id);
+      if (!coupon) {
+        return reply
+          .code(404)
+          .send(stripeError('resource_missing', `No such coupon: '${id}'`));
+      }
+      return reply.code(200).send(coupon);
+    });
+
+    server.delete('/stripe/v1/coupons/:id', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      store.delete(NS.coupons, id);
+      return reply.code(200).send({ id, object: 'coupon', deleted: true });
+    });
+
+    // ── Disputes ────────────────────────────────────────────────────────
+
+    server.get('/stripe/v1/disputes', async (_req, reply) => {
+      const disputes = store.list(NS.disputes);
+      return reply.code(200).send(listWrap(disputes, 'disputes'));
+    });
+
+    server.get('/stripe/v1/disputes/:id', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const dispute = store.get(NS.disputes, id);
+      if (!dispute) {
+        return reply
+          .code(404)
+          .send(stripeError('resource_missing', `No such dispute: '${id}'`));
+      }
+      return reply.code(200).send(dispute);
+    });
+
+    server.post('/stripe/v1/disputes/:id', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const existing = store.get<Record<string, unknown>>(NS.disputes, id);
+      if (!existing) {
+        return reply
+          .code(404)
+          .send(stripeError('resource_missing', `No such dispute: '${id}'`));
+      }
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const updated = { ...existing, ...body };
+      store.set(NS.disputes, id, updated);
+      return reply.code(200).send(updated);
+    });
+
+    server.post('/stripe/v1/disputes/:id/close', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const existing = store.get<Record<string, unknown>>(NS.disputes, id);
+      if (!existing) {
+        return reply
+          .code(404)
+          .send(stripeError('resource_missing', `No such dispute: '${id}'`));
+      }
+      const updated = { ...existing, status: 'lost' };
+      store.set(NS.disputes, id, updated);
+      return reply.code(200).send(updated);
+    });
+
+    // ── Invoice Items ───────────────────────────────────────────────────
+
+    server.post('/stripe/v1/invoiceitems', async (req, reply) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const now = unixNow();
+      const item = {
+        id: generateId('ii', 24),
+        object: 'invoiceitem',
+        customer: body.customer ?? null,
+        amount: body.amount != null ? Number(body.amount) : 0,
+        currency: body.currency ?? 'usd',
+        description: body.description ?? null,
+        invoice: body.invoice ?? null,
+        price: body.price ?? null,
+        quantity: body.quantity ?? 1,
+        created: now,
+        livemode: false,
+        metadata: body.metadata ?? {},
+      };
+      store.set(NS.invoiceItems, item.id, item);
+      return reply.code(200).send(item);
+    });
+
+    // ── Invoice Finalize ────────────────────────────────────────────────
+
+    server.post('/stripe/v1/invoices/:id/finalize', async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const invoice = store.get<Record<string, unknown>>(NS.invoices, id);
+      if (!invoice) {
+        return reply
+          .code(404)
+          .send(stripeError('resource_missing', `No such invoice: '${id}'`));
+      }
+      const finalized = { ...invoice, status: 'open' };
+      store.set(NS.invoices, id, finalized);
+      return reply.code(200).send(finalized);
+    });
+
+    // ── Payment Links ───────────────────────────────────────────────────
+
+    server.post('/stripe/v1/payment_links', async (req, reply) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const now = unixNow();
+      const link = {
+        id: generateId('plink', 14),
+        object: 'payment_link',
+        active: true,
+        url: `https://buy.stripe.com/${generateId('', 12).slice(1)}`,
+        line_items: body.line_items ?? null,
+        metadata: body.metadata ?? {},
+        created: now,
+        livemode: false,
+      };
+      store.set(NS.paymentLinks, link.id, link);
+      return reply.code(200).send(link);
+    });
+
+    server.get('/stripe/v1/payment_links', async (_req, reply) => {
+      const links = store.list(NS.paymentLinks);
+      return reply.code(200).send(listWrap(links, 'payment_links'));
+    });
+
+    // ── Billing Portal ──────────────────────────────────────────────────
+
+    server.post('/stripe/v1/billing_portal/sessions', async (req, reply) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const now = unixNow();
+      const session = {
+        id: generateId('bps', 24),
+        object: 'billing_portal.session',
+        customer: body.customer ?? null,
+        url: `https://billing.stripe.com/session/${generateId('', 20).slice(1)}`,
+        return_url: body.return_url ?? null,
+        created: now,
+        livemode: false,
+      };
+      return reply.code(200).send(session);
+    });
+
+    // ── Account ─────────────────────────────────────────────────────────
+
+    server.get('/stripe/v1/account', async (_req, reply) => {
+      return reply.code(200).send({
+        id: 'acct_1234567890',
+        object: 'account',
+        business_type: 'company',
+        country: 'US',
+        email: 'test@example.com',
+        charges_enabled: true,
+        payouts_enabled: true,
+        capabilities: { card_payments: 'active', transfers: 'active' },
+        created: unixNow(),
+        livemode: false,
+      });
+    });
+
     // ── Balance ────────────────────────────────────────────────────────────
 
     server.get('/stripe/v1/balance', async (_req, reply) => {
@@ -567,6 +773,7 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
 
       // Payment Intents
       { method: 'POST', path: '/stripe/v1/payment_intents', description: 'Create payment intent' },
+      { method: 'GET', path: '/stripe/v1/payment_intents', description: 'List payment intents' },
       { method: 'GET', path: '/stripe/v1/payment_intents/:id', description: 'Get payment intent' },
       { method: 'POST', path: '/stripe/v1/payment_intents/:id/confirm', description: 'Confirm payment intent' },
       { method: 'POST', path: '/stripe/v1/payment_intents/:id/capture', description: 'Capture payment intent' },
@@ -587,7 +794,11 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
       { method: 'POST', path: '/stripe/v1/invoices', description: 'Create invoice' },
       { method: 'GET', path: '/stripe/v1/invoices', description: 'List invoices' },
       { method: 'GET', path: '/stripe/v1/invoices/:id', description: 'Get invoice' },
+      { method: 'POST', path: '/stripe/v1/invoices/:id/finalize', description: 'Finalize invoice' },
       { method: 'POST', path: '/stripe/v1/invoices/:id/pay', description: 'Pay invoice' },
+
+      // Invoice Items
+      { method: 'POST', path: '/stripe/v1/invoiceitems', description: 'Create invoice item' },
 
       // Refunds
       { method: 'POST', path: '/stripe/v1/refunds', description: 'Create refund' },
@@ -600,6 +811,28 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
       // Prices
       { method: 'POST', path: '/stripe/v1/prices', description: 'Create price' },
       { method: 'GET', path: '/stripe/v1/prices', description: 'List prices' },
+
+      // Coupons
+      { method: 'POST', path: '/stripe/v1/coupons', description: 'Create coupon' },
+      { method: 'GET', path: '/stripe/v1/coupons', description: 'List coupons' },
+      { method: 'GET', path: '/stripe/v1/coupons/:id', description: 'Get coupon' },
+      { method: 'DELETE', path: '/stripe/v1/coupons/:id', description: 'Delete coupon' },
+
+      // Disputes
+      { method: 'GET', path: '/stripe/v1/disputes', description: 'List disputes' },
+      { method: 'GET', path: '/stripe/v1/disputes/:id', description: 'Get dispute' },
+      { method: 'POST', path: '/stripe/v1/disputes/:id', description: 'Update dispute' },
+      { method: 'POST', path: '/stripe/v1/disputes/:id/close', description: 'Close dispute' },
+
+      // Payment Links
+      { method: 'POST', path: '/stripe/v1/payment_links', description: 'Create payment link' },
+      { method: 'GET', path: '/stripe/v1/payment_links', description: 'List payment links' },
+
+      // Billing Portal
+      { method: 'POST', path: '/stripe/v1/billing_portal/sessions', description: 'Create billing portal session' },
+
+      // Account
+      { method: 'GET', path: '/stripe/v1/account', description: 'Get account info' },
 
       // Balance
       { method: 'GET', path: '/stripe/v1/balance', description: 'Get balance' },
@@ -617,9 +850,13 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
     charges: NS.charges,
     subscriptions: NS.subs,
     invoices: NS.invoices,
+    invoice_items: NS.invoiceItems,
     refunds: NS.refunds,
     products: NS.products,
     prices: NS.prices,
+    coupons: NS.coupons,
+    disputes: NS.disputes,
+    payment_links: NS.paymentLinks,
   };
 
   private readonly RESOURCE_OBJECT: Record<string, string> = {
@@ -628,9 +865,13 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
     charges: 'charge',
     subscriptions: 'subscription',
     invoices: 'invoice',
+    invoice_items: 'invoiceitem',
     refunds: 'refund',
     products: 'product',
     prices: 'price',
+    coupons: 'coupon',
+    disputes: 'dispute',
+    payment_links: 'payment_link',
   };
 
   private seedFromApiResponses(
