@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/cli",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "CLI for Mimic — generate, seed, serve, and test synthetic data for AI agents",
   "type": "module",
   "license": "Apache-2.0",
