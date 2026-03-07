@@ -293,6 +293,7 @@ mimic test                    Run test scenarios
 mimic inspect                 View schema, data, or blueprint information
 mimic clean                   Remove all seeded data
 mimic adapters                Manage API mock adapters
+mimic info                    Print environment info for bug reports
 ```
 
 ## Packages
@@ -300,7 +301,7 @@ mimic adapters                Manage API mock adapters
 | Package | Description |
 |---------|-------------|
 | [`@mimicai/core`](packages/core/) | Engine — schema parsing, generation, seeding, MCP server, test runner |
-| [`@mimicai/cli`](packages/cli/) | CLI binary with 8 commands |
+| [`@mimicai/cli`](packages/cli/) | CLI binary with 9 commands |
 | [`@mimicai/blueprints`](packages/blueprints/) | Pre-built persona blueprints |
 | [`@mimicai/adapter-sdk`](packages/adapter-sdk/) | SDK for building custom adapters |
 | [`@mimicai/adapter-postgres`](packages/adapters/adapter-postgres/) | PostgreSQL database seeder |
@@ -310,6 +311,13 @@ mimic adapters                Manage API mock adapters
 | [`@mimicai/adapter-stripe`](packages/adapters/adapter-stripe/) | Stripe API mock + MCP server |
 | [`@mimicai/adapter-plaid`](packages/adapters/adapter-plaid/) | Plaid API mock + MCP server |
 | [`@mimicai/adapter-slack`](packages/adapters/adapter-slack/) | Slack API mock + MCP server |
+| [`@mimicai/adapter-paddle`](packages/adapters/adapter-paddle/) | Paddle API mock + MCP server |
+| [`@mimicai/adapter-chargebee`](packages/adapters/adapter-chargebee/) | Chargebee API mock + MCP server |
+| [`@mimicai/adapter-gocardless`](packages/adapters/adapter-gocardless/) | GoCardless API mock + MCP server |
+| [`@mimicai/adapter-recurly`](packages/adapters/adapter-recurly/) | Recurly API mock + MCP server |
+| [`@mimicai/adapter-revenuecat`](packages/adapters/adapter-revenuecat/) | RevenueCat API mock + MCP server |
+| [`@mimicai/adapter-lemonsqueezy`](packages/adapters/adapter-lemonsqueezy/) | Lemon Squeezy API mock + MCP server |
+| [`@mimicai/adapter-zuora`](packages/adapters/adapter-zuora/) | Zuora API mock + MCP server |
 
 ## Community
 

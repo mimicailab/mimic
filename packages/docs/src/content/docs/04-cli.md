@@ -259,3 +259,42 @@ Show details and endpoints for an adapter.
 </div>
 
 Displays the adapter manifest (name, type, version, description) and lists all endpoints with their descriptions.
+
+<h2 id="cli-info">mimic info</h2>
+
+Print environment and package info for bug reports.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic info [options]
+&#8203;
+<span class="cm">Options:</span>
+  <span class="flag">--json</span>                   Output as JSON</code></pre>
+</div>
+
+Prints system information (OS, architecture, Node version, package manager), installed `@mimicai/*` package versions, and whether a `mimic.json` config file is found in the current directory.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic info
+&#8203;
+  Mimic Environment Info
+&#8203;
+  System:
+    OS:              darwin (25.3.0)
+    Arch:            arm64
+    Node:            v22.14.0
+    Package Manager: pnpm
+&#8203;
+  Packages:
+    @mimicai/core              0.6.0
+    @mimicai/cli               0.6.0
+    @mimicai/adapter-stripe    0.6.0
+&#8203;
+  Config:
+    mimic.json:      found
+&#8203;
+  Copy the above into your bug report.</code></pre>
+</div>
+
+Use `--json` for machine-readable output, useful in CI or automated diagnostics.

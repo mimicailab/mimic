@@ -1,0 +1,66 @@
+name: Adapter Request
+description: Request a new adapter for a platform Mimic doesn't support yet
+labels: ["adapter", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Adapters are the highest-impact contribution to Mimic. Before requesting, check the [existing adapters](https://github.com/mimicailab/mimic/tree/main/packages/adapters) and [open adapter requests](https://github.com/mimicailab/mimic/labels/adapter).
+
+        Want to build it yourself? See the [Adapter Development Guide](https://github.com/mimicailab/mimic/blob/main/docs/ADAPTER_GUIDE.md) and use [`adapter-stripe`](https://github.com/mimicailab/mimic/tree/main/packages/adapters/adapter-stripe) as the reference implementation.
+
+  - type: input
+    id: platform
+    attributes:
+      label: What platform should be supported?
+      description: The name of the API or service you want Mimic to mock.
+      placeholder: "e.g., Twilio, HubSpot, Shopify, SendGrid"
+    validations:
+      required: true
+
+  - type: input
+    id: api-docs
+    attributes:
+      label: Link to official API documentation
+      description: A link to the platform's API reference so contributors can understand the surface area.
+      placeholder: "https://docs.example.com/api"
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: Who needs this? What use case is blocked without it?
+      placeholder: |
+        Our team builds AI agents that interact with [platform]. We need realistic mock data
+        for local development and CI testing, but currently have to hit the real API or
+        maintain custom fixtures.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Minimum viable scope
+      description: |
+        List the smallest set of endpoints or resources that would make this adapter useful.
+        Don't try to cover everything — focus on the core CRUD operations.
+      placeholder: |
+        - List / Get / Create / Update customers
+        - List / Get / Create invoices
+        - Webhook event simulation for invoice.paid
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contribution-intent
+    attributes:
+      label: Contribution intent
+      description: Are you able to help build or test this adapter?
+      options:
+        - "I can build this adapter"
+        - "I can help with testing and review"
+        - "I'm requesting only"
+    validations:
+      required: true
