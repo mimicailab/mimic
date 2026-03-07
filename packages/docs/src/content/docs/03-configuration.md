@@ -361,7 +361,7 @@ MongoDB does not require a schema file. Mimic generates document shapes from the
     <tbody>
       <tr><td><code>prisma</code></td><td style="color: var(--green);">Yes</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
       <tr><td><code>sql</code></td><td style="color: var(--green);">Yes</td><td style="color: var(--green);">Yes</td><td>&mdash;</td><td>&mdash;</td></tr>
-      <tr><td><code>introspect</code></td><td style="color: var(--green);">Yes</td><td style="color: var(--green);">Yes</td><td>&mdash;</td><td>&mdash;</td></tr>
+      <tr><td><code>introspect</code></td><td style="color: var(--green);">Yes</td><td style="color: var(--green);">Yes</td><td style="color: var(--green);">Yes</td><td>&mdash;</td></tr>
       <tr><td>Schema-free</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td style="color: var(--green);">Yes</td></tr>
     </tbody>
   </table>

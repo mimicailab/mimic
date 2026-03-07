@@ -76,46 +76,43 @@ export class BlueprintExpander {
     );
 
     // ------------------------------------------------------------------
-    // 1. Static entities — insert in topological (insertion) order
+    // 1. Static entities + archetypes — process together per table in
+    //    topological order so parent PKs are tracked before child FKs
+    //    resolve (e.g. users before feature_flags).
     // ------------------------------------------------------------------
     for (const tableName of schema.insertionOrder) {
-      const entityRows = blueprint.data.entities[tableName];
-      if (!entityRows || entityRows.length === 0) continue;
-
       const tableInfo = tableIndex.get(tableName);
-      const rows: Row[] = [];
 
-      for (const raw of entityRows) {
-        const row = { ...raw } as Row;
-        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
-        resolveReferences(row, idTracker);
-        rows.push(row);
-        trackRow(row, tableInfo, idTracker, tableName);
+      // 1a. Static entities
+      const entityRows = blueprint.data.entities[tableName];
+      if (entityRows && entityRows.length > 0) {
+        const rows: Row[] = [];
+        for (const raw of entityRows) {
+          const row = { ...raw } as Row;
+          assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+          resolveReferences(row, idTracker);
+          rows.push(row);
+          trackRow(row, tableInfo, idTracker, tableName);
+        }
+        tables[tableName] = rows;
       }
 
-      tables[tableName] = rows;
-    }
-
-    // ------------------------------------------------------------------
-    // 1b. Archetype expansion — scale entities from compact templates
-    // ------------------------------------------------------------------
-    if (blueprint.data.entityArchetypes) {
-      for (const tableName of schema.insertionOrder) {
-        const config = blueprint.data.entityArchetypes[tableName];
-        if (!config) continue;
-
-        const tableInfo = tableIndex.get(tableName);
+      // 1b. Archetype expansion
+      const archetypeConfig = blueprint.data.entityArchetypes?.[tableName];
+      if (archetypeConfig) {
         const existingRows = tables[tableName] ?? [];
         const archetypeRows = this.expandArchetypes(
-          config,
+          archetypeConfig,
           tableName,
           tableInfo,
           idTracker,
         );
         tables[tableName] = [...existingRows, ...archetypeRows];
       }
+    }
 
-      // Also expand archetype tables not in insertionOrder
+    // Also expand archetype tables not in insertionOrder
+    if (blueprint.data.entityArchetypes) {
       for (const [tableName, config] of Object.entries(blueprint.data.entityArchetypes)) {
         if (schema.insertionOrder.includes(tableName)) continue;
         const tableInfo = tableIndex.get(tableName);
@@ -157,7 +154,17 @@ export class BlueprintExpander {
     }
 
     // ------------------------------------------------------------------
-    // 4. Fill missing required columns with generated values
+    // 4. Deduplicate by unique constraints
+    // ------------------------------------------------------------------
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 1) {
+        tables[tableName] = deduplicateByUniqueConstraints(rows, tableInfo);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // 5. Fill missing required columns with generated values
     // ------------------------------------------------------------------
     for (const [tableName, rows] of Object.entries(tables)) {
       const tableInfo = tableIndex.get(tableName);
@@ -787,6 +794,18 @@ function assignAutoIncrementIds(
       row[col.name] = next;
     }
   }
+
+  // Generate UUIDs for primary key columns that have a client-side UUID
+  // default (e.g. Prisma @default(uuid())).  These are NOT auto-increment
+  // but still need values before trackRow/resolveReferences can work.
+  for (const pkColName of tableInfo.primaryKey) {
+    if (row[pkColName] !== undefined) continue;
+    const col = tableInfo.columns.find((c) => c.name === pkColName);
+    if (!col) continue;
+    if (col.hasDefault && isClientSideUuidDefault(col)) {
+      row[pkColName] = crypto.randomUUID();
+    }
+  }
 }
 
 function trackRow(
@@ -977,6 +996,28 @@ function fillMissingRequiredColumns(
   tableInfo: TableInfo,
   rng: SeededRandom,
 ): void {
+  // First pass: generate UUIDs for PK columns with client-side UUID defaults.
+  // These have hasDefault=true (from Prisma @default(uuid())) but the actual
+  // DB column has no DEFAULT — so we must generate values ourselves.
+  for (const pkColName of tableInfo.primaryKey) {
+    const col = tableInfo.columns.find((c) => c.name === pkColName);
+    if (!col || !col.hasDefault || !isClientSideUuidDefault(col)) continue;
+
+    const hasMissing = rows.some(
+      (row) => row[col.name] === undefined || row[col.name] === null,
+    );
+    if (!hasMissing) continue;
+
+    logger.debug(
+      `Generating UUIDs for PK "${tableInfo.name}.${col.name}"`,
+    );
+    for (const row of rows) {
+      if (row[col.name] === undefined || row[col.name] === null) {
+        row[col.name] = crypto.randomUUID();
+      }
+    }
+  }
+
   for (const col of tableInfo.columns) {
     // Skip columns that the DB handles: has default, nullable, auto-inc, generated
     if (col.hasDefault || col.isNullable || col.isAutoIncrement || col.isGenerated) {
@@ -1041,4 +1082,67 @@ function generateColumnValue(col: ColumnInfo, rng: SeededRandom): unknown {
     default:
       return null;
   }
+}
+
+/**
+ * Remove rows that would violate unique constraints defined in the schema.
+ * For each unique constraint (including PK), build a composite key from the
+ * row values and keep only the first occurrence.  Works for any schema.
+ */
+function deduplicateByUniqueConstraints(
+  rows: Row[],
+  tableInfo: TableInfo,
+): Row[] {
+  // Collect all unique key sets: explicit unique constraints + primary key.
+  // Skip PK if any PK column is missing from rows (e.g. UUID PKs that
+  // haven't been generated yet — they'll be unique once assigned later).
+  const uniqueKeySets: string[][] = [
+    ...(tableInfo.uniqueConstraints ?? []),
+  ];
+
+  const pkCols = tableInfo.primaryKey;
+  if (pkCols.length > 0) {
+    const pkPresent = rows.length === 0 ||
+      pkCols.every((c) => rows[0]![c] !== undefined);
+    if (pkPresent) {
+      uniqueKeySets.push(pkCols);
+    }
+  }
+
+  if (uniqueKeySets.length === 0) return rows;
+
+  // One Set per unique constraint to track seen composite keys
+  const seenSets = uniqueKeySets.map(() => new Set<string>());
+  const before = rows.length;
+
+  const result = rows.filter((row) => {
+    for (let i = 0; i < uniqueKeySets.length; i++) {
+      const cols = uniqueKeySets[i]!;
+      const key = cols.map((c) => String(row[c] ?? '')).join('\x00');
+      if (seenSets[i]!.has(key)) return false;
+      seenSets[i]!.add(key);
+    }
+    return true;
+  });
+
+  if (result.length < before) {
+    logger.debug(
+      `Deduped "${tableInfo.name}" by unique constraints: ${before} → ${result.length} rows`,
+    );
+  }
+
+  return result;
+}
+
+/**
+ * Check if a column has a client-side UUID default.
+ * Prisma @default(uuid()) / @default(cuid()) set hasDefault=true and
+ * defaultValue to 'gen_random_uuid()' but the actual SQL column has NO
+ * DEFAULT — so the application must generate values.
+ */
+function isClientSideUuidDefault(col: ColumnInfo): boolean {
+  if (col.type === 'uuid') return true;
+  if (col.defaultValue === 'gen_random_uuid()') return true;
+  if (col.pgType === 'uuid') return true;
+  return false;
 }

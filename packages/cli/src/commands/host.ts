@@ -25,14 +25,9 @@ export function registerHostCommand(program: Command): void {
   program
     .command('host')
     .description('Start mock API server and MCP server to expose seeded data to AI agents')
-    .option(
-      '-t, --transport <transport>',
-      'transport: stdio or sse',
-      'stdio',
-    )
-    .option('-P, --port <number>', 'port for SSE transport', parseInt)
-    .option('-p, --api-port <number>', 'port for mock API server', parseInt)
-    .option('--no-api', 'skip starting the mock API server')
+    .option('--mcp-base-port <number>', 'starting port for MCP SSE servers (default: 4201)', parseInt)
+    .option('--api-base-port <number>', 'starting port for mock API servers (default: 4101)', parseInt)
+    .option('--no-api', 'skip starting mock API servers')
     .option('--verbose', 'enable verbose logging')
     .action(async (opts) => {
       await runHost(opts);
@@ -44,11 +39,21 @@ export function registerHostCommand(program: Command): void {
 // ---------------------------------------------------------------------------
 
 interface HostOptions {
-  transport?: string;
-  port?: number;
-  apiPort?: number;
+  mcpBasePort?: number;
+  apiBasePort?: number;
   api?: boolean;
   verbose?: boolean;
+}
+
+/** Tracks a running server pair (MCP + optional mock API) for shutdown. */
+interface ServerInstance {
+  name: string;
+  type: 'database' | 'adapter';
+  mcpServer: MimicMcpServer;
+  mcpPort: number;
+  mockServer?: MockServer;
+  apiPort?: number;
+  pool?: import('pg').Pool;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,22 +67,14 @@ async function runHost(opts: HostOptions): Promise<void> {
 
   const cwd = process.cwd();
   const config = await loadConfig(cwd);
-  const transport = opts.transport ?? 'stdio';
-  const port = opts.port ?? 4200;
-  const apiPort = opts.apiPort ?? 4100;
-
-  if (transport !== 'stdio' && transport !== 'sse') {
-    throw new MimicError(
-      `Invalid transport "${transport}"`,
-      'MCP_SERVER_ERROR',
-      'Use "stdio" or "sse"',
-    );
-  }
 
   const databases = config.databases;
   const apis = config.apis;
   const hasDatabase = databases && Object.keys(databases).length > 0;
   const hasApis = opts.api !== false && apis && Object.keys(apis).length > 0;
+  const totalServers =
+    (hasDatabase ? Object.keys(databases!).length : 0) +
+    (hasApis ? Object.entries(apis!).filter(([, v]) => (v as Record<string, unknown>).enabled !== false).length : 0);
 
   if (!hasDatabase && !hasApis) {
     throw new MimicError(
@@ -87,29 +84,31 @@ async function runHost(opts: HostOptions): Promise<void> {
     );
   }
 
+  // Auto-detect transport: stdio for single server, SSE for multiple
+  const transport: 'stdio' | 'sse' = totalServers > 1 ? 'sse' : 'stdio';
+
+  const mcpBasePort = opts.mcpBasePort ?? 4201;
+  const apiBasePort = opts.apiBasePort ?? 4101;
+
   logger.header('mimic host');
   logger.step(`Domain: ${chalk.yellow(config.domain)}`);
   logger.step(`Personas: ${config.personas.map((p) => chalk.yellow(p.name)).join(', ')}`);
+  logger.step(`Transport: ${chalk.yellow(transport)}`);
+  logger.step(`Servers: ${chalk.yellow(String(totalServers))} (1 MCP per database/adapter)`);
 
-  // ── Track resources for graceful shutdown ────────────────────────────────
-  let pool: import('pg').Pool | null = null;
-  let mcpServer: MimicMcpServer | null = null;
-  let mockServer: MockServer | null = null;
+  // ── Track all server instances for graceful shutdown ──────────────────
+  const instances: ServerInstance[] = [];
+  let nextMcpPort = mcpBasePort;
+  let nextApiPort = apiBasePort;
 
-  // Track adapter instances for MCP tool registration after mock server starts
-  const adapterInstances = new Map<string, ApiMockAdapter>();
+  // Pre-load persona data (shared across adapters)
+  let dataMap: Map<string, ExpandedData> | null = null;
+  if (hasApis) {
+    dataMap = await loadPersonaDataMap(config.personas, cwd);
+  }
 
-  // ── 1. Create MCP Server (database tools) — but don't start transport yet ─
+  // ── 1. Spin up one MCP server per database ─────────────────────────────
   if (hasDatabase) {
-    const [dbName, dbConfig] = Object.entries(databases!)[0]!;
-    const dbUrl = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
-
-    logger.step(`Database: ${chalk.yellow(dbName)}`);
-    logger.step(`Transport: ${chalk.yellow(transport)}`);
-    if (transport === 'sse') {
-      logger.step(`MCP Port: ${chalk.yellow(String(port))}`);
-    }
-
     let pg: typeof import('pg');
     try {
       pg = await import('pg');
@@ -120,198 +119,180 @@ async function runHost(opts: HostOptions): Promise<void> {
       );
     }
 
-    pool = new pg.default.Pool({ connectionString: dbUrl });
+    for (const [dbName, dbConfig] of Object.entries(databases!)) {
+      const cfg = dbConfig as Record<string, unknown>;
+      const dbUrl = resolveEnvVars(cfg.url as string);
+      const mcpPort = nextMcpPort++;
 
-    try {
-      const client = await pool.connect();
-      client.release();
-      logger.success('Database connection verified');
-    } catch (err) {
-      throw new McpServerError(
-        `Failed to connect to database: ${err instanceof Error ? err.message : String(err)}`,
-        'Check DATABASE_URL and ensure PostgreSQL is running',
-        err instanceof Error ? err : undefined,
-      );
-    }
+      logger.step(`Database ${chalk.yellow(dbName)}: connecting...`);
 
-    const schemaSpin = logger.spinner('Parsing database schema...');
-    let schema: SchemaModel;
-    try {
-      const schemaConfig = (dbConfig as Record<string, unknown>).schema as
-        | { source: 'prisma' | 'sql' | 'introspect'; path?: string }
-        | undefined;
-      schema = await parseSchema({ schema: schemaConfig, pool, basePath: cwd });
-      schemaSpin.succeed(`Parsed schema: ${chalk.yellow(String(schema.tables.length))} tables`);
-    } catch (err) {
-      schemaSpin.fail('Failed to parse schema');
-      await pool.end();
-      throw err;
-    }
+      const pool = new pg.default.Pool({ connectionString: dbUrl });
 
-    try {
-      mcpServer = new MimicMcpServer(schema, pool, config);
-      logger.debug('MCP server created (database tools registered)');
-
-      console.log();
-      logger.header('Available MCP Tools');
-      const tools = generateTools(schema);
-      for (const tool of tools) {
-        logger.info(`${chalk.bold(tool.name)}  — ${tool.description.slice(0, 60)}`);
+      try {
+        const client = await pool.connect();
+        client.release();
+        logger.success(`Database ${chalk.yellow(dbName)} connection verified`);
+      } catch (err) {
+        await pool.end();
+        throw new McpServerError(
+          `Failed to connect to database "${dbName}": ${err instanceof Error ? err.message : String(err)}`,
+          'Check DATABASE_URL and ensure PostgreSQL is running',
+          err instanceof Error ? err : undefined,
+        );
       }
-    } catch (err) {
-      await pool.end();
-      throw new McpServerError(
-        `MCP server failed: ${err instanceof Error ? err.message : String(err)}`,
-        undefined,
-        err instanceof Error ? err : undefined,
-      );
+
+      const schemaSpin = logger.spinner(`Parsing schema for ${dbName}...`);
+      let schema: SchemaModel;
+      try {
+        const schemaConfig = cfg.schema as
+          | { source: 'prisma' | 'sql' | 'introspect'; path?: string }
+          | undefined;
+        schema = await parseSchema({ schema: schemaConfig, pool, basePath: cwd });
+        schemaSpin.succeed(`${chalk.yellow(dbName)}: ${schema.tables.length} tables`);
+      } catch (err) {
+        schemaSpin.fail(`Failed to parse schema for ${dbName}`);
+        await pool.end();
+        throw err;
+      }
+
+      try {
+        const mcpServer = new MimicMcpServer(schema, pool, config);
+
+        if (transport === 'sse') {
+          await mcpServer.start('sse', mcpPort);
+        } else {
+          await mcpServer.start('stdio');
+        }
+
+        instances.push({ name: dbName, type: 'database', mcpServer, mcpPort, pool });
+        logger.success(`${chalk.yellow(dbName)} MCP server on :${mcpPort}`);
+      } catch (err) {
+        await pool.end();
+        throw new McpServerError(
+          `MCP server for "${dbName}" failed: ${err instanceof Error ? err.message : String(err)}`,
+          undefined,
+          err instanceof Error ? err : undefined,
+        );
+      }
     }
   }
 
-  // ── 2. Start Mock API Server ──────────────────────────────────────────────
+  // ── 2. Spin up one mock API + MCP server per adapter ───────────────────
   if (hasApis) {
-    const apiSpin = logger.spinner('Starting mock API server...');
-    try {
-      const dataMap = await loadPersonaDataMap(config.personas, cwd);
-      mockServer = new MockServer();
-
-      for (const [apiName, apiConfig] of Object.entries(apis!)) {
-        const cfg = apiConfig as Record<string, unknown>;
-        if (cfg.enabled === false) {
-          logger.debug(`Adapter "${apiName}" is disabled, skipping`);
-          continue;
-        }
-        const adapterId = cfg.adapter as string || apiName;
-
-        let mod: Record<string, unknown>;
-        const pkg = `@mimicai/adapter-${adapterId}`;
-        try {
-          mod = await import(/* @vite-ignore */ pkg);
-        } catch {
-          // ESM import resolves from CWD which may not have the adapter.
-          // Walk up from the CLI binary to find a node_modules that has it.
-          try {
-            mod = await importFromAncestors(pkg, process.argv[1]);
-          } catch {
-            logger.warn(`Adapter ${pkg} not installed, skipping`);
-            logger.info(`Install it with: mimic adapters add ${adapterId}`);
-            continue;
-          }
-        }
-
-        // Find the adapter class — instantiate to check type since 'type' is an instance property
-        const AdapterClass = Object.values(mod).find((v) => {
-          if (typeof v !== 'function') return false;
-          try {
-            const instance = new (v as new () => unknown)() as { type?: string };
-            return instance.type === 'api-mock';
-          } catch { return false; }
-        }) as (new () => ApiMockAdapter) | undefined;
-
-        if (!AdapterClass) {
-          logger.warn(`No ApiMockAdapter found in @mimicai/adapter-${adapterId}, skipping`);
-          continue;
-        }
-
-        const adapter = new AdapterClass();
-        const adapterConfig = (apiConfig as Record<string, unknown>).config ?? {};
-        await adapter.init(adapterConfig, { config, blueprints: new Map(), logger: console });
-        await mockServer.registerAdapter(adapter, dataMap, { basePath: adapter.basePath });
-
-        // Save instance for MCP tool registration
-        adapterInstances.set(apiName, adapter);
-      }
-
-      await mockServer.start(apiPort);
-      apiSpin.succeed(`Mock API server running on http://localhost:${apiPort}`);
-
-      console.log();
-      logger.header('Available Mock API Endpoints');
-      for (const ep of mockServer.getRegisteredEndpoints()) {
-        logger.info(`${chalk.bold(ep.method.padEnd(7))} ${chalk.cyan(ep.path)}  — ${ep.description}`);
-      }
-    } catch (err) {
-      apiSpin.fail('Failed to start mock API server');
-      if (mcpServer) await mcpServer.stop();
-      if (pool) await pool.end();
-      throw err;
-    }
-  }
-
-  // ── 3. Register adapter MCP tools (mcp: true) ────────────────────────────
-  if (hasApis) {
-    const mockBaseUrl = `http://localhost:${apiPort}`;
-
     for (const [apiName, apiConfig] of Object.entries(apis!)) {
       const cfg = apiConfig as Record<string, unknown>;
-      if (!cfg.mcp || cfg.enabled === false) continue;
-
-      const adapter = adapterInstances.get(apiName);
-      if (!adapter || typeof adapter.registerMcpTools !== 'function') continue;
-
-      // Create MCP server if not already created (API-only, no database)
-      if (!mcpServer) {
-        mcpServer = new MimicMcpServer(undefined, undefined, config);
+      if (cfg.enabled === false) {
+        logger.debug(`Adapter "${apiName}" is disabled, skipping`);
+        continue;
       }
 
-      mcpServer.registerExternalTools((srv) => adapter.registerMcpTools!(srv, mockBaseUrl));
-
       const adapterId = (cfg.adapter as string) || apiName;
-      logger.success(`Registered ${chalk.yellow(adapterId)} MCP tools`);
+      const mcpPort = nextMcpPort++;
+      const apiPort = nextApiPort++;
+
+      // ── Load adapter module ──────────────────────────────────────────
+      let mod: Record<string, unknown>;
+      const pkg = `@mimicai/adapter-${adapterId}`;
+      try {
+        mod = await import(/* @vite-ignore */ pkg);
+      } catch {
+        try {
+          mod = await importFromAncestors(pkg, process.argv[1]);
+        } catch {
+          logger.warn(`Adapter ${pkg} not installed, skipping`);
+          logger.info(`Install it with: mimic adapters add ${adapterId}`);
+          continue;
+        }
+      }
+
+      const AdapterClass = Object.values(mod).find((v) => {
+        if (typeof v !== 'function') return false;
+        try {
+          const instance = new (v as new () => unknown)() as { type?: string };
+          return instance.type === 'api-mock';
+        } catch { return false; }
+      }) as (new () => ApiMockAdapter) | undefined;
+
+      if (!AdapterClass) {
+        logger.warn(`No ApiMockAdapter found in ${pkg}, skipping`);
+        continue;
+      }
+
+      // ── Start mock API server for this adapter ───────────────────────
+      const adapter = new AdapterClass();
+      const adapterConfig = cfg.config ?? {};
+      await adapter.init(adapterConfig, { config, blueprints: new Map(), logger: console });
+
+      const mockServer = new MockServer();
+      await mockServer.registerAdapter(adapter, dataMap!, { basePath: adapter.basePath });
+      await mockServer.start(apiPort);
+
+      // ── Create MCP server with this adapter's tools ──────────────────
+      const mcpServer = new MimicMcpServer(undefined, undefined, config);
+      const mockBaseUrl = `http://localhost:${apiPort}`;
+
+      if (cfg.mcp && typeof adapter.registerMcpTools === 'function') {
+        mcpServer.registerExternalTools((srv) => adapter.registerMcpTools!(srv, mockBaseUrl));
+      }
+
+      if (transport === 'sse') {
+        await mcpServer.start('sse', mcpPort);
+      } else {
+        await mcpServer.start('stdio');
+      }
+
+      instances.push({ name: apiName, type: 'adapter', mcpServer, mcpPort, mockServer, apiPort });
+      logger.success(`${chalk.yellow(apiName)} → API :${apiPort} | MCP :${mcpPort}`);
     }
   }
 
-  // ── 4. Start MCP transport (after all tools are registered) ───────────────
-  if (mcpServer) {
-    const mcpSpin = logger.spinner('Starting MCP transport...');
-    try {
-      await mcpServer.start(transport as 'stdio' | 'sse', port);
-      mcpSpin.succeed(`MCP server started (${transport})`);
-    } catch (err) {
-      mcpSpin.fail('Failed to start MCP transport');
-      if (mockServer) await mockServer.stop();
-      if (pool) await pool.end();
-      throw new McpServerError(
-        `MCP server failed: ${err instanceof Error ? err.message : String(err)}`,
-        undefined,
-        err instanceof Error ? err : undefined,
-      );
-    }
-  }
-
-  // ── Print connection info ─────────────────────────────────────────────
+  // ── Print connection summary ─────────────────────────────────────────────
   console.log();
-  if (mcpServer && transport === 'stdio') {
-    logger.header('Claude Desktop Configuration');
-    console.log(chalk.dim('  Add to ~/.claude/claude_desktop_config.json:'));
-    console.log();
-    console.log(
-      chalk.cyan(
-        JSON.stringify(
-          { mcpServers: { mimic: { command: 'npx', args: ['mimic', 'host', '--transport', 'stdio'], cwd: process.cwd() } } },
-          null,
-          2,
-        ).split('\n').map((line) => '  ' + line).join('\n'),
-      ),
-    );
-    console.log();
-  } else if (mcpServer && transport === 'sse') {
-    logger.header('MCP Connection');
-    logger.info(`URL: ${chalk.cyan(`http://localhost:${port}/sse`)}`);
-    console.log();
+  logger.header('MCP Servers');
+  console.log();
+
+  const mcpServersConfig: Record<string, { url: string; type: string }> = {};
+
+  for (const inst of instances) {
+    const url = transport === 'sse'
+      ? `http://localhost:${inst.mcpPort}/sse`
+      : 'stdio';
+    const typeLabel = inst.type === 'database' ? 'database' : 'adapter';
+    const portInfo = inst.apiPort
+      ? `MCP :${inst.mcpPort} | API :${inst.apiPort}`
+      : `MCP :${inst.mcpPort}`;
+
+    logger.info(`  ${chalk.bold(inst.name.padEnd(14))} ${chalk.cyan(portInfo)}  (${typeLabel})`);
+    mcpServersConfig[inst.name] = { url, type: typeLabel };
   }
 
-  logger.info(chalk.dim('Press Ctrl+C to stop the server'));
+  console.log();
+  logger.header('Agent Configuration');
+  console.log(chalk.dim('  MCP server endpoints:'));
+  console.log();
+  console.log(
+    chalk.cyan(
+      JSON.stringify(mcpServersConfig, null, 2)
+        .split('\n')
+        .map((line) => '  ' + line)
+        .join('\n'),
+    ),
+  );
+  console.log();
 
-  // ── Graceful shutdown ─────────────────────────────────────────────────
+  logger.info(chalk.dim('Press Ctrl+C to stop all servers'));
+
+  // ── Graceful shutdown ────────────────────────────────────────────────────
   await new Promise<void>((resolve) => {
     const shutdown = async () => {
       console.log();
       logger.step('Shutting down...');
-      if (mockServer) await mockServer.stop();
-      if (mcpServer) await mcpServer.stop();
-      if (pool) await pool.end();
-      logger.done('Server stopped');
+      for (const inst of instances) {
+        if (inst.mockServer) await inst.mockServer.stop();
+        await inst.mcpServer.stop();
+        if (inst.pool) await inst.pool.end();
+      }
+      logger.done('All servers stopped');
       resolve();
     };
 

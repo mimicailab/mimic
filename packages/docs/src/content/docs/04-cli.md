@@ -56,42 +56,76 @@ Loads expanded data from `.mimic/data/` and pushes it to your configured databas
 
 <h2 id="cli-host">mimic host</h2>
 
-Start the mock API server and MCP server.
+Start mock API servers and MCP servers to expose seeded data to AI agents.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="prompt">$</span> mimic host [options]
 &#8203;
 <span class="cm">Options:</span>
-  <span class="flag">-t, --transport</span> &lt;transport&gt;  MCP transport: stdio or sse (default: stdio)
-  <span class="flag">-P, --port</span> &lt;number&gt;          Port for SSE transport (default: 4200)
-  <span class="flag">-p, --api-port</span> &lt;number&gt;      Port for mock API server (default: 4100)
-  <span class="flag">--no-api</span>                     Skip starting the mock API server (MCP only)
+  <span class="flag">--mcp-base-port</span> &lt;number&gt;     Starting port for MCP SSE servers (default: 4201)
+  <span class="flag">--api-base-port</span> &lt;number&gt;     Starting port for mock API servers (default: 4101)
+  <span class="flag">--no-api</span>                     Skip starting mock API servers
   <span class="flag">--verbose</span>                    Enable verbose logging</code></pre>
 </div>
 
-Starts a Fastify server with all configured API mocks mounted at their base paths. Also starts a unified MCP server that exposes both database tools (auto-generated from schema) and API adapter tools (when `mcp: true` is set in config).
+#### What it starts
 
-<h2 id="cli-test">mimic test</h2>
+`mimic host` spins up one server pair per configured database and one server pair per enabled API adapter &mdash; there is no single shared server.
 
-Run test scenarios against your AI agent.
+**For each database** in `mimic.json`:
+- Connects to the database and parses the schema
+- Starts an MCP server exposing auto-generated query tools for every table
+
+**For each enabled adapter** in `mimic.json`:
+- Loads persona data from `.mimic/data/` and registers it with the adapter
+- Starts a mock HTTP API server serving realistic responses at the adapter&rsquo;s base path
+- Starts an MCP server exposing the adapter&rsquo;s tools (when `mcp: true` is set), pointed at the mock API
+
+#### Port assignment
+
+Ports are assigned sequentially starting from the base port values:
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
-  <pre><code><span class="prompt">$</span> mimic test [options]
-&#8203;
-<span class="cm">Options:</span>
-  <span class="flag">-S, --scenario</span> &lt;names...&gt; Limit to specific scenarios
-  <span class="flag">-p, --persona</span> &lt;names...&gt;  Limit to specific personas
-  <span class="flag">-f, --format</span> &lt;format&gt;     Output format: cli, json, junit (default: cli)
-  <span class="flag">-o, --output</span> &lt;path&gt;       Write report to file
-  <span class="flag">--ci</span>                      CI mode: exit code 1 on failure
-  <span class="flag">-t, --timeout</span> &lt;ms&gt;        Per-scenario timeout in ms
-  <span class="flag">--verbose</span>                 Enable verbose logging
-  <span class="flag">--full</span>                    Full pipeline: run &rarr; seed &rarr; host (background) &rarr; test &rarr; stop</code></pre>
+  <pre><code><span class="cm"># Example: 1 database + 2 adapters</span>
+<span class="cm">#   main-db   MCP :4201</span>
+<span class="cm">#   plaid     API :4101 | MCP :4202</span>
+<span class="cm">#   stripe    API :4102 | MCP :4203</span>
+<span class="prompt">$</span> mimic host</code></pre>
 </div>
 
-Reads scenarios from the `test` section of `mimic.json`. Each scenario sends a goal to the agent and verifies the response &mdash; which tools were called, whether the response contains expected keywords, and whether it's factually accurate. Supports keyword matching and LLM-as-judge evaluation.
+Use `--mcp-base-port` and `--api-base-port` to shift the port ranges if they conflict with other services.
+
+#### Transport auto-detection
+
+The MCP transport protocol is chosen automatically based on server count:
+
+- **One server** &rarr; `stdio` (reads/writes stdin&sol;stdout directly)
+- **Multiple servers** &rarr; `sse` (each MCP server listens at `http://localhost:&lt;port&gt;/sse`)
+
+You cannot override this &mdash; use `--no-api` to reduce server count if you need `stdio` with a single adapter.
+
+#### Connection summary
+
+After all servers start, `mimic host` prints a JSON block of MCP endpoints ready to paste into your agent&rsquo;s MCP configuration:
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code>{
+  <span class="yk">"main-db"</span>: { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4201/sse"</span>, <span class="yk">"type"</span>: <span class="ys">"database"</span> },
+  <span class="yk">"plaid"</span>:   { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4202/sse"</span>, <span class="yk">"type"</span>: <span class="ys">"adapter"</span> },
+  <span class="yk">"stripe"</span>:  { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4203/sse"</span>, <span class="yk">"type"</span>: <span class="ys">"adapter"</span> }
+}</code></pre>
+</div>
+
+#### `--no-api` flag
+
+Skips starting mock HTTP API servers for all adapters. MCP servers for adapters are also omitted since they depend on the mock API URL. Only database MCP servers start. Useful when you only need the database tools exposed to your agent.
+
+#### Graceful shutdown
+
+`mimic host` blocks the terminal until you press `Ctrl+C` (or send `SIGTERM`). On shutdown it stops all MCP servers, mock API servers, and closes all database connections cleanly.
 
 <h2 id="cli-inspect">mimic inspect</h2>
 
@@ -133,7 +167,7 @@ List cached blueprints.
   <pre><code><span class="prompt">$</span> mimic inspect blueprints [--verbose]</code></pre>
 </div>
 
-Shows persona name, occupation, and generation timestamp for each cached blueprint in `.mimic/blueprints/`.
+Shows a table with five columns for each cached blueprint in `.mimic/blueprints/`: persona ID slug, full name, occupation, the LLM model that generated it (Generated By), and the generation timestamp (Generated At).
 
 #### inspect db
 

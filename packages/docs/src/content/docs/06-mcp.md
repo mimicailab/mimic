@@ -69,146 +69,138 @@ The simplest way &mdash; configure adapters in `mimic.json` with `mcp: true` and
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="prompt">$</span> mimic host
 &#8203;
-<span class="ok">&#10003;</span> <span class="out">Stripe API    &rarr; http://localhost:4100/stripe/v1</span>
-<span class="ok">&#10003;</span> <span class="out">Plaid API     &rarr; http://localhost:4100/plaid</span>
-<span class="ok">&#10003;</span> <span class="out">MCP Server    &rarr; stdio (database + API adapter tools)</span>
-<span class="ok">&#10003;</span> <span class="out">Ready in 1.2s</span></code></pre>
+<span class="ok">&#10003;</span> <span class="out">Stripe API    &rarr; http://localhost:4101/stripe/v1</span>
+<span class="ok">&#10003;</span> <span class="out">Stripe MCP    &rarr; http://localhost:4201/sse</span>
+<span class="ok">&#10003;</span> <span class="out">Plaid API     &rarr; http://localhost:4102/plaid</span>
+<span class="ok">&#10003;</span> <span class="out">Plaid MCP     &rarr; http://localhost:4202/sse</span>
+<span class="ok">&#10003;</span> <span class="out">Ready in 1.4s</span></code></pre>
 </div>
 
 <h2 id="mcp-catalog">Available MCP Servers</h2>
 
+All 10 shipped adapters include a full MCP server. Each can be run standalone via `npx` or started together via `mimic host`.
+
 <div class="doc-table-wrap">
   <table class="doc-table">
-    <thead><tr><th>Adapter</th><th>Package</th><th>MCP Command</th><th>Tools</th><th>Status</th></tr></thead>
+    <thead><tr><th>Adapter</th><th>Package</th><th>Standalone MCP Command</th><th>Status</th></tr></thead>
     <tbody>
-      <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td><code>npx @mimicai/adapter-stripe mcp</code></td><td>17</td><td style="color: var(--green);">Shipped</td></tr>
-      <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td><code>npx @mimicai/adapter-plaid mcp</code></td><td>10</td><td style="color: var(--green);">Shipped</td></tr>
-      <tr><td><strong>Slack</strong></td><td><code>@mimicai/adapter-slack</code></td><td><code>npx @mimicai/adapter-slack mcp</code></td><td>12</td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td><code>npx @mimicai/adapter-stripe mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td><code>npx @mimicai/adapter-plaid mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Slack</strong></td><td><code>@mimicai/adapter-slack</code></td><td><code>npx @mimicai/adapter-slack mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Paddle</strong></td><td><code>@mimicai/adapter-paddle</code></td><td><code>npx @mimicai/adapter-paddle mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Chargebee</strong></td><td><code>@mimicai/adapter-chargebee</code></td><td><code>npx @mimicai/adapter-chargebee mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>GoCardless</strong></td><td><code>@mimicai/adapter-gocardless</code></td><td><code>npx @mimicai/adapter-gocardless mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Lemon Squeezy</strong></td><td><code>@mimicai/adapter-lemonsqueezy</code></td><td><code>npx @mimicai/adapter-lemonsqueezy mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Recurly</strong></td><td><code>@mimicai/adapter-recurly</code></td><td><code>npx @mimicai/adapter-recurly mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>RevenueCat</strong></td><td><code>@mimicai/adapter-revenuecat</code></td><td><code>npx @mimicai/adapter-revenuecat mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Zuora</strong></td><td><code>@mimicai/adapter-zuora</code></td><td><code>npx @mimicai/adapter-zuora mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
     </tbody>
   </table>
 </div>
 
-### Stripe MCP Tools
+<h2 id="mcp-parity">Official Parity</h2>
+
+Mimic MCP tools are designed to match the official MCP servers published by each platform — same tool names, same parameter shapes, same return format. The goal is zero code changes when you swap a Mimic MCP server for the real one.
 
 <div class="doc-table-wrap">
   <table class="doc-table">
-    <thead><tr><th>Tool</th><th>Description</th></tr></thead>
+    <thead><tr><th>Adapter</th><th>Based on</th><th>Coverage</th></tr></thead>
     <tbody>
-      <tr><td><code>list_customers</code></td><td>List all customers with optional filtering</td></tr>
-      <tr><td><code>create_customer</code></td><td>Create a new customer with name, email, description</td></tr>
-      <tr><td><code>create_payment_intent</code></td><td>Create a payment intent with amount and currency</td></tr>
-      <tr><td><code>list_charges</code></td><td>List charges with optional customer filter</td></tr>
-      <tr><td><code>list_subscriptions</code></td><td>List active subscriptions</td></tr>
-      <tr><td><code>create_subscription</code></td><td>Create a new subscription for a customer</td></tr>
-      <tr><td><code>list_invoices</code></td><td>List invoices with optional status filter</td></tr>
-      <tr><td><code>list_products</code></td><td>List all products</td></tr>
-      <tr><td><code>create_product</code></td><td>Create a new product</td></tr>
-      <tr><td><code>list_prices</code></td><td>List prices for products</td></tr>
-      <tr><td><code>list_payment_methods</code></td><td>List payment methods for a customer</td></tr>
-      <tr><td><code>create_refund</code></td><td>Refund a charge or payment intent</td></tr>
-      <tr><td><code>get_balance</code></td><td>Retrieve current account balance</td></tr>
+      <tr><td><strong>Stripe</strong></td><td><a href="https://mcp.stripe.com" target="_blank">mcp.stripe.com</a> official server</td><td>All 26 official tools + 4 Mimic extras for payment lifecycle testing</td></tr>
+      <tr><td><strong>Plaid</strong></td><td>Plaid API surface</td><td>Link flow, accounts, transactions, balances, identity, auth, holdings, liabilities</td></tr>
+      <tr><td><strong>Slack</strong></td><td>Slack Web API</td><td>Channels, messages, threads, reactions, users, search, team info</td></tr>
+      <tr><td><strong>Paddle</strong></td><td>Paddle Billing API</td><td>Products, prices, subscriptions, customers, transactions, discounts</td></tr>
+      <tr><td><strong>Chargebee</strong></td><td>Chargebee API</td><td>Subscriptions, customers, invoices, plans, addons, events</td></tr>
+      <tr><td><strong>GoCardless</strong></td><td>GoCardless API</td><td>Mandates, payments, customers, bank accounts, payouts, events</td></tr>
+      <tr><td><strong>Lemon Squeezy</strong></td><td>Lemon Squeezy API</td><td>Products, variants, orders, subscriptions, customers, discounts</td></tr>
+      <tr><td><strong>Recurly</strong></td><td>Recurly API</td><td>Accounts, subscriptions, invoices, plans, add-ons, transactions</td></tr>
+      <tr><td><strong>RevenueCat</strong></td><td>RevenueCat API</td><td>Subscribers, entitlements, offerings, purchases, events</td></tr>
+      <tr><td><strong>Zuora</strong></td><td>Zuora API</td><td>Accounts, subscriptions, orders, invoices, payments, products</td></tr>
     </tbody>
   </table>
 </div>
 
-### Plaid MCP Tools
-
-<div class="doc-table-wrap">
-  <table class="doc-table">
-    <thead><tr><th>Tool</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>create_link_token</code></td><td>Create a Link token to initialize Plaid Link</td></tr>
-      <tr><td><code>exchange_public_token</code></td><td>Exchange a public token for an access token</td></tr>
-      <tr><td><code>get_accounts</code></td><td>Get all linked bank accounts</td></tr>
-      <tr><td><code>get_transactions</code></td><td>Get transactions with date range filtering</td></tr>
-      <tr><td><code>get_balance</code></td><td>Get real-time account balances</td></tr>
-      <tr><td><code>get_identity</code></td><td>Get account holder identity information</td></tr>
-      <tr><td><code>get_auth</code></td><td>Get account and routing numbers</td></tr>
-      <tr><td><code>get_institutions</code></td><td>Search financial institutions</td></tr>
-    </tbody>
-  </table>
-</div>
-
-### Slack MCP Tools
-
-<div class="doc-table-wrap">
-  <table class="doc-table">
-    <thead><tr><th>Tool</th><th>Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>slack_list_channels</code></td><td>List all channels in the workspace</td></tr>
-      <tr><td><code>slack_post_message</code></td><td>Post a message to a channel</td></tr>
-      <tr><td><code>slack_list_messages</code></td><td>List messages in a channel</td></tr>
-      <tr><td><code>slack_list_users</code></td><td>List all users in the workspace</td></tr>
-      <tr><td><code>slack_get_user_info</code></td><td>Get detailed info about a user</td></tr>
-      <tr><td><code>slack_add_reaction</code></td><td>Add a reaction emoji to a message</td></tr>
-      <tr><td><code>slack_list_reactions</code></td><td>List reactions on a message</td></tr>
-      <tr><td><code>slack_upload_file</code></td><td>Upload a file to a channel</td></tr>
-      <tr><td><code>slack_get_channel_info</code></td><td>Get detailed channel information</td></tr>
-      <tr><td><code>slack_search_messages</code></td><td>Search messages across channels</td></tr>
-    </tbody>
-  </table>
+<div class="callout tip">
+  <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+  <div><p><strong>Zero migration cost:</strong> Agent code that calls <code>mimic-stripe</code> MCP tools works unchanged against the real Stripe MCP server in production — no renames, no schema changes.</p></div>
 </div>
 
 <h2 id="mcp-env">Environment Variables</h2>
 
 <div class="doc-table-wrap">
   <table class="doc-table">
-    <thead><tr><th>Variable</th><th>Description</th><th>Default</th></tr></thead>
+    <thead><tr><th>Variable</th><th>Applies to</th><th>Description</th><th>Default</th></tr></thead>
     <tbody>
-      <tr><td><code>MIMIC_BASE_URL</code></td><td>URL of the running Mimic mock server</td><td><code>http://localhost:4100</code></td></tr>
+      <tr><td><code>MIMIC_BASE_URL</code></td><td>Standalone binary only</td><td>URL of the mock API server the standalone MCP binary will call</td><td><code>http://localhost:4100</code></td></tr>
     </tbody>
   </table>
 </div>
 
+<div class="callout info">
+  <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12" y2="16"/></svg></span>
+  <div><p><strong><code>MIMIC_BASE_URL</code> is only for standalone binary mode.</strong> When you run <code>npx @mimicai/adapter-stripe mcp</code> directly, it needs to know where your mock API server is listening. <code>mimic host</code> does not use this variable — it assigns ports internally and wires each MCP server to its own API server automatically.</p></div>
+</div>
+
 <h2 id="mcp-build">Build an MCP Server</h2>
 
-Each adapter includes an MCP entry point at `src/bin/mcp.ts`. Here's the pattern:
+Each adapter's MCP implementation lives in `src/mcp.ts`. The pattern is a `registerMyPlatformTools` function (used by both `mimic host` and the standalone binary) plus a `startMyPlatformMcpServer` function for the standalone path. A thin `src/bin/mcp.ts` entry point calls the start function.
 
 <div class="code-block">
-  <div class="code-bar"><span class="code-bar-lang">typescript</span><span>src/bin/mcp.ts</span><button class="code-copy">Copy</button></div>
+  <div class="code-bar"><span class="code-bar-lang">typescript</span><span>src/mcp.ts</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="kw">import</span> { <span class="ty">McpServer</span> } <span class="kw">from</span> <span class="str">'@modelcontextprotocol/sdk/server/mcp.js'</span>;
 <span class="kw">import</span> { <span class="ty">StdioServerTransport</span> } <span class="kw">from</span> <span class="str">'@modelcontextprotocol/sdk/server/stdio.js'</span>;
 <span class="kw">import</span> { z } <span class="kw">from</span> <span class="str">'zod'</span>;
 &#8203;
-<span class="kw">const</span> BASE_URL = process.env.MIMIC_BASE_URL ?? <span class="str">'http://localhost:4100'</span>;
-<span class="kw">const</span> server = <span class="kw">new</span> <span class="ty">McpServer</span>({ name: <span class="str">'mimic-my-platform'</span>, version: <span class="str">'0.3.0'</span> });
+<span class="cm">// Register tools on any McpServer instance — used by mimic host and standalone mode.</span>
+<span class="kw">export function</span> <span class="fn">registerMyPlatformTools</span>(server: <span class="ty">McpServer</span>, baseUrl: <span class="ty">string</span>): <span class="ty">void</span> {
+  server.<span class="fn">tool</span>(
+    <span class="str">'list_items'</span>,
+    <span class="str">'List all items in the account.'</span>,
+    {},
+    <span class="kw">async</span> () <span class="op">=&gt;</span> {
+      <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${baseUrl}/my-platform/items`</span>);
+      <span class="kw">const</span> data = <span class="kw">await</span> res.<span class="fn">json</span>();
+      <span class="kw">return</span> { content: [{ type: <span class="str">'text'</span>, text: JSON.<span class="fn">stringify</span>(data, <span class="ty">null</span>, 2) }] };
+    }
+  );
 &#8203;
-server.<span class="fn">tool</span>(
-  <span class="str">'list_items'</span>,
-  <span class="str">'List all items in the account.'</span>,
-  {},
-  <span class="kw">async</span> () <span class="op">=&gt;</span> {
-    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${BASE_URL}/my-platform/items`</span>);
-    <span class="kw">const</span> data = <span class="kw">await</span> res.<span class="fn">json</span>();
-    <span class="kw">return</span> {
-      content: [{ type: <span class="str">'text'</span>, text: JSON.<span class="fn">stringify</span>(data, <span class="ty">null</span>, 2) }],
-    };
-  }
-);
+  server.<span class="fn">tool</span>(
+    <span class="str">'create_item'</span>,
+    <span class="str">'Create a new item. Requires title. Optionally set priority.'</span>,
+    {
+      title: z.<span class="fn">string</span>().<span class="fn">describe</span>(<span class="str">'Item title'</span>),
+      priority: z.<span class="fn">enum</span>([<span class="str">'low'</span>, <span class="str">'medium'</span>, <span class="str">'high'</span>]).<span class="fn">optional</span>(),
+    },
+    <span class="kw">async</span> (params) <span class="op">=&gt;</span> {
+      <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${baseUrl}/my-platform/items`</span>, {
+        method: <span class="str">'POST'</span>,
+        headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+        body: JSON.<span class="fn">stringify</span>(params),
+      });
+      <span class="kw">const</span> data = <span class="kw">await</span> res.<span class="fn">json</span>();
+      <span class="kw">return</span> { content: [{ type: <span class="str">'text'</span>, text: <span class="str">`Created item ${data.id}`</span> }] };
+    }
+  );
+}
 &#8203;
-server.<span class="fn">tool</span>(
-  <span class="str">'create_item'</span>,
-  <span class="str">'Create a new item. Requires title. Optionally set priority.'</span>,
-  {
-    title: z.<span class="fn">string</span>().<span class="fn">describe</span>(<span class="str">'Item title'</span>),
-    priority: z.<span class="fn">enum</span>([<span class="str">'low'</span>, <span class="str">'medium'</span>, <span class="str">'high'</span>]).<span class="fn">optional</span>(),
-  },
-  <span class="kw">async</span> (params) <span class="op">=&gt;</span> {
-    <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${BASE_URL}/my-platform/items`</span>, {
-      method: <span class="str">'POST'</span>,
-      headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
-      body: JSON.<span class="fn">stringify</span>(params),
-    });
-    <span class="kw">const</span> data = <span class="kw">await</span> res.<span class="fn">json</span>();
-    <span class="kw">return</span> {
-      content: [{ type: <span class="str">'text'</span>, text: <span class="str">`Created item ${data.data.id}: "${data.data.title}"`</span> }],
-    };
-  }
-);
-&#8203;
-<span class="kw">const</span> transport = <span class="kw">new</span> <span class="ty">StdioServerTransport</span>();
-<span class="kw">await</span> server.<span class="fn">connect</span>(transport);</code></pre>
+<span class="cm">// Standalone entry — called by src/bin/mcp.ts.</span>
+<span class="kw">export async function</span> <span class="fn">startMyPlatformMcpServer</span>(): <span class="ty">Promise</span>&lt;<span class="ty">void</span>&gt; {
+  <span class="kw">const</span> baseUrl = process.env.MIMIC_BASE_URL ?? <span class="str">'http://localhost:4100'</span>;
+  <span class="kw">const</span> server = <span class="kw">new</span> <span class="ty">McpServer</span>({ name: <span class="str">'mimic-my-platform'</span>, version: <span class="str">'0.1.0'</span> });
+  <span class="fn">registerMyPlatformTools</span>(server, baseUrl);
+  <span class="kw">const</span> transport = <span class="kw">new</span> <span class="ty">StdioServerTransport</span>();
+  <span class="kw">await</span> server.<span class="fn">connect</span>(transport);
+}</code></pre>
 </div>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">typescript</span><span>src/bin/mcp.ts</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="cm">#!/usr/bin/env node</span>
+<span class="kw">import</span> { <span class="fn">startMyPlatformMcpServer</span> } <span class="kw">from</span> <span class="str">'../mcp.js'</span>;
+<span class="fn">startMyPlatformMcpServer</span>().<span class="fn">catch</span>(console.error);</code></pre>
+</div>
+
+The `registerMyPlatformTools` function is also what you pass to `registerMcpTools` in your adapter class — so `mimic host` can mount the same tools on its shared MCP server without spawning a separate process.
 
 <div class="callout tip">
   <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
