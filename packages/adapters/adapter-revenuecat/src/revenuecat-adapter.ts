@@ -40,6 +40,47 @@ function isoNow(): string {
   return new Date().toISOString();
 }
 
+function toIsoTimestamp(value: unknown): string {
+  if (typeof value === 'string' && value.length > 0) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const millis = value > 1e12 ? value : value * 1000;
+    return new Date(millis).toISOString();
+  }
+
+  return isoNow();
+}
+
+function toProjectId(personaId: string): string {
+  const slug = personaId
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return `proj_${slug || 'default'}`;
+}
+
+function ensureProject(
+  store: StateStore,
+  projectId: string,
+  displayName: string,
+  createdAt: string,
+): void {
+  const existing = store.get<Record<string, unknown>>(NS.projects, projectId);
+  if (existing) return;
+
+  store.set(NS.projects, projectId, {
+    id: projectId,
+    name: displayName,
+    created_at: createdAt,
+    updated_at: createdAt,
+  });
+}
+
 /** RevenueCat cursor pagination */
 function paginateCursor<T>(items: T[], cursor?: string, limit: number = 20) {
   const startIdx = cursor ? parseInt(cursor, 10) : 0;
@@ -609,7 +650,177 @@ export class RevenueCatAdapter extends BaseApiMockAdapter<RevenueCatConfig> {
       const rcData = expanded.apiResponses?.revenuecat;
       if (!rcData) continue;
 
+      const projectId = toProjectId(expanded.personaId);
+      const projectName = `${expanded.personaId} RevenueCat`;
+
       for (const [resourceType, responses] of Object.entries(rcData.responses)) {
+        if (resourceType === 'offerings') {
+          for (const response of responses) {
+            const body = response.body as Record<string, unknown>;
+            const offeringId =
+              typeof body.id === 'string'
+                ? body.id
+                : typeof body.identifier === 'string'
+                  ? body.identifier
+                  : null;
+            if (!offeringId) continue;
+
+            const createdAt = toIsoTimestamp(body.created_at ?? body.created);
+            const resolvedProjectId =
+              typeof body.project_id === 'string' ? body.project_id : projectId;
+
+            ensureProject(store, resolvedProjectId, projectName, createdAt);
+
+            const packages = Array.isArray(body.packages) ? body.packages : [];
+            const enriched = {
+              id: offeringId,
+              project_id: resolvedProjectId,
+              display_name:
+                body.display_name ??
+                body.description ??
+                body.identifier ??
+                offeringId,
+              lookup_key: body.lookup_key ?? body.identifier ?? null,
+              is_current: body.is_current ?? body.identifier === 'default',
+              packages,
+              created_at: createdAt,
+              updated_at: toIsoTimestamp(body.updated_at ?? body.created_at ?? body.created),
+              ...body,
+            };
+
+            store.set(NS.offerings, offeringId, enriched);
+
+            for (const pkg of packages) {
+              if (typeof pkg !== 'object' || !pkg) continue;
+              const packageData = pkg as Record<string, unknown>;
+              const packageId =
+                typeof packageData.id === 'string'
+                  ? packageData.id
+                  : typeof packageData.identifier === 'string'
+                    ? packageData.identifier
+                    : null;
+              if (packageId) {
+                store.set(NS.packages, packageId, {
+                  id: packageId,
+                  offering_id: offeringId,
+                  display_name:
+                    packageData.display_name ??
+                    packageData.identifier ??
+                    packageId,
+                  lookup_key: packageData.lookup_key ?? packageData.identifier ?? null,
+                  created_at: createdAt,
+                  updated_at: createdAt,
+                  ...packageData,
+                });
+              }
+
+              const productId =
+                typeof packageData.platform_product_identifier === 'string'
+                  ? packageData.platform_product_identifier
+                  : typeof packageData.product_id === 'string'
+                    ? packageData.product_id
+                    : null;
+              if (productId) {
+                store.set(NS.products, productId, {
+                  id: productId,
+                  project_id: resolvedProjectId,
+                  type: 'subscription',
+                  display_name: productId,
+                  store_identifier: productId,
+                  created_at: createdAt,
+                  updated_at: createdAt,
+                });
+              }
+            }
+          }
+          continue;
+        }
+
+        if (resourceType === 'subscribers') {
+          for (const response of responses) {
+            const body = response.body as Record<string, unknown>;
+            const customerId =
+              typeof body.id === 'string'
+                ? body.id
+                : typeof body.original_app_user_id === 'string'
+                  ? body.original_app_user_id
+                  : null;
+            if (!customerId) continue;
+
+            const createdAt = toIsoTimestamp(body.created_at ?? body.created);
+            const resolvedProjectId =
+              typeof body.project_id === 'string' ? body.project_id : projectId;
+            const entitlements =
+              typeof body.entitlements === 'object' && body.entitlements
+                ? (body.entitlements as Record<string, unknown>)
+                : {};
+
+            ensureProject(store, resolvedProjectId, projectName, createdAt);
+
+            store.set(NS.customers, customerId, {
+              id: customerId,
+              project_id: resolvedProjectId,
+              original_app_user_id: customerId,
+              first_seen: createdAt,
+              last_seen: toIsoTimestamp(body.last_seen ?? body.updated_at ?? body.created_at ?? body.created),
+              entitlements,
+              subscriber_attributes:
+                typeof body.subscriber_attributes === 'object' && body.subscriber_attributes
+                  ? body.subscriber_attributes
+                  : {},
+              created_at: createdAt,
+              updated_at: toIsoTimestamp(body.updated_at ?? body.created_at ?? body.created),
+              ...body,
+            });
+
+            for (const [entitlementId, entitlementValue] of Object.entries(entitlements)) {
+              const entitlement =
+                typeof entitlementValue === 'object' && entitlementValue
+                  ? (entitlementValue as Record<string, unknown>)
+                  : {};
+              const productId =
+                typeof entitlement.product_identifier === 'string'
+                  ? entitlement.product_identifier
+                  : null;
+              const subscriptionId = `sub_${customerId}_${entitlementId}`;
+
+              store.set(NS.entitlements, entitlementId, {
+                id: entitlementId,
+                lookup_key: entitlementId,
+                display_name: entitlementId,
+                created_at: createdAt,
+                updated_at: createdAt,
+              });
+
+              store.set(NS.subscriptions, subscriptionId, {
+                id: subscriptionId,
+                project_id: resolvedProjectId,
+                customer_id: customerId,
+                entitlement_id: entitlementId,
+                product_id: productId,
+                store: entitlement.store ?? null,
+                status: 'active',
+                current_period_started_at: createdAt,
+                created_at: createdAt,
+                updated_at: createdAt,
+              });
+
+              if (productId) {
+                store.set(NS.products, productId, {
+                  id: productId,
+                  project_id: resolvedProjectId,
+                  type: 'subscription',
+                  display_name: productId,
+                  store_identifier: productId,
+                  created_at: createdAt,
+                  updated_at: createdAt,
+                });
+              }
+            }
+          }
+          continue;
+        }
+
         const namespace = this.RESOURCE_NS[resourceType];
         if (!namespace) continue;
 
@@ -617,9 +828,38 @@ export class RevenueCatAdapter extends BaseApiMockAdapter<RevenueCatConfig> {
           const body = response.body as Record<string, unknown>;
           if (!body.id) continue;
 
+          const createdAt = toIsoTimestamp(body.created_at ?? body.created);
+          const updatedAt = toIsoTimestamp(
+            body.updated_at ?? body.created_at ?? body.created,
+          );
+          const resolvedProjectId =
+            resourceType === 'projects'
+              ? String(body.id)
+              : typeof body.project_id === 'string'
+                ? body.project_id
+                : projectId;
+
+          if (
+            resourceType === 'projects' ||
+            resourceType === 'offerings' ||
+            resourceType === 'products' ||
+            resourceType === 'customers' ||
+            resourceType === 'subscriptions' ||
+            resourceType === 'purchases'
+          ) {
+            ensureProject(
+              store,
+              resolvedProjectId,
+              projectName,
+              createdAt,
+            );
+          }
+
           const enriched = {
-            created_at: body.created_at ?? isoNow(),
-            updated_at: body.updated_at ?? isoNow(),
+            project_id:
+              resourceType === 'projects' ? undefined : resolvedProjectId,
+            created_at: createdAt,
+            updated_at: updatedAt,
             ...body,
           };
 

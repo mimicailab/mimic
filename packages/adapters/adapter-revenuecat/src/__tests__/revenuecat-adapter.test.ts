@@ -554,4 +554,113 @@ describe('RevenueCatAdapter', () => {
       expect(res.json().type).toBe('subscription');
     });
   });
+
+  describe('Generated RevenueCat response seeding', () => {
+    let generatedTs: TestServer;
+
+    beforeAll(async () => {
+      const generatedAdapter = new RevenueCatAdapter();
+      const generatedData = new Map<string, ExpandedData>([
+        ['growth-saas', {
+          personaId: 'growth-saas',
+          blueprint: {} as Blueprint,
+          tables: {},
+          documents: {},
+          apiResponses: {
+            revenuecat: {
+              adapterId: 'revenuecat',
+              responses: {
+                offerings: [
+                  {
+                    statusCode: 200,
+                    headers: {},
+                    body: {
+                      id: 'rc_offering_default',
+                      identifier: 'default',
+                      description: 'Default mobile offering',
+                      packages: [
+                        {
+                          identifier: '$rc_monthly_pro',
+                          platform_product_identifier: 'verida_pro_monthly',
+                        },
+                      ],
+                      created: 1757156062,
+                    },
+                    personaId: 'growth-saas',
+                    stateKey: 'rc_offerings',
+                  },
+                ],
+                subscribers: [
+                  {
+                    statusCode: 200,
+                    headers: {},
+                    body: {
+                      original_app_user_id: 'rc_user_123',
+                      entitlements: {
+                        pro: {
+                          product_identifier: 'verida_pro_monthly',
+                          store: 'play_store',
+                        },
+                      },
+                      subscriber_attributes: {
+                        '$appsflyerId': { value: 'af-123' },
+                      },
+                      created: 1757156062,
+                    },
+                    personaId: 'growth-saas',
+                    stateKey: 'rc_subscribers',
+                  },
+                ],
+              },
+            },
+          },
+          files: [],
+          events: [],
+        }],
+      ]);
+      generatedTs = await buildTestServer(generatedAdapter, generatedData);
+    });
+
+    afterAll(async () => {
+      await generatedTs.close();
+    });
+
+    it('should expose a seeded project instead of falling back to proj_default', async () => {
+      const res = await generatedTs.server.inject({ method: 'GET', url: `${BP}/projects` });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().items[0].id).toBe('proj_growth_saas');
+      expect(res.json().items[0].id).not.toBe('proj_default');
+    });
+
+    it('should list offerings under the generated project', async () => {
+      const res = await generatedTs.server.inject({
+        method: 'GET',
+        url: `${BP}/projects/proj_growth_saas/offerings`,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().items.length).toBe(1);
+      expect(res.json().items[0].id).toBe('rc_offering_default');
+    });
+
+    it('should expose subscribers as customers keyed by original_app_user_id', async () => {
+      const res = await generatedTs.server.inject({
+        method: 'GET',
+        url: `${BP}/projects/proj_growth_saas/customers/rc_user_123`,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().id).toBe('rc_user_123');
+      expect(res.json().entitlements.pro.product_identifier).toBe('verida_pro_monthly');
+    });
+
+    it('should derive subscriptions from subscriber entitlements', async () => {
+      const res = await generatedTs.server.inject({
+        method: 'GET',
+        url: `${BP}/projects/proj_growth_saas/subscriptions`,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().items.length).toBe(1);
+      expect(res.json().items[0].customer_id).toBe('rc_user_123');
+      expect(res.json().items[0].product_id).toBe('verida_pro_monthly');
+    });
+  });
 });
