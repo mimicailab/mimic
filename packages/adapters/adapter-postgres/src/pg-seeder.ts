@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import type { Pool, PoolClient } from 'pg';
 import type {
@@ -466,6 +467,24 @@ function applyIdOffsets(
  * (no SQL default) and LLM omissions (e.g. missing `balance`).
  */
 function fillMissingColumns(rows: Row[], tableInfo: TableInfo): void {
+  // First: generate UUIDs for PK columns with client-side UUID defaults
+  // (e.g. Prisma @default(uuid()) — hasDefault=true but no SQL DEFAULT).
+  for (const pkColName of tableInfo.primaryKey) {
+    const col = tableInfo.columns.find((c) => c.name === pkColName);
+    if (!col || !col.hasDefault) continue;
+    if (col.type !== 'uuid' && col.defaultValue !== 'gen_random_uuid()' && col.pgType !== 'uuid') continue;
+
+    const missing = rows.some((row) => row[col.name] === undefined || row[col.name] === null);
+    if (!missing) continue;
+
+    warn(`Generating UUIDs for PK "${tableInfo.name}.${col.name}" (client-side default)`);
+    for (const row of rows) {
+      if (row[col.name] === undefined || row[col.name] === null) {
+        row[col.name] = randomUUID();
+      }
+    }
+  }
+
   for (const col of tableInfo.columns) {
     // Skip columns that have DB defaults, are nullable, auto-increment, or generated
     if (col.hasDefault || col.isNullable || col.isAutoIncrement || col.isGenerated) {
