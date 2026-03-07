@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Feature request or idea
+    url: https://github.com/mimicailab/mimic/discussions/new?category=ideas
+    about: Propose new features or improvements in Discussions. Accepted ideas become scoped issues.
+  - name: Question or help
+    url: https://github.com/mimicailab/mimic/discussions/new?category=q-a
+    about: Ask questions in Discussions. Issues are for actionable bugs and adapter requests.
+  - name: Discord
+    url: https://discord.gg/mimic
+    about: Chat with the community and get real-time help.
