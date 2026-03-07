@@ -17,7 +17,14 @@
       "@mimicai/adapter-sqlite",
       "@mimicai/adapter-plaid",
       "@mimicai/adapter-slack",
-      "@mimicai/adapter-stripe"
+      "@mimicai/adapter-stripe",
+      "@mimicai/adapter-paddle",
+      "@mimicai/adapter-chargebee",
+      "@mimicai/adapter-gocardless",
+      "@mimicai/adapter-revenuecat",
+      "@mimicai/adapter-lemonsqueezy",
+      "@mimicai/adapter-zuora",
+      "@mimicai/adapter-recurly"
     ]
   ],
   "linked": [],

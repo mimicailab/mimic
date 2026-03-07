@@ -1,7 +1,7 @@
 ---
 "@mimicai/core": minor
 "@mimicai/cli": minor
-"@mimicai/adapter-revenuecat": patch
+"@mimicai/adapter-revenuecat": minor
 ---
 
 ### feat(example): CFO agent with 8 billing platforms and chat UI
