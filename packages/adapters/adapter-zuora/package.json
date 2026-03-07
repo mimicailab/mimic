@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-zuora",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Zuora API mock adapter for Mimic — enterprise subscription management, orders, billing, invoicing, revenue recognition",
   "type": "module",
   "license": "Apache-2.0",

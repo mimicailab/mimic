@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-recurly",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Recurly API mock adapter for Mimic — subscription management, recurring billing, revenue recognition",
   "type": "module",
   "license": "Apache-2.0",

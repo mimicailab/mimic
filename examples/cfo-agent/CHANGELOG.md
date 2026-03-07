@@ -1,5 +1,20 @@
 # cfo-agent-example
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [[`e7e1160`](https://github.com/mimicailab/mimic/commit/e7e1160701e5925b9a8f3060477e8a02020aec74)]:
+  - @mimicai/cli@0.7.0
+  - @mimicai/adapter-chargebee@0.7.0
+  - @mimicai/adapter-gocardless@0.7.0
+  - @mimicai/adapter-lemonsqueezy@0.7.0
+  - @mimicai/adapter-paddle@0.7.0
+  - @mimicai/adapter-recurly@0.7.0
+  - @mimicai/adapter-revenuecat@0.7.0
+  - @mimicai/adapter-stripe@0.7.0
+  - @mimicai/adapter-zuora@0.7.0
+
 ## 0.0.2
 
 ### Patch Changes
