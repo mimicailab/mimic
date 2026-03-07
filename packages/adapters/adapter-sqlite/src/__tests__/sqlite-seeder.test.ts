@@ -164,6 +164,7 @@ function makeExpandedData(personaId: string): ExpandedData {
     apiResponses: {},
     files: [],
     events: [],
+      facts: [],
   };
 }
 
@@ -319,6 +320,7 @@ describe('SQLiteSeeder', () => {
         apiResponses: {},
         files: [],
         events: [],
+      facts: [],
       };
 
       await seeder.seedBatch(schema, new Map([['test', data]]), { strategy: 'truncate-and-insert' });
@@ -354,6 +356,7 @@ describe('SQLiteSeeder', () => {
         apiResponses: {},
         files: [],
         events: [],
+      facts: [],
       };
 
       await seeder.seedBatch(schema, new Map([['test', data]]), { strategy: 'truncate-and-insert' });
@@ -389,6 +392,7 @@ describe('SQLiteSeeder', () => {
         apiResponses: {},
         files: [],
         events: [],
+      facts: [],
       };
 
       await seeder.seedBatch(schema, new Map([['test', data]]), { strategy: 'truncate-and-insert' });

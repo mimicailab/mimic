@@ -531,6 +531,7 @@ describe('RevenueCatAdapter', () => {
           },
           files: [],
           events: [],
+      facts: [],
         }],
       ]);
       seededTs = await buildTestServer(seededAdapter, seedData);
@@ -616,6 +617,7 @@ describe('RevenueCatAdapter', () => {
           },
           files: [],
           events: [],
+      facts: [],
         }],
       ]);
       generatedTs = await buildTestServer(generatedAdapter, generatedData);

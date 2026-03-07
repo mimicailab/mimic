@@ -85,6 +85,7 @@ function makeExpandedData(personaId: string): ExpandedData {
     apiResponses: {},
     files: [],
     events: [],
+      facts: [],
   };
 }
 
@@ -270,6 +271,7 @@ describe('MongoSeeder', () => {
         apiResponses: {},
         files: [],
         events: [],
+      facts: [],
       };
 
       await seeder.seedBatch(new Map([['test', emptyData]]));
