@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-mongodb",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "MongoDB database adapter for Mimic — insertMany batching, schema inference, auto-indexing",
   "type": "module",
   "license": "Apache-2.0",

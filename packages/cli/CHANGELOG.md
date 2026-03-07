@@ -1,5 +1,24 @@
 # @mimicailab/cli
 
+## 0.6.0
+
+### Minor Changes
+
+- [#20](https://github.com/mimicailab/mimic/pull/20) [`c2b95f3`](https://github.com/mimicailab/mimic/commit/c2b95f3b0a32a7bd6f7a852cc8dddc1d901ce685) Thanks [@ajollie](https://github.com/ajollie)! - Add `mimic info` command for bug reports and fix dynamic version display
+  - New `mimic info` command prints OS, Node, package manager, installed @mimicai/\* package versions, and config status
+  - Supports `--json` flag for machine-readable output
+  - `mimic --version` now reads from package.json instead of hardcoded value
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @mimicai/core@0.6.0
+  - @mimicai/blueprints@0.6.0
+  - @mimicai/adapter-postgres@0.6.0
+  - @mimicai/adapter-mysql@0.6.0
+  - @mimicai/adapter-mongodb@0.6.0
+  - @mimicai/adapter-sqlite@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes

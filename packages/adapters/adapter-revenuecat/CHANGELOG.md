@@ -1,5 +1,13 @@
 # @mimicai/adapter-revenuecat
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @mimicai/core@0.6.0
+  - @mimicai/adapter-sdk@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
