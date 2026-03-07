@@ -43,7 +43,7 @@ Adapters are Mimic's plugin system. There are two types:
 
 The mock server is a Fastify instance that:
 
-1. Loads all configured adapters from `config.yaml`
+1. Loads all configured adapters from `mimic.json`
 1. Calls each adapter's `registerRoutes()` to mount route handlers
 1. Serves HTTP requests, routing by path prefix to the correct adapter
 1. Provides CORS headers for browser-based agent testing

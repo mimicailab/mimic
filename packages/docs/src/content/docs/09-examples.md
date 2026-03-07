@@ -1,7 +1,7 @@
 ---
 title: "Examples"
 eyebrow: "Examples"
-description: "Nine working examples demonstrating different database backends, API mock adapters, and agent architectures."
+description: "Ten working examples demonstrating different database backends, API mock adapters, and agent architectures."
 order: 9
 slug: "examples"
 prev: { slug: "guides", title: "Guides" }
@@ -17,7 +17,7 @@ prev: { slug: "guides", title: "Guides" }
   Clone, seed, and chat &mdash; each example works end-to-end out of the box.
 </p>
 
-<p>Mimic ships with nine working examples that demonstrate different database backends, API mock adapters, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
+<p>Mimic ships with ten working examples that demonstrate different database backends, API mock adapters, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
 
 <ol>
   <li><strong>Define personas</strong> in <code>mimic.json</code> &mdash; describe who generates the data</li>
@@ -39,6 +39,7 @@ prev: { slug: "guides", title: "Guides" }
       <tr><td><code>budget-agent</code></td><td>PostgreSQL (Prisma)</td><td>Plaid</td><td>Personal budgeting</td><td>OpenAI Agents SDK</td><td>Plaid bank accounts + budgets + savings goals</td></tr>
       <tr><td><code>payments-monitor</code></td><td>PostgreSQL (Prisma)</td><td>Stripe</td><td>Payment operations</td><td>OpenAI Agents SDK</td><td>Revenue metrics, failure analysis, dunning</td></tr>
       <tr><td><code>meeting-notes</code></td><td>PostgreSQL (Prisma)</td><td>Slack</td><td>Team meetings</td><td>OpenAI Agents SDK</td><td>Meeting summaries posted to Slack channels</td></tr>
+      <tr><td><code>cfo-agent</code></td><td>PostgreSQL (Prisma)</td><td>Stripe + Paddle + Chargebee + GoCardless + RevenueCat + Lemon Squeezy + Zuora + Recurly</td><td>SaaS CFO / billing intelligence</td><td>LangChain + LangGraph</td><td>8 billing platforms, supervisor + sub-agent, Next.js UI</td></tr>
     </tbody>
   </table>
 </div>
@@ -850,4 +851,155 @@ prev: { slug: "guides", title: "Guides" }
 <div class="callout info">
   <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
   <div><p><strong>Slack integration:</strong> Meeting records in PostgreSQL have <code>slack_channel</code> and <code>slack_thread_ts</code> fields that update when summaries are posted. Team members have <code>slack_user_id</code> for mention support. The agent composes rich Slack Block Kit messages with headers, action items, and decisions.</p></div>
+</div>
+
+<h3 id="example-cfo-agent">CFO Agent &mdash; PostgreSQL + 8 Billing Platforms</h3>
+
+<p>The most complete Mimic example. A conversational CFO assistant for a growth-stage SaaS company that reasons across <strong>8 billing platforms simultaneously</strong> (Stripe, Paddle, Chargebee, GoCardless, RevenueCat, Lemon Squeezy, Zuora, Recurly) plus a PostgreSQL product database. Uses a <strong>LangGraph supervisor + sub-agent</strong> architecture and ships with a full <strong>Next.js chat UI</strong>.</p>
+
+<p><strong>Persona:</strong> A single richly-detailed <strong>growth-saas</strong> persona — Verida Analytics, a growth-stage B2B analytics company with ~£127k MRR split across all 8 platforms: Stripe (£77k, 61%), Paddle (£28k EU, 22%), RevenueCat (£15k mobile, 12%), plus Chargebee, GoCardless, Lemon Squeezy, Zuora, and Recurly for specialised segments. The persona includes deliberate anomalies: a RevenueCat dip from an App Store outage, 3 overdue Chargebee invoices, GoCardless funds pending settlement, and 14 Pro users who haven't logged in for 30+ days.</p>
+
+<h4>Architecture</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">text</span><span>cfo-agent architecture</span><button class="code-copy">Copy</button></div>
+  <pre><code>Browser (localhost:3000)
+  └─ Next.js UI → POST /api/chat
+       └─ CFO Agent server (localhost:3003)
+            └─ LangGraph Supervisor
+                 ├─ query_postgres
+                 ├─ query_stripe
+                 ├─ query_paddle
+                 ├─ query_chargebee
+                 ├─ query_gocardless
+                 ├─ query_revenuecat
+                 ├─ query_lemonsqueezy
+                 ├─ query_zuora
+                 └─ query_recurly
+
+mimic host (separate terminal)
+  ├─ postgres  MCP :4201
+  ├─ stripe    API :4101  | MCP :4202
+  ├─ paddle    API :4102  | MCP :4203
+  ├─ chargebee API :4103  | MCP :4204
+  ├─ gocardless API :4104 | MCP :4205
+  ├─ revenuecat API :4105 | MCP :4206
+  ├─ lemonsqueezy API:4106 | MCP :4207
+  ├─ zuora     API :4107  | MCP :4208
+  └─ recurly   API :4108  | MCP :4209</code></pre>
+</div>
+
+<h4>Config</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/cfo-agent/mimic.json</span><button class="code-copy">Copy</button></div>
+  <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"Multi-platform SaaS billing — Verida Analytics, ~£127k MRR across 8 billing platforms"</span>,
+  <span class="yk">"llm"</span>: { <span class="yk">"provider"</span>: <span class="str">"anthropic"</span>, <span class="yk">"model"</span>: <span class="str">"claude-sonnet-4-6"</span> },
+  <span class="yk">"personas"</span>: [{ <span class="yk">"name"</span>: <span class="str">"growth-saas"</span>, <span class="yk">"description"</span>: <span class="str">"Verida Analytics — £127k MRR, 2,847 customers, 8 billing platforms..."</span> }],
+  <span class="yk">"generate"</span>: { <span class="yk">"volume"</span>: <span class="str">"6 months"</span>, <span class="yk">"seed"</span>: <span class="ty">42</span> },
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: { <span class="yk">"type"</span>: <span class="str">"postgres"</span>, <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>, <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"prisma"</span>, <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span> } }
+  },
+  <span class="yk">"apis"</span>: {
+    <span class="yk">"stripe"</span>:       { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"paddle"</span>:       { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"chargebee"</span>:    { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"gocardless"</span>:   { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"revenuecat"</span>:   { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"lemonsqueezy"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"zuora"</span>:        { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"recurly"</span>:      { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> }
+  }
+}</code></pre>
+</div>
+
+<h4>PostgreSQL schema</h4>
+
+<p>Four tables designed for cross-platform reconciliation. The <code>billing_platform</code> and <code>external_id</code> columns on <code>users</code> let the supervisor correlate product-side records against any of the 8 billing platforms.</p>
+
+<div class="doc-table-wrap">
+  <table class="doc-table">
+    <thead><tr><th>Table</th><th>Key columns</th></tr></thead>
+    <tbody>
+      <tr><td><code>users</code></td><td><code>email</code>, <code>plan</code>, <code>status</code>, <code>billing_platform</code>, <code>external_id</code>, <code>mrr_cents</code>, <code>last_login_at</code></td></tr>
+      <tr><td><code>events</code></td><td><code>user_id</code>, <code>event_type</code>, <code>properties</code>, <code>created_at</code></td></tr>
+      <tr><td><code>usage_metrics</code></td><td><code>user_id</code>, <code>period</code> (YYYY-MM), <code>api_calls</code>, <code>seats_used</code>, <code>storage_gb</code>, <code>exports</code></td></tr>
+      <tr><td><code>feature_flags</code></td><td><code>user_id</code>, <code>flag_name</code>, <code>enabled</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Agent tools</h4>
+
+<p>The LangGraph supervisor routes each question to the right sub-agent. Each sub-agent connects to its MCP server over SSE (since <code>mimic host</code> starts multiple servers).</p>
+
+<div class="doc-table-wrap">
+  <table class="doc-table">
+    <thead><tr><th>Sub-agent</th><th>MCP port</th><th>What it answers</th></tr></thead>
+    <tbody>
+      <tr><td><code>query_postgres</code></td><td>:4201</td><td>User records, usage metrics, feature flags, events, churn risk</td></tr>
+      <tr><td><code>query_stripe</code></td><td>:4202</td><td>Core web subscriptions, charges, invoices, refunds (£77k MRR)</td></tr>
+      <tr><td><code>query_paddle</code></td><td>:4203</td><td>EU &amp; international billing, VAT-inclusive prices (£28k MRR)</td></tr>
+      <tr><td><code>query_chargebee</code></td><td>:4204</td><td>Enterprise invoicing, overdue invoices, contract management</td></tr>
+      <tr><td><code>query_gocardless</code></td><td>:4205</td><td>UK direct debit mandates, payment collection, settlement status</td></tr>
+      <tr><td><code>query_revenuecat</code></td><td>:4206</td><td>Mobile app subscriptions, App Store / Play Store entitlements</td></tr>
+      <tr><td><code>query_lemonsqueezy</code></td><td>:4207</td><td>Individual dev licenses, one-time purchases</td></tr>
+      <tr><td><code>query_zuora</code></td><td>:4208</td><td>Enterprise usage-based contracts, metered billing</td></tr>
+      <tr><td><code>query_recurly</code></td><td>:4209</td><td>Legacy subscriber management, migrated long-term accounts</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Quick start</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="cm"># 1. Start PostgreSQL</span>
+<span class="prompt">$</span> cd examples/cfo-agent
+<span class="prompt">$</span> docker compose up -d
+&#8203;
+<span class="cm"># 2. Configure environment</span>
+<span class="prompt">$</span> cp .env.example .env
+<span class="cm"># Add ANTHROPIC_API_KEY (or OPENAI_API_KEY)</span>
+&#8203;
+<span class="cm"># 3. Set up Prisma schema</span>
+<span class="prompt">$</span> export $(cat .env | xargs)
+<span class="prompt">$</span> npx prisma generate && npx prisma migrate dev --name init
+&#8203;
+<span class="cm"># 4. Generate and seed</span>
+<span class="prompt">$</span> pnpm exec mimic run
+<span class="prompt">$</span> pnpm exec mimic seed --verbose
+&#8203;
+<span class="cm"># 5. Start mimic host (new terminal) — brings up all 9 MCP servers</span>
+<span class="prompt">$</span> export $(cat .env | xargs) && pnpm exec mimic host
+&#8203;
+<span class="cm"># 6. Start the agent (new terminal)</span>
+<span class="prompt">$</span> cd agent && npm install && export $(cat ../.env | xargs) && npm start
+&#8203;
+<span class="cm"># 7. Start the UI (new terminal)</span>
+<span class="prompt">$</span> cd ui && npm install && npm run dev
+<span class="cm"># Open http://localhost:3000</span></code></pre>
+</div>
+
+<h4>Demo questions</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> curl -s -X POST http://localhost:3003/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "What'\''s our MRR right now?"}'</span> | jq .
+&#8203;
+<span class="prompt">$</span> curl -s -X POST http://localhost:3003/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Give me the full picture for my investor meeting"}'</span> | jq .
+&#8203;
+<span class="prompt">$</span> curl -s -X POST http://localhost:3003/chat \
+    -H <span class="str">"Content-Type: application/json"</span> \
+    -d <span class="str">'{"message": "Are any customers paying for a plan they'\''re not using?"}'</span> | jq .</code></pre>
+</div>
+
+<div class="callout tip">
+  <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+  <div><p><strong>The flagship example:</strong> This is Mimic at full scale — one persona, 8 billing platforms, 9 simultaneous MCP servers, a supervisor agent that routes across all of them, and a polished chat UI. Use it to see what end-to-end agent testing looks like when your product touches multiple billing providers.</p></div>
 </div>

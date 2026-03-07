@@ -114,4 +114,4 @@ Execute test scenarios against your mock environment with optional AI-powered ev
   <pre><code><span class="prompt">$</span> mimic clean</code></pre>
 </div>
 
-Truncates seeded database rows, stops mock servers, and clears caches.
+Truncates all seeded database tables, removes `.mimic/data/`, and clears cached blueprints in `.mimic/blueprints/`.

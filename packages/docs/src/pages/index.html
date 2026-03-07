@@ -1210,6 +1210,313 @@
       border: 1px solid;
     }
 
+    /* ─── CFO FLAGSHIP ────────────────────────── */
+    .cfo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 2rem;
+    }
+
+    .cfo-arch {
+      padding: 2.5rem 2rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+    }
+
+    .cfo-flow-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    .cfo-flow-row .cfo-flow-node {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-raised);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    .cfo-flow-row .cfo-flow-arrow {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .cfo-supervisor {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 16px;
+      border-radius: 20px;
+      background: var(--accent-glow);
+      border: 1px solid rgba(124, 106, 255, 0.25);
+      color: var(--accent-bright);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      margin-bottom: 1.5rem;
+    }
+
+    .cfo-connector {
+      width: 1px;
+      height: 20px;
+      background: var(--border-mid);
+      margin-bottom: 0.5rem;
+    }
+
+    .cfo-connector-h {
+      height: 1px;
+      background: var(--border-mid);
+      align-self: stretch;
+      margin: 0 1rem;
+    }
+
+    .cfo-servers {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 6px;
+      width: 100%;
+      padding-top: 16px;
+      position: relative;
+    }
+
+    .cfo-server {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 4px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-raised);
+      position: relative;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .cfo-server:hover {
+      border-color: var(--border-mid);
+      background: var(--bg-card-hover);
+    }
+
+    .cfo-server::before {
+      content: '';
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      width: 1px;
+      height: 16px;
+      background: var(--border-mid);
+    }
+
+    .cfo-server-name {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+
+    .cfo-server-port {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+
+    .cfo-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cfo-stat {
+      padding: 1.5rem 1rem;
+      text-align: center;
+    }
+
+    .cfo-stat + .cfo-stat {
+      border-left: 1px solid var(--border);
+    }
+
+    .cfo-stat-num {
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-family: var(--mono);
+      line-height: 1;
+    }
+
+    .cfo-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    .cfo-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .cfo-quickstart {
+      padding: 1.75rem;
+      border-right: 1px solid var(--border);
+    }
+
+    .cfo-questions {
+      padding: 1.75rem;
+    }
+
+    .cfo-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+
+    .cfo-terminal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .cfo-terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cfo-terminal-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border-bright);
+    }
+
+    .cfo-terminal-body {
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      line-height: 1.9;
+      color: var(--text-muted);
+    }
+
+    .cfo-terminal-body .cmd-prompt {
+      color: var(--accent-bright);
+      user-select: none;
+    }
+
+    .cfo-terminal-body .cmd-comment {
+      color: var(--border-bright);
+    }
+
+    .cfo-question {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      padding: 10px 14px;
+      background: var(--bg-raised);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .cfo-question:hover {
+      border-color: var(--border-mid);
+      background: var(--bg-card-hover);
+    }
+
+    .cfo-questions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cfo-footer {
+      padding: 1rem 1.75rem;
+      background: var(--bg-subtle);
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .cfo-footer-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    .cfo-footer-link {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--accent-bright);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+
+    .cfo-footer-link:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      .cfo-servers {
+        grid-template-columns: repeat(5, 1fr);
+      }
+      .cfo-server:nth-child(n+6)::before {
+        display: none;
+      }
+      .cfo-bottom {
+        grid-template-columns: 1fr;
+      }
+      .cfo-quickstart {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .cfo-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .cfo-stat:nth-child(1),
+      .cfo-stat:nth-child(2) {
+        border-bottom: 1px solid var(--border);
+      }
+      .cfo-stat:nth-child(2n+1) {
+        border-left: none;
+      }
+      .cfo-servers {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .cfo-server::before {
+        display: none;
+      }
+      .cfo-flow-row {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+
     /* ─── CI/CD ────────────────────────────────── */
     .cicd-container {
       display: grid;
@@ -1595,14 +1902,15 @@
         </div>
         <div class="terminal-body">
           <div><span class="t-prompt">$</span> <span class="t-cmd">mimic init</span></div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">mimic run</span> <span class="t-flag">--persona finance-alex</span></div>
           <div><span class="t-prompt">$</span> <span class="t-cmd">mimic seed</span> <span class="t-flag">--persona finance-alex</span></div>
           <div><span class="t-prompt">$</span> <span class="t-cmd">mimic host</span></div>
           <span class="t-blank"></span>
           <div><span class="t-ok">&#10003;</span> <span class="t-out">PostgreSQL</span>  <span class="t-out">&rarr;</span> <span class="t-url">seeded 4 tables, 1,247 rows</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Plaid API</span>   <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4000/plaid</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Stripe API</span>  <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4000/stripe/v1</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Jira API</span>    <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4000/jira/rest/api/3</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Slack MCP</span>   <span class="t-out">&rarr;</span> <span class="t-url">stdio ready</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Plaid API</span>   <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4101/plaid</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Stripe API</span>  <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4102/stripe/v1</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Jira API</span>    <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4103/jira/rest/api/3</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Slack MCP</span>   <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4205/sse</span></div>
           <div><span class="t-ok">&#10003;</span> <span class="t-url">Ready in 1.2s</span></div>
         </div>
       </div>
@@ -1758,21 +2066,21 @@
         </div>
         <div class="flow-step">
           <div class="flow-num">2</div>
-          <div class="flow-cmd">mimic seed</div>
-          <h3>Seed</h3>
-          <p>One persona generates consistent data across your entire environment.</p>
+          <div class="flow-cmd">mimic run</div>
+          <h3>Generate</h3>
+          <p>LLM generates persona blueprints and expands them into realistic rows. Cached for instant reruns.</p>
         </div>
         <div class="flow-step">
           <div class="flow-num">3</div>
-          <div class="flow-cmd">mimic host</div>
-          <h3>Mock</h3>
-          <p>Start API mocks and MCP servers locally. Point your agent and go.</p>
+          <div class="flow-cmd">mimic seed</div>
+          <h3>Seed</h3>
+          <p>Push generated data to your configured databases. Atomic, idempotent, and fast.</p>
         </div>
         <div class="flow-step">
           <div class="flow-num">4</div>
-          <div class="flow-cmd">mimic test</div>
-          <h3>Test</h3>
-          <p>Run scenarios with synthetic users and AI evaluation. CI/CD ready.</p>
+          <div class="flow-cmd">mimic host</div>
+          <h3>Host</h3>
+          <p>Start API mocks and MCP servers locally. One server per adapter, auto-configured transport.</p>
         </div>
       </div>
     </div>
@@ -1782,87 +2090,133 @@
   <hr class="section-divider" />
   <section class="section fade-in" id="use-cases">
     <div class="container">
-      <p class="section-eyebrow">Use Cases</p>
-      <h2 class="section-title">What you can test with Mimic</h2>
-      <p class="section-desc">
-        Real examples from the repo. Each one ships with a persona, schema, and a working agent.
+      <p class="section-eyebrow">Flagship Example</p>
+      <h2 class="section-title">CFO Agent &mdash; 8 billing platforms, one AI</h2>
+      <p class="section-desc" style="margin-bottom: 0;">
+        A LangGraph supervisor agent that queries Stripe, Paddle, Chargebee, GoCardless, RevenueCat, Lemon&nbsp;Squeezy, Zuora, and Recurly simultaneously &mdash; plus a PostgreSQL product database &mdash; through 9 live MCP servers. Ships with a Next.js chat UI.
       </p>
-      <div class="usecase-grid">
-        <div class="usecase-card">
-          <div class="usecase-card-inner">
-            <div class="usecase-header">
-              <div class="usecase-icon" style="background: var(--accent-glow);">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-              </div>
-              <h3>Billing &amp; subscription agents</h3>
+
+      <div class="cfo-card">
+
+        <!-- Architecture diagram -->
+        <div class="cfo-arch">
+          <div class="cfo-flow-row">
+            <span class="cfo-flow-node">Browser</span>
+            <span class="cfo-flow-arrow">&rarr;</span>
+            <span class="cfo-flow-node">Next.js UI <span style="color: var(--text-muted); font-weight: 400;">:3000</span></span>
+            <span class="cfo-flow-arrow">&rarr;</span>
+            <span class="cfo-flow-node">CFO Agent <span style="color: var(--text-muted); font-weight: 400;">:3003</span></span>
+          </div>
+          <div class="cfo-supervisor">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-2.8-7.2-2.8 2.8M7.6 16.4l-2.8 2.8m0-14.4 2.8 2.8m8.8 8.8 2.8 2.8"/></svg>
+            LangGraph Supervisor
+          </div>
+          <div class="cfo-connector"></div>
+          <div class="cfo-connector-h"></div>
+          <div class="cfo-servers">
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--cyan);">postgres</span>
+              <span class="cfo-server-port">:4201</span>
             </div>
-            <p>Simulate a SaaS billing platform with customers, invoices, and payments. Mock Stripe so your agent can query MRR and process refunds &mdash; without touching production.</p>
-            <div class="usecase-cmd">
-              <span class="prompt">$</span> cd examples/billing-agent &amp;&amp; mimic seed &amp;&amp; mimic serve
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--green);">stripe</span>
+              <span class="cfo-server-port">:4202</span>
             </div>
-            <div class="usecase-tags">
-              <span class="usecase-tag" style="border-color: rgba(124,106,255,0.3); color: var(--accent-bright);">PostgreSQL</span>
-              <span class="usecase-tag" style="border-color: rgba(62,207,113,0.3); color: var(--green);">Stripe API</span>
-              <span class="usecase-tag" style="border-color: rgba(45,212,191,0.3); color: var(--cyan);">MCP</span>
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--green);">paddle</span>
+              <span class="cfo-server-port">:4203</span>
+            </div>
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--amber);">chargebee</span>
+              <span class="cfo-server-port">:4204</span>
+            </div>
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--amber);">gocardless</span>
+              <span class="cfo-server-port">:4205</span>
+            </div>
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--pink);">revenuecat</span>
+              <span class="cfo-server-port">:4206</span>
+            </div>
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--pink);">lemonsqzy</span>
+              <span class="cfo-server-port">:4207</span>
+            </div>
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--text-secondary);">zuora</span>
+              <span class="cfo-server-port">:4208</span>
+            </div>
+            <div class="cfo-server">
+              <span class="cfo-server-name" style="color: var(--text-secondary);">recurly</span>
+              <span class="cfo-server-port">:4209</span>
             </div>
           </div>
         </div>
-        <div class="usecase-card">
-          <div class="usecase-card-inner">
-            <div class="usecase-header">
-              <div class="usecase-icon" style="background: var(--green-dim);">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+
+        <!-- Stats row -->
+        <div class="cfo-stats">
+          <div class="cfo-stat">
+            <div class="cfo-stat-num" style="color: var(--accent-bright);">9</div>
+            <div class="cfo-stat-label">MCP servers</div>
+          </div>
+          <div class="cfo-stat">
+            <div class="cfo-stat-num" style="color: var(--green);">8</div>
+            <div class="cfo-stat-label">billing platforms</div>
+          </div>
+          <div class="cfo-stat">
+            <div class="cfo-stat-num" style="color: var(--cyan);">1</div>
+            <div class="cfo-stat-label">persona, 6 months data</div>
+          </div>
+          <div class="cfo-stat">
+            <div class="cfo-stat-num" style="color: var(--amber);">UI</div>
+            <div class="cfo-stat-label">Next.js chat included</div>
+          </div>
+        </div>
+
+        <!-- Quick start + questions -->
+        <div class="cfo-bottom">
+          <div class="cfo-quickstart">
+            <div class="cfo-label">Quick start</div>
+            <div class="cfo-terminal">
+              <div class="cfo-terminal-bar">
+                <span class="cfo-terminal-dot"></span>
+                <span class="cfo-terminal-dot"></span>
+                <span class="cfo-terminal-dot"></span>
               </div>
-              <h3>Personal finance assistants</h3>
+              <div class="cfo-terminal-body">
+                <div><span class="cmd-prompt">$</span> cd examples/cfo-agent</div>
+                <div><span class="cmd-prompt">$</span> docker compose up -d</div>
+                <div><span class="cmd-prompt">$</span> mimic run &amp;&amp; mimic seed</div>
+                <div><span class="cmd-prompt">$</span> mimic host <span class="cmd-comment"># starts all 9 MCP servers</span></div>
+                <div><span class="cmd-prompt">$</span> cd agent &amp;&amp; npm start</div>
+                <div><span class="cmd-prompt">$</span> cd ui &amp;&amp; npm run dev</div>
+              </div>
             </div>
-            <p>Seed bank accounts, transactions, and spending patterns. Mock Plaid and test budgeting queries, balance checks, and spending breakdowns end-to-end.</p>
-            <div class="usecase-cmd">
-              <span class="prompt">$</span> cd examples/finance-assistant &amp;&amp; mimic seed &amp;&amp; mimic test
-            </div>
-            <div class="usecase-tags">
-              <span class="usecase-tag" style="border-color: rgba(124,106,255,0.3); color: var(--accent-bright);">PostgreSQL</span>
-              <span class="usecase-tag" style="border-color: rgba(245,183,49,0.3); color: var(--amber);">Plaid API</span>
-              <span class="usecase-tag" style="border-color: rgba(45,212,191,0.3); color: var(--cyan);">MCP</span>
+          </div>
+          <div class="cfo-questions">
+            <div class="cfo-label">Ask it anything</div>
+            <div class="cfo-questions-list">
+              <div class="cfo-question">&ldquo;What&rsquo;s our MRR right now?&rdquo;</div>
+              <div class="cfo-question">&ldquo;Give me the full picture for my investor meeting&rdquo;</div>
+              <div class="cfo-question">&ldquo;Are any customers paying for a plan they&rsquo;re not using?&rdquo;</div>
+              <div class="cfo-question">&ldquo;Why is our money down this week?&rdquo;</div>
             </div>
           </div>
         </div>
-        <div class="usecase-card">
-          <div class="usecase-card-inner">
-            <div class="usecase-header">
-              <div class="usecase-icon" style="background: var(--pink-dim);">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pink)" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              </div>
-              <h3>E-commerce &amp; support agents</h3>
-            </div>
-            <p>Generate a full product catalog with customers, orders, and reviews in MySQL. Test product search, order history, and support workflows deterministically.</p>
-            <div class="usecase-cmd">
-              <span class="prompt">$</span> cd examples/ecommerce-mysql &amp;&amp; mimic seed &amp;&amp; mimic serve
-            </div>
-            <div class="usecase-tags">
-              <span class="usecase-tag" style="border-color: rgba(240,101,149,0.3); color: var(--pink);">MySQL</span>
-              <span class="usecase-tag" style="border-color: rgba(62,207,113,0.3); color: var(--green);">Schema introspection</span>
-            </div>
-          </div>
+
+        <!-- Footer tags -->
+        <div class="cfo-footer">
+          <span class="cfo-footer-label">Stack:</span>
+          <span class="usecase-tag" style="border-color: rgba(124,106,255,0.3); color: var(--accent-bright);">LangGraph</span>
+          <span class="usecase-tag" style="border-color: rgba(124,106,255,0.3); color: var(--accent-bright);">Supervisor Agent</span>
+          <span class="usecase-tag" style="border-color: rgba(45,212,191,0.3); color: var(--cyan);">9 MCP Servers</span>
+          <span class="usecase-tag" style="border-color: rgba(62,207,113,0.3); color: var(--green);">Stripe &middot; Paddle &middot; Chargebee &middot; GoCardless</span>
+          <span class="usecase-tag" style="border-color: rgba(240,101,149,0.3); color: var(--pink);">RevenueCat &middot; Lemon Squeezy &middot; Zuora &middot; Recurly</span>
+          <span class="usecase-tag" style="border-color: rgba(124,106,255,0.3); color: var(--accent-bright);">PostgreSQL</span>
+          <span class="usecase-tag" style="border-color: rgba(245,183,49,0.3); color: var(--amber);">Next.js UI</span>
+          <a href="/docs/examples#example-cfo-agent" class="cfo-footer-link">View full example &rarr;</a>
         </div>
-        <div class="usecase-card">
-          <div class="usecase-card-inner">
-            <div class="usecase-header">
-              <div class="usecase-icon" style="background: var(--cyan-dim);">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-              </div>
-              <h3>Multi-database fintech agents</h3>
-            </div>
-            <p>Combine PostgreSQL for structured transactions with MongoDB for activity logs. Test agents that query across both databases transparently.</p>
-            <div class="usecase-cmd">
-              <span class="prompt">$</span> cd examples/fintech-multi-db &amp;&amp; mimic seed &amp;&amp; mimic serve
-            </div>
-            <div class="usecase-tags">
-              <span class="usecase-tag" style="border-color: rgba(124,106,255,0.3); color: var(--accent-bright);">PostgreSQL</span>
-              <span class="usecase-tag" style="border-color: rgba(245,183,49,0.3); color: var(--amber);">MongoDB</span>
-              <span class="usecase-tag" style="border-color: rgba(45,212,191,0.3); color: var(--cyan);">MCP</span>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   </section>
@@ -1907,22 +2261,22 @@
           <div class="arch-adapter">
             <div class="arch-adapter-name">Plaid</div>
             <div class="arch-adapter-type api">API MOCK</div>
-            <div class="arch-adapter-target">:4000/plaid</div>
+            <div class="arch-adapter-target">:4101/plaid</div>
           </div>
           <div class="arch-adapter">
             <div class="arch-adapter-name">Stripe</div>
             <div class="arch-adapter-type api">API MOCK</div>
-            <div class="arch-adapter-target">:4000/stripe</div>
+            <div class="arch-adapter-target">:4102/stripe</div>
           </div>
           <div class="arch-adapter">
-            <div class="arch-adapter-name">Jira</div>
+            <div class="arch-adapter-name">Chargebee</div>
             <div class="arch-adapter-type api">API MOCK</div>
-            <div class="arch-adapter-target">:4000/jira</div>
+            <div class="arch-adapter-target">:4103/chargebee</div>
           </div>
           <div class="arch-adapter">
             <div class="arch-adapter-name">Slack</div>
             <div class="arch-adapter-type mcp">MCP</div>
-            <div class="arch-adapter-target">stdio</div>
+            <div class="arch-adapter-target">:4201/sse</div>
           </div>
         </div>
       </div>

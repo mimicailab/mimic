@@ -13,32 +13,31 @@ next: { slug: "guides", title: "Guides" }
   <div class="code-bar"><span class="code-bar-lang">text</span><span>architecture</span><button class="code-copy">Copy</button></div>
   <pre><code>┌──────────────────────────────────────────────────────────┐
 │                        CLI Layer                          │
-│   mimic init │ mimic seed │ mimic host │ mimic test       │
+│   mimic init │ mimic run │ mimic seed │ mimic host        │
 └─────────────────────────┬────────────────────────────────┘
                           │
              ┌────────────┼────────────┐
              │            │            │
              v            v            v
   ┌──────────────┐ ┌────────────┐ ┌────────────┐
-  │  Blueprint   │ │ Mock Server│ │Test Runner  │
-  │              │ │            │ │             │
-  │ Persona load │ │ Fastify    │ │ Scenarios   │
-  │ Engine (Pro) │ │ Adapters   │ │ Eval (Pro)  │
-  │ Expander     │ │ State store│ │ Coverage    │
-  └──────┬───────┘ └──────┬─────┘ └─────────────┘
-         │          ┌─────┴─────┐
-         │          │           │
-         v          v           v
-  ┌──────────┐ ┌────────┐ ┌────────┐
-  │ Database │ │API Mock│ │  MCP   │
-  │ Adapters │ │Adapters│ │Servers │
-  │          │ │        │ │        │
-  │ Postgres │ │ Stripe │ │mcp-jira│
-  │ MongoDB  │ │ Plaid  │ │mcp-slk │
-  │ MySQL    │ │ 60+    │ │ ...    │
-  └────┬─────┘ └────────┘ └────────┘
-       v
-   Real databases</code></pre>
+  │  Blueprint   │ │ Mock Server│ │  Database  │
+  │              │ │            │ │  Adapters  │
+  │ Persona load │ │ Fastify    │ │            │
+  │ LLM Engine   │ │ Adapters   │ │ Postgres   │
+  │ Expander     │ │ State store│ │ MySQL      │
+  └──────────────┘ └──────┬─────┘ │ MongoDB    │
+                    ┌─────┴─────┐  │ SQLite     │
+                    │           │  └─────┬──────┘
+                    v           v        v
+             ┌────────────┐ ┌────────┐  Real databases
+             │  API Mock  │ │  MCP   │
+             │  Adapters  │ │Servers │
+             │            │ │        │
+             │ Stripe     │ │per-    │
+             │ Plaid      │ │adapter │
+             │ Slack      │ │(stdio/ │
+             │ + 7 more   │ │ SSE)   │
+             └────────────┘ └────────┘</code></pre>
 </div>
 
 <h2 id="arch-data-flow">Data Flow</h2>
@@ -64,16 +63,15 @@ next: { slug: "guides", title: "Guides" }
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">text</span><button class="code-copy">Copy</button></div>
-  <pre><code>Agent sends: GET /jira/rest/api/3/search?jql=project=MIM
+  <pre><code>Agent sends: GET /stripe/v1/customers?email=alex@example.com
 &#8203;
-Mock Server
-  ├─ Route matched: /jira/* &rarr; JiraAdapter
-  ├─ JiraAdapter.handleSearch(req, reply)
-  │   ├─ seedData()   &mdash; populate state store if empty
-  │   ├─ Parse JQL from query params
-  │   ├─ Filter state store by parsed criteria
-  │   ├─ Format response matching Jira's real shape
-  │   └─ reply.send({ issues: [...], total: N })
+Mock Server (Fastify, port 4101)
+  ├─ Route matched: /stripe/* &rarr; StripeAdapter
+  ├─ StripeAdapter.registerRoutes handler
+  │   ├─ Lazy seed &mdash; populate state store from blueprint on first request
+  │   ├─ Filter customers by email query param
+  │   ├─ Format response matching Stripe's real shape
+  │   └─ reply.send({ object: "list", data: [...], has_more: false })
   └─ Response returned to agent</code></pre>
 </div>
 
@@ -81,14 +79,14 @@ Mock Server
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">text</span><button class="code-copy">Copy</button></div>
-  <pre><code>Agent calls MCP tool: search_jql({ jql: "project = MIM" })
+  <pre><code>Agent calls MCP tool: list_customers({ email: "alex@example.com" })
 &#8203;
-MCP Server (@mimicai/mcp-jira)
+MCP Server (@mimicai/adapter-stripe, port 4201/sse)
   ├─ Validate params with Zod schema
   ├─ Translate to HTTP:
-  │   POST http://localhost:4000/jira/rest/api/3/search
+  │   GET http://localhost:4101/stripe/v1/customers?email=alex@example.com
   ├─ Parse response
-  ├─ Format for agent: "Found 5 issues: MIM-1 | In Progress | ..."
+  ├─ Format for agent: "Customers (1):\n• cus_abc — Alex (alex@example.com)"
   └─ Return MCP response</code></pre>
 </div>
 
@@ -99,7 +97,7 @@ The Blueprint Engine's core differentiator. When it generates data for persona "
 - PostgreSQL `users` table has Alex with ID `user_001`
 - Plaid API returns bank accounts owned by `user_001`
 - Stripe API returns payment history for `user_001`'s card
-- Jira API returns issues assigned to Alex
+- Chargebee API shows Alex's subscription and invoices
 - Slack API shows messages from Alex
 
 Achieved through a two-phase process:
@@ -114,23 +112,39 @@ Achieved through a two-phase process:
   <pre><code>@mimicai/cli
   ├── @mimicai/core
   │     ├── adapter system, state store, mock server
-  │     ├── blueprint engine, consistency, test runner
+  │     ├── blueprint engine, persona generation, expander
   │     └── schema parsing (prisma-ast, pgsql-parser)
   ├── @mimicai/adapter-sdk
-  │     └── BaseApiMockAdapter, test helpers, format helpers
-  ├── @mimicai/adapter-postgres    (shipped)
-  ├── @mimicai/adapter-mongodb     (shipped)
-  ├── @mimicai/adapter-mysql       (shipped)
-  ├── @mimicai/adapter-sqlite      (shipped)
-  ├── @mimicai/adapter-stripe      (shipped, + MCP)
-  ├── @mimicai/adapter-plaid       (shipped, + MCP)
-  ├── @mimicai/adapter-slack       (shipped, + MCP)
-  └── @mimicai/blueprints
-        └── pre-built personas (JSON)
+  │     └── BaseApiMockAdapter, StateStore, buildTestServer
+  ├── @mimicai/blueprints
+  │     └── pre-built persona blueprints (JSON)
+  │
+  ├── Database adapters (shipped)
+  │     ├── @mimicai/adapter-postgres
+  │     ├── @mimicai/adapter-mongodb
+  │     ├── @mimicai/adapter-mysql
+  │     └── @mimicai/adapter-sqlite
+  │
+  └── API mock adapters (shipped, each includes MCP server)
+        ├── @mimicai/adapter-stripe
+        ├── @mimicai/adapter-plaid
+        ├── @mimicai/adapter-slack
+        ├── @mimicai/adapter-paddle
+        ├── @mimicai/adapter-chargebee
+        ├── @mimicai/adapter-gocardless
+        ├── @mimicai/adapter-lemonsqueezy
+        ├── @mimicai/adapter-recurly
+        ├── @mimicai/adapter-revenuecat
+        └── @mimicai/adapter-zuora
 &#8203;
-@mimicai/mcp-stripe (standalone binary)
-  └── @modelcontextprotocol/sdk
+Each API adapter contains:
+  ├── src/mcp.ts          &mdash; registerTools() + startMcpServer()
+  ├── src/bin/mcp.ts      &mdash; standalone binary entry point (3 lines)
+  └── src/*-adapter.ts    &mdash; BaseApiMockAdapter implementation
 &#8203;
-@mimicai/adapter-sdk (standalone)
-  └── zod, fastify (peer deps)</code></pre>
+Shared peer deps across adapters:
+  ├── @mimicai/adapter-sdk
+  ├── @modelcontextprotocol/sdk
+  ├── fastify
+  └── zod</code></pre>
 </div>
