@@ -85,14 +85,23 @@ body:
     attributes:
       label: Environment
       description: |
-        Provide your environment details. You can find package versions in your `package.json` or `node_modules/@mimicai/*/package.json`.
+        Run `mimic info` in your project root and paste the output here.
       render: bash
       placeholder: |
-        OS: macOS 15.3 / Ubuntu 24.04 / Windows 11
-        Node: 22.x
-        pnpm: 9.x
-        mimic --version: 0.5.0
-        @mimicai/adapter-stripe: 0.5.0
+        Mimic Environment Info
+
+        System:
+          OS:              darwin (25.3.0)
+          Arch:            arm64
+          Node:            v22.14.0
+          Package Manager: pnpm
+
+        Packages:
+          @mimicai/core              0.5.0
+          @mimicai/adapter-stripe    0.5.0
+
+        Config:
+          mimic.json:      found
     validations:
       required: true
 
