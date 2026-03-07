@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-chargebee",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Chargebee API mock adapter for Mimic — subscriptions, invoicing, billing, product catalog",
   "type": "module",
   "license": "Apache-2.0",

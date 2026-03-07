@@ -1,5 +1,13 @@
 # @mimicai/adapter-lemonsqueezy
 
+## 0.7.0
+
+### Patch Changes
+
+- Updated dependencies [[`e7e1160`](https://github.com/mimicailab/mimic/commit/e7e1160701e5925b9a8f3060477e8a02020aec74)]:
+  - @mimicai/core@0.7.0
+  - @mimicai/adapter-sdk@0.7.0
+
 ## 0.6.0
 
 ### Patch Changes
