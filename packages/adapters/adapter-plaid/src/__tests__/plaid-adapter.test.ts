@@ -31,6 +31,7 @@ seedData.set('test-user', {
   },
   files: [],
   events: [],
+      facts: [],
 });
 
 describe('PlaidAdapter', () => {

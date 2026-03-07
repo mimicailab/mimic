@@ -92,6 +92,7 @@ function makeExpandedData(personaId: string): ExpandedData {
     apiResponses: {},
     files: [],
     events: [],
+      facts: [],
   };
 }
 

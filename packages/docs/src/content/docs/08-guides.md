@@ -1,9 +1,9 @@
 ---
 title: "Guides"
 description: "CI/CD integration guide for running Mimic in automated pipelines."
-order: 8
+order: 9
 slug: "guides"
-prev: { slug: "architecture", title: "Architecture" }
+prev: { slug: "testing", title: "Testing & Auto-Scenarios" }
 next: { slug: "examples", title: "Examples" }
 ---
 

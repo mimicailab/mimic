@@ -18,7 +18,7 @@ import {
   CostTracker,
   providerConfigFromMimic,
 } from '@mimicai/core';
-import type { Blueprint, MimicConfig, ExpandedData, SchemaModel } from '@mimicai/core';
+import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, Fact, FactManifest } from '@mimicai/core';
 import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
 import { resolveEnvVars } from '../utils/env.js';
 
@@ -103,6 +103,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const engine = new BlueprintEngine(llmClient, cache, costTracker);
 
   const summary: { persona: string; tables: Record<string, number>; apis?: Record<string, number> }[] = [];
+  const allFacts: Fact[] = [];
 
   // ── Phase 1: Obtain all blueprints (parallel for LLM calls) ──────────
   const blueprintSpin = logger.spinner(
@@ -179,6 +180,11 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         if (total > 0) apiCounts[adapterId] = total;
       }
 
+      // Collect facts for fact manifest
+      if (expanded.facts && expanded.facts.length > 0) {
+        allFacts.push(...expanded.facts);
+      }
+
       summary.push({ persona: persona.name, tables: tableCounts, apis: apiCounts });
 
       expandSpin.succeed('Data expanded');
@@ -186,6 +192,20 @@ async function runGenerate(opts: RunOptions): Promise<void> {
       expandSpin.fail('Expansion failed');
       throw err;
     }
+  }
+
+  // ── Write fact manifest ─────────────────────────────────────────────────
+  if (!opts.dryRun && allFacts.length > 0) {
+    const manifest: FactManifest = {
+      persona: targetPersonas.map((p) => p.name).join(', '),
+      domain: config.domain,
+      generated: new Date().toISOString(),
+      seed,
+      facts: allFacts,
+    };
+    const manifestPath = join(cwd, '.mimic', 'fact-manifest.json');
+    await writeJson(manifestPath, manifest);
+    logger.success(`Fact manifest written → ${chalk.cyan(manifestPath)} (${allFacts.length} facts)`);
   }
 
   // ── Cost summary ───────────────────────────────────────────────────────

@@ -127,6 +127,66 @@ Skips starting mock HTTP API servers for all adapters. MCP servers for adapters 
 
 `mimic host` blocks the terminal until you press `Ctrl+C` (or send `SIGTERM`). On shutdown it stops all MCP servers, mock API servers, and closes all database connections cleanly.
 
+<h2 id="cli-test">mimic test</h2>
+
+Run test scenarios against your AI agent, with optional auto-scenario generation from facts and export to eval platforms.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic test [options]
+&#8203;
+<span class="cm">Options:</span>
+  <span class="flag">-S, --scenario</span> &lt;names...&gt; Limit to specific scenarios
+  <span class="flag">-p, --persona</span> &lt;names...&gt;  Limit to specific personas
+  <span class="flag">-f, --format</span> &lt;format&gt;     Output format: cli, json, junit (default: cli)
+  <span class="flag">-o, --output</span> &lt;path&gt;       Write report to file
+  <span class="flag">--ci</span>                      CI mode: exit code 1 on failure
+  <span class="flag">-t, --timeout</span> &lt;ms&gt;        Per-scenario timeout in ms
+  <span class="flag">--tier</span> &lt;tiers...&gt;         Filter auto-generated scenarios by tier: smoke, functional, adversarial
+  <span class="flag">--export</span> &lt;format&gt;         Export scenarios: mimic, promptfoo, braintrust, langsmith, inspect
+  <span class="flag">--inspect</span>                 Shortcut for --export inspect
+  <span class="flag">--verbose</span>                 Enable verbose logging
+  <span class="flag">--full</span>                    Full pipeline: run &rarr; seed &rarr; serve &rarr; test &rarr; stop</code></pre>
+</div>
+
+Runs manual scenarios from `mimic.json` and, when `auto_scenarios` is enabled, generates additional scenarios from the fact manifest (`.mimic/fact-manifest.json`). The fact manifest is created automatically by `mimic run`. See <a href="/docs/testing">Testing &amp; Auto-Scenarios</a> for the full guide.
+
+#### Auto-scenario generation
+
+When `auto_scenarios: true` is set in `mimic.json` (or when `--tier` or `--export` flags are used), Mimic reads the fact manifest and uses an LLM call to generate test scenarios from facts. Each fact becomes a scenario with natural-language input and specific assertions.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="cm"># Generate + export to PromptFoo format</span>
+<span class="prompt">$</span> mimic test --export promptfoo
+&#8203;
+<span class="cm"># Generate only smoke-tier scenarios</span>
+<span class="prompt">$</span> mimic test --tier smoke
+&#8203;
+<span class="cm"># Export to Mimic's own JSON format</span>
+<span class="prompt">$</span> mimic test --export mimic
+&#8203;
+<span class="cm"># Export to Inspect AI (Python task file)</span>
+<span class="prompt">$</span> mimic test --inspect</code></pre>
+</div>
+
+#### Export formats
+
+<div class="doc-table-wrap">
+  <table class="doc-table">
+    <thead><tr><th>Format</th><th>Output files</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>mimic</code></td><td><code>mimic-scenarios.json</code></td><td>Mimic's native scenario format &mdash; paste into <code>mimic.json</code> or load standalone</td></tr>
+      <tr><td><code>promptfoo</code></td><td><code>promptfooconfig.yaml</code></td><td>PromptFoo config with contains/not-contains/javascript/llm-rubric assertions</td></tr>
+      <tr><td><code>braintrust</code></td><td><code>braintrust-dataset.jsonl</code>, <code>braintrust-scorer.ts</code></td><td>Braintrust dataset + TypeScript scorer</td></tr>
+      <tr><td><code>langsmith</code></td><td><code>langsmith-dataset.json</code>, <code>langsmith-upload.ts</code>, <code>langsmith-evaluator.ts</code></td><td>LangSmith dataset + upload script + evaluator</td></tr>
+      <tr><td><code>inspect</code></td><td><code>inspect_task.py</code></td><td>Self-contained Inspect AI Python task with dataset + scorer</td></tr>
+    </tbody>
+  </table>
+</div>
+
+All exports are written to `.mimic/exports/`.
+
 <h2 id="cli-inspect">mimic inspect</h2>
 
 Show schema, data, or blueprint information.

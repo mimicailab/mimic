@@ -743,6 +743,7 @@ describe('ZuoraAdapter', () => {
           },
           files: [],
           events: [],
+      facts: [],
         }],
       ]);
       seededTs = await buildTestServer(seededAdapter, seedData);

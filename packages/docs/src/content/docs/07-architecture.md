@@ -4,7 +4,7 @@ description: "System overview, data flow, cross-surface consistency, and the pac
 order: 7
 slug: "architecture"
 prev: { slug: "mcp", title: "MCP Servers" }
-next: { slug: "guides", title: "Guides" }
+next: { slug: "testing", title: "Testing & Auto-Scenarios" }
 ---
 
 <h2 id="arch-overview">System Overview</h2>

@@ -1,4 +1,5 @@
 import type { Blueprint } from './blueprint.js';
+import type { Fact } from './fact-manifest.js';
 
 /** The expanded dataset — ready to seed/serve */
 export interface ExpandedData {
@@ -9,6 +10,7 @@ export interface ExpandedData {
   apiResponses: Record<string, ApiResponseSet>;
   files: GeneratedFile[];
   events: EventRecord[];
+  facts: Fact[];
 }
 
 export type Row = Record<string, unknown>;

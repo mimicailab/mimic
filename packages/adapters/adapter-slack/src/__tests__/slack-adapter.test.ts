@@ -393,6 +393,7 @@ describe('SlackAdapter with seed data', () => {
         },
         files: [],
         events: [],
+      facts: [],
       }],
     ]);
 

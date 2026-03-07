@@ -177,6 +177,13 @@ export const MimicConfigSchema = z.object({
           ]),
         )
         .optional(),
+      auto_scenarios: z.boolean().default(false),
+      scenario_tiers: z
+        .array(z.enum(['smoke', 'functional', 'adversarial']))
+        .optional(),
+      export: z
+        .enum(['mimic', 'promptfoo', 'braintrust', 'langsmith', 'inspect'])
+        .optional(),
     })
     .optional(),
 });

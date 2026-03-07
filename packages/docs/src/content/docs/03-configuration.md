@@ -448,8 +448,26 @@ Defines test scenarios that `mimic test` runs against your agent. Each scenario 
       <tr><td><code>mode</code></td><td>No</td><td>string</td><td><code>"text"</code> (default) or <code>"voice"</code></td></tr>
       <tr><td><code>evaluator</code></td><td>No</td><td>string</td><td><code>"keyword"</code>, <code>"llm"</code>, or <code>"both"</code> (default)</td></tr>
       <tr><td><code>scenarios</code></td><td>No</td><td>array</td><td>List of test scenario objects (see below)</td></tr>
+      <tr><td><code>auto_scenarios</code></td><td>No</td><td>boolean</td><td>Enable auto-scenario generation from fact manifest. Default: <code>false</code></td></tr>
+      <tr><td><code>scenario_tiers</code></td><td>No</td><td>array</td><td>Filter auto-scenarios by tier: <code>"smoke"</code>, <code>"functional"</code>, <code>"adversarial"</code></td></tr>
+      <tr><td><code>export</code></td><td>No</td><td>string</td><td>Default export format: <code>"mimic"</code>, <code>"promptfoo"</code>, <code>"braintrust"</code>, <code>"langsmith"</code>, or <code>"inspect"</code></td></tr>
     </tbody>
   </table>
+</div>
+
+#### Auto-scenario generation
+
+When `auto_scenarios` is `true`, `mimic test` reads the fact manifest (`.mimic/fact-manifest.json`, written by `mimic run`) and generates test scenarios via an LLM call. Each fact in the manifest becomes a scenario with a natural-language question and specific assertions grounded in the generated data. Use `scenario_tiers` to limit which tiers are generated, and `export` to set a default export format. See <a href="/docs/testing">Testing &amp; Auto-Scenarios</a> for the full guide.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">json</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="yk">"test"</span>: {
+  <span class="yk">"agent"</span>: <span class="str">"http://localhost:3000/chat"</span>,
+  <span class="yk">"auto_scenarios"</span>: <span class="ty">true</span>,
+  <span class="yk">"scenario_tiers"</span>: [<span class="str">"smoke"</span>, <span class="str">"functional"</span>],
+  <span class="yk">"export"</span>: <span class="str">"promptfoo"</span>,
+  <span class="yk">"scenarios"</span>: []
+}</code></pre>
 </div>
 
 #### Scenario fields

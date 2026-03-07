@@ -609,6 +609,7 @@ describe('ChargebeeAdapter', () => {
           },
           files: [],
           events: [],
+      facts: [],
         }],
       ]);
       seededTs = await buildTestServer(seededAdapter, seedData);

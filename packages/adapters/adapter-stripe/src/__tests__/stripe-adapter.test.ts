@@ -694,6 +694,7 @@ describe('StripeAdapter', () => {
           },
           files: [],
           events: [],
+      facts: [],
         }],
       ]);
       seededTs = await buildTestServer(seededAdapter, seedData);

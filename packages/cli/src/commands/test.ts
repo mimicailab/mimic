@@ -16,6 +16,12 @@ import {
   LLMClient,
   CostTracker,
   providerConfigFromMimic,
+  ScenarioGenerator,
+  PromptFooExporter,
+  BraintrustExporter,
+  LangSmithExporter,
+  InspectExporter,
+  MimicExporter,
 } from '@mimicai/core';
 import type {
   MimicConfig,
@@ -24,6 +30,9 @@ import type {
   TestResult,
   TestScenario,
   TestExpectation,
+  FactManifest,
+  ScenarioTier,
+  ScenarioExporter,
 } from '@mimicai/core';
 
 // ---------------------------------------------------------------------------
@@ -49,6 +58,15 @@ export function registerTestCommand(program: Command): void {
       '--full',
       'full pipeline: run -> seed -> serve (background) -> test -> stop',
     )
+    .option(
+      '--tier <tiers...>',
+      'filter auto-generated scenarios by tier: smoke, functional, adversarial',
+    )
+    .option(
+      '--export <format>',
+      'export scenarios: mimic, promptfoo, braintrust, langsmith, inspect',
+    )
+    .option('--inspect', 'shortcut for --export inspect')
     .action(async (opts) => {
       await runTest(opts);
     });
@@ -67,6 +85,9 @@ interface TestOptions {
   timeout?: number;
   verbose?: boolean;
   full?: boolean;
+  tier?: string[];
+  export?: string;
+  inspect?: boolean;
 }
 
 interface ScenarioConfig {
@@ -142,13 +163,96 @@ async function runTest(opts: TestOptions): Promise<void> {
   const rawScenarios = resolveScenarios(config, opts.scenario, opts.persona);
   const testScenarios = rawScenarios.map((s) => toTestScenario(s, config));
 
-  if (format === 'cli') {
-    logger.step(`Running ${chalk.yellow(String(testScenarios.length))} scenario(s)`);
-  }
-
   // ── Create core test infrastructure ─────────────────────────────────────
   const costTracker = new CostTracker();
   const llmClient = new LLMClient(providerConfigFromMimic(config), costTracker);
+
+  // ── Auto-scenario generation from fact manifest ─────────────────────────
+  const exportFormat = opts.inspect ? 'inspect' : (opts.export ?? config.test?.export);
+  const autoEnabled = config.test?.auto_scenarios || opts.tier || exportFormat;
+
+  if (autoEnabled) {
+    const manifestPath = join(cwd, '.mimic', 'fact-manifest.json');
+    if (!(await fileExists(manifestPath))) {
+      throw new MimicError(
+        'No fact manifest found',
+        'CONFIG_INVALID',
+        "Run 'mimic run' first to generate data with facts",
+      );
+    }
+
+    const manifest = await readJson<FactManifest>(manifestPath);
+    const tiers = (opts.tier ?? config.test?.scenario_tiers) as ScenarioTier[] | undefined;
+
+    if (format === 'cli') {
+      const spin = logger.spinner('Generating scenarios from fact manifest...');
+      try {
+        const generator = new ScenarioGenerator(llmClient, costTracker);
+        const autoScenarios = await generator.generate(manifest, tiers);
+        spin.succeed(`Generated ${autoScenarios.length} scenario(s) from ${manifest.facts.length} fact(s)`);
+
+        // Export if requested
+        if (exportFormat) {
+          const exportDir = join(cwd, '.mimic', 'exports');
+          const exporter = createExporter(exportFormat, config.test?.agent);
+          const files = await exporter.export(autoScenarios, exportDir);
+          logger.done(`Exported to ${exportFormat}: ${files.join(', ')}`);
+
+          // If only exporting (no manual scenarios), we're done
+          if (testScenarios.length === 0) {
+            return;
+          }
+        }
+
+        // Merge auto-scenarios into test scenarios for running
+        for (const s of autoScenarios) {
+          testScenarios.push({
+            name: s.name,
+            persona: s.metadata.persona,
+            goal: s.goal,
+            input: s.input,
+            mode: (config.test?.mode ?? 'text') as 'text' | 'voice',
+            expect: {
+              response_contains: s.expect.response_contains,
+              max_latency_ms: s.expect.max_latency_ms,
+            },
+          });
+        }
+      } catch (err) {
+        spin.fail('Auto-scenario generation failed');
+        logger.warn(`Falling back to manual scenarios only: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } else {
+      // Non-CLI format — no spinner
+      const generator = new ScenarioGenerator(llmClient, costTracker);
+      const autoScenarios = await generator.generate(manifest, tiers);
+
+      if (exportFormat) {
+        const exportDir = join(cwd, '.mimic', 'exports');
+        const exporter = createExporter(exportFormat, config.test?.agent);
+        await exporter.export(autoScenarios, exportDir);
+        if (testScenarios.length === 0) return;
+      }
+
+      for (const s of autoScenarios) {
+        testScenarios.push({
+          name: s.name,
+          persona: s.metadata.persona,
+          goal: s.goal,
+          input: s.input,
+          mode: (config.test?.mode ?? 'text') as 'text' | 'voice',
+          expect: {
+            response_contains: s.expect.response_contains,
+            max_latency_ms: s.expect.max_latency_ms,
+          },
+        });
+      }
+    }
+  }
+
+  if (format === 'cli') {
+    logger.step(`Running ${chalk.yellow(String(testScenarios.length))} scenario(s)`);
+  }
   const evaluator = new Evaluator(llmClient, costTracker);
   const reporter = new Reporter();
   const runner = new ScenarioRunner(llmClient, evaluator, reporter, costTracker);
@@ -344,6 +448,31 @@ function toTestScenario(
     mode,
     expect: (s.expect ?? {}) as TestExpectation,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Exporter factory
+// ---------------------------------------------------------------------------
+
+function createExporter(format: string, agentUrl?: string): ScenarioExporter {
+  switch (format) {
+    case 'promptfoo':
+      return new PromptFooExporter(agentUrl);
+    case 'braintrust':
+      return new BraintrustExporter();
+    case 'langsmith':
+      return new LangSmithExporter();
+    case 'inspect':
+      return new InspectExporter();
+    case 'mimic':
+      return new MimicExporter();
+    default:
+      throw new MimicError(
+        `Unknown export format "${format}"`,
+        'CONFIG_INVALID',
+        'Use mimic, promptfoo, braintrust, langsmith, or inspect',
+      );
+  }
 }
 
 // ---------------------------------------------------------------------------
