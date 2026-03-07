@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-paddle",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Paddle API mock adapter for Mimic — payments, subscriptions, billing as merchant of record",
   "type": "module",
   "license": "Apache-2.0",

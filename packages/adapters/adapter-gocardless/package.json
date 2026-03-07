@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-gocardless",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "GoCardless API mock adapter for Mimic — direct debit, bank payments, mandates, subscriptions",
   "type": "module",
   "license": "Apache-2.0",

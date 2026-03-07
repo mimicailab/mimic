@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-revenuecat",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "RevenueCat API mock adapter for Mimic — mobile subscriptions, in-app purchases, entitlements, offerings, A/B pricing",
   "type": "module",
   "license": "Apache-2.0",

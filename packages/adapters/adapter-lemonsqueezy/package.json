@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-lemonsqueezy",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Lemon Squeezy API mock adapter for Mimic — digital products, subscriptions, license keys, checkouts",
   "type": "module",
   "license": "Apache-2.0",
