@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Internal user record — the product's source of truth for access and engagement.
+/// Cross-reference with billing platforms via billing_platform + external_id.
+model users {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique @db.VarChar(255)
+  name             String    @db.VarChar(255)
+  company          String?   @db.VarChar(255)
+  /// Internal plan gate: free | starter | pro | enterprise
+  plan             String    @db.VarChar(50)
+  /// Account status: active | churned | suspended | trialing
+  status           String    @db.VarChar(50)
+  /// Which billing platform manages this user's subscription
+  billing_platform String?   @db.VarChar(50)
+  /// External customer/subscription ID on the billing platform
+  external_id      String?   @db.VarChar(255)
+  /// Monthly recurring revenue in pence (GBP). 0 for free tier.
+  mrr_cents        Int       @default(0)
+  /// ISO 3166-1 alpha-2 country code
+  country          String?   @db.VarChar(2)
+  created_at       DateTime  @default(now())
+  last_login_at    DateTime?
+  trial_ends_at    DateTime?
+
+  events        events[]
+  usage_metrics usage_metrics[]
+  feature_flags feature_flags[]
+}
+
+/// Product usage events — login, api_call, feature_used, limit_hit, upgrade_clicked, export, invite
+model events {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  /// Event type: login | api_call | feature_used | limit_hit | upgrade_clicked | export | invite_sent
+  event_type String   @db.VarChar(100)
+  /// Arbitrary event payload (feature name, page, api endpoint, etc.)
+  properties Json?
+  created_at DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, created_at])
+  @@index([event_type, created_at])
+}
+
+/// Monthly usage metrics per user — used for plan limit enforcement and engagement scoring
+model usage_metrics {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  /// Billing period in YYYY-MM format
+  period     String   @db.VarChar(7)
+  api_calls  Int      @default(0)
+  seats_used Int      @default(0)
+  storage_gb Float    @default(0)
+  /// Data export count (pro+ feature)
+  exports    Int      @default(0)
+  updated_at DateTime @updatedAt
+
+  user users @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, period])
+  @@index([period])
+}
+
+/// Feature flag overrides per user — grants or restricts access to specific product features
+model feature_flags {
+  id        String   @id @default(uuid()) @db.Uuid
+  user_id   String   @db.Uuid
+  /// Flag: advanced_analytics | api_access | team_seats | custom_export | priority_support | beta_features
+  flag_name String   @db.VarChar(100)
+  enabled   Boolean  @default(false)
+  /// When this flag was granted or last changed
+  granted_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user users @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, flag_name])
+}

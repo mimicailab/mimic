@@ -1,0 +1,94 @@
+{
+  "domain": "Multi-platform SaaS billing and subscription management. A growth-stage analytics company (Verida Analytics) that simultaneously uses 8 billing platforms across different customer segments and geographies. Core business: B2B analytics SaaS with starter, pro, and enterprise tiers.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6"
+  },
+
+  "personas": [
+    {
+      "name": "growth-saas",
+      "description": "Verida Analytics — a growth-stage B2B SaaS company with approximately £127k MRR across 8 billing platforms. Core web subscriptions via Stripe (£77k, ~61% of MRR) for 1,200 customers on starter (£29/mo), pro (£79/mo), and enterprise (£499/mo) plans. EU and international customers billed via Paddle (£28k, ~22% of MRR) with strong German localisation driving +31% MoM EU growth. Mobile app subscriptions via RevenueCat (£15k, ~12% of MRR) — currently down ~23% this week due to Apple App Store outage on Tuesday. Enterprise invoicing and contract management via Chargebee (£6k, ~5% of MRR) with 3 overdue invoices totalling £12,400 (oldest is 34 days overdue). UK SMB customers on direct debit via GoCardless — £8,400 collected on Monday pending 2-day bank settlement (clears Thursday). Individual developer and indie licenses via Lemon Squeezy (534 license holders). Large enterprise usage-based contracts via Zuora (3 contracts, usage-based billing). Legacy subscriber management via Recurly (47 long-term subscribers migrated from old platform). Total ~2,847 paying customers. 8.2% MoM revenue growth. 6 months of billing history showing healthy growth trend. Also has 847 free-tier users in the product database, some repeatedly hitting API rate limits (conversion opportunity). 14 Pro customers who haven't logged in for 30+ days (churn risk). 34 users in the database with paid plan flags but no corresponding billing platform record (data integrity issue)."
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "prisma",
+        "path": "./prisma/schema.prisma"
+      },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "stripe": {
+      "enabled": true,
+      "mcp": true
+    },
+    "paddle": {
+      "enabled": true,
+      "mcp": true
+    },
+    "chargebee": {
+      "enabled": true,
+      "mcp": true
+    },
+    "gocardless": {
+      "enabled": true,
+      "mcp": true
+    },
+    "revenuecat": {
+      "enabled": true,
+      "mcp": true
+    },
+    "lemonsqueezy": {
+      "enabled": true,
+      "mcp": true
+    },
+    "zuora": {
+      "enabled": true,
+      "mcp": true
+    },
+    "recurly": {
+      "enabled": true,
+      "mcp": true
+    }
+  },
+
+  "test": {
+    "agent": "http://localhost:3003/test",
+    "mode": "text",
+    "scenarios": [
+      {
+        "name": "hello-smoke",
+        "persona": "growth-saas",
+        "goal": "Verify the agent returns valid JSON for a trivial greeting",
+        "input": "Say hello in one sentence.",
+        "expect": {
+          "response_contains": ["Hello", "Verida Analytics"],
+          "max_latency_ms": 15000
+        }
+      },
+      {
+        "name": "capabilities-smoke",
+        "persona": "growth-saas",
+        "goal": "Verify the agent can describe its billing analysis coverage",
+        "input": "List the billing platforms and product database you can analyze.",
+        "expect": {
+          "response_contains": ["Stripe", "Paddle", "PostgreSQL"],
+          "max_latency_ms": 15000
+        }
+      }
+    ]
+  }
+}
