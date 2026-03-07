@@ -228,6 +228,7 @@ export class BlueprintExpander {
       apiResponses,
       files: [],
       events: [],
+      facts: blueprint.data.facts ?? [],
     };
   }
 

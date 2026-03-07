@@ -49,6 +49,7 @@ export type {
   EventRecord,
 } from './types/dataset.js';
 
+
 export type {
   TestScenario,
   TestExpectation,
@@ -56,6 +57,15 @@ export type {
   EvaluationDetail,
   TestReport,
 } from './types/test.js';
+
+export type {
+  Fact,
+  FactType,
+  FactSeverity,
+  FactManifest,
+  MimicScenario,
+  ScenarioTier,
+} from './types/fact-manifest.js';
 
 // Config
 export { loadConfig } from './config/index.js';
@@ -118,6 +128,13 @@ export { ScenarioRunner } from './test/scenario-runner.js';
 export { Evaluator } from './test/evaluator.js';
 export { Reporter } from './test/reporter.js';
 export { PersonaSimulator } from './test/persona-sim.js';
+export { ScenarioGenerator } from './test/scenario-generator.js';
+export type { ScenarioExporter } from './test/exporters/exporter.interface.js';
+export { PromptFooExporter } from './test/exporters/promptfoo.exporter.js';
+export { BraintrustExporter } from './test/exporters/braintrust.exporter.js';
+export { LangSmithExporter } from './test/exporters/langsmith.exporter.js';
+export { InspectExporter } from './test/exporters/inspect.exporter.js';
+export { MimicExporter } from './test/exporters/mimic.exporter.js';
 
 // Mock
 export { MockServer } from './mock/server.js';

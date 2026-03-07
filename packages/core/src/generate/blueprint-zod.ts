@@ -105,11 +105,30 @@ const EntityArchetypeConfigSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Fact schema — testable facts about the generated data
+// ---------------------------------------------------------------------------
+
+const FactSchema = z.object({
+  id: z.string().describe('Unique fact ID, e.g. "fact_001"'),
+  type: z.enum(['anomaly', 'overdue', 'pending', 'integrity', 'growth', 'risk'])
+    .describe('Category of the fact'),
+  platform: z.string().describe('Source platform or "database", e.g. "stripe", "chargebee", "database"'),
+  severity: z.enum(['info', 'warn', 'critical'])
+    .describe('info = basic recognition, warn = reasoning required, critical = hallucination guard'),
+  detail: z.string().describe('Human-readable summary of the fact, e.g. "3 overdue invoices totalling £12,400 — oldest 34 days"'),
+  data: z.record(z.unknown()).describe('Structured values for assertion generation — numbers, counts, percentages, dates'),
+});
+
+// ---------------------------------------------------------------------------
 
 const PersonaDataSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
   annotations: z.record(z.unknown()),
+  facts: z
+    .array(FactSchema)
+    .optional()
+    .describe('Testable facts about the generated data — anomalies, overdue items, pending settlements, integrity issues, growth trends, risk signals. Used to auto-generate test scenarios.'),
   apiEntities: z
     .record(z.record(z.array(z.record(z.unknown()))))
     .optional()
@@ -129,6 +148,10 @@ const PersonaDataWithApisSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
   annotations: z.record(z.unknown()),
+  facts: z
+    .array(FactSchema)
+    .optional()
+    .describe('Testable facts about the generated data — anomalies, overdue items, pending settlements, integrity issues, growth trends, risk signals. Used to auto-generate test scenarios.'),
   apiEntities: z
     .record(z.record(z.array(z.record(z.unknown()))))
     .optional()

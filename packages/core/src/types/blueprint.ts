@@ -25,6 +25,8 @@ export interface PersonaData {
   entities: Record<string, EntityData[]>;
   patterns: DataPattern[];
   annotations: Record<string, unknown>;
+  /** Testable facts about the generated data — used for auto-scenario generation */
+  facts?: import('./fact-manifest.js').Fact[];
   /** API entity seeds, keyed by adapter ID then resource type */
   apiEntities?: Record<string, Record<string, EntityData[]>>;
   /** Archetype definitions for scalable entity generation, keyed by table name */

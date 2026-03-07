@@ -2,7 +2,7 @@
 title: "Examples"
 eyebrow: "Examples"
 description: "Ten working examples demonstrating different database backends, API mock adapters, and agent architectures."
-order: 9
+order: 10
 slug: "examples"
 prev: { slug: "guides", title: "Guides" }
 ---

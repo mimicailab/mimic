@@ -68,6 +68,7 @@
   "test": {
     "agent": "http://localhost:3003/test",
     "mode": "text",
+    "auto_scenarios": true,
     "scenarios": [
       {
         "name": "hello-smoke",
