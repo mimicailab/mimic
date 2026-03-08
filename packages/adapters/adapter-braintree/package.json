@@ -1,0 +1,56 @@
+{
+  "name": "@mimicai/adapter-braintree",
+  "version": "0.7.0",
+  "description": "Braintree API mock adapter for Mimic — transactions, customers, payment methods, subscriptions, disputes",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "Mimic AI Lab",
+  "homepage": "https://github.com/mimicailab/mimic",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mimicailab/mimic.git",
+    "directory": "packages/adapters/adapter-braintree"
+  },
+  "keywords": [
+    "mimic",
+    "adapter",
+    "braintree",
+    "api-mock",
+    "payments"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "bin": {
+    "mimic-mcp-braintree": "./dist/bin/mcp.js"
+  },
+  "dependencies": {
+    "@mimicai/adapter-sdk": "workspace:*",
+    "@mimicai/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "fastify": "^5.7.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
