@@ -72,6 +72,12 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const cwd = process.cwd();
   const config = await loadConfig(cwd);
 
+  // Initialize file-based debug log under .mimic/debug/
+  const debugDir = join(cwd, '.mimic', 'debug');
+  const debugLogFile = join(debugDir, `run-${Date.now()}.log`);
+  logger.initDebugLog(debugLogFile);
+  logger.debugFile('CONFIG', config);
+
   logger.header('mimic run');
 
   // ── Resolve personas ────────────────────────────────────────────────────
@@ -212,10 +218,29 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     try {
       const expanded = expander.expand(blueprint, schema, config.generate.volume, promptContexts);
 
+      // Log expansion output summary
+      const expandedTableSummary: Record<string, number> = {};
+      for (const [t, rows] of Object.entries(expanded.tables)) {
+        expandedTableSummary[t] = (rows as unknown[]).length;
+      }
+      const expandedApiSummary: Record<string, Record<string, number>> = {};
+      for (const [adapterId, rs] of Object.entries(expanded.apiResponses)) {
+        expandedApiSummary[adapterId] = {};
+        for (const [resource, rows] of Object.entries(rs.responses)) {
+          expandedApiSummary[adapterId]![resource] = (rows as unknown[]).length;
+        }
+      }
+      logger.debugFile(`EXPANDER OUTPUT [${persona.name}]`, {
+        tables: expandedTableSummary,
+        apiResponses: expandedApiSummary,
+        facts: expanded.facts?.length ?? 0,
+      });
+
       // Post-expansion validation and repair using adapter specs
       if (promptContexts) {
         const validator = new DataValidator(promptContexts, dataSpecs);
-        validator.validateAndRepair(expanded, schema);
+        const repairStats = validator.validateAndRepair(expanded, schema);
+        logger.debugFile(`VALIDATOR REPAIRS [${persona.name}]`, repairStats);
       }
 
       if (!opts.dryRun) {
@@ -307,6 +332,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     logger.done(`Generated ${totalRows} rows across ${summary.length} persona(s)`);
     logger.info(`Data written to ${chalk.cyan(dataDir)}`);
   }
+  logger.info(`Debug log: ${chalk.cyan(debugLogFile)}`);
   console.log();
 }
 

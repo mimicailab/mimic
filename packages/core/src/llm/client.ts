@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import { createProvider, type ProviderConfig } from './providers.js';
 import { CostTracker, type CostCategory } from './cost-tracker.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
-import { logger } from '../utils/logger.js';
+import { logger, debugFile } from '../utils/logger.js';
 
 // Models that are reasoning models and don't support temperature
 const REASONING_MODELS = /^(o[1-9]|o3-mini|gpt-5-mini)/;
@@ -113,6 +113,15 @@ export class LLMClient {
     const category = opts.category ?? 'generation';
 
     logger.debug(`LLM [${label}] calling ${this.config.model} (structured output)`);
+    debugFile(`LLM REQUEST [${label}]`, {
+      model: this.config.model,
+      provider: this.config.provider,
+      system: opts.system?.substring(0, 500) + (opts.system && opts.system.length > 500 ? `... (${opts.system.length} chars total)` : ''),
+      prompt: opts.prompt,
+      temperature: opts.temperature ?? this.config.temperature ?? 0.7,
+      maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
+      timeoutMs: this.config.timeoutMs ?? 120_000,
+    });
 
     try {
       // Use streamText to avoid HTTP timeouts on large structured outputs.
@@ -146,6 +155,7 @@ export class LLMClient {
         // Output.object validation failed — try to extract from raw text
         const errObj = sdkErr as { text?: string; output?: unknown; cause?: { value?: unknown } };
         const rawText = errObj.text ?? '';
+        debugFile(`LLM RAW RESPONSE (SDK error recovery) [${label}]`, rawText || '(empty)');
         if (rawText) {
           logger.debug(`LLM [${label}] SDK error, raw text (${rawText.length} chars): ${rawText.substring(0, 500)}`);
           try {
@@ -162,9 +172,11 @@ export class LLMClient {
             }
             // Normalize common LLM output shape mismatches before Zod validation
             raw = normalizeLLMOutput(raw);
+            debugFile(`LLM NORMALIZED OUTPUT [${label}]`, raw);
             const validation = opts.schema.safeParse(raw);
             if (validation.success) {
               logger.debug(`LLM [${label}] Zod passed on manual parse, using result`);
+              debugFile(`LLM VALIDATION OK [${label}]`, 'Zod validation passed after normalization');
               const err2 = sdkErr as { usage?: { inputTokens?: number; outputTokens?: number } };
               return {
                 object: validation.data as z.infer<T>,
@@ -174,8 +186,10 @@ export class LLMClient {
             }
             const issues = validation.error.issues.map((i: { path: unknown[]; message: string }) =>
               `${(i.path as string[]).join('.')}: ${i.message}`);
+            debugFile(`LLM VALIDATION FAILED [${label}]`, { issues, rawKeys: Object.keys(raw ?? {}) });
             logger.debug(`LLM [${label}] Zod validation issues:\n  ${issues.join('\n  ')}`);
           } catch (parseErr) {
+            debugFile(`LLM JSON PARSE FAILED [${label}]`, String(parseErr));
             logger.debug(`LLM [${label}] manual JSON parse failed: ${parseErr}`);
           }
         }
@@ -202,6 +216,12 @@ export class LLMClient {
       logger.debug(
         `LLM [${label}] done — ${promptTokens} prompt + ${completionTokens} completion tokens`,
       );
+
+      debugFile(`LLM RESPONSE OK [${label}]`, {
+        promptTokens,
+        completionTokens,
+        output,
+      });
 
       return {
         object: output as z.infer<T>,
@@ -320,7 +340,7 @@ function normalizeLLMOutput(raw: unknown): unknown {
   }
 
   // --- Normalize apiEntityArchetypes (top-level or nested under data) ---
-  normalizeArchetypeMap(obj, 'apiEntityArchetypes');
+  normalizeArchetypeMap(obj, 'apiEntityArchetypes', true);
 
   // --- Normalize data sub-object ---
   const data = obj.data as Record<string, unknown> | undefined;
@@ -354,9 +374,18 @@ function normalizeLLMOutput(raw: unknown): unknown {
       }
     }
 
+    // Un-nest apiEntityArchetypes from inside entityArchetypes
+    if (!data.apiEntityArchetypes && data.entityArchetypes && typeof data.entityArchetypes === 'object') {
+      const ea = data.entityArchetypes as Record<string, unknown>;
+      if (ea.apiEntityArchetypes && typeof ea.apiEntityArchetypes === 'object') {
+        data.apiEntityArchetypes = ea.apiEntityArchetypes;
+        delete ea.apiEntityArchetypes;
+      }
+    }
+
     // entityArchetypes: arrays → { count, archetypes }
     normalizeArchetypeMap(data, 'entityArchetypes');
-    normalizeArchetypeMap(data, 'apiEntityArchetypes');
+    normalizeArchetypeMap(data, 'apiEntityArchetypes', true);
 
     // patterns: fix common shape issues
     if (Array.isArray(data.patterns)) {
@@ -618,45 +647,70 @@ function normalizePattern(pattern: Record<string, unknown>): void {
  * Works for both `apiEntityArchetypes` (nested: adapter → resource → value)
  * and `entityArchetypes` (flat: table → value).
  */
-function normalizeArchetypeMap(obj: Record<string, unknown>, key: string): void {
+function normalizeArchetypeMap(obj: Record<string, unknown>, key: string, nested = false): void {
   const map = obj[key];
   if (!map || typeof map !== 'object') return;
 
   for (const [outerKey, outerValue] of Object.entries(map as Record<string, unknown>)) {
     if (Array.isArray(outerValue)) {
-      // Flat archetype map (entityArchetypes): table → array
+      // Array → convert to { count, archetypes }
       (map as Record<string, unknown>)[outerKey] = arrayToArchetypeConfig(outerValue, outerKey);
     } else if (outerValue && typeof outerValue === 'object') {
       const rec = outerValue as Record<string, unknown>;
-      if ('archetypes' in rec) {
-        if (!('count' in rec) || rec.count === undefined) {
-          rec.count = inferArchetypeCount(rec);
-        }
-        fixArchetypesField(rec);
-      } else {
-        // Nested archetype map (apiEntityArchetypes): adapter → resource → value
-        for (const [resource, value] of Object.entries(rec)) {
-          if (Array.isArray(value)) {
-            rec[resource] = arrayToArchetypeConfig(value, resource);
-          } else if (value && typeof value === 'object') {
-            const inner = value as Record<string, unknown>;
-            if ('archetypes' in inner) {
-              if (!('count' in inner) || inner.count === undefined) {
-                inner.count = inferArchetypeCount(inner);
+
+      if (nested) {
+        // Nested map (apiEntityArchetypes): adapter → resource → { count, archetypes }
+        // If LLM put { count, archetypes } directly at adapter level, wrap under "default"
+        if ('archetypes' in rec && ('count' in rec || Array.isArray(rec.archetypes))) {
+          const wrapped = { count: rec.count ?? inferArchetypeCount(rec), archetypes: rec.archetypes };
+          fixArchetypesField(wrapped as Record<string, unknown>);
+          // Clear and replace with single-resource wrapper
+          for (const k of Object.keys(rec)) delete rec[k];
+          rec.default = wrapped;
+        } else {
+          // Process each resource entry
+          for (const [resource, value] of Object.entries(rec)) {
+            if (Array.isArray(value)) {
+              rec[resource] = arrayToArchetypeConfig(value, resource);
+            } else if (value && typeof value === 'object') {
+              const inner = value as Record<string, unknown>;
+              if ('archetypes' in inner) {
+                if (!('count' in inner) || inner.count === undefined) {
+                  inner.count = inferArchetypeCount(inner);
+                }
+                fixArchetypesField(inner);
+              } else if (!('count' in inner)) {
+                rec[resource] = {
+                  count: 1,
+                  archetypes: [{
+                    label: `${resource}-1`,
+                    weight: 1.0,
+                    fields: inner,
+                    vary: {},
+                  }],
+                };
               }
-              fixArchetypesField(inner);
-            } else if (!('count' in inner)) {
-              rec[resource] = {
-                count: 1,
-                archetypes: [{
-                  label: `${resource}-1`,
-                  weight: 1.0,
-                  fields: inner,
-                  vary: {},
-                }],
-              };
             }
           }
+        }
+      } else {
+        // Flat map (entityArchetypes): table → { count, archetypes }
+        if ('archetypes' in rec) {
+          if (!('count' in rec) || rec.count === undefined) {
+            rec.count = inferArchetypeCount(rec);
+          }
+          fixArchetypesField(rec);
+        } else if (!('count' in rec)) {
+          // Object without archetypes/count — wrap as single archetype
+          (map as Record<string, unknown>)[outerKey] = {
+            count: 1,
+            archetypes: [{
+              label: `${outerKey}-1`,
+              weight: 1.0,
+              fields: rec,
+              vary: {},
+            }],
+          };
         }
       }
     }
