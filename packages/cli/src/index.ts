@@ -11,6 +11,7 @@ import { registerInspectCommand } from './commands/inspect.js';
 import { registerCleanCommand } from './commands/clean.js';
 import { registerAdaptersCommand } from './commands/adapters.js';
 import { registerInfoCommand } from './commands/info.js';
+import { registerExploreCommand } from './commands/explore.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../../package.json') as { version: string };
@@ -37,6 +38,7 @@ registerInspectCommand(program);
 registerCleanCommand(program);
 registerAdaptersCommand(program);
 registerInfoCommand(program);
+registerExploreCommand(program);
 
 // ---------------------------------------------------------------------------
 // Global error handling

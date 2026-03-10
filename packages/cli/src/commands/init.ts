@@ -155,6 +155,7 @@ async function runInit(): Promise<void> {
     choices: [
       { name: 'Anthropic (Claude)', value: 'anthropic' as const },
       { name: 'OpenAI', value: 'openai' as const },
+      { name: 'xAI (Grok)', value: 'xai' as const },
       { name: 'Ollama (local)', value: 'ollama' as const },
       { name: 'Custom OpenAI-compatible', value: 'custom' as const },
     ],
@@ -163,6 +164,7 @@ async function runInit(): Promise<void> {
   const defaultModels: Record<string, string> = {
     anthropic: 'claude-haiku-4-5',
     openai: 'gpt-4o-mini',
+    xai: 'grok-3-mini',
     ollama: 'llama3',
     custom: 'gpt-4o-mini',
   };

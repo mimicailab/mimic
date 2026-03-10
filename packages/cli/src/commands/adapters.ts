@@ -17,34 +17,34 @@ export function registerAdaptersCommand(program: Command): void {
     .description('Manage API mock adapters');
 
   adapters
-    .command('add <id>')
+    .command('add <name>')
     .description('Install an adapter package and add it to mimic.json')
     .option('--port <number>', 'port for the mock server', parseInt)
     .option('--no-install', 'skip npm install (just add to config)')
-    .action(async (id: string, opts) => {
-      await addAdapter(id, opts);
+    .action(async (name: string, opts) => {
+      await addAdapter(name, opts);
     });
 
   adapters
-    .command('remove <id>')
+    .command('remove <name>')
     .description('Remove an adapter from mimic.json and uninstall the package')
     .option('--no-uninstall', 'skip npm uninstall (just remove from config)')
-    .action(async (id: string, opts) => {
-      await removeAdapter(id, opts);
+    .action(async (name: string, opts) => {
+      await removeAdapter(name, opts);
     });
 
   adapters
-    .command('enable <id>')
+    .command('enable <name>')
     .description('Enable a configured adapter')
-    .action(async (id: string) => {
-      await toggleAdapter(id, true);
+    .action(async (name: string) => {
+      await toggleAdapter(name, true);
     });
 
   adapters
-    .command('disable <id>')
+    .command('disable <name>')
     .description('Disable an adapter without removing it')
-    .action(async (id: string) => {
-      await toggleAdapter(id, false);
+    .action(async (name: string) => {
+      await toggleAdapter(name, false);
     });
 
   adapters
@@ -55,10 +55,10 @@ export function registerAdaptersCommand(program: Command): void {
     });
 
   adapters
-    .command('inspect <id>')
+    .command('inspect <name>')
     .description('Show details and endpoints for an adapter')
-    .action(async (id: string) => {
-      await inspectAdapter(id);
+    .action(async (name: string) => {
+      await inspectAdapter(name);
     });
 }
 

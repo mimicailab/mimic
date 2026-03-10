@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { join } from 'node:path';
+import { createRequire } from 'node:module';
 
 import {
   loadConfig,
@@ -17,8 +18,9 @@ import {
   LLMClient,
   CostTracker,
   providerConfigFromMimic,
+  DataValidator,
 } from '@mimicai/core';
-import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, Fact, FactManifest } from '@mimicai/core';
+import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, Fact, FactManifest, PromptContext, DataSpec, ApiMockAdapter } from '@mimicai/core';
 import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
 import { resolveEnvVars } from '../utils/env.js';
 
@@ -96,6 +98,46 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     throw err;
   }
 
+  // ── Resolve API adapter prompt contexts + data specs ─────────────────────
+  let promptContexts: Record<string, PromptContext> | undefined;
+  let dataSpecs: Record<string, DataSpec> | undefined;
+  if (config.apis && Object.keys(config.apis).length > 0) {
+    promptContexts = {};
+    dataSpecs = {};
+    for (const [name, apiConfig] of Object.entries(config.apis)) {
+      const adapterId = (apiConfig as { adapter?: string }).adapter ?? name;
+      try {
+        const pkg = `@mimicai/adapter-${adapterId}`;
+        // Resolve from user's CWD so adapters installed in the project (not the CLI) are found
+        const cwdRequire = createRequire(join(process.cwd(), 'package.json'));
+        const resolved = cwdRequire.resolve(pkg);
+        const mod = await import(resolved);
+        // Find the adapter class by scanning exports (same pattern as host command)
+        const AdapterClass = Object.values(mod).find((v) => {
+          if (typeof v !== 'function') return false;
+          try {
+            const instance = new (v as new () => unknown)() as { type?: string };
+            return instance.type === 'api-mock';
+          } catch { return false; }
+        }) as (new () => ApiMockAdapter) | undefined;
+        if (AdapterClass) {
+          const adapter = new AdapterClass();
+          if (adapter.promptContext) {
+            promptContexts![adapterId] = adapter.promptContext;
+          }
+          if (adapter.dataSpec) {
+            dataSpecs![adapterId] = adapter.dataSpec;
+          }
+        }
+      } catch {
+        // Adapter not installed — skip prompt context (formatApis will still list it)
+        logger.debug(`Could not resolve adapter "${adapterId}" for prompt context`);
+      }
+    }
+    if (Object.keys(promptContexts).length === 0) promptContexts = undefined;
+    if (Object.keys(dataSpecs!).length === 0) dataSpecs = undefined;
+  }
+
   // ── Create shared core instances ───────────────────────────────────────
   const costTracker = new CostTracker();
   const llmClient = new LLMClient(providerConfigFromMimic(config), costTracker);
@@ -124,12 +166,20 @@ async function runGenerate(opts: RunOptions): Promise<void> {
       } else if (!opts.generate && (await fileExists(cachedPath))) {
         blueprint = await readJson<Blueprint>(cachedPath);
       } else {
-        blueprint = await engine.generate(
+        blueprint = await engine.generateBatched(
           schema,
           { name: persona.name, description: persona.description },
           config.domain,
-          { force: opts.generate, personaIndex, totalPersonas: targetPersonas.length, volume: config.generate.volume },
+          {
+            force: opts.generate,
+            personaIndex,
+            totalPersonas: targetPersonas.length,
+            volume: config.generate.volume,
+            adapterBatchSize: config.generate.adapterBatchSize,
+            adapterBatchConcurrency: config.generate.adapterBatchConcurrency,
+          },
           config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
+          promptContexts,
         );
 
         if (!opts.dryRun) {
@@ -160,7 +210,13 @@ async function runGenerate(opts: RunOptions): Promise<void> {
 
     const expandSpin = logger.spinner('Expanding blueprint into rows...');
     try {
-      const expanded = expander.expand(blueprint, schema, config.generate.volume);
+      const expanded = expander.expand(blueprint, schema, config.generate.volume, promptContexts);
+
+      // Post-expansion validation and repair using adapter specs
+      if (promptContexts) {
+        const validator = new DataValidator(promptContexts, dataSpecs);
+        validator.validateAndRepair(expanded, schema);
+      }
 
       if (!opts.dryRun) {
         const outPath = join(dataDir, `${persona.name}.json`);
