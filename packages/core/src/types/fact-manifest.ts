@@ -8,7 +8,11 @@ export type FactType =
   | 'pending'
   | 'integrity'
   | 'growth'
-  | 'risk';
+  | 'risk'
+  | 'dispute'
+  | 'churn'
+  | 'fraud'
+  | 'compliance';
 
 export type FactSeverity = 'info' | 'warn' | 'critical';
 

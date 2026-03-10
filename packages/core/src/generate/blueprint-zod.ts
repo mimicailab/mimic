@@ -53,6 +53,12 @@ const EventSchema = z.object({
   probability: z.number().describe('Probability between 0 and 1'),
 });
 
+const ForEachParentSchema = z.object({
+  table: z.string().describe('Parent table to iterate over (e.g. "customers")'),
+  foreignKey: z.string().optional()
+    .describe('FK column in the target table that references the parent. Inferred from schema if omitted.'),
+});
+
 /**
  * Data pattern schema — uses a permissive object with all sub-schemas optional.
  * The downstream expander code checks `type` at runtime and uses the relevant
@@ -61,6 +67,8 @@ const EventSchema = z.object({
 const DataPatternSchema = z.object({
   targetTable: z.string(),
   type: z.enum(['recurring', 'variable', 'periodic', 'event']),
+  forEachParent: ForEachParentSchema.optional()
+    .describe('When set, run the pattern once per entity in the parent table instead of once globally. Use for transactional tables (invoices, payments, events, usage_metrics) that need per-customer/per-account rows.'),
   recurring: RecurringSchema.optional(),
   variable: VariableSchema.optional(),
   periodic: PeriodicSchema.optional(),
@@ -72,7 +80,7 @@ const PersonaProfileSchema = z.object({
   age: z.number().int().describe('Age in years'),
   occupation: z.string(),
   location: z.string(),
-  salary: z.number().optional(),
+  salary: z.number().nullable().describe('Annual salary or null if not applicable'),
   description: z.string(),
 });
 
@@ -83,7 +91,7 @@ const PersonaProfileSchema = z.object({
 const FieldVariationSchema = z.object({
   type: z.enum([
     'firstName', 'lastName', 'fullName', 'email', 'phone', 'companyName',
-    'pick', 'range', 'decimal_range', 'uuid', 'derived', 'sequence',
+    'pick', 'range', 'decimal_range', 'uuid', 'timestamp', 'date', 'derived', 'sequence',
   ]),
   values: z.array(z.unknown()).optional(),
   min: z.number().optional(),
@@ -110,7 +118,7 @@ const EntityArchetypeConfigSchema = z.object({
 
 const FactSchema = z.object({
   id: z.string().describe('Unique fact ID, e.g. "fact_001"'),
-  type: z.enum(['anomaly', 'overdue', 'pending', 'integrity', 'growth', 'risk'])
+  type: z.enum(['anomaly', 'overdue', 'pending', 'integrity', 'growth', 'risk', 'dispute', 'churn', 'fraud', 'compliance'])
     .describe('Category of the fact'),
   platform: z.string().describe('Source platform or "database", e.g. "stripe", "chargebee", "database"'),
   severity: z.enum(['info', 'warn', 'critical'])
@@ -124,7 +132,7 @@ const FactSchema = z.object({
 const PersonaDataSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
-  annotations: z.record(z.unknown()),
+  annotations: z.record(z.unknown()).optional().default({}),
   facts: z
     .array(FactSchema)
     .optional()
@@ -147,7 +155,7 @@ const PersonaDataSchema = z.object({
 const PersonaDataWithApisSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
-  annotations: z.record(z.unknown()),
+  annotations: z.record(z.unknown()).optional().default({}),
   facts: z
     .array(FactSchema)
     .optional()
@@ -210,3 +218,30 @@ export const BlueprintLLMOutputWithApisSchema = z.object({
 });
 
 export type BlueprintLLMOutput = z.infer<typeof BlueprintLLMOutputSchema>;
+
+// ---------------------------------------------------------------------------
+// Adapter batch output schema (Phase 2 of batched generation)
+// ---------------------------------------------------------------------------
+
+/**
+ * Zod schema for adapter-batch-only LLM output.
+ *
+ * Used in Phase 2 of batched generation where the persona and DB data have
+ * already been generated. The LLM only needs to produce API entity data for
+ * a subset of adapters.
+ */
+export const AdapterBatchOutputSchema = z.object({
+  apiEntities: z
+    .record(z.record(z.array(z.record(z.unknown()))))
+    .optional()
+    .describe(
+      'API entity seeds keyed by adapter ID then resource type — use for small reference data (<10 items)',
+    ),
+  apiEntityArchetypes: z
+    .record(z.record(EntityArchetypeConfigSchema))
+    .describe(
+      'REQUIRED: API entity archetypes keyed by adapter ID then resource type',
+    ),
+});
+
+export type AdapterBatchOutput = z.infer<typeof AdapterBatchOutputSchema>;

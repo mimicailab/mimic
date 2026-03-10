@@ -36,6 +36,7 @@ export type {
   InspectResult,
   HealthCheckResult,
   AdapterManifest,
+  PromptContext,
 } from './adapter.js';
 
 export { MimicConfigSchema } from './config.js';

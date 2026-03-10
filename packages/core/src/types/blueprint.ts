@@ -16,7 +16,7 @@ export interface PersonaProfile {
   age: number;
   occupation: string;
   location: string;
-  salary?: number;
+  salary?: number | null;
   description: string;
 }
 
@@ -24,7 +24,7 @@ export interface PersonaProfile {
 export interface PersonaData {
   entities: Record<string, EntityData[]>;
   patterns: DataPattern[];
-  annotations: Record<string, unknown>;
+  annotations?: Record<string, unknown>;
   /** Testable facts about the generated data — used for auto-scenario generation */
   facts?: import('./fact-manifest.js').Fact[];
   /** API entity seeds, keyed by adapter ID then resource type */
@@ -44,6 +44,24 @@ export interface EntityData {
 export interface DataPattern {
   targetTable: string;
   type: 'recurring' | 'variable' | 'periodic' | 'event';
+
+  /**
+   * When set, run the pattern **once per entity** in the parent table instead
+   * of once globally. Produces realistic per-customer/per-account row volumes
+   * for transactional tables (invoices, payments, events, usage_metrics).
+   *
+   * Any `{{parentTable.column}}` references in the pattern's fields are
+   * resolved to the current parent row's values automatically.
+   */
+  forEachParent?: {
+    /** Parent table to iterate over (e.g. "customers") */
+    table: string;
+    /**
+     * FK column in the target table that references the parent.
+     * If omitted, inferred from the schema's foreign key constraints.
+     */
+    foreignKey?: string;
+  };
 
   recurring?: {
     fields: Record<string, unknown>;
@@ -109,6 +127,8 @@ export interface FieldVariation {
     | 'range'
     | 'decimal_range'
     | 'uuid'
+    | 'timestamp'
+    | 'date'
     | 'derived'
     | 'sequence';
   /** For 'pick': array of possible values */

@@ -7,13 +7,15 @@ import type { MimicConfig } from '../types/index.js';
 // Provider types
 // ---------------------------------------------------------------------------
 
-export type LLMProviderName = 'anthropic' | 'openai' | 'ollama' | 'custom';
+export type LLMProviderName = 'anthropic' | 'openai' | 'xai' | 'ollama' | 'custom';
 
 export interface ProviderConfig {
   provider: LLMProviderName;
   model: string;
   apiKey?: string;
   baseUrl?: string;
+  /** Request timeout in ms. Used by LLMClient for streamText/generateText. */
+  timeoutMs?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -39,7 +41,13 @@ const PRICING: Record<string, ModelPricing> = {
   'gpt-4.1':                       { promptPer1k: 0.002,   completionPer1k: 0.008 },
   'gpt-4.1-mini':                  { promptPer1k: 0.0004,  completionPer1k: 0.0016 },
   'gpt-4.1-nano':                  { promptPer1k: 0.0001,  completionPer1k: 0.0004 },
+  'gpt-5-mini-2025-08-07':         { promptPer1k: 0.0004,  completionPer1k: 0.0016 },
   'o3-mini':                       { promptPer1k: 0.00115, completionPer1k: 0.0044 },
+
+  // xAI (Grok)
+  'grok-3':                        { promptPer1k: 0.003,  completionPer1k: 0.015 },
+  'grok-3-mini':                   { promptPer1k: 0.0003, completionPer1k: 0.0005 },
+  'grok-3-fast':                   { promptPer1k: 0.005,  completionPer1k: 0.025 },
 
   // Ollama / local — zero cost
   'llama3':                        { promptPer1k: 0, completionPer1k: 0 },
@@ -82,6 +90,14 @@ export function createProvider(config: ProviderConfig): LanguageModel {
       return openai(model);
     }
 
+    case 'xai': {
+      const xai = createOpenAI({
+        baseURL: baseUrl ?? 'https://api.x.ai/v1',
+        ...(apiKey ? { apiKey } : {}),
+      });
+      return xai(model);
+    }
+
     case 'ollama': {
       const ollama = createOpenAI({
         baseURL: baseUrl ?? 'http://localhost:11434/v1',
@@ -119,5 +135,6 @@ export function providerConfigFromMimic(config: MimicConfig): ProviderConfig {
     model: config.llm.model,
     apiKey: config.llm.apiKey,
     baseUrl: config.llm.baseUrl,
+    timeoutMs: config.llm.timeoutMs,
   };
 }

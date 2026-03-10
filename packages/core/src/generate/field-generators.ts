@@ -2,6 +2,11 @@ import { faker } from '@faker-js/faker';
 import type { FieldVariation, Row } from '../types/index.js';
 import type { SeededRandom } from './seed-random.js';
 
+const KNOWN_VARIATION_TYPES = new Set([
+  'pick', 'range', 'decimal_range', 'sequence', 'uuid', 'derived',
+  'timestamp', 'date', 'firstName', 'lastName', 'fullName', 'email', 'phone', 'companyName',
+]);
+
 // ---------------------------------------------------------------------------
 // FieldGenerator
 // ---------------------------------------------------------------------------
@@ -54,19 +59,50 @@ export class FieldGenerator {
         return faker.phone.number();
       case 'companyName':
         return faker.company.name();
-      case 'pick':
+      case 'pick': {
         if (!variation.values || variation.values.length === 0) return null;
-        return this.rng.pick(variation.values);
+        const picked = this.rng.pick(variation.values);
+        // LLMs sometimes generate stringified JSON arrays/objects as pick values
+        // (e.g. subscription items, order_lines). Parse them back into real objects.
+        if (typeof picked === 'string' && picked.length > 1) {
+          const trimmed = picked.trim();
+          if (trimmed[0] === '[' || trimmed[0] === '{') {
+            try {
+              return JSON.parse(trimmed);
+            } catch {
+              // Not valid JSON — return as-is
+            }
+          }
+        }
+        return picked;
+      }
       case 'range':
         return this.rng.intBetween(variation.min ?? 0, variation.max ?? 100);
       case 'decimal_range':
         return this.rng.decimalBetween(variation.min ?? 0, variation.max ?? 100, 2);
       case 'uuid':
         return faker.string.uuid();
+      case 'timestamp': {
+        // Random Unix timestamp within configured range (defaults to last 6 months)
+        const now = Math.floor(Date.now() / 1000);
+        const sixMonthsAgo = now - 6 * 30 * 24 * 3600;
+        return this.rng.intBetween(variation.min ?? sixMonthsAgo, variation.max ?? now);
+      }
+      case 'date': {
+        // Random ISO date string within last 6 months
+        const nowMs = Date.now();
+        const sixMonths = 6 * 30 * 24 * 3600 * 1000;
+        const ts = this.rng.intBetween(nowMs - sixMonths, nowMs);
+        return new Date(ts).toISOString().split('T')[0];
+      }
       case 'derived':
         return this.resolveDerivedTemplate(variation.template ?? '', currentRow);
       case 'sequence': {
-        const key = sequenceKey ?? variation.prefix ?? 'seq';
+        // Use prefix as the counter key so each prefix namespace is independent.
+        // e.g. "cus_p1_" and "chr_cus_p1_" get separate counters both starting at 001.
+        const key = variation.prefix
+          ? `__prefix__${variation.prefix}`
+          : (sequenceKey ?? 'seq');
         const counter = (this.sequenceCounters.get(key) ?? 0) + 1;
         this.sequenceCounters.set(key, counter);
         return `${variation.prefix ?? ''}${String(counter).padStart(3, '0')}`;
@@ -88,17 +124,69 @@ export class FieldGenerator {
   ): Row {
     const row: Row = { ...baseFields };
 
+    // Flatten nested `fields` key: the LLM sometimes generates
+    // `fields: { fields: { "object": "customer" } }`, which after spreading
+    // produces `row.fields = { "object": "customer" }` — a nested object.
+    // Merge it into the top-level row so downstream consumers see flat data.
+    if (
+      'fields' in row &&
+      row.fields !== null &&
+      typeof row.fields === 'object' &&
+      !Array.isArray(row.fields)
+    ) {
+      const nested = row.fields as Record<string, unknown>;
+      const isVariation = 'type' in nested &&
+        typeof nested.type === 'string' &&
+        KNOWN_VARIATION_TYPES.has(nested.type as string);
+      if (!isVariation) {
+        delete row.fields;
+        for (const [k, v] of Object.entries(nested)) {
+          if (row[k] === undefined || row[k] === null || row[k] === 0 || row[k] === '') {
+            row[k] = v;
+          }
+        }
+      }
+    }
+
+    // Pre-pass: detect variation objects that the LLM accidentally placed in
+    // `fields` instead of `vary` (e.g. { type: "pick", values: [...] }).
+    // Move them into the vary map so they get resolved properly.
+    const effectiveVary = { ...vary };
+    for (const [fieldName, value] of Object.entries(row)) {
+      if (
+        value !== null &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        'type' in (value as Record<string, unknown>) &&
+        typeof (value as Record<string, unknown>).type === 'string'
+      ) {
+        const candidate = value as Record<string, unknown>;
+        if (KNOWN_VARIATION_TYPES.has(candidate.type as string)) {
+          effectiveVary[fieldName] = candidate as unknown as FieldVariation;
+          delete row[fieldName];
+        }
+      }
+    }
+
     // First pass: non-derived fields
-    for (const [fieldName, variation] of Object.entries(vary)) {
+    for (const [fieldName, variation] of Object.entries(effectiveVary)) {
       if (variation.type === 'derived') continue;
       const seqKey = `${tableName}.${fieldName}`;
       row[fieldName] = this.resolveVariation(variation, row, index, seqKey);
     }
 
     // Second pass: derived fields (can reference values from first pass)
-    for (const [fieldName, variation] of Object.entries(vary)) {
+    for (const [fieldName, variation] of Object.entries(effectiveVary)) {
       if (variation.type !== 'derived') continue;
       row[fieldName] = this.resolveVariation(variation, row, index);
+    }
+
+    // Final pass: resolve {{...}} placeholders in plain string values that the
+    // LLM placed directly in `fields` (e.g. "billing@{{name}}.com").
+    for (const [fieldName, value] of Object.entries(row)) {
+      if (typeof value === 'string' && /\{\{.+?\}\}/.test(value)) {
+        row[fieldName] = this.resolveDerivedTemplate(value, row);
+      }
     }
 
     return row;
@@ -110,20 +198,20 @@ export class FieldGenerator {
 
   /**
    * Replace `{{fieldName}}` placeholders in a template with values from the
-   * current row. Values are sanitized for common use cases:
-   * - Lowercased
-   * - Spaces replaced with dots (for email-style templates)
+   * current row. If the template contains `@` (email) or looks like a URL,
+   * values are sanitized (lowercased, non-alphanumeric stripped). Otherwise
+   * values are inserted as-is to preserve natural names/text.
    */
   private resolveDerivedTemplate(template: string, row: Row): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (_match, fieldName: string) => {
+    const needsSanitize = template.includes('@') || /^https?:\/\//.test(template);
+
+    // Match {{fieldName}} or {{fieldName | filters...}} — strip Jinja-style filters
+    return template.replace(/\{\{(\w+)(?:\s*\|[^}]*)?\}\}/g, (_match, fieldName: string) => {
       const value = row[fieldName];
       if (value === undefined || value === null) return '';
       const str = String(value);
-      // Sanitize for use in emails/usernames:
-      // - lowercase
-      // - strip non-alphanumeric chars (except dots and hyphens)
-      // - collapse multiple dots/hyphens
-      // - trim leading/trailing dots/hyphens
+      if (!needsSanitize) return str;
+      // Sanitize for use in emails/URLs:
       return str
         .toLowerCase()
         .replace(/[^a-z0-9.\-]/g, '')

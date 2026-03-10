@@ -30,10 +30,12 @@ export type {
   EventEmitterAdapter,
   AdapterContext,
   AdapterResult,
+  DataSpec,
   EndpointDefinition,
   InspectResult,
   HealthCheckResult,
   AdapterManifest,
+  PromptContext,
 } from './types/adapter.js';
 
 export { MimicConfigSchema } from './types/config.js';
@@ -114,6 +116,8 @@ export { BlueprintEngine } from './generate/blueprint-engine.js';
 export { BlueprintExpander } from './generate/expander.js';
 export { BlueprintCache } from './generate/blueprint-cache.js';
 export { SeededRandom } from './generate/seed-random.js';
+export { DataValidator } from './generate/data-validator.js';
+export type { RepairStats } from './generate/data-validator.js';
 
 // Seed (adapters are now in @mimicai/adapter-* packages)
 export { VectorSeeder } from './seed/vector-seeder.js';

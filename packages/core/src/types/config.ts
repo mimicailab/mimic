@@ -6,10 +6,12 @@ export const MimicConfigSchema = z.object({
 
   llm: z
     .object({
-      provider: z.enum(['anthropic', 'openai', 'ollama', 'custom']),
+      provider: z.enum(['anthropic', 'openai', 'xai', 'ollama', 'custom']),
       model: z.string(),
       apiKey: z.string().optional(),
       baseUrl: z.string().optional(),
+      /** Request timeout in ms (default 120000). Aborts stalled streams. */
+      timeoutMs: z.number().int().min(5000).optional(),
     })
     .default({ provider: 'anthropic', model: 'claude-haiku-4-5' }),
 
@@ -27,6 +29,10 @@ export const MimicConfigSchema = z.object({
     .object({
       volume: z.string().default('6 months'),
       seed: z.number().int().default(42),
+      /** Max API adapters per LLM call. Smaller = better quality. Batches run in parallel. */
+      adapterBatchSize: z.number().int().min(1).default(2),
+      /** Max concurrent LLM calls during batched generation. Prevents rate limiting. */
+      adapterBatchConcurrency: z.number().int().min(1).default(4),
       tables: z
         .record(z.union([z.number(), z.literal('auto')]))
         .optional(),
