@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { AdyenConfig } from './config.js';
@@ -54,6 +54,31 @@ export class AdyenAdapter extends BaseApiMockAdapter<AdyenConfig> {
   readonly name = 'Adyen API';
   readonly basePath = '/adyen/v71';
   readonly versions = ['v70', 'v71'];
+  readonly promptContext = {
+    resources: ['payments', 'captures', 'refunds', 'recurring_details', 'payment_methods', 'payouts'],
+    amountFormat: 'integer minor units with currency object (e.g. { value: 2999, currency: "USD" })',
+    relationships: [
+      'capture → payment',
+      'refund → payment',
+      'recurring_detail → shopper',
+      'payout → merchant_account',
+    ],
+    requiredFields: {
+      payments: ['pspReference', 'merchantReference', 'amount', 'status', 'paymentMethod', 'merchantAccountCode', 'createdAt'],
+      captures: ['pspReference', 'paymentPspReference', 'amount', 'status', 'merchantAccountCode'],
+      refunds: ['pspReference', 'paymentPspReference', 'amount', 'status', 'merchantAccountCode'],
+    },
+    notes: 'Amounts use {value, currency} object format with value in minor units. Uses pspReference as primary ID. Status: Authorised, Captured, Refused, Cancelled, Error. Timestamps ISO 8601.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount'],
+    statusEnums: {
+      payments: ['Authorised', 'Captured', 'Refused', 'Cancelled', 'Error'],
+    },
+    timestampFields: ['createdAt'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerAdyenTools(mcpServer, mockBaseUrl);

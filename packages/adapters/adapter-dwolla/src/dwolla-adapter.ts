@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { DwollaConfig } from './config.js';
@@ -67,6 +67,33 @@ export class DwollaAdapter extends BaseApiMockAdapter<DwollaConfig> {
   readonly name = 'Dwolla API';
   readonly basePath = '/dwolla';
   readonly versions = ['v2'];
+
+  readonly promptContext = {
+    resources: ['customers', 'funding_sources', 'transfers', 'mass_payments', 'webhooks', 'events'],
+    amountFormat: 'decimal string with currency (e.g. { value: "29.99", currency: "USD" })',
+    relationships: [
+      'transfer → source_funding_source, destination_funding_source',
+      'funding_source → customer',
+      'mass_payment → customer, items',
+    ],
+    requiredFields: {
+      customers: ['id', 'firstName', 'lastName', 'email', 'type', 'status', 'created'],
+      funding_sources: ['id', 'status', 'type', 'bankAccountType', 'name', 'created'],
+      transfers: ['id', 'status', 'amount', 'created'],
+    },
+    notes: 'ACH payment platform. Amounts as decimal string in {value, currency} objects. Timestamps ISO 8601. Customer type: personal, business, receive-only. Transfer status: pending, processed, cancelled, failed. Uses camelCase field names.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount'],
+    statusEnums: {
+      customers: ['unverified', 'retry', 'document', 'verified', 'suspended', 'deactivated'],
+      transfers: ['pending', 'processed', 'cancelled', 'failed'],
+      funding_sources: ['unverified', 'verified', 'removed'],
+    },
+    timestampFields: ['created'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerDwollaTools(mcpServer, mockBaseUrl);

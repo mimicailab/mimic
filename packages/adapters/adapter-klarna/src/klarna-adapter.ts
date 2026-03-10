@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { KlarnaConfig } from './config.js';
@@ -40,6 +40,33 @@ export class KlarnaAdapter extends BaseApiMockAdapter<KlarnaConfig> {
     'hpp/v1',
     'settlements/v1',
   ];
+  readonly promptContext = {
+    resources: ['sessions', 'orders', 'captures', 'refunds', 'customer_tokens'],
+    amountFormat: 'integer minor units (e.g. 2999 = $29.99)',
+    relationships: [
+      'order → session',
+      'capture → order',
+      'refund → order',
+      'customer_token → order',
+    ],
+    requiredFields: {
+      sessions: ['session_id', 'status', 'purchase_country', 'purchase_currency', 'order_amount'],
+      orders: ['order_id', 'status', 'purchase_country', 'purchase_currency', 'order_amount', 'created_at'],
+      captures: ['capture_id', 'captured_amount', 'captured_at'],
+      refunds: ['refund_id', 'refunded_amount'],
+      customer_tokens: ['status', 'payment_method_type'],
+    },
+    notes: 'Buy-now-pay-later platform. Amounts in minor units. Timestamps ISO 8601. Order status: AUTHORIZED, PART_CAPTURED, CAPTURED, CANCELLED, EXPIRED. Requires order_lines with name, quantity, unit_price, total_amount per line.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['order_amount', 'captured_amount', 'refunded_amount', 'unit_price', 'total_amount'],
+    statusEnums: {
+      orders: ['AUTHORIZED', 'PART_CAPTURED', 'CAPTURED', 'CANCELLED', 'EXPIRED'],
+    },
+    timestampFields: ['created_at', 'captured_at', 'expires_at'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerKlarnaTools(mcpServer, mockBaseUrl);
@@ -567,6 +594,7 @@ export class KlarnaAdapter extends BaseApiMockAdapter<KlarnaConfig> {
             (body.order_id as string) ??
             (body.session_id as string) ??
             (body.token_id as string) ??
+            (body.id as string) ??
             (body.payout_id as string);
           if (!key) continue;
 

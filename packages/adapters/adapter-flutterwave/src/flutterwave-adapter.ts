@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter } from '@mimicai/adapter-sdk';
 import type { FlutterwaveConfig } from './config.js';
@@ -174,6 +174,34 @@ export class FlutterwaveAdapter extends BaseApiMockAdapter<FlutterwaveConfig> {
   readonly name = 'Flutterwave API';
   readonly basePath = '/flutterwave/v3';
   readonly versions = ['v3'];
+
+  readonly promptContext = {
+    resources: ['customers', 'transactions', 'transfers', 'payment_plans', 'subaccounts', 'refunds', 'virtual_accounts'],
+    amountFormat: 'decimal float (e.g. 2999.00)',
+    relationships: [
+      'transaction → customer',
+      'transfer → subaccount',
+      'refund → transaction',
+      'payment_plan → transaction',
+    ],
+    requiredFields: {
+      customers: ['id', 'email', 'full_name', 'phone_number', 'created_at'],
+      transactions: ['id', 'tx_ref', 'amount', 'currency', 'status', 'payment_type', 'customer', 'created_at'],
+      transfers: ['id', 'amount', 'currency', 'status', 'reference', 'narration', 'created_at'],
+      refunds: ['id', 'amount_refunded', 'status', 'flw_ref', 'created_at'],
+    },
+    notes: 'African payment gateway. Amounts as decimal floats. Timestamps ISO 8601. Transaction status: successful, failed, pending. Supports NGN, GHS, KES, ZAR, USD currencies. tx_ref is merchant reference.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount', 'amount_refunded', 'charged_amount', 'app_fee'],
+    statusEnums: {
+      transactions: ['successful', 'failed', 'pending'],
+      transfers: ['NEW', 'PENDING', 'FAILED', 'SUCCESSFUL'],
+    },
+    timestampFields: ['created_at'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerFlutterwaveTools(mcpServer, mockBaseUrl);

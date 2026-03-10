@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { BraintreeConfig } from './config.js';
@@ -84,6 +84,37 @@ export class BraintreeAdapter extends BaseApiMockAdapter<BraintreeConfig> {
   readonly name = 'Braintree API';
   readonly basePath = '/braintree';
   readonly versions = ['rest', 'graphql'];
+  readonly promptContext = {
+    resources: ['customers', 'transactions', 'subscriptions', 'plans', 'payment_methods', 'disputes', 'refunds'],
+    amountFormat: 'decimal string (e.g. "29.99")',
+    relationships: [
+      'transaction → customer, payment_method',
+      'subscription → customer, plan, payment_method',
+      'dispute → transaction',
+      'refund → transaction',
+      'payment_method → customer',
+    ],
+    requiredFields: {
+      customers: ['id', 'email', 'firstName', 'lastName', 'createdAt'],
+      transactions: ['id', 'amount', 'status', 'currencyIsoCode', 'type', 'merchantAccountId', 'createdAt'],
+      subscriptions: ['id', 'planId', 'status', 'price', 'paymentMethodToken', 'currentBillingCycle', 'createdAt'],
+      plans: ['id', 'name', 'price', 'billingFrequency', 'currencyIsoCode'],
+      payment_methods: ['token', 'customerId', 'cardType', 'last4', 'expirationDate'],
+      disputes: ['id', 'kind', 'status', 'reason', 'amount', 'currencyIsoCode', 'receivedDate'],
+      refunds: ['id', 'amount', 'status', 'createdAt'],
+    },
+    notes: 'Amounts are decimal strings (not cents). Timestamps ISO 8601. Transaction status: authorized, submitted_for_settlement, settling, settled, voided, gateway_rejected. Uses camelCase field names. Subscription status: Active, Canceled, Expired, Past Due, Pending.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount', 'price'],
+    statusEnums: {
+      transactions: ['authorized', 'submitted_for_settlement', 'settling', 'settled', 'voided', 'gateway_rejected'],
+      subscriptions: ['Active', 'Canceled', 'Expired', 'Past Due', 'Pending'],
+    },
+    timestampFields: ['createdAt', 'updatedAt', 'receivedDate'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerBraintreeTools(mcpServer, mockBaseUrl);

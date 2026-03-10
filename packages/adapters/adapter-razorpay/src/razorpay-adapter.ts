@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { RazorpayConfig } from './config.js';
@@ -62,6 +62,38 @@ export class RazorpayAdapter extends BaseApiMockAdapter<RazorpayConfig> {
   readonly name = 'Razorpay API';
   readonly basePath = '/razorpay/v1';
   readonly versions = ['v1'];
+
+  readonly promptContext = {
+    resources: ['customers', 'orders', 'payments', 'refunds', 'subscriptions', 'plans', 'invoices', 'settlements'],
+    amountFormat: 'integer paise (e.g. 29900 = ₹299.00)',
+    relationships: [
+      'payment → order, customer',
+      'refund → payment',
+      'subscription → customer, plan',
+      'invoice → customer, subscription',
+    ],
+    requiredFields: {
+      customers: ['id', 'name', 'email', 'contact', 'created_at'],
+      orders: ['id', 'amount', 'currency', 'status', 'created_at'],
+      payments: ['id', 'amount', 'currency', 'status', 'method', 'order_id', 'created_at'],
+      refunds: ['id', 'payment_id', 'amount', 'currency', 'status', 'created_at'],
+      subscriptions: ['id', 'plan_id', 'customer_id', 'status', 'total_count', 'created_at'],
+      plans: ['id', 'period', 'interval', 'item', 'created_at'],
+    },
+    notes: 'Indian payment gateway. Amounts in paise (1 INR = 100 paise). Timestamps are Unix seconds. Payment status: created, authorized, captured, refunded, failed. IDs prefixed: cust_, order_, pay_, rfnd_, sub_, plan_.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'unix_seconds',
+    idPrefixes: { customers: 'cust_', orders: 'order_', payments: 'pay_', refunds: 'rfnd_', subscriptions: 'sub_', plans: 'plan_' },
+    amountFields: ['amount'],
+    statusEnums: {
+      payments: ['created', 'authorized', 'captured', 'refunded', 'failed'],
+      orders: ['created', 'attempted', 'paid'],
+      subscriptions: ['created', 'authenticated', 'active', 'pending', 'halted', 'cancelled', 'completed', 'expired'],
+    },
+    timestampFields: ['created_at'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerRazorpayTools(mcpServer, mockBaseUrl);

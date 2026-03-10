@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { PayPalConfig } from './config.js';
@@ -46,6 +46,37 @@ export class PayPalAdapter extends BaseApiMockAdapter<PayPalConfig> {
   readonly name = 'PayPal API';
   readonly basePath = '/paypal';
   readonly versions = ['v1', 'v2', 'v3'];
+  readonly promptContext = {
+    resources: ['orders', 'payments', 'captures', 'refunds', 'subscriptions', 'plans', 'products', 'disputes', 'payouts'],
+    amountFormat: 'decimal string with currency object (e.g. { value: "29.99", currency_code: "USD" })',
+    relationships: [
+      'order → payer',
+      'capture → order',
+      'refund → capture',
+      'subscription → plan, subscriber',
+      'plan → product',
+      'dispute → transaction',
+    ],
+    requiredFields: {
+      orders: ['id', 'status', 'intent', 'purchase_units', 'create_time'],
+      captures: ['id', 'status', 'amount', 'create_time'],
+      refunds: ['id', 'status', 'amount', 'create_time'],
+      subscriptions: ['id', 'status', 'plan_id', 'subscriber', 'start_time', 'create_time'],
+      plans: ['id', 'product_id', 'name', 'status', 'billing_cycles', 'create_time'],
+      products: ['id', 'name', 'type', 'create_time'],
+    },
+    notes: 'Amounts are decimal strings in {value, currency_code} objects. Timestamps are ISO 8601. Order status: CREATED, SAVED, APPROVED, VOIDED, COMPLETED, PAYER_ACTION_REQUIRED. Subscription status: APPROVAL_PENDING, APPROVED, ACTIVE, SUSPENDED, CANCELLED, EXPIRED.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount'],
+    statusEnums: {
+      orders: ['CREATED', 'SAVED', 'APPROVED', 'VOIDED', 'COMPLETED', 'PAYER_ACTION_REQUIRED'],
+      subscriptions: ['APPROVAL_PENDING', 'APPROVED', 'ACTIVE', 'SUSPENDED', 'CANCELLED', 'EXPIRED'],
+    },
+    timestampFields: ['create_time', 'update_time', 'start_time'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerPayPalTools(mcpServer, mockBaseUrl);

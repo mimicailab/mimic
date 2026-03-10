@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { WiseConfig } from './config.js';
@@ -58,6 +58,35 @@ export class WiseAdapter extends BaseApiMockAdapter<WiseConfig> {
   readonly name = 'Wise API';
   readonly basePath = '/wise';
   readonly versions = ['v4', 'v3', 'v2', 'v1'];
+
+  readonly promptContext = {
+    resources: ['profiles', 'accounts', 'quotes', 'transfers', 'recipients', 'balances'],
+    amountFormat: 'decimal float (e.g. 29.99)',
+    relationships: [
+      'transfer → quote, recipient, profile',
+      'quote → profile',
+      'recipient → profile',
+      'balance → profile',
+      'account → profile',
+    ],
+    requiredFields: {
+      profiles: ['id', 'type', 'fullName', 'createdAt'],
+      accounts: ['id', 'profileId', 'currency', 'balance', 'createdAt'],
+      quotes: ['id', 'profileId', 'sourceCurrency', 'targetCurrency', 'sourceAmount', 'rate', 'createdTime'],
+      transfers: ['id', 'profileId', 'quoteUuid', 'targetAccount', 'sourceAmount', 'sourceCurrency', 'targetAmount', 'targetCurrency', 'status', 'created'],
+      recipients: ['id', 'profileId', 'accountHolderName', 'currency', 'type', 'details'],
+    },
+    notes: 'International money transfer platform. Amounts are decimal floats. Timestamps ISO 8601. Transfer status: incoming_payment_waiting, processing, funds_converted, outgoing_payment_sent, cancelled, bounced_back. Uses camelCase field names.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['sourceAmount', 'targetAmount', 'rate', 'balance'],
+    statusEnums: {
+      transfers: ['incoming_payment_waiting', 'processing', 'funds_converted', 'outgoing_payment_sent', 'cancelled', 'bounced_back'],
+    },
+    timestampFields: ['createdAt', 'createdTime', 'created'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerWiseTools(mcpServer, mockBaseUrl);

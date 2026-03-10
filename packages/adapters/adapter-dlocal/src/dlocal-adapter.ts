@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { DLocalConfig } from './config.js';
@@ -189,6 +189,30 @@ export class DLocalAdapter extends BaseApiMockAdapter<DLocalConfig> {
   readonly name = 'dLocal API';
   readonly basePath = '/dlocal';
   readonly versions = ['2.1'];
+
+  readonly promptContext = {
+    resources: ['payments', 'refunds', 'payouts', 'payment_methods', 'exchange_rates'],
+    amountFormat: 'decimal float (e.g. 29.99)',
+    relationships: [
+      'refund → payment',
+      'payout → payment_method',
+    ],
+    requiredFields: {
+      payments: ['id', 'amount', 'currency', 'country', 'status', 'payment_method_id', 'order_id', 'created_date'],
+      refunds: ['id', 'payment_id', 'amount', 'currency', 'status', 'created_date'],
+      payouts: ['id', 'amount', 'currency', 'country', 'status', 'beneficiary', 'created_date'],
+    },
+    notes: 'LatAm/emerging market payment platform. Amounts as decimal floats. Timestamps ISO 8601. Payment status: PENDING, PAID, REJECTED, CANCELLED, EXPIRED. Country codes are ISO 3166-1 alpha-2 (BR, MX, AR, CL, CO, etc.).',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount'],
+    statusEnums: {
+      payments: ['PENDING', 'PAID', 'REJECTED', 'CANCELLED', 'EXPIRED'],
+    },
+    timestampFields: ['created_date', 'approved_date'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerDlocalTools(mcpServer, mockBaseUrl);

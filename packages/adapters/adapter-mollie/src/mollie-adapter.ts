@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { MollieConfig } from './config.js';
@@ -115,6 +115,39 @@ export class MollieAdapter extends BaseApiMockAdapter<MollieConfig> {
   readonly name = 'Mollie API';
   readonly basePath = '/mollie/v2';
   readonly versions = ['v2'];
+  readonly promptContext = {
+    resources: ['customers', 'payments', 'refunds', 'orders', 'subscriptions', 'mandates', 'profiles', 'chargebacks'],
+    amountFormat: 'decimal string with currency object (e.g. { value: "29.99", currency: "EUR" })',
+    relationships: [
+      'payment → customer, mandate, subscription, order',
+      'refund → payment',
+      'subscription → customer, mandate',
+      'order → customer',
+      'chargeback → payment',
+      'mandate → customer',
+    ],
+    requiredFields: {
+      customers: ['id', 'name', 'email', 'createdDatetime'],
+      payments: ['id', 'amount', 'description', 'status', 'method', 'createdAt'],
+      refunds: ['id', 'paymentId', 'amount', 'status', 'createdAt'],
+      orders: ['id', 'amount', 'status', 'lines', 'createdAt'],
+      subscriptions: ['id', 'customerId', 'amount', 'interval', 'status', 'startDate', 'createdAt'],
+      mandates: ['id', 'customerId', 'status', 'method', 'createdAt'],
+    },
+    notes: 'European payment platform. Amounts as decimal strings in {value, currency} objects. Timestamps ISO 8601. Payment status: open, canceled, pending, authorized, expired, failed, paid. IDs prefixed: cst_, tr_, re_, ord_, sub_, mdt_. Primarily EUR transactions.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    idPrefixes: { customers: 'cst_', payments: 'tr_', refunds: 're_', orders: 'ord_', subscriptions: 'sub_', mandates: 'mdt_' },
+    amountFields: ['amount'],
+    statusEnums: {
+      payments: ['open', 'canceled', 'pending', 'authorized', 'expired', 'failed', 'paid'],
+      subscriptions: ['pending', 'active', 'canceled', 'suspended', 'completed'],
+      mandates: ['valid', 'pending', 'invalid'],
+    },
+    timestampFields: ['createdAt', 'createdDatetime', 'startDate', 'paidAt', 'canceledAt', 'expiredAt'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerMollieTools(mcpServer, mockBaseUrl);

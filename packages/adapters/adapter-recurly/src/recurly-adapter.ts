@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { RecurlyConfig } from './config.js';
@@ -60,6 +60,36 @@ export class RecurlyAdapter extends BaseApiMockAdapter<RecurlyConfig> {
   readonly name = 'Recurly API';
   readonly basePath = '/recurly/v2021-02-25';
   readonly versions = ['v2021-02-25'];
+
+  readonly promptContext = {
+    resources: ['accounts', 'subscriptions', 'plans', 'add_ons', 'invoices', 'transactions', 'line_items', 'coupons'],
+    amountFormat: 'decimal float (e.g. 29.99)',
+    relationships: [
+      'subscription → account, plan',
+      'invoice → account, subscription',
+      'transaction → account, invoice',
+      'line_item → invoice',
+    ],
+    requiredFields: {
+      accounts: ['id', 'code', 'email', 'first_name', 'last_name', 'state', 'created_at'],
+      subscriptions: ['id', 'uuid', 'account', 'plan', 'state', 'currency', 'unit_amount', 'current_period_started_at', 'current_period_ends_at', 'created_at'],
+      plans: ['id', 'code', 'name', 'state', 'currencies', 'created_at'],
+      invoices: ['id', 'number', 'account', 'state', 'total', 'currency', 'created_at'],
+      transactions: ['id', 'uuid', 'account', 'type', 'amount', 'currency', 'status', 'created_at'],
+    },
+    notes: 'Amounts are decimal floats (not cents). Timestamps are ISO 8601. Subscription state: active, canceled, expired, future, paused. Account state: active, closed.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount', 'unit_amount', 'total', 'subtotal', 'tax'],
+    statusEnums: {
+      subscriptions: ['active', 'canceled', 'expired', 'future', 'paused'],
+      accounts: ['active', 'closed'],
+      invoices: ['pending', 'processing', 'past_due', 'paid', 'failed', 'voided'],
+    },
+    timestampFields: ['created_at', 'updated_at', 'current_period_started_at', 'current_period_ends_at', 'closed_at'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerRecurlyTools(mcpServer, mockBaseUrl);

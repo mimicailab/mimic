@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { MercadoPagoConfig } from './config.js';
@@ -31,6 +31,33 @@ export class MercadoPagoAdapter extends BaseApiMockAdapter<MercadoPagoConfig> {
   readonly name = 'Mercado Pago API';
   readonly basePath = '/mercadopago';
   readonly versions = ['v1'];
+  readonly promptContext = {
+    resources: ['payments', 'preferences', 'customers', 'cards', 'refunds', 'preapprovals', 'merchant_orders'],
+    amountFormat: 'decimal float (e.g. 29.99)',
+    relationships: [
+      'payment → customer, preference',
+      'refund → payment',
+      'card → customer',
+      'preapproval → customer',
+      'merchant_order → preference',
+    ],
+    requiredFields: {
+      payments: ['id', 'transaction_amount', 'currency_id', 'status', 'status_detail', 'payment_method_id', 'payment_type_id', 'date_created'],
+      customers: ['id', 'email', 'first_name', 'last_name', 'date_created'],
+      preferences: ['id', 'items', 'payer', 'date_created'],
+      refunds: ['id', 'payment_id', 'amount', 'status', 'date_created'],
+    },
+    notes: 'Latin American payment platform. Amounts as decimal floats. Timestamps ISO 8601. Payment status: pending, approved, authorized, in_process, in_mediation, rejected, cancelled, refunded, charged_back. Currency codes: ARS, BRL, CLP, MXN, COP, PEN, UYU, USD.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['transaction_amount', 'amount', 'net_amount', 'total_paid_amount'],
+    statusEnums: {
+      payments: ['pending', 'approved', 'authorized', 'in_process', 'in_mediation', 'rejected', 'cancelled', 'refunded', 'charged_back'],
+    },
+    timestampFields: ['date_created', 'date_approved', 'date_last_updated'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerMercadoPagoTools(mcpServer, mockBaseUrl);

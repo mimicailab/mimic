@@ -21,10 +21,12 @@ export {
 
 export type {
   ApiMockAdapter,
+  DataSpec,
   EndpointDefinition,
   AdapterManifest,
   AdapterContext,
   AdapterResult,
   ExpandedData,
   PaginatedResult,
+  PromptContext,
 } from '@mimicai/core';

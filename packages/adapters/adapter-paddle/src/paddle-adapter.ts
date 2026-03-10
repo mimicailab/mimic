@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { PaddleConfig } from './config.js';
@@ -70,6 +70,36 @@ export class PaddleAdapter extends BaseApiMockAdapter<PaddleConfig> {
   readonly name = 'Paddle API';
   readonly basePath = '/paddle';
   readonly versions = ['1'];
+
+  readonly promptContext = {
+    resources: ['customers', 'products', 'prices', 'subscriptions', 'transactions', 'adjustments', 'discounts'],
+    amountFormat: 'decimal string (e.g. "29.99")',
+    relationships: [
+      'subscription → customer, price',
+      'transaction → customer, subscription',
+      'adjustment → transaction',
+      'price → product',
+    ],
+    requiredFields: {
+      customers: ['id', 'email', 'name', 'status', 'created_at'],
+      products: ['id', 'name', 'status', 'tax_category', 'created_at'],
+      prices: ['id', 'product_id', 'unit_price', 'status', 'billing_cycle', 'created_at'],
+      subscriptions: ['id', 'customer_id', 'status', 'currency_code', 'created_at'],
+      transactions: ['id', 'customer_id', 'status', 'currency_code', 'created_at'],
+    },
+    notes: 'Paddle is a merchant of record. Amounts are decimal strings NOT cents. Timestamps are ISO 8601 strings (not Unix). IDs prefixed: ctm_, pro_, pri_, sub_, txn_. Subscription status: active, canceled, past_due, paused, trialing.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    idPrefixes: { customers: 'ctm_', products: 'pro_', prices: 'pri_', subscriptions: 'sub_', transactions: 'txn_' },
+    amountFields: ['unit_price', 'total'],
+    statusEnums: {
+      subscriptions: ['active', 'canceled', 'past_due', 'paused', 'trialing'],
+      transactions: ['draft', 'ready', 'billed', 'paid', 'completed', 'canceled', 'past_due'],
+    },
+    timestampFields: ['created_at', 'updated_at', 'billed_at', 'started_at', 'first_billed_at'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerPaddleTools(mcpServer, mockBaseUrl);

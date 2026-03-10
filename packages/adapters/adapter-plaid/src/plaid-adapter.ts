@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData, AdapterContext } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, AdapterContext, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import {
   BaseApiMockAdapter,
@@ -35,6 +35,29 @@ export class PlaidAdapter extends BaseApiMockAdapter<PlaidConfig> {
   readonly name = 'Plaid API';
   readonly basePath = '/plaid';
   readonly versions = ['2020-09-14'];
+  readonly promptContext = {
+    resources: ['accounts', 'transactions', 'identity', 'auth', 'balances', 'institutions'],
+    amountFormat: 'decimal float with sign (negative = debit/outflow, positive = credit/inflow)',
+    relationships: [
+      'transaction → account',
+      'identity → account',
+      'auth → account',
+      'balance → account',
+    ],
+    requiredFields: {
+      accounts: ['account_id', 'name', 'type', 'subtype', 'balances', 'mask'],
+      transactions: ['transaction_id', 'account_id', 'amount', 'date', 'name', 'merchant_name', 'category', 'pending'],
+      balances: ['available', 'current', 'iso_currency_code'],
+    },
+    notes: 'Financial data aggregator (read-only bank data). Amounts: negative = money leaving account (debit), positive = money entering account (credit). Dates are YYYY-MM-DD strings (not timestamps). Account types: depository, credit, loan, investment. Subtypes: checking, savings, credit card, mortgage, etc.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount', 'available', 'current', 'limit'],
+    statusEnums: {},
+    timestampFields: ['date', 'authorized_date'],
+  };
 
   async init(config: PlaidConfig, context: AdapterContext): Promise<void> {
     await super.init(config, context);

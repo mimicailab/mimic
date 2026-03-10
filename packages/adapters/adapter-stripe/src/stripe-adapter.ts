@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
@@ -53,6 +53,65 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
     '2025-09-30.clover',
     '2026-02-25.clover',
   ];
+
+  readonly promptContext = {
+    resources: ['customers', 'products', 'prices', 'subscriptions', 'invoices', 'payment_intents', 'charges', 'refunds', 'coupons', 'disputes', 'payment_links'],
+    amountFormat: 'integer cents (e.g. 2999 = $29.99)',
+    relationships: [
+      'subscription → customer, price',
+      'invoice → customer, subscription',
+      'payment_intent → customer, invoice',
+      'charge → customer, payment_intent',
+      'refund → charge',
+      'dispute → charge',
+    ],
+    requiredFields: {
+      customers: ['id', 'object', 'email', 'name', 'currency', 'created'],
+      products: ['id', 'object', 'name', 'active', 'created'],
+      prices: ['id', 'object', 'product', 'unit_amount', 'currency', 'type', 'recurring', 'active', 'created'],
+      subscriptions: ['id', 'object', 'customer', 'status', 'currency', 'items', 'current_period_start', 'current_period_end', 'created'],
+      invoices: ['id', 'object', 'customer', 'subscription', 'status', 'amount_due', 'amount_paid', 'currency', 'created'],
+      payment_intents: ['id', 'object', 'customer', 'amount', 'currency', 'status', 'created'],
+      charges: ['id', 'object', 'customer', 'amount', 'currency', 'status', 'paid', 'created'],
+      refunds: ['id', 'object', 'charge', 'amount', 'currency', 'status', 'created'],
+    },
+    notes: 'All timestamps are Unix seconds. Amounts in smallest currency unit (cents for USD). IDs prefixed with object type (cus_, sub_, in_, pi_, ch_, re_). Subscription status: active, past_due, canceled, trialing, unpaid.',
+    idPrefix: 'cus_',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'unix_seconds',
+    idPrefixes: {
+      customers: 'cus_',
+      subscriptions: 'sub_',
+      invoices: 'in_',
+      payment_intents: 'pi_',
+      charges: 'ch_',
+      refunds: 're_',
+      products: 'prod_',
+      prices: 'price_',
+      coupons: '',
+      disputes: 'dp_',
+      payment_links: 'plink_',
+    },
+    amountFields: [
+      'amount', 'amount_due', 'amount_paid', 'amount_remaining',
+      'amount_captured', 'amount_refunded', 'unit_amount',
+      'total', 'subtotal', 'amount_off',
+    ],
+    statusEnums: {
+      subscriptions: ['active', 'past_due', 'canceled', 'trialing', 'unpaid', 'incomplete', 'incomplete_expired', 'paused'],
+      invoices: ['draft', 'open', 'paid', 'uncollectible', 'void'],
+      payment_intents: ['requires_payment_method', 'requires_confirmation', 'requires_action', 'processing', 'requires_capture', 'canceled', 'succeeded'],
+      charges: ['succeeded', 'pending', 'failed'],
+      refunds: ['succeeded', 'pending', 'failed', 'canceled'],
+      disputes: ['warning_needs_response', 'warning_under_review', 'warning_closed', 'needs_response', 'under_review', 'charge_refunded', 'won', 'lost'],
+    },
+    timestampFields: [
+      'created', 'current_period_start', 'current_period_end',
+      'cancel_at', 'canceled_at', 'trial_start', 'trial_end',
+    ],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerStripeTools(mcpServer, mockBaseUrl);

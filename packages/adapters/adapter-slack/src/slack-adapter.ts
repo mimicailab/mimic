@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import {
   BaseApiMockAdapter,
@@ -64,6 +64,30 @@ export class SlackAdapter extends BaseApiMockAdapter<SlackConfig> {
   readonly name = 'Slack API';
   readonly basePath = '/slack/api';
   readonly versions = ['web'];
+  readonly promptContext = {
+    resources: ['channels', 'users', 'messages', 'reactions', 'files', 'usergroups'],
+    amountFormat: 'N/A (non-financial platform)',
+    relationships: [
+      'message → channel, user',
+      'reaction → message, user',
+      'file → user, channel',
+      'usergroup → users',
+    ],
+    requiredFields: {
+      channels: ['id', 'name', 'is_channel', 'is_member', 'created', 'creator', 'topic', 'purpose', 'num_members'],
+      users: ['id', 'name', 'real_name', 'profile', 'is_bot', 'is_admin', 'updated'],
+      messages: ['type', 'user', 'text', 'ts', 'channel'],
+    },
+    notes: 'Messaging platform (non-financial). Timestamps are Unix seconds as string with microsecond decimal (e.g. "1678900000.000000"). Channel IDs prefixed C, user IDs prefixed U. Message ts is unique ID within channel.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'unix_seconds',
+    idPrefixes: { channels: 'C', users: 'U' },
+    amountFields: [],
+    statusEnums: {},
+    timestampFields: ['created', 'updated', 'ts'],
+  };
 
   private tsCounter = Date.now() / 1000;
 

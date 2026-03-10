@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { XenditConfig } from './config.js';
@@ -29,6 +29,35 @@ export class XenditAdapter extends BaseApiMockAdapter<XenditConfig> {
   readonly name = 'Xendit API';
   readonly basePath = '/xendit';
   readonly versions = ['v3', 'v2'];
+
+  readonly promptContext = {
+    resources: ['customers', 'invoices', 'payment_requests', 'payouts', 'balance', 'refunds'],
+    amountFormat: 'integer (e.g. 29900 for IDR, follows currency minor units)',
+    relationships: [
+      'invoice → customer',
+      'payment_request → customer',
+      'payout → customer',
+      'refund → payment_request',
+    ],
+    requiredFields: {
+      customers: ['id', 'reference_id', 'email', 'type', 'created'],
+      invoices: ['id', 'external_id', 'amount', 'status', 'currency', 'created'],
+      payment_requests: ['id', 'reference_id', 'amount', 'currency', 'status', 'payment_method', 'created'],
+      payouts: ['id', 'reference_id', 'amount', 'currency', 'status', 'channel_code', 'created'],
+    },
+    notes: 'Southeast Asian payment gateway. Amounts as integers in currency minor units. Timestamps ISO 8601. Invoice status: PENDING, PAID, EXPIRED. Payment request status: REQUIRES_ACTION, PENDING, SUCCEEDED, FAILED. Primarily used in Indonesia, Philippines, Vietnam.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount'],
+    statusEnums: {
+      invoices: ['PENDING', 'PAID', 'EXPIRED'],
+      payment_requests: ['REQUIRES_ACTION', 'PENDING', 'SUCCEEDED', 'FAILED'],
+      payouts: ['ACCEPTED', 'QUEUED', 'SENDING', 'COMPLETED', 'FAILED'],
+    },
+    timestampFields: ['created', 'updated', 'expiry_date'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerXenditTools(mcpServer, mockBaseUrl);

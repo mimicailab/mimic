@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { ChargebeeConfig } from './config.js';
@@ -64,6 +64,37 @@ export class ChargebeeAdapter extends BaseApiMockAdapter<ChargebeeConfig> {
   readonly name = 'Chargebee API';
   readonly basePath = '/chargebee/api/v2';
   readonly versions = ['2'];
+
+  readonly promptContext = {
+    resources: ['customers', 'subscriptions', 'items', 'item_prices', 'invoices', 'credit_notes', 'coupons', 'payment_sources', 'transactions'],
+    amountFormat: 'integer cents (e.g. 2999 = $29.99)',
+    relationships: [
+      'subscription → customer, item_price',
+      'invoice → customer, subscription',
+      'credit_note → customer, invoice',
+      'transaction → customer, invoice',
+      'payment_source → customer',
+    ],
+    requiredFields: {
+      customers: ['id', 'email', 'first_name', 'last_name', 'created_at'],
+      subscriptions: ['id', 'customer_id', 'status', 'plan_id', 'plan_amount', 'currency_code', 'created_at'],
+      items: ['id', 'name', 'type', 'status'],
+      item_prices: ['id', 'item_id', 'name', 'pricing_model', 'price', 'currency_code'],
+      invoices: ['id', 'customer_id', 'subscription_id', 'status', 'total', 'amount_due', 'currency_code', 'date'],
+      transactions: ['id', 'customer_id', 'type', 'amount', 'currency_code', 'status', 'date'],
+    },
+    notes: 'Amounts in cents. Timestamps are Unix seconds. Subscription status: active, in_trial, cancelled, non_renewing, paused. Uses item_price model (not legacy plan model).',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'unix_seconds',
+    amountFields: ['amount', 'amount_due', 'total', 'price', 'plan_amount'],
+    statusEnums: {
+      subscriptions: ['active', 'in_trial', 'cancelled', 'non_renewing', 'paused'],
+      invoices: ['paid', 'posted', 'payment_due', 'not_paid', 'voided', 'pending'],
+    },
+    timestampFields: ['created_at', 'updated_at', 'date', 'next_billing_at', 'activated_at', 'cancelled_at'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerChargebeeTools(mcpServer, mockBaseUrl);

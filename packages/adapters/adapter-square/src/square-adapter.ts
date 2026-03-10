@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { SquareConfig } from './config.js';
@@ -43,6 +43,37 @@ export class SquareAdapter extends BaseApiMockAdapter<SquareConfig> {
   readonly name = 'Square API';
   readonly basePath = '/square/v2';
   readonly versions = ['2025-10-16'];
+  readonly promptContext = {
+    resources: ['customers', 'payments', 'orders', 'invoices', 'subscriptions', 'catalog_objects', 'refunds'],
+    amountFormat: 'integer cents in Money object (e.g. { amount: 2999, currency: "USD" })',
+    relationships: [
+      'payment → customer, order',
+      'order → customer, location',
+      'invoice → customer, order',
+      'subscription → customer, plan',
+      'refund → payment',
+    ],
+    requiredFields: {
+      customers: ['id', 'given_name', 'family_name', 'email_address', 'created_at'],
+      payments: ['id', 'amount_money', 'status', 'source_type', 'location_id', 'created_at'],
+      orders: ['id', 'location_id', 'line_items', 'state', 'total_money', 'created_at'],
+      invoices: ['id', 'order_id', 'status', 'payment_requests', 'created_at'],
+      subscriptions: ['id', 'customer_id', 'plan_variation_id', 'status', 'start_date', 'created_at'],
+    },
+    notes: 'Amounts use Money object {amount (cents), currency}. Timestamps ISO 8601. Payment status: COMPLETED, APPROVED, PENDING, CANCELED, FAILED. All operations are location-scoped.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount_money', 'total_money', 'tip_money'],
+    statusEnums: {
+      payments: ['COMPLETED', 'APPROVED', 'PENDING', 'CANCELED', 'FAILED'],
+      orders: ['OPEN', 'COMPLETED', 'CANCELED', 'DRAFT'],
+      invoices: ['DRAFT', 'UNPAID', 'SCHEDULED', 'PARTIALLY_PAID', 'PAID', 'PARTIALLY_REFUNDED', 'REFUNDED', 'CANCELED', 'FAILED', 'PAYMENT_PENDING'],
+      subscriptions: ['PENDING', 'ACTIVE', 'CANCELED', 'DEACTIVATED', 'PAUSED'],
+    },
+    timestampFields: ['created_at', 'updated_at', 'start_date'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerSquareTools(mcpServer, mockBaseUrl);

@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { CheckoutComConfig } from './config.js';
@@ -45,6 +45,34 @@ export class CheckoutComAdapter extends BaseApiMockAdapter<CheckoutComConfig> {
   readonly name = 'Checkout.com API';
   readonly basePath = '/checkout';
   readonly versions = ['default'];
+  readonly promptContext = {
+    resources: ['payments', 'captures', 'refunds', 'payment_links', 'customers', 'instruments', 'disputes'],
+    amountFormat: 'integer minor units (e.g. 2999 = $29.99)',
+    relationships: [
+      'capture → payment',
+      'refund → payment',
+      'payment → customer, instrument',
+      'dispute → payment',
+      'payment_link → payment',
+    ],
+    requiredFields: {
+      payments: ['id', 'amount', 'currency', 'status', 'source', 'customer', 'processed_on'],
+      captures: ['action_id', 'amount', 'reference', 'processed_on'],
+      refunds: ['action_id', 'amount', 'reference', 'processed_on'],
+      customers: ['id', 'email', 'name'],
+    },
+    notes: 'Amounts in minor units. Timestamps ISO 8601. Payment status: Pending, Authorized, Captured, Partially Captured, Voided, Partially Refunded, Refunded, Declined, Canceled. IDs prefixed: pay_, cus_.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    idPrefixes: { payments: 'pay_', customers: 'cus_' },
+    amountFields: ['amount'],
+    statusEnums: {
+      payments: ['Pending', 'Authorized', 'Captured', 'Partially Captured', 'Voided', 'Partially Refunded', 'Refunded', 'Declined', 'Canceled'],
+    },
+    timestampFields: ['processed_on', 'requested_on'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerCheckoutComTools(mcpServer, mockBaseUrl);

@@ -3,8 +3,10 @@ import type {
   ApiMockAdapter,
   AdapterContext,
   AdapterResult,
+  DataSpec,
   EndpointDefinition,
   ExpandedData,
+  PromptContext,
 } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 
@@ -24,6 +26,8 @@ export abstract class BaseApiMockAdapter<TConfig = unknown>
   readonly type = 'api-mock' as const;
   abstract readonly basePath: string;
   readonly versions?: string[];
+  readonly promptContext?: PromptContext;
+  readonly dataSpec?: DataSpec;
 
   protected config!: TConfig;
   protected context?: AdapterContext;

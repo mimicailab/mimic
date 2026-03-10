@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { GoCardlessConfig } from './config.js';
@@ -64,6 +64,36 @@ export class GoCardlessAdapter extends BaseApiMockAdapter<GoCardlessConfig> {
   readonly name = 'GoCardless API';
   readonly basePath = '/gocardless';
   readonly versions = ['2015-07-06'];
+
+  readonly promptContext = {
+    resources: ['customers', 'mandates', 'subscriptions', 'payments', 'payouts', 'bank_accounts'],
+    amountFormat: 'integer minor units (e.g. 2999 = £29.99, varies by currency)',
+    relationships: [
+      'mandate → customer, bank_account',
+      'subscription → customer, mandate',
+      'payment → customer, mandate, subscription',
+      'payout → bank_account',
+    ],
+    requiredFields: {
+      customers: ['id', 'email', 'given_name', 'family_name', 'created_at'],
+      mandates: ['id', 'status', 'scheme', 'customer', 'customer_bank_account', 'created_at'],
+      subscriptions: ['id', 'status', 'amount', 'currency', 'interval_unit', 'mandate', 'created_at'],
+      payments: ['id', 'status', 'amount', 'currency', 'charge_date', 'mandate', 'created_at'],
+    },
+    notes: 'Direct Debit platform. Amounts in smallest currency unit. Timestamps are ISO 8601. IDs prefixed: CU_, MD_, SB_, PM_. Payment status: pending_submission, submitted, confirmed, paid_out, cancelled, failed. Mandate status: pending_submission, submitted, active, cancelled, failed.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    idPrefixes: { customers: 'CU', mandates: 'MD', subscriptions: 'SB', payments: 'PM' },
+    amountFields: ['amount'],
+    statusEnums: {
+      payments: ['pending_submission', 'submitted', 'confirmed', 'paid_out', 'cancelled', 'failed', 'charged_back'],
+      mandates: ['pending_submission', 'submitted', 'active', 'cancelled', 'failed', 'expired'],
+      subscriptions: ['pending_customer_approval', 'customer_approval_granted', 'active', 'finished', 'cancelled', 'paused'],
+    },
+    timestampFields: ['created_at', 'charge_date'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerGoCardlessTools(mcpServer, mockBaseUrl);

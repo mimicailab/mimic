@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { LemonSqueezyConfig } from './config.js';
@@ -94,6 +94,39 @@ export class LemonSqueezyAdapter extends BaseApiMockAdapter<LemonSqueezyConfig> 
   readonly name = 'Lemon Squeezy API';
   readonly basePath = '/lemonsqueezy/v1';
   readonly versions = ['1'];
+  readonly promptContext = {
+    resources: ['stores', 'products', 'variants', 'customers', 'orders', 'subscriptions', 'subscription_invoices', 'discounts', 'license_keys'],
+    amountFormat: 'integer cents (e.g. 2999 = $29.99)',
+    relationships: [
+      'product → store',
+      'variant → product',
+      'order → store, customer',
+      'subscription → store, customer, order, variant',
+      'subscription_invoice → subscription',
+      'license_key → order',
+      'discount → store',
+    ],
+    requiredFields: {
+      stores: ['id', 'name', 'slug', 'url', 'created_at'],
+      products: ['id', 'store_id', 'name', 'status', 'price', 'created_at'],
+      variants: ['id', 'product_id', 'name', 'price', 'status', 'created_at'],
+      customers: ['id', 'store_id', 'name', 'email', 'status', 'created_at'],
+      orders: ['id', 'store_id', 'customer_id', 'status', 'total', 'currency', 'created_at'],
+      subscriptions: ['id', 'store_id', 'customer_id', 'order_id', 'variant_id', 'status', 'renews_at', 'created_at'],
+    },
+    notes: 'Digital products/SaaS platform. Amounts in cents. Timestamps ISO 8601. Uses JSON:API envelope format. Subscription status: on_trial, active, paused, past_due, unpaid, cancelled, expired. Product status: published, draft.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['price', 'total', 'subtotal', 'tax'],
+    statusEnums: {
+      subscriptions: ['on_trial', 'active', 'paused', 'past_due', 'unpaid', 'cancelled', 'expired'],
+      products: ['published', 'draft'],
+      orders: ['pending', 'failed', 'paid', 'refunded'],
+    },
+    timestampFields: ['created_at', 'updated_at', 'renews_at', 'ends_at', 'trial_ends_at'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerLemonSqueezyTools(mcpServer, mockBaseUrl);

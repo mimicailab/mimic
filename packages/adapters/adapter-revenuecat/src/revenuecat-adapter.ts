@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
 import type { RevenueCatConfig } from './config.js';
@@ -101,6 +101,30 @@ export class RevenueCatAdapter extends BaseApiMockAdapter<RevenueCatConfig> {
   readonly name = 'RevenueCat API';
   readonly basePath = '/revenuecat/v2';
   readonly versions = ['v2'];
+  readonly promptContext = {
+    resources: ['subscribers', 'entitlements', 'offerings', 'packages', 'products', 'purchases'],
+    amountFormat: 'decimal float in USD (e.g. 9.99)',
+    relationships: [
+      'entitlement → subscriber, product',
+      'package → offering, product',
+      'purchase → subscriber, product',
+    ],
+    requiredFields: {
+      subscribers: ['app_user_id', 'first_seen', 'last_seen'],
+      entitlements: ['identifier', 'product_identifier', 'purchase_date', 'expires_date'],
+      offerings: ['identifier', 'description', 'packages'],
+      products: ['identifier', 'store_identifier', 'type'],
+      purchases: ['product_id', 'purchase_date', 'store', 'is_sandbox'],
+    },
+    notes: 'Mobile subscription platform (iOS/Android). Amounts as decimal floats. Timestamps ISO 8601. Store values: app_store, play_store, stripe, amazon, promotional. Entitlements expire — check expires_date. Subscriber object contains nested subscriptions and non_subscriptions maps.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['price'],
+    statusEnums: {},
+    timestampFields: ['purchase_date', 'expires_date', 'first_seen', 'last_seen', 'original_purchase_date'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerRevenueCatTools(mcpServer, mockBaseUrl);

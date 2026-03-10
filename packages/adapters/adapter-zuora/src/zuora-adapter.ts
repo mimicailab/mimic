@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { ZuoraConfig } from './config.js';
@@ -65,6 +65,36 @@ export class ZuoraAdapter extends BaseApiMockAdapter<ZuoraConfig> {
   readonly name = 'Zuora API';
   readonly basePath = '/zuora/v1';
   readonly versions = ['v1'];
+
+  readonly promptContext = {
+    resources: ['accounts', 'subscriptions', 'rate_plans', 'invoices', 'payments', 'product_catalog', 'usage'],
+    amountFormat: 'decimal float (e.g. 29.99)',
+    relationships: [
+      'subscription → account, rate_plan',
+      'invoice → account, subscription',
+      'payment → account, invoice',
+      'rate_plan → product_catalog',
+    ],
+    requiredFields: {
+      accounts: ['id', 'name', 'accountNumber', 'status', 'currency', 'billToContact', 'createdDate'],
+      subscriptions: ['id', 'accountId', 'subscriptionNumber', 'status', 'termType', 'contractEffectiveDate', 'serviceActivationDate', 'createdDate'],
+      invoices: ['id', 'accountId', 'invoiceNumber', 'status', 'amount', 'balance', 'invoiceDate', 'dueDate'],
+      payments: ['id', 'accountId', 'amount', 'status', 'type', 'effectiveDate', 'createdDate'],
+    },
+    notes: 'Enterprise billing platform. Amounts are decimal floats. Timestamps are ISO 8601 date strings (YYYY-MM-DD). Subscription status: Draft, PendingActivation, Active, Suspended, Cancelled, Expired. Uses camelCase field names.',
+  };
+
+  readonly dataSpec: DataSpec = {
+    timestampFormat: 'iso8601',
+    amountFields: ['amount', 'balance', 'total', 'price'],
+    statusEnums: {
+      subscriptions: ['Draft', 'PendingActivation', 'Active', 'Suspended', 'Cancelled', 'Expired'],
+      accounts: ['Draft', 'Active', 'Canceled'],
+      invoices: ['Draft', 'Posted', 'Paid', 'Canceled', 'Error'],
+      payments: ['Draft', 'Processing', 'Processed', 'Error', 'Voided'],
+    },
+    timestampFields: ['createdDate', 'updatedDate', 'contractEffectiveDate', 'serviceActivationDate', 'invoiceDate', 'dueDate', 'effectiveDate'],
+  };
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerZuoraTools(mcpServer, mockBaseUrl);
