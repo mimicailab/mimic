@@ -1,0 +1,36 @@
+{
+  "name": "stripe-explorer-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "mimic run",
+    "host": "mimic host",
+    "explore": "mimic explore",
+    "demo": "mimic run && echo '\\n✅ Data generated. Starting servers...' && mimic host"
+  },
+  "dependencies": {
+    "@mimicai/adapter-adyen": "workspace:*",
+    "@mimicai/adapter-braintree": "workspace:*",
+    "@mimicai/adapter-chargebee": "workspace:*",
+    "@mimicai/adapter-checkout-com": "workspace:*",
+    "@mimicai/adapter-dlocal": "workspace:*",
+    "@mimicai/adapter-flutterwave": "workspace:*",
+    "@mimicai/adapter-gocardless": "workspace:*",
+    "@mimicai/adapter-klarna": "workspace:*",
+    "@mimicai/adapter-lemonsqueezy": "workspace:*",
+    "@mimicai/adapter-mercadopago": "workspace:*",
+    "@mimicai/adapter-mollie": "workspace:*",
+    "@mimicai/adapter-paddle": "workspace:*",
+    "@mimicai/adapter-paypal": "workspace:*",
+    "@mimicai/adapter-razorpay": "workspace:*",
+    "@mimicai/adapter-recurly": "workspace:*",
+    "@mimicai/adapter-revenuecat": "workspace:*",
+    "@mimicai/adapter-square": "workspace:*",
+    "@mimicai/adapter-stripe": "workspace:*",
+    "@mimicai/adapter-xendit": "workspace:*",
+    "@mimicai/adapter-zuora": "workspace:*",
+    "@mimicai/cli": "workspace:*",
+    "@mimicai/explorer": "workspace:*"
+  }
+}

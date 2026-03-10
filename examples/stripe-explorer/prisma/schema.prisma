@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Internal customer record — the product's source of truth for identity, access, and billing linkage.
+/// Each customer is linked to exactly one billing platform via billing_platform + external_id.
+model customers {
+  id               String    @id @default(uuid()) @db.Uuid
+  email            String    @unique @db.VarChar(255)
+  name             String    @db.VarChar(255)
+  company          String?   @db.VarChar(255)
+  /// Internal plan gate: free | starter | pro | enterprise
+  plan             String    @db.VarChar(50)
+  /// Account status: active | churned | suspended | trialing | past_due
+  status           String    @db.VarChar(50)
+  /// Which billing platform manages this customer's subscription
+  billing_platform String?   @db.VarChar(50)
+  /// External customer/subscription ID on the billing platform
+  external_id      String?   @db.VarChar(255)
+  /// Monthly recurring revenue in cents (USD). 0 for free tier.
+  mrr_cents        Int       @default(0)
+  /// ISO 4217 currency code
+  currency         String    @default("USD") @db.VarChar(3)
+  /// ISO 3166-1 alpha-2 country code
+  country          String?   @db.VarChar(2)
+  created_at       DateTime  @default(now())
+  last_login_at    DateTime?
+  trial_ends_at    DateTime?
+
+  events           events[]
+  usage_metrics    usage_metrics[]
+  invoices         invoices[]
+  payment_methods  payment_methods[]
+
+  @@index([billing_platform])
+  @@index([status])
+  @@index([plan])
+}
+
+/// Product usage events — login, api_call, feature_used, limit_hit, upgrade_clicked, export, webhook_received
+model events {
+  id          String   @id @default(uuid()) @db.Uuid
+  customer_id String   @db.Uuid
+  /// Event type: login | api_call | feature_used | limit_hit | upgrade_clicked | export | webhook_received | payment_failed
+  event_type  String   @db.VarChar(100)
+  /// Arbitrary event payload (feature name, endpoint, platform, etc.)
+  properties  Json?
+  created_at  DateTime @default(now())
+
+  customer customers @relation(fields: [customer_id], references: [id])
+
+  @@index([customer_id, created_at])
+  @@index([event_type, created_at])
+}
+
+/// Monthly usage metrics per customer — used for plan limit enforcement and billing reconciliation
+model usage_metrics {
+  id          String   @id @default(uuid()) @db.Uuid
+  customer_id String   @db.Uuid
+  /// Billing period in YYYY-MM format
+  period      String   @db.VarChar(7)
+  api_calls   Int      @default(0)
+  seats_used  Int      @default(0)
+  storage_mb  Int      @default(0)
+  bandwidth_mb Int     @default(0)
+  updated_at  DateTime @updatedAt
+
+  customer customers @relation(fields: [customer_id], references: [id])
+
+  @@unique([customer_id, period])
+  @@index([period])
+}
+
+/// Internal invoice mirror — tracks billing state across all platforms in one place
+model invoices {
+  id               String    @id @default(uuid()) @db.Uuid
+  customer_id      String    @db.Uuid
+  /// Which platform issued this invoice
+  billing_platform String    @db.VarChar(50)
+  /// External invoice ID on the billing platform
+  external_id      String    @db.VarChar(255)
+  /// Invoice status: paid | open | overdue | void | draft
+  status           String    @db.VarChar(50)
+  amount_cents     Int
+  currency         String    @default("USD") @db.VarChar(3)
+  /// Billing period start
+  period_start     DateTime?
+  /// Billing period end
+  period_end       DateTime?
+  due_date         DateTime?
+  paid_at          DateTime?
+  created_at       DateTime  @default(now())
+
+  customer customers @relation(fields: [customer_id], references: [id])
+
+  @@index([customer_id, created_at])
+  @@index([billing_platform])
+  @@index([status])
+}
+
+/// Stored payment methods — tokenized references to platform-managed instruments
+model payment_methods {
+  id               String   @id @default(uuid()) @db.Uuid
+  customer_id      String   @db.Uuid
+  /// Which platform manages this payment method
+  billing_platform String   @db.VarChar(50)
+  /// External payment method ID on the platform
+  external_id      String   @db.VarChar(255)
+  /// Type: card | bank_account | direct_debit | wallet | boleto | pix | upi
+  type             String   @db.VarChar(50)
+  /// Last 4 digits or masked identifier
+  last_four        String?  @db.VarChar(4)
+  /// Card brand or bank name
+  brand            String?  @db.VarChar(50)
+  is_default       Boolean  @default(false)
+  created_at       DateTime @default(now())
+
+  customer customers @relation(fields: [customer_id], references: [id])
+
+  @@index([customer_id])
+  @@index([billing_platform])
+}
