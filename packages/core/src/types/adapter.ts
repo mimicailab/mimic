@@ -46,9 +46,11 @@ export interface ApiMockAdapter<TConfig = unknown> extends Adapter<TConfig> {
   readonly type: 'api-mock';
   readonly basePath: string;
   readonly versions?: string[];
-  /** Platform schema context injected into LLM prompts for accurate data generation */
+  /** Canonical resource specs — the single source of platform truth */
+  readonly resourceSpecs?: AdapterResourceSpecs;
+  /** @deprecated Use resourceSpecs. Will be removed. */
   readonly promptContext?: PromptContext;
-  /** Structured data spec for post-expansion validation/repair (optional, falls back to promptContext) */
+  /** @deprecated Use resourceSpecs. Will be removed. */
   readonly dataSpec?: DataSpec;
 
   /** Register routes on the mock server */
@@ -161,6 +163,165 @@ export interface PromptContext {
    * prefixes. If not set, derived algorithmically from the adapter ID.
    */
   idPrefix?: string;
+}
+
+// ---------------------------------------------------------------------------
+// ResourceSpec — the single adapter metadata contract
+// ---------------------------------------------------------------------------
+
+/** Semantic type hints — used for prompt derivation, validation, and deterministic generation */
+export type SemanticType =
+  | 'email' | 'url' | 'phone' | 'currency_code' | 'country_code' | 'locale'
+  | 'ip_address' | 'uuid' | 'slug' | 'color_hex'
+  | 'platform_id' | 'timestamp' | 'amount' | 'percentage';
+
+export interface ResourceFieldSpec {
+  type: 'string' | 'integer' | 'number' | 'boolean' | 'object' | 'array';
+  required: boolean;
+  nullable?: boolean;
+  default?: unknown;
+  ref?: string;
+  enum?: unknown[];
+  idPrefix?: string;
+  auto?: boolean;
+  timestamp?: 'unix_seconds' | 'unix_ms' | 'iso8601';
+  isAmount?: boolean;
+  semanticType?: SemanticType;
+  description?: string;
+
+  // v2 fields — added when real adapters need them
+  examples?: unknown[];
+  properties?: Record<string, ResourceFieldSpec>;
+  items?: ResourceFieldSpec;
+  derivedFrom?: string;
+  format?: string;
+}
+
+export interface ResourceSpec {
+  objectType: string;
+  fields: Record<string, ResourceFieldSpec>;
+  volumeHint: 'reference' | 'entity';
+  refs?: string[];
+}
+
+export interface AdapterResourceSpecs {
+  platform: {
+    timestampFormat: 'unix_seconds' | 'unix_ms' | 'iso8601';
+    amountFormat: 'integer_cents' | 'decimal_string' | 'currency_object';
+    idPrefix?: string;
+  };
+  resources: Record<string, ResourceSpec>;
+}
+
+// ---------------------------------------------------------------------------
+// Derived functions (replace promptContext and dataSpec during migration)
+// ---------------------------------------------------------------------------
+
+/** Derive a PromptContext from ResourceSpec — for backward compat during migration */
+export function derivePromptContext(specs: AdapterResourceSpecs): PromptContext {
+  const resources = Object.keys(specs.resources);
+
+  const amountFormatMap: Record<string, string> = {
+    integer_cents: 'integer cents (e.g. 2999 = $29.99)',
+    decimal_string: 'decimal string (e.g. "29.99")',
+    currency_object: 'object with value and currency (e.g. {"value": "29.99", "currency": "USD"})',
+  };
+  const amountFormat = amountFormatMap[specs.platform.amountFormat] ?? specs.platform.amountFormat;
+
+  const relationships: string[] = [];
+  for (const [resourceType, spec] of Object.entries(specs.resources)) {
+    if (spec.refs && spec.refs.length > 0) {
+      relationships.push(`${resourceType} → ${spec.refs.join(', ')}`);
+    }
+  }
+
+  const requiredFields: Record<string, string[]> = {};
+  for (const [resourceType, spec] of Object.entries(specs.resources)) {
+    const required = Object.entries(spec.fields)
+      .filter(([, f]) => f.required)
+      .map(([name]) => name);
+    if (required.length > 0) {
+      requiredFields[resourceType] = required;
+    }
+  }
+
+  const notesParts: string[] = [];
+  const tsFormatMap: Record<string, string> = {
+    unix_seconds: 'All timestamps are Unix seconds.',
+    unix_ms: 'All timestamps are Unix milliseconds.',
+    iso8601: 'All timestamps are ISO-8601 strings.',
+  };
+  notesParts.push(tsFormatMap[specs.platform.timestampFormat] ?? '');
+
+  // Collect ID prefixes for notes
+  const idPrefixParts: string[] = [];
+  for (const [, spec] of Object.entries(specs.resources)) {
+    for (const [fieldName, fieldSpec] of Object.entries(spec.fields)) {
+      if (fieldSpec.idPrefix && fieldName === 'id') {
+        idPrefixParts.push(`${spec.objectType}: ${fieldSpec.idPrefix}`);
+      }
+    }
+  }
+  if (idPrefixParts.length > 0) {
+    notesParts.push(`ID prefixes: ${idPrefixParts.join(', ')}.`);
+  }
+
+  // Collect status enums for notes
+  for (const [, spec] of Object.entries(specs.resources)) {
+    const statusField = spec.fields.status;
+    if (statusField?.enum && statusField.enum.length > 0) {
+      notesParts.push(`${spec.objectType} status: ${statusField.enum.join(', ')}.`);
+    }
+  }
+
+  return {
+    resources,
+    amountFormat,
+    relationships,
+    requiredFields,
+    notes: notesParts.filter(Boolean).join(' '),
+    idPrefix: specs.platform.idPrefix,
+  };
+}
+
+/** Derive a DataSpec from ResourceSpec — for backward compat during migration */
+export function deriveDataSpec(specs: AdapterResourceSpecs): DataSpec {
+  const idPrefixes: Record<string, string> = {};
+  const amountFields: string[] = [];
+  const statusEnums: Record<string, string[]> = {};
+  const timestampFields: string[] = [];
+  const seenAmountFields = new Set<string>();
+  const seenTimestampFields = new Set<string>();
+
+  for (const [resourceType, spec] of Object.entries(specs.resources)) {
+    for (const [fieldName, fieldSpec] of Object.entries(spec.fields)) {
+      if (fieldSpec.idPrefix && fieldName === 'id') {
+        idPrefixes[resourceType] = fieldSpec.idPrefix;
+      }
+
+      if (fieldSpec.isAmount && !seenAmountFields.has(fieldName)) {
+        amountFields.push(fieldName);
+        seenAmountFields.add(fieldName);
+      }
+
+      if (fieldSpec.timestamp && !seenTimestampFields.has(fieldName)) {
+        timestampFields.push(fieldName);
+        seenTimestampFields.add(fieldName);
+      }
+
+      if (fieldName === 'status' && fieldSpec.enum && fieldSpec.enum.length > 0) {
+        statusEnums[resourceType] = fieldSpec.enum as string[];
+      }
+    }
+  }
+
+  return {
+    timestampFormat: specs.platform.timestampFormat,
+    idPrefixes: Object.keys(idPrefixes).length > 0 ? idPrefixes : undefined,
+    amountFields: amountFields.length > 0 ? amountFields : undefined,
+    statusEnums: Object.keys(statusEnums).length > 0 ? statusEnums : undefined,
+    timestampFields: timestampFields.length > 0 ? timestampFields : undefined,
+  };
 }
 
 /** Adapter manifest — used for discovery and documentation */

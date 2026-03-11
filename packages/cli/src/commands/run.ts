@@ -19,8 +19,11 @@ import {
   CostTracker,
   providerConfigFromMimic,
   DataValidator,
+  classifyTables,
+  derivePromptContext,
+  deriveDataSpec,
 } from '@mimicai/core';
-import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, Fact, FactManifest, PromptContext, DataSpec, ApiMockAdapter } from '@mimicai/core';
+import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, SchemaMapping, Fact, FactManifest, PromptContext, DataSpec, AdapterResourceSpecs, ApiMockAdapter, TableClassification } from '@mimicai/core';
 import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
 import { resolveEnvVars } from '../utils/env.js';
 
@@ -104,21 +107,21 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     throw err;
   }
 
-  // ── Resolve API adapter prompt contexts + data specs ─────────────────────
+  // ── Resolve API adapter resource specs, prompt contexts, and data specs ──
   let promptContexts: Record<string, PromptContext> | undefined;
   let dataSpecs: Record<string, DataSpec> | undefined;
+  let resourceSpecs: Record<string, AdapterResourceSpecs> | undefined;
   if (config.apis && Object.keys(config.apis).length > 0) {
     promptContexts = {};
     dataSpecs = {};
+    resourceSpecs = {};
     for (const [name, apiConfig] of Object.entries(config.apis)) {
       const adapterId = (apiConfig as { adapter?: string }).adapter ?? name;
       try {
         const pkg = `@mimicai/adapter-${adapterId}`;
-        // Resolve from user's CWD so adapters installed in the project (not the CLI) are found
         const cwdRequire = createRequire(join(process.cwd(), 'package.json'));
         const resolved = cwdRequire.resolve(pkg);
         const mod = await import(resolved);
-        // Find the adapter class by scanning exports (same pattern as host command)
         const AdapterClass = Object.values(mod).find((v) => {
           if (typeof v !== 'function') return false;
           try {
@@ -128,20 +131,28 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         }) as (new () => ApiMockAdapter) | undefined;
         if (AdapterClass) {
           const adapter = new AdapterClass();
-          if (adapter.promptContext) {
-            promptContexts![adapterId] = adapter.promptContext;
-          }
-          if (adapter.dataSpec) {
-            dataSpecs![adapterId] = adapter.dataSpec;
+          if (adapter.resourceSpecs) {
+            // ResourceSpec is the source of truth — derive legacy types from it
+            resourceSpecs![adapterId] = adapter.resourceSpecs;
+            promptContexts![adapterId] = derivePromptContext(adapter.resourceSpecs);
+            dataSpecs![adapterId] = deriveDataSpec(adapter.resourceSpecs);
+          } else {
+            // Legacy adapter without resourceSpecs — use direct properties
+            if (adapter.promptContext) {
+              promptContexts![adapterId] = adapter.promptContext;
+            }
+            if (adapter.dataSpec) {
+              dataSpecs![adapterId] = adapter.dataSpec;
+            }
           }
         }
       } catch {
-        // Adapter not installed — skip prompt context (formatApis will still list it)
         logger.debug(`Could not resolve adapter "${adapterId}" for prompt context`);
       }
     }
     if (Object.keys(promptContexts).length === 0) promptContexts = undefined;
     if (Object.keys(dataSpecs!).length === 0) dataSpecs = undefined;
+    if (Object.keys(resourceSpecs!).length === 0) resourceSpecs = undefined;
   }
 
   // ── Create shared core instances ───────────────────────────────────────
@@ -149,6 +160,62 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const llmClient = new LLMClient(providerConfigFromMimic(config), costTracker);
   const cache = new BlueprintCache(blueprintDir);
   const engine = new BlueprintEngine(llmClient, cache, costTracker);
+
+  // ── Resolve schema mapping (DB↔API) when both are configured ─────────
+  // Skip the schema mapping LLM call when all adapters have ResourceSpecs —
+  // table classification uses ResourceSpec metadata directly.
+  let schemaMapping: SchemaMapping | undefined;
+  const allAdaptersHaveSpecs = resourceSpecs && promptContexts
+    && Object.keys(promptContexts).length > 0
+    && Object.keys(promptContexts).every(id => resourceSpecs![id]);
+
+  if (schema.tables.length > 0 && promptContexts && Object.keys(promptContexts).length > 0 && !allAdaptersHaveSpecs) {
+    const adapterResources: Record<string, string[]> = {};
+    for (const [adapterId, ctx] of Object.entries(promptContexts)) {
+      adapterResources[adapterId] = ctx.resources;
+    }
+    schemaMapping = await engine.generateSchemaMapping(schema, adapterResources);
+    logger.debugFile('SCHEMA_MAPPING', schemaMapping);
+  } else if (allAdaptersHaveSpecs) {
+    logger.debug('All adapters have ResourceSpecs — skipping schema mapping LLM call');
+  }
+
+  // ── Classify tables BEFORE generation ─────────────────────────────────
+  // Classification must happen early so the blueprint engine knows which
+  // tables are identity tables (driven by API data, not independent DB archetypes).
+  const configAdapterIds = config.apis
+    ? Object.entries(config.apis).map(([name, cfg]) => (cfg as { adapter?: string }).adapter ?? name)
+    : [];
+
+  let tableClassifications: TableClassification[] | undefined;
+  const modelingOverrides = (config as Record<string, unknown>).modeling as
+    | { tableRoles?: Record<string, { role: 'identity' | 'external-mirrored' | 'internal-only'; sources?: { adapter: string; resource: string; discriminatorValue?: string }[] }> }
+    | undefined;
+
+  if (schema.tables.length > 0 && configAdapterIds.length > 0) {
+    tableClassifications = classifyTables({
+      schema,
+      schemaMapping,
+      adapterIds: configAdapterIds,
+      modelingOverrides: modelingOverrides?.tableRoles,
+    });
+
+    const identityTables = tableClassifications.filter(c => c.role === 'identity').map(c => c.table);
+    const mirroredTables = tableClassifications.filter(c => c.role === 'external-mirrored').map(c => c.table);
+    if (identityTables.length > 0 || mirroredTables.length > 0) {
+      logger.debug(
+        `Table classification: ${identityTables.length} identity, ${mirroredTables.length} mirrored, ` +
+        `${tableClassifications.length - identityTables.length - mirroredTables.length} internal-only`,
+      );
+      if (identityTables.length > 0) logger.debug(`  Identity: ${identityTables.join(', ')}`);
+      if (mirroredTables.length > 0) logger.debug(`  Mirrored: ${mirroredTables.join(', ')}`);
+    }
+  }
+
+  // Build the set of identity table names for the blueprint engine
+  const identityTableNames = new Set(
+    (tableClassifications ?? []).filter(c => c.role === 'identity').map(c => c.table),
+  );
 
   const summary: { persona: string; tables: Record<string, number>; apis?: Record<string, number> }[] = [];
   const allFacts: Fact[] = [];
@@ -183,9 +250,12 @@ async function runGenerate(opts: RunOptions): Promise<void> {
             volume: config.generate.volume,
             adapterBatchSize: config.generate.adapterBatchSize,
             adapterBatchConcurrency: config.generate.adapterBatchConcurrency,
+            identityTableNames,
           },
           config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
           promptContexts,
+          resourceSpecs,
+          tableClassifications,
         );
 
         if (!opts.dryRun) {
@@ -216,7 +286,14 @@ async function runGenerate(opts: RunOptions): Promise<void> {
 
     const expandSpin = logger.spinner('Expanding blueprint into rows...');
     try {
-      const expanded = expander.expand(blueprint, schema, config.generate.volume, promptContexts);
+      const modelingConfig = (config as Record<string, unknown>).modeling as
+        | { fieldMappings?: Record<string, Record<string, Record<string, string>>>; identityLinks?: Record<string, Record<string, { column: string; identityTable: string; apiField: string; platformColumn: string; externalIdColumn: string }[]>> }
+        | undefined;
+
+      const expanded = expander.expand(
+        blueprint, schema, config.generate.volume, promptContexts,
+        schemaMapping, tableClassifications, modelingConfig,
+      );
 
       // Log expansion output summary
       const expandedTableSummary: Record<string, number> = {};

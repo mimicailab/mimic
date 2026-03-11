@@ -262,6 +262,12 @@ export class PgSeeder implements DatabaseAdapter<PostgresConfig> {
           continue;
         }
 
+        // Coerce Unix timestamps → ISO-8601 strings for timestamp columns
+        coerceTimestampColumns(cleanRows, tableInfo);
+
+        // Repair empty-string FK references (LLM sometimes produces "" for UUIDs)
+        repairEmptyFks(cleanRows, tableInfo, schema);
+
         // Fill missing required columns with type-appropriate defaults
         fillMissingColumns(cleanRows, tableInfo);
 
@@ -565,6 +571,92 @@ function normalizeRowColumns(rows: Row[], tableInfo: TableInfo): string[] {
   }
 
   return finalColumns;
+}
+
+/**
+ * Coerce numeric Unix timestamps to ISO-8601 strings for timestamp/timestamptz/date columns.
+ * LLM-generated data often produces Unix epoch seconds instead of ISO strings.
+ */
+function coerceTimestampColumns(rows: Row[], tableInfo: TableInfo): void {
+  const tsColumns = tableInfo.columns.filter(
+    (c) => c.type === 'timestamp' || c.type === 'timestamptz' || c.type === 'date',
+  );
+  if (tsColumns.length === 0) return;
+
+  for (const col of tsColumns) {
+    for (const row of rows) {
+      const val = row[col.name];
+      if (typeof val === 'number') {
+        // Detect seconds vs milliseconds: values < 1e12 are seconds
+        const ms = val > 1e12 ? val : val * 1000;
+        row[col.name] = new Date(ms).toISOString();
+      }
+    }
+  }
+}
+
+/**
+ * Repair empty-string and unresolved FK references.
+ *
+ * Strategy:
+ *  - Nullable FK → null (safe, DB allows it)
+ *  - Non-nullable FK → look up a valid PK value from the already-merged rows
+ *    for the referenced table. If none available, log a warning and null out
+ *    the row (will be filtered by the template-placeholder filter above).
+ */
+function repairEmptyFks(rows: Row[], tableInfo: TableInfo, schema: SchemaModel): void {
+  // Build a cache of first-valid-PK per referenced table from the schema.
+  // We don't have the full data map here, so we collect valid references
+  // from other rows in the same batch that reference the same table.
+  const validRefCache = new Map<string, unknown>();
+
+  for (const fk of tableInfo.foreignKeys) {
+    for (let i = 0; i < fk.columns.length; i++) {
+      const fkCol = fk.columns[i]!;
+      const colInfo = tableInfo.columns.find(c => c.name === fkCol);
+      if (!colInfo) continue;
+
+      const refKey = `${fk.referencedTable}.${fk.referencedColumns[i]!}`;
+
+      const isBadValue = (val: unknown): boolean =>
+        val === '' ||
+        val === '{{}}' ||
+        (typeof val === 'string' && val.startsWith('{{') && val.endsWith('}}'));
+
+      // First pass: find a valid reference value from rows that already have one
+      if (!validRefCache.has(refKey)) {
+        for (const row of rows) {
+          const val = row[fkCol];
+          if (val !== undefined && val !== null && !isBadValue(val)) {
+            validRefCache.set(refKey, val);
+            break;
+          }
+        }
+      }
+
+      const fallback = validRefCache.get(refKey);
+
+      for (const row of rows) {
+        const val = row[fkCol];
+        if (!isBadValue(val)) continue;
+
+        if (colInfo.isNullable) {
+          row[fkCol] = null;
+        } else if (fallback !== undefined) {
+          row[fkCol] = fallback;
+        } else {
+          // No valid reference available and column is non-nullable.
+          // Mark the row for removal by inserting an unresolvable placeholder
+          // that the template-placeholder filter will catch.
+          warn(
+            `Cannot repair FK "${tableInfo.name}.${fkCol}" → "${fk.referencedTable}": ` +
+            `no valid reference values available and column is NOT NULL. Row will be dropped.`,
+          );
+          row[fkCol] = '{{__unresolvable__}}';
+        }
+      }
+    }
+  }
 }
 
 function getTypeDefault(col: ColumnInfo): unknown {

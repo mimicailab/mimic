@@ -118,7 +118,7 @@ const EntityArchetypeConfigSchema = z.object({
 
 const FactSchema = z.object({
   id: z.string().describe('Unique fact ID, e.g. "fact_001"'),
-  type: z.enum(['anomaly', 'overdue', 'pending', 'integrity', 'growth', 'risk', 'dispute', 'churn', 'fraud', 'compliance'])
+  type: z.enum(['anomaly', 'overdue', 'pending', 'integrity', 'growth', 'risk', 'dispute', 'churn', 'fraud', 'compliance', 'refund', 'upgrade', 'downgrade', 'payment', 'cancellation'])
     .describe('Category of the fact'),
   platform: z.string().describe('Source platform or "database", e.g. "stripe", "chargebee", "database"'),
   severity: z.enum(['info', 'warn', 'critical'])
@@ -245,3 +245,200 @@ export const AdapterBatchOutputSchema = z.object({
 });
 
 export type AdapterBatchOutput = z.infer<typeof AdapterBatchOutputSchema>;
+
+// ---------------------------------------------------------------------------
+// Schema mapping output schema (DB↔API field correspondence)
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a schema mapping output schema with `adapterId` constrained to
+ * the actual adapter IDs configured in the project.
+ *
+ * This forces the LLM to emit one mapping entry per adapter rather than
+ * using wildcards like "all". Different platforms use different resource
+ * names (e.g. Stripe "charges" vs PayPal "payments"), so per-adapter
+ * mappings are essential for correct bridge table derivation.
+ */
+export function createSchemaMappingOutputSchema(adapterIds: [string, ...string[]]) {
+  const SchemaMappingEntrySchema = z.object({
+    dbTable: z.string().describe('DB table name (e.g. "customers")'),
+    dbColumn: z.string().describe('DB column name (e.g. "external_id")'),
+    adapterId: z.enum(adapterIds).describe(
+      `Exact adapter/platform ID. Must be one of: ${adapterIds.join(', ')}. Do NOT use wildcards like "all".`,
+    ),
+    apiResource: z.string().describe('API resource type as listed for this specific platform (e.g. "customers", "charges", "payments")'),
+    apiField: z.string().describe('API field name (e.g. "id")'),
+    isBridgeTable: z.boolean().describe(
+      'True if this DB table is a projection of API data (has billing_platform + external_id columns)',
+    ),
+  });
+
+  return z.object({
+    mappings: z
+      .array(SchemaMappingEntrySchema)
+      .describe(
+        'All field-level mappings between DB columns and API resource fields. ' +
+        'Emit one entry PER adapter PER column — never use wildcards. ' +
+        'Different platforms may have different resource names for the same concept.',
+      ),
+    bridgeTables: z
+      .array(z.string())
+      .describe(
+        'DB table names that are projections of API platform data (e.g. tables with billing_platform + external_id)',
+      ),
+  });
+}
+
+export type SchemaMappingOutput = z.infer<ReturnType<typeof createSchemaMappingOutputSchema>>;
+
+// ---------------------------------------------------------------------------
+// Distribution output schema (ResourceSpec-based, PR3)
+//
+// OpenAI structured outputs require all objects to have explicit `properties`
+// and `additionalProperties: false`. z.record() is not supported. We use
+// arrays of named entries and convert to records after parsing.
+// ---------------------------------------------------------------------------
+
+const FieldOverrideEntrySchema = z.object({
+  field: z.string().describe('Field name from the ResourceSpec'),
+  value: z.string().describe('Override value (numbers/booleans as strings, e.g. "active", "2999", "true")'),
+});
+
+const VaryEntrySchema = z.object({
+  field: z.string().describe('Field name to vary per clone'),
+  type: z.enum([
+    'firstName', 'lastName', 'fullName', 'email', 'phone', 'companyName',
+    'pick', 'range', 'decimal_range', 'uuid', 'timestamp', 'date', 'derived', 'sequence',
+  ]).describe('Variation strategy'),
+  values: z.array(z.string()).optional().describe('For pick: enum values to choose from'),
+  min: z.number().optional().describe('For range/decimal_range: minimum'),
+  max: z.number().optional().describe('For range/decimal_range: maximum'),
+  template: z.string().optional().describe('For derived: template with {{fieldName}} placeholders'),
+  prefix: z.string().optional().describe('For sequence: prefix string'),
+});
+
+const ArchetypeDistributionSchema = z.object({
+  label: z.string().describe('Human-readable archetype label, e.g. "starter-plan"'),
+  weight: z.number().describe('Fraction 0-1, all weights should sum to ~1.0'),
+  fieldOverrides: z
+    .array(FieldOverrideEntrySchema)
+    .optional()
+    .describe('Constant field values that define this archetype (e.g. {field:"status", value:"active"})'),
+  vary: z
+    .array(VaryEntrySchema)
+    .optional()
+    .describe('Fields that should vary per clone with a specific strategy the LLM chooses (e.g. amount ranges, name types). Omit fields the assembler can derive from the spec.'),
+});
+
+const DistributionFactSchema = z.object({
+  id: z.string().describe('Unique fact ID, e.g. "fact_001"'),
+  type: z.enum(['anomaly', 'overdue', 'pending', 'integrity', 'growth', 'risk', 'dispute', 'churn', 'fraud', 'compliance', 'refund', 'upgrade', 'downgrade', 'payment', 'cancellation'])
+    .describe('Category of the fact'),
+  platform: z.string().describe('Source platform or "database"'),
+  severity: z.enum(['info', 'warn', 'critical'])
+    .describe('info = basic recognition, warn = reasoning required, critical = hallucination guard'),
+  detail: z.string().describe('Human-readable summary, e.g. "3 overdue invoices totalling £12,400"'),
+});
+
+const ResourceDistributionSchema = z.object({
+  count: z.number().int().describe('Target number of entities to generate'),
+  archetypes: z
+    .array(ArchetypeDistributionSchema)
+    .describe('2-8 representative sub-groups with labels and weights'),
+});
+
+const ResourceDistributionEntrySchema = z.object({
+  resource: z.string().describe('Resource type key (e.g. "customers", "subscriptions")'),
+  distribution: ResourceDistributionSchema,
+});
+
+/**
+ * Zod schema for distribution-only LLM output (OpenAI-compatible).
+ *
+ * Uses arrays instead of records because OpenAI structured outputs
+ * reject z.record(). Converted to DistributionOutput records via
+ * toDistributionOutput() after parsing.
+ */
+export const DistributionOutputSchema = z.object({
+  resources: z
+    .array(ResourceDistributionEntrySchema)
+    .describe('Distribution plan for each resource type'),
+  facts: z
+    .array(DistributionFactSchema)
+    .optional()
+    .describe('Testable facts about distribution choices — anomalies, overdue items, risk signals, growth trends. Used for auto-scenario generation.'),
+}).describe(
+  'Distribution plan: counts, archetypes with weights, field overrides, vary specs, and testable facts.',
+);
+
+export type DistributionOutputRaw = z.infer<typeof DistributionOutputSchema>;
+
+export interface DistributionOutputConverted {
+  distributions: DistributionOutput;
+  facts: DistributionFact[];
+}
+
+/**
+ * Convert the OpenAI-compatible array-based output to the record-based
+ * DistributionOutput that the resource assembler expects, plus extracted facts.
+ */
+export function toDistributionOutput(raw: DistributionOutputRaw): DistributionOutputConverted {
+  const distributions: DistributionOutput = {};
+  for (const entry of raw.resources) {
+    distributions[entry.resource] = {
+      count: entry.distribution.count,
+      archetypes: entry.distribution.archetypes.map(a => ({
+        label: a.label,
+        weight: a.weight,
+        fieldOverrides: a.fieldOverrides
+          ? Object.fromEntries(a.fieldOverrides.map(o => [o.field, coerceValue(o.value)]))
+          : undefined,
+        vary: a.vary
+          ? Object.fromEntries(a.vary.map(v => {
+              const spec: Record<string, unknown> = { type: v.type };
+              if (v.values) spec.values = v.values;
+              if (v.min !== undefined) spec.min = v.min;
+              if (v.max !== undefined) spec.max = v.max;
+              if (v.template) spec.template = v.template;
+              if (v.prefix) spec.prefix = v.prefix;
+              return [v.field, spec];
+            }))
+          : undefined,
+      })),
+    };
+  }
+
+  const facts: DistributionFact[] = (raw.facts ?? []).map(f => ({
+    id: f.id,
+    type: f.type as FactType,
+    platform: f.platform,
+    severity: f.severity as FactSeverity,
+    detail: f.detail,
+    data: {},
+  }));
+
+  return { distributions, facts };
+}
+
+function coerceValue(v: string): unknown {
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  const n = Number(v);
+  if (!Number.isNaN(n) && v.trim() !== '') return n;
+  return v;
+}
+
+import type { Fact, FactType, FactSeverity } from '../types/fact-manifest.js';
+
+export type DistributionFact = Fact;
+
+/** Re-export-compatible shape — matches resource-assembler's DistributionOutput */
+export type DistributionOutput = Record<string, {
+  count: number;
+  archetypes: {
+    label: string;
+    weight: number;
+    fieldOverrides?: Record<string, unknown>;
+    vary?: Record<string, Record<string, unknown>>;
+  }[];
+}>;

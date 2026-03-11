@@ -20,6 +20,11 @@ export type {
   DataPattern,
   RandomSpec,
   FrequencySpec,
+  SchemaMapping,
+  SchemaMappingEntry,
+  TableRole,
+  MirrorSource,
+  TableClassification,
 } from './types/blueprint.js';
 
 export type {
@@ -36,6 +41,10 @@ export type {
   HealthCheckResult,
   AdapterManifest,
   PromptContext,
+  SemanticType,
+  ResourceFieldSpec,
+  ResourceSpec,
+  AdapterResourceSpecs,
 } from './types/adapter.js';
 
 export { MimicConfigSchema } from './types/config.js';
@@ -118,6 +127,11 @@ export { BlueprintCache } from './generate/blueprint-cache.js';
 export { SeededRandom } from './generate/seed-random.js';
 export { DataValidator } from './generate/data-validator.js';
 export type { RepairStats } from './generate/data-validator.js';
+export { classifyTables } from './generate/table-classifier.js';
+export { FkResolutionError, resolveMirroredFks } from './generate/fk-resolver.js';
+export { assembleResourceArchetypes } from './generate/resource-assembler.js';
+export type { AssembleOptions } from './generate/resource-assembler.js';
+export { derivePromptContext, deriveDataSpec } from './types/adapter.js';
 
 // Seed (adapters are now in @mimicai/adapter-* packages)
 export { VectorSeeder } from './seed/vector-seeder.js';

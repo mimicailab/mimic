@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData, DataSpec } from '@mimicai/core';
+import type { EndpointDefinition, ExpandedData, DataSpec, AdapterResourceSpecs } from '@mimicai/core';
+import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
@@ -54,64 +55,228 @@ export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
     '2026-02-25.clover',
   ];
 
-  readonly promptContext = {
-    resources: ['customers', 'products', 'prices', 'subscriptions', 'invoices', 'payment_intents', 'charges', 'refunds', 'coupons', 'disputes', 'payment_links'],
-    amountFormat: 'integer cents (e.g. 2999 = $29.99)',
-    relationships: [
-      'subscription → customer, price',
-      'invoice → customer, subscription',
-      'payment_intent → customer, invoice',
-      'charge → customer, payment_intent',
-      'refund → charge',
-      'dispute → charge',
-    ],
-    requiredFields: {
-      customers: ['id', 'object', 'email', 'name', 'currency', 'created'],
-      products: ['id', 'object', 'name', 'active', 'created'],
-      prices: ['id', 'object', 'product', 'unit_amount', 'currency', 'type', 'recurring', 'active', 'created'],
-      subscriptions: ['id', 'object', 'customer', 'status', 'currency', 'items', 'current_period_start', 'current_period_end', 'created'],
-      invoices: ['id', 'object', 'customer', 'subscription', 'status', 'amount_due', 'amount_paid', 'currency', 'created'],
-      payment_intents: ['id', 'object', 'customer', 'amount', 'currency', 'status', 'created'],
-      charges: ['id', 'object', 'customer', 'amount', 'currency', 'status', 'paid', 'created'],
-      refunds: ['id', 'object', 'charge', 'amount', 'currency', 'status', 'created'],
+  readonly resourceSpecs: AdapterResourceSpecs = {
+    platform: {
+      timestampFormat: 'unix_seconds',
+      amountFormat: 'integer_cents',
+      idPrefix: 'cus_',
     },
-    notes: 'All timestamps are Unix seconds. Amounts in smallest currency unit (cents for USD). IDs prefixed with object type (cus_, sub_, in_, pi_, ch_, re_). Subscription status: active, past_due, canceled, trialing, unpaid.',
-    idPrefix: 'cus_',
+    resources: {
+      customers: {
+        objectType: 'customer',
+        volumeHint: 'entity',
+        refs: [],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'cus_' },
+          object: { type: 'string', required: true, default: 'customer' },
+          email: { type: 'string', required: true, semanticType: 'email' },
+          name: { type: 'string', required: true },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          description: { type: 'string', required: false, nullable: true },
+          metadata: { type: 'object', required: false, default: {} },
+          livemode: { type: 'boolean', required: false, default: false },
+        },
+      },
+      products: {
+        objectType: 'product',
+        volumeHint: 'reference',
+        refs: [],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'prod_' },
+          object: { type: 'string', required: true, default: 'product' },
+          name: { type: 'string', required: true },
+          active: { type: 'boolean', required: true, default: true },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          description: { type: 'string', required: false, nullable: true },
+          metadata: { type: 'object', required: false, default: {} },
+        },
+      },
+      prices: {
+        objectType: 'price',
+        volumeHint: 'reference',
+        refs: ['products'],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'price_' },
+          object: { type: 'string', required: true, default: 'price' },
+          product: { type: 'string', required: true, ref: 'products' },
+          unit_amount: { type: 'integer', required: true, isAmount: true },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          type: { type: 'string', required: true, enum: ['one_time', 'recurring'], default: 'recurring' },
+          recurring: { type: 'object', required: true, nullable: true },
+          active: { type: 'boolean', required: true, default: true },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+        },
+      },
+      subscriptions: {
+        objectType: 'subscription',
+        volumeHint: 'entity',
+        refs: ['customers', 'prices'],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'sub_' },
+          object: { type: 'string', required: true, default: 'subscription' },
+          customer: { type: 'string', required: true, ref: 'customers' },
+          status: {
+            type: 'string', required: true,
+            enum: ['active', 'past_due', 'canceled', 'trialing', 'unpaid', 'incomplete', 'incomplete_expired', 'paused'],
+          },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          items: { type: 'object', required: true },
+          current_period_start: { type: 'integer', required: true, timestamp: 'unix_seconds' },
+          current_period_end: { type: 'integer', required: true, timestamp: 'unix_seconds' },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          cancel_at: { type: 'integer', required: false, nullable: true, timestamp: 'unix_seconds' },
+          canceled_at: { type: 'integer', required: false, nullable: true, timestamp: 'unix_seconds' },
+          trial_start: { type: 'integer', required: false, nullable: true, timestamp: 'unix_seconds' },
+          trial_end: { type: 'integer', required: false, nullable: true, timestamp: 'unix_seconds' },
+          metadata: { type: 'object', required: false, default: {} },
+          livemode: { type: 'boolean', required: false, default: false },
+        },
+      },
+      invoices: {
+        objectType: 'invoice',
+        volumeHint: 'entity',
+        refs: ['customers', 'subscriptions'],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'in_' },
+          object: { type: 'string', required: true, default: 'invoice' },
+          customer: { type: 'string', required: true, ref: 'customers' },
+          subscription: { type: 'string', required: false, nullable: true, ref: 'subscriptions' },
+          status: {
+            type: 'string', required: true,
+            enum: ['draft', 'open', 'paid', 'uncollectible', 'void'],
+          },
+          amount_due: { type: 'integer', required: true, isAmount: true },
+          amount_paid: { type: 'integer', required: true, isAmount: true },
+          amount_remaining: { type: 'integer', required: false, isAmount: true },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          total: { type: 'integer', required: false, isAmount: true },
+          subtotal: { type: 'integer', required: false, isAmount: true },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+          livemode: { type: 'boolean', required: false, default: false },
+        },
+      },
+      payment_intents: {
+        objectType: 'payment_intent',
+        volumeHint: 'entity',
+        refs: ['customers', 'invoices'],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'pi_' },
+          object: { type: 'string', required: true, default: 'payment_intent' },
+          customer: { type: 'string', required: true, ref: 'customers' },
+          amount: { type: 'integer', required: true, isAmount: true },
+          amount_captured: { type: 'integer', required: false, isAmount: true },
+          amount_refunded: { type: 'integer', required: false, isAmount: true },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          status: {
+            type: 'string', required: true,
+            enum: ['requires_payment_method', 'requires_confirmation', 'requires_action', 'processing', 'requires_capture', 'canceled', 'succeeded'],
+          },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+          livemode: { type: 'boolean', required: false, default: false },
+        },
+      },
+      charges: {
+        objectType: 'charge',
+        volumeHint: 'entity',
+        refs: ['customers', 'payment_intents'],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'ch_' },
+          object: { type: 'string', required: true, default: 'charge' },
+          customer: { type: 'string', required: true, ref: 'customers' },
+          amount: { type: 'integer', required: true, isAmount: true },
+          amount_captured: { type: 'integer', required: false, isAmount: true },
+          amount_refunded: { type: 'integer', required: false, isAmount: true },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          status: {
+            type: 'string', required: true,
+            enum: ['succeeded', 'pending', 'failed'],
+          },
+          paid: { type: 'boolean', required: true },
+          payment_intent: { type: 'string', required: false, nullable: true, ref: 'payment_intents' },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+          livemode: { type: 'boolean', required: false, default: false },
+        },
+      },
+      refunds: {
+        objectType: 'refund',
+        volumeHint: 'entity',
+        refs: ['charges'],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 're_' },
+          object: { type: 'string', required: true, default: 'refund' },
+          charge: { type: 'string', required: true, ref: 'charges' },
+          amount: { type: 'integer', required: true, isAmount: true },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          status: {
+            type: 'string', required: true,
+            enum: ['succeeded', 'pending', 'failed', 'canceled'],
+          },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+        },
+      },
+      coupons: {
+        objectType: 'coupon',
+        volumeHint: 'reference',
+        refs: [],
+        fields: {
+          id: { type: 'string', required: true },
+          object: { type: 'string', required: true, default: 'coupon' },
+          percent_off: { type: 'number', required: false, nullable: true, semanticType: 'percentage' },
+          amount_off: { type: 'integer', required: false, nullable: true, isAmount: true },
+          currency: { type: 'string', required: false, nullable: true, semanticType: 'currency_code' },
+          duration: { type: 'string', required: true, enum: ['once', 'repeating', 'forever'], default: 'once' },
+          duration_in_months: { type: 'integer', required: false, nullable: true },
+          max_redemptions: { type: 'integer', required: false, nullable: true },
+          times_redeemed: { type: 'integer', required: false, default: 0 },
+          valid: { type: 'boolean', required: false, default: true },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+        },
+      },
+      disputes: {
+        objectType: 'dispute',
+        volumeHint: 'entity',
+        refs: ['charges'],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'dp_' },
+          object: { type: 'string', required: true, default: 'dispute' },
+          charge: { type: 'string', required: true, ref: 'charges' },
+          amount: { type: 'integer', required: true, isAmount: true },
+          currency: { type: 'string', required: true, semanticType: 'currency_code', default: 'usd' },
+          status: {
+            type: 'string', required: true,
+            enum: ['warning_needs_response', 'warning_under_review', 'warning_closed', 'needs_response', 'under_review', 'charge_refunded', 'won', 'lost'],
+          },
+          reason: { type: 'string', required: false },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+        },
+      },
+      payment_links: {
+        objectType: 'payment_link',
+        volumeHint: 'reference',
+        refs: [],
+        fields: {
+          id: { type: 'string', required: true, idPrefix: 'plink_' },
+          object: { type: 'string', required: true, default: 'payment_link' },
+          active: { type: 'boolean', required: true, default: true },
+          url: { type: 'string', required: true, semanticType: 'url' },
+          created: { type: 'integer', required: true, timestamp: 'unix_seconds', auto: true },
+          metadata: { type: 'object', required: false, default: {} },
+          livemode: { type: 'boolean', required: false, default: false },
+        },
+      },
+    },
   };
 
-  readonly dataSpec: DataSpec = {
-    timestampFormat: 'unix_seconds',
-    idPrefixes: {
-      customers: 'cus_',
-      subscriptions: 'sub_',
-      invoices: 'in_',
-      payment_intents: 'pi_',
-      charges: 'ch_',
-      refunds: 're_',
-      products: 'prod_',
-      prices: 'price_',
-      coupons: '',
-      disputes: 'dp_',
-      payment_links: 'plink_',
-    },
-    amountFields: [
-      'amount', 'amount_due', 'amount_paid', 'amount_remaining',
-      'amount_captured', 'amount_refunded', 'unit_amount',
-      'total', 'subtotal', 'amount_off',
-    ],
-    statusEnums: {
-      subscriptions: ['active', 'past_due', 'canceled', 'trialing', 'unpaid', 'incomplete', 'incomplete_expired', 'paused'],
-      invoices: ['draft', 'open', 'paid', 'uncollectible', 'void'],
-      payment_intents: ['requires_payment_method', 'requires_confirmation', 'requires_action', 'processing', 'requires_capture', 'canceled', 'succeeded'],
-      charges: ['succeeded', 'pending', 'failed'],
-      refunds: ['succeeded', 'pending', 'failed', 'canceled'],
-      disputes: ['warning_needs_response', 'warning_under_review', 'warning_closed', 'needs_response', 'under_review', 'charge_refunded', 'won', 'lost'],
-    },
-    timestampFields: [
-      'created', 'current_period_start', 'current_period_end',
-      'cancel_at', 'canceled_at', 'trial_start', 'trial_end',
-    ],
-  };
+  readonly promptContext = derivePromptContext(this.resourceSpecs);
+  readonly dataSpec: DataSpec = deriveDataSpec(this.resourceSpecs);
 
   registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
     registerStripeTools(mcpServer, mockBaseUrl);

@@ -1,6 +1,6 @@
 {
   "$schema": "https://github.com/mimicailab/mimic/blob/main/packages/core/mimic.schema.json",
-  "domain": "Multi-platform B2B SaaS subscription billing. A growth-stage developer tools company (NovaDev) that uses 20 billing platforms across different customer segments, geographies, and payment methods. Core product: API monitoring SaaS with starter ($29/mo), pro ($99/mo), and enterprise ($299/mo) tiers. Internal Postgres database is the source of truth for customer identity and links to each billing platform via billing_platform + external_id.",
+  "domain": "B2B SaaS subscription billing. A growth-stage developer tools company (NovaDev) that uses Stripe for all billing. Core product: API monitoring SaaS with starter ($29/mo), pro ($99/mo), and enterprise ($299/mo) tiers. Internal Postgres database is the source of truth for customer identity and links to Stripe via billing_platform + external_id.",
   "llm": {
     "provider": "openai",
     "model": "gpt-5-mini-2025-08-07",
@@ -9,7 +9,7 @@
   "personas": [
     {
       "name": "growing-startup",
-      "description": "NovaDev — a growth-stage B2B SaaS company with ~50 customers in the internal Postgres database across 3 plans (starter $29/mo, pro $99/mo, enterprise $299/mo). Customers are spread across 20 billing platforms by region and payment method: Stripe (US/EU cards), Chargebee (enterprise contracts), Paddle (EU with VAT), Braintree (PayPal-heavy customers), Adyen (global enterprise), Checkout.com (UK merchants), dLocal (LATAM), Flutterwave (Africa), GoCardless (UK direct debit), LemonSqueezy (indie developers), MercadoPago (LATAM local payments), Mollie (EU/Netherlands), PayPal (worldwide fallback), Razorpay (India), Recurly (legacy subscribers), RevenueCat (mobile app), Square (in-person), Xendit (Southeast Asia), Zuora (usage-based enterprise), Klarna (buy-now-pay-later). Each customer in the Postgres customers table has billing_platform + external_id linking to their billing platform. Mix of monthly and annual billing, some overdue invoices, a few disputed charges, recent upgrades. 6 months of history."
+      "description": "NovaDev — a growth-stage B2B SaaS company with ~30 customers in the internal Postgres database across 3 plans (starter $29/mo, pro $99/mo, enterprise $299/mo). All customers use Stripe for billing. Each customer in the Postgres customers table has billing_platform='stripe' + external_id linking to their Stripe customer ID. Mix of monthly and annual billing, some overdue invoices, a few disputed charges, recent upgrades. 6 months of history."
     }
   ],
   "generate": {
@@ -31,64 +31,6 @@
     "stripe": {
       "enabled": true,
       "mcp": true
-    },
-    "chargebee": {
-      "enabled": true,
-      "mcp": true
-    },
-    "klarna": {
-      "enabled": true
-    },
-    "adyen": {
-      "enabled": true
-    },
-    "braintree": {
-      "enabled": true
-    },
-    "checkout-com": {
-      "enabled": true
-    },
-    "dlocal": {
-      "enabled": true
-    },
-    "flutterwave": {
-      "enabled": true
-    },
-    "gocardless": {
-      "enabled": true
-    },
-    "lemonsqueezy": {
-      "enabled": true
-    },
-    "mercadopago": {
-      "enabled": true
-    },
-    "mollie": {
-      "enabled": true
-    },
-    "paddle": {
-      "enabled": true
-    },
-    "paypal": {
-      "enabled": true
-    },
-    "razorpay": {
-      "enabled": true
-    },
-    "recurly": {
-      "enabled": true
-    },
-    "revenuecat": {
-      "enabled": true
-    },
-    "square": {
-      "enabled": true
-    },
-    "xendit": {
-      "enabled": true
-    },
-    "zuora": {
-      "enabled": true
     }
   }
 }

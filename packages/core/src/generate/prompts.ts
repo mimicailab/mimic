@@ -1,4 +1,4 @@
-import type { SchemaModel, TableInfo, ColumnInfo, PromptContext } from '../types/index.js';
+import type { SchemaModel, TableInfo, ColumnInfo, PromptContext, AdapterResourceSpecs } from '../types/index.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -840,6 +840,251 @@ function formatPhase1Summary(summary: Phase1Summary, batchAdapterKeys?: string[]
   );
   lines.push('--- END DATABASE SUMMARY ---');
   return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Schema mapping prompt (DB↔API field correspondence)
+// ---------------------------------------------------------------------------
+
+export interface BuildSchemaMappingPromptOptions {
+  schema: SchemaModel;
+  /** Adapter IDs and their resource lists from promptContexts */
+  adapterResources: Record<string, string[]>;
+}
+
+/**
+ * System prompt for the schema mapping LLM call.
+ * Asks the LLM to inspect the DB schema and API resource lists,
+ * then produce field-level mappings between DB columns and API fields.
+ */
+const SCHEMA_MAPPING_SYSTEM_PROMPT = `You are a data architect analysing a database schema and a set of API platform resource types.
+
+Your task is to identify which DB tables and columns correspond to which API platform resources and fields.
+
+## Bridge Tables
+
+A "bridge table" is a DB table that acts as a projection of external API platform data.
+Bridge tables typically have columns like:
+- \`billing_platform\` or \`provider\` — identifies which API platform the row came from
+- \`external_id\` or \`platform_id\` — the ID of the entity on the external platform
+- Other columns that mirror fields from the API platform (name, email, status, amount, etc.)
+
+When a DB table is a bridge table, its rows should be **derived from** the API platform data
+rather than generated independently. This ensures the DB and API are always consistent.
+
+## Your Task
+
+1. For each DB table, determine if it is a bridge table (has platform identifier + external ID columns)
+2. For each bridge table, map its columns to the corresponding API resource fields
+3. Also map non-bridge tables that have FK references to API platform IDs (e.g. an orders table with a stripe_customer_id column)
+
+## Rules
+
+- Only map columns that have a clear semantic correspondence — do NOT guess
+- A single DB table may map to multiple API resources (e.g. a payments table may correspond to both charges and payment_intents)
+- Multiple DB columns may map to the same API resource (e.g. name, email, status all map to customers)
+- If a DB column name contains a platform prefix (e.g. \`stripe_customer_id\`), map it to that specific platform
+- **CRITICAL: Emit one mapping entry PER adapter PER column. NEVER use wildcards like "all" or "any".**
+  Different platforms use different resource names for the same concept (e.g. Stripe uses "charges" while PayPal uses "payments").
+  You MUST emit a separate mapping for each platform with its correct resource name.
+- Output ONLY valid JSON matching the provided schema. No markdown, no commentary.`;
+
+/**
+ * Build the prompt for schema mapping — a lightweight LLM call that maps
+ * DB columns to API resource fields before generation begins.
+ */
+export function buildSchemaMappingPrompt(
+  options: BuildSchemaMappingPromptOptions,
+): PromptPair {
+  const { schema, adapterResources } = options;
+
+  const lines: string[] = [
+    '--- DATABASE SCHEMA ---',
+    '',
+  ];
+
+  for (const table of schema.tables) {
+    lines.push(`Table: ${table.name}`);
+    lines.push(`  Columns: ${table.columns.map(c => `${c.name} (${c.pgType}${c.isNullable ? '' : ' NOT NULL'})`).join(', ')}`);
+    if (table.foreignKeys.length > 0) {
+      lines.push(`  FKs: ${table.foreignKeys.map(fk => `${fk.columns.join(',')} → ${fk.referencedTable}(${fk.referencedColumns.join(',')})`).join('; ')}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('--- API PLATFORMS ---');
+  lines.push('');
+  for (const [adapterId, resources] of Object.entries(adapterResources)) {
+    lines.push(`Platform: ${adapterId}`);
+    lines.push(`  Resources: ${resources.join(', ')}`);
+    lines.push('');
+  }
+
+  lines.push('Analyse the DB schema and API platforms above.');
+  lines.push('Identify bridge tables and map DB columns to API resource fields.');
+
+  return { system: SCHEMA_MAPPING_SYSTEM_PROMPT, user: lines.join('\n') };
+}
+
+// ---------------------------------------------------------------------------
+// Distribution prompt (ResourceSpec-based, PR3)
+// ---------------------------------------------------------------------------
+
+export interface BuildDistributionPromptOptions {
+  persona: { name: string; description: string };
+  domain: string;
+  /** Adapter-level resource specs */
+  resourceSpecs: Record<string, AdapterResourceSpecs>;
+  /** Current date (ISO string) */
+  currentDate?: string;
+  /** Volume string from config */
+  volume?: string;
+  /** 1-based persona index */
+  personaIndex?: number;
+  totalPersonas?: number;
+  /**
+   * Identity entity count constraints from Phase 1 DB archetypes.
+   * Maps resource type → exact count. The LLM MUST use these counts
+   * for identity resources (e.g. customers) to ensure DB↔API coordination.
+   */
+  identityEntityCounts?: Record<string, number>;
+}
+
+const DISTRIBUTION_SYSTEM_PROMPT = `You are a synthetic data architect. Your ONLY task is to decide the distribution of API entity data for a given persona.
+
+You will be given a set of API platform resource specifications. For each resource type, decide:
+1. **count** — how many entities of this type to generate (use the volume hint and persona context)
+2. **archetypes** — 2-8 representative sub-groups with labels, weights, and field overrides
+3. **facts** — testable facts about the distribution choices (anomalies, overdue items, risk signals)
+
+## Output format
+Return a JSON object with:
+- "resources": array of { "resource": "<type>", "distribution": { count, archetypes } }
+- "facts": optional array of testable facts about the generated data
+
+Each archetype has:
+- "label": human-readable name
+- "weight": fraction 0-1 (all weights sum to ~1.0)
+- "fieldOverrides": array of { "field", "value" } pairs for CONSTANT values (value is always a string)
+- "vary": optional array of { "field", "type", ... } for fields where you want a SPECIFIC variation strategy
+
+## When to use vary
+Most fields are auto-varied by the assembler from the spec (IDs, timestamps, emails, names, etc.).
+Use "vary" ONLY when you have a specific opinion the assembler cannot infer:
+- Amount ranges: { "field": "amount", "type": "range", "min": 500, "max": 2000 }
+- Specific pick values: { "field": "currency", "type": "pick", "values": ["usd", "eur"] }
+- Derived templates: { "field": "description", "type": "derived", "template": "Invoice for {{name}}" }
+Do NOT include vary for: IDs (assembler handles prefixes), timestamps, emails, names, phones.
+
+## Facts
+Include 3-10 testable facts about your distribution choices. These enable auto-scenario generation.
+Examples:
+- { "id": "fact_001", "type": "overdue", "platform": "stripe", "severity": "warn", "detail": "3 overdue invoices older than 30 days totalling $12,400" }
+- { "id": "fact_002", "type": "churn", "platform": "stripe", "severity": "info", "detail": "8% of subscriptions are canceled within first 3 months" }
+
+## Rules
+- Archetype weights must sum to ~1.0 per resource type
+- Reference data (volumeHint: "reference") should have low counts (1-10)
+- Entity data (volumeHint: "entity") scales with the persona context (20-200)
+- Field overrides set CONSTANT values that define the archetype (e.g. status, plan, currency)
+- Output ONLY valid JSON matching the provided schema. No markdown, no commentary.`;
+
+/**
+ * Build the prompt for distribution generation — a focused LLM call that
+ * produces only counts, archetypes, and weights for each API resource.
+ *
+ * The structural details (field specs, variation types, ID prefixes) are
+ * ALL provided by ResourceSpec — the LLM only decides distribution.
+ */
+export function buildDistributionPrompt(
+  options: BuildDistributionPromptOptions,
+): PromptPair {
+  const {
+    persona,
+    domain,
+    resourceSpecs,
+    currentDate,
+    volume,
+    personaIndex,
+    totalPersonas,
+    identityEntityCounts,
+  } = options;
+
+  const today = currentDate ?? new Date().toISOString().split('T')[0];
+  const startDate = volume ? computeStartDate(today, volume) : undefined;
+
+  const lines: string[] = [
+    `Domain: ${domain}`,
+    '',
+    `Persona: "${persona.name}"`,
+    persona.description,
+    '',
+  ];
+
+  if (startDate) {
+    lines.push(`Date range: ${startDate} → ${today}`);
+  }
+
+  if (personaIndex !== undefined) {
+    lines.push(`Persona index: ${personaIndex} (of ${totalPersonas ?? '?'} total)`);
+  }
+
+  // Include identity entity count constraints if provided
+  if (identityEntityCounts && Object.keys(identityEntityCounts).length > 0) {
+    lines.push('');
+    lines.push('--- IDENTITY ENTITY COUNT CONSTRAINTS (from DB coordination) ---');
+    lines.push('⚠ MANDATORY: The following resource counts are coordinated with the database.');
+    lines.push('You MUST use these EXACT counts for the specified resources:');
+    lines.push('');
+    for (const [resource, count] of Object.entries(identityEntityCounts)) {
+      lines.push(`  ${resource}: exactly ${count} entities`);
+    }
+    lines.push('');
+    lines.push('These counts ensure API entity totals match database identity table rows.');
+    lines.push('Other non-identity resources can have any appropriate count.');
+    lines.push('--- END CONSTRAINTS ---');
+  }
+
+  lines.push('', '--- API PLATFORM RESOURCES ---', '');
+
+  for (const [adapterId, specs] of Object.entries(resourceSpecs)) {
+    lines.push(`Platform: ${adapterId}`);
+    lines.push(`  Timestamp format: ${specs.platform.timestampFormat}`);
+    lines.push(`  Amount format: ${specs.platform.amountFormat}`);
+    lines.push('');
+
+    for (const [resourceType, spec] of Object.entries(specs.resources)) {
+      lines.push(`  Resource: ${resourceType} (${spec.volumeHint})`);
+
+      const requiredFields = Object.entries(spec.fields)
+        .filter(([, f]) => f.required && !f.auto)
+        .map(([name, f]) => {
+          const details: string[] = [f.type];
+          if (f.enum) details.push(`enum[${f.enum.join('|')}]`);
+          if (f.ref) details.push(`→ ${f.ref}`);
+          if (f.isAmount) details.push('amount');
+          if (f.idPrefix) details.push(`prefix:${f.idPrefix}`);
+          return `${name}(${details.join(', ')})`;
+        });
+
+      lines.push(`    Required fields: ${requiredFields.join(', ')}`);
+
+      if (spec.refs && spec.refs.length > 0) {
+        lines.push(`    References: ${spec.refs.join(', ')}`);
+      }
+
+      lines.push('');
+    }
+  }
+
+  lines.push('Return { "resources": [...], "facts": [...] }');
+  lines.push('Each resource entry: { "resource": "<type>", "distribution": { "count": N, "archetypes": [...] } }');
+  lines.push('Each archetype: { "label": "...", "weight": 0.N, "fieldOverrides": [...], "vary": [...] }');
+  lines.push('fieldOverrides: [{ "field": "status", "value": "active" }] — constant values only, values are always strings.');
+  lines.push('vary: [{ "field": "amount", "type": "range", "min": 500, "max": 5000 }] — only when you have a specific opinion the assembler cannot infer.');
+  lines.push('facts: [{ "id": "fact_001", "type": "overdue", "platform": "<adapter>", "severity": "warn", "detail": "..." }] — testable assertions about the data.');
+
+  return { system: DISTRIBUTION_SYSTEM_PROMPT, user: lines.join('\n') };
 }
 
 function formatColumn(col: ColumnInfo): string {

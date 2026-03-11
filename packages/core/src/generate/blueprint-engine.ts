@@ -1,16 +1,29 @@
 import { createHash } from 'node:crypto';
-import type { Blueprint, SchemaModel, PromptContext } from '../types/index.js';
+import type { Blueprint, SchemaModel, PromptContext, AdapterResourceSpecs, TableClassification } from '../types/index.js';
 import type { LLMClient } from '../llm/client.js';
 import type { CostTracker } from '../llm/cost-tracker.js';
 import { BlueprintCache } from './blueprint-cache.js';
+import type { SchemaMapping } from '../types/blueprint.js';
 import {
   BlueprintLLMOutputSchema,
   BlueprintLLMOutputWithApisSchema,
   AdapterBatchOutputSchema,
+  DistributionOutputSchema,
+  toDistributionOutput,
+  type DistributionOutputRaw,
+  type DistributionFact,
+  createSchemaMappingOutputSchema,
   type BlueprintLLMOutput,
   type AdapterBatchOutput,
 } from './blueprint-zod.js';
-import { buildPrompt, buildAdapterBatchPrompt, type Phase1Summary } from './prompts.js';
+import {
+  buildPrompt,
+  buildAdapterBatchPrompt,
+  buildSchemaMappingPrompt,
+  buildDistributionPrompt,
+  type Phase1Summary,
+} from './prompts.js';
+import { assembleResourceArchetypes } from './resource-assembler.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -41,6 +54,13 @@ export interface GenerateOptions {
    * external_id values in DB entities without generating full API data.
    */
   apiPlatformNames?: string[];
+  /**
+   * Identity table names from table classification.
+   * When provided, Phase 2 distribution prompts receive entity count
+   * constraints derived from Phase 1 DB archetypes, ensuring API entity
+   * counts match the coordinated DB identity table totals.
+   */
+  identityTableNames?: Set<string>;
 }
 
 export interface PersonaInput {
@@ -220,12 +240,14 @@ export class BlueprintEngine {
     options: GenerateOptions = {},
     apis?: Record<string, { adapter?: string; config?: Record<string, unknown> }>,
     promptContexts?: Record<string, PromptContext>,
+    resourceSpecs?: Record<string, AdapterResourceSpecs>,
+    tableClassifications?: TableClassification[],
   ): Promise<Blueprint> {
     const batchSize = options.adapterBatchSize ?? 5;
     const adapterKeys = apis ? Object.keys(apis) : [];
 
     // ── Fast path: few adapters → single-call generation ─────────────
-    if (adapterKeys.length <= batchSize) {
+    if (adapterKeys.length <= batchSize && !resourceSpecs) {
       return this.generate(schema, persona, domain, options, apis, promptContexts);
     }
 
@@ -246,7 +268,8 @@ export class BlueprintEngine {
     logger.step(
       `Batched generation: ${adapterKeys.length} adapters → ` +
         `Phase 1 (persona + DB) + Phase 2 (${batchCount} batch${batchCount > 1 ? 'es' : ''}, ` +
-        `${batchSize}/batch, ${maxConcurrent} concurrent)`,
+        `${batchSize}/batch, ${maxConcurrent} concurrent)` +
+        (resourceSpecs ? ' [ResourceSpec path]' : ''),
     );
 
     // ------------------------------------------------------------------
@@ -267,46 +290,228 @@ export class BlueprintEngine {
     const phase1Summary = extractPhase1Summary(phase1Blueprint);
 
     // ------------------------------------------------------------------
-    // Phase 2: Generate API data in parallel batches
+    // Extract identity entity counts per adapter from Phase 1 archetypes.
+    // This coordinates API entity counts with DB identity table totals.
     // ------------------------------------------------------------------
-    const batches: Record<
-      string,
-      { adapter?: string; config?: Record<string, unknown> }
-    >[] = [];
+    const identityEntityCounts = extractIdentityEntityCounts(
+      phase1Blueprint, options.identityTableNames, tableClassifications,
+    );
 
+    if (Object.keys(identityEntityCounts).length > 0) {
+      logger.debug(
+        `Identity entity count constraints: ${JSON.stringify(identityEntityCounts)}`,
+      );
+    }
+
+    // ==================================================================
+    // ResourceSpec path: use distribution prompt + deterministic assembly
+    // ==================================================================
+    if (resourceSpecs && Object.keys(resourceSpecs).length > 0) {
+      const mergedData = { ...phase1Blueprint.data };
+      const collectedFacts: DistributionFact[] = [];
+
+      // Partition adapters: those with resourceSpecs vs those without
+      const specAdapterIds = Object.keys(resourceSpecs);
+      const legacyAdapterIds = adapterKeys.filter(k => {
+        const adapterId = (apis![k] as { adapter?: string }).adapter ?? k;
+        return !specAdapterIds.includes(adapterId);
+      });
+
+      // ResourceSpec adapters: distribution prompt → resource assembler
+      for (const adapterId of specAdapterIds) {
+        const specs = resourceSpecs[adapterId]!;
+
+        logger.step(`ResourceSpec distribution: ${adapterId}`);
+
+        const { system, user } = buildDistributionPrompt({
+          persona: { name: persona.name, description: persona.description },
+          domain,
+          resourceSpecs: { [adapterId]: specs },
+          currentDate: new Date().toISOString().split('T')[0],
+          volume: options.volume,
+          personaIndex: options.personaIndex,
+          totalPersonas: options.totalPersonas,
+          identityEntityCounts: identityEntityCounts[adapterId],
+        });
+
+        try {
+          const result = await this.llmClient.generateObject({
+            schema: DistributionOutputSchema,
+            schemaName: 'DistributionOutput',
+            schemaDescription: `Distribution plan for ${adapterId} resources`,
+            system,
+            prompt: user,
+            label: `distribution:${persona.name}:${adapterId}`,
+            category: 'generation',
+            temperature: options.temperature,
+            maxRetries: options.maxRetries,
+          });
+
+          const { distributions, facts } = toDistributionOutput(result.object as DistributionOutputRaw);
+          const assembled = assembleResourceArchetypes(specs, distributions, {
+            personaIndex: options.personaIndex,
+          });
+
+          mergedData.apiEntityArchetypes = {
+            ...(mergedData.apiEntityArchetypes ?? {}),
+            [adapterId]: assembled,
+          };
+
+          if (facts.length > 0) {
+            collectedFacts.push(...facts);
+            logger.debug(`Collected ${facts.length} distribution facts for ${adapterId}`);
+          }
+
+          logger.success(
+            `Assembled ${Object.keys(assembled).length} resource types for ${adapterId}`,
+          );
+        } catch (error) {
+          logger.warn(
+            `Distribution generation failed for ${adapterId}: ` +
+            `${error instanceof Error ? error.message : String(error)}. ` +
+            `Falling back to legacy adapter batch prompt.`,
+          );
+
+          // Fallback: add to legacy list
+          legacyAdapterIds.push(adapterId);
+        }
+      }
+
+      // Merge distribution facts into the blueprint
+      if (collectedFacts.length > 0) {
+        const allFacts = [...(mergedData.facts ?? []), ...collectedFacts];
+        mergedData.facts = allFacts;
+        logger.debug(`Total facts in blueprint: ${allFacts.length}`);
+      }
+
+      // Legacy adapters: use existing batch prompt flow
+      if (legacyAdapterIds.length > 0 && apis) {
+        const legacyApis: Record<string, { adapter?: string; config?: Record<string, unknown> }> = {};
+        for (const key of legacyAdapterIds) {
+          if (apis[key]) legacyApis[key] = apis[key]!;
+        }
+
+        if (Object.keys(legacyApis).length > 0) {
+          const legacyBatchResult = await this.generateLegacyBatches(
+            legacyApis, persona, domain, options, promptContexts, phase1Summary,
+          );
+
+          if (legacyBatchResult) {
+            if (legacyBatchResult.apiEntityArchetypes) {
+              mergedData.apiEntityArchetypes = {
+                ...(mergedData.apiEntityArchetypes ?? {}),
+                ...legacyBatchResult.apiEntityArchetypes,
+              };
+            }
+            if (legacyBatchResult.apiEntities) {
+              mergedData.apiEntities = {
+                ...(mergedData.apiEntities ?? {}),
+                ...legacyBatchResult.apiEntities,
+              };
+            }
+          }
+        }
+      }
+
+      normalizeBlueprintData(mergedData);
+      const mergedBlueprint: Blueprint = {
+        ...phase1Blueprint,
+        data: mergedData,
+        checksum: '',
+      };
+      mergedBlueprint.checksum = computeChecksum(mergedBlueprint);
+
+      try {
+        await this.cache.set(cacheKey, mergedBlueprint);
+        logger.success(`Blueprint for "${persona.name}" cached (${cacheKey.slice(0, 8)}...)`);
+      } catch (error) {
+        logger.warn(`Failed to cache blueprint: ${error instanceof Error ? error.message : String(error)}`);
+      }
+
+      return mergedBlueprint;
+    }
+
+    // ==================================================================
+    // Legacy path: full adapter batch prompts
+    // ==================================================================
+    const legacyBatchResult = await this.generateLegacyBatches(
+      apis!, persona, domain, options, promptContexts, phase1Summary,
+    );
+
+    const mergedData = { ...phase1Blueprint.data };
+
+    if (legacyBatchResult) {
+      if (legacyBatchResult.apiEntityArchetypes) {
+        mergedData.apiEntityArchetypes = {
+          ...(mergedData.apiEntityArchetypes ?? {}),
+          ...legacyBatchResult.apiEntityArchetypes,
+        };
+      }
+      if (legacyBatchResult.apiEntities) {
+        mergedData.apiEntities = {
+          ...(mergedData.apiEntities ?? {}),
+          ...legacyBatchResult.apiEntities,
+        };
+      }
+    }
+
+    normalizeBlueprintData(mergedData);
+
+    const mergedBlueprint: Blueprint = {
+      ...phase1Blueprint,
+      data: mergedData,
+      checksum: '',
+    };
+    mergedBlueprint.checksum = computeChecksum(mergedBlueprint);
+
+    try {
+      await this.cache.set(cacheKey, mergedBlueprint);
+      logger.success(`Batched blueprint for "${persona.name}" cached (${cacheKey.slice(0, 8)}...)`);
+    } catch (error) {
+      logger.warn(`Failed to cache blueprint: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    return mergedBlueprint;
+  }
+
+  // -----------------------------------------------------------------------
+  // Legacy batch generation (adapter batch prompts)
+  // -----------------------------------------------------------------------
+
+  private async generateLegacyBatches(
+    apis: Record<string, { adapter?: string; config?: Record<string, unknown> }>,
+    persona: PersonaInput,
+    domain: string,
+    options: GenerateOptions,
+    promptContexts?: Record<string, PromptContext>,
+    phase1Summary?: Phase1Summary,
+  ): Promise<AdapterBatchOutput | null> {
+    const batchSize = options.adapterBatchSize ?? 5;
+    const adapterKeys = Object.keys(apis);
+    const batchCount = Math.ceil(adapterKeys.length / batchSize);
+    const currentDate = new Date().toISOString().split('T')[0];
+    const concurrency = options.adapterBatchConcurrency ?? 4;
+
+    const batches: Record<string, { adapter?: string; config?: Record<string, unknown> }>[] = [];
     for (let i = 0; i < adapterKeys.length; i += batchSize) {
       const batchKeys = adapterKeys.slice(i, i + batchSize);
-      const batch: Record<
-        string,
-        { adapter?: string; config?: Record<string, unknown> }
-      > = {};
-      for (const key of batchKeys) {
-        batch[key] = apis![key]!;
-      }
+      const batch: Record<string, { adapter?: string; config?: Record<string, unknown> }> = {};
+      for (const key of batchKeys) batch[key] = apis[key]!;
       batches.push(batch);
     }
 
-    const currentDate = new Date().toISOString().split('T')[0];
-
-    const concurrency = options.adapterBatchConcurrency ?? 4;
     const batchResults = await runWithConcurrency(
       batches,
       concurrency,
       async (batchApis, batchIdx) => {
         const batchAdapterNames = Object.keys(batchApis);
-        logger.step(
-          `API batch ${batchIdx + 1}/${batchCount}: ${batchAdapterNames.join(', ')}`,
-        );
+        logger.step(`API batch ${batchIdx + 1}/${batchCount}: ${batchAdapterNames.join(', ')}`);
 
-        // Build batch-specific prompt contexts
         const batchContexts: Record<string, PromptContext> = {};
         if (promptContexts) {
           for (const key of batchAdapterNames) {
-            const adapterId =
-              (batchApis[key] as { adapter?: string }).adapter ?? key;
-            if (promptContexts[adapterId]) {
-              batchContexts[adapterId] = promptContexts[adapterId]!;
-            }
+            const adapterId = (batchApis[key] as { adapter?: string }).adapter ?? key;
+            if (promptContexts[adapterId]) batchContexts[adapterId] = promptContexts[adapterId]!;
           }
         }
 
@@ -314,8 +519,7 @@ export class BlueprintEngine {
           persona: { name: persona.name, description: persona.description },
           domain,
           apis: batchApis,
-          promptContexts:
-            Object.keys(batchContexts).length > 0 ? batchContexts : undefined,
+          promptContexts: Object.keys(batchContexts).length > 0 ? batchContexts : undefined,
           currentDate,
           volume: options.volume,
           personaIndex: options.personaIndex,
@@ -327,8 +531,7 @@ export class BlueprintEngine {
           const result = await this.llmClient.generateObject({
             schema: AdapterBatchOutputSchema,
             schemaName: 'AdapterBatch',
-            schemaDescription:
-              'API entity data for a subset of adapters',
+            schemaDescription: 'API entity data for a subset of adapters',
             system,
             prompt: user,
             label: `adapter-batch:${persona.name}:${batchIdx + 1}`,
@@ -340,59 +543,95 @@ export class BlueprintEngine {
         } catch (error) {
           logger.warn(
             `API batch ${batchIdx + 1} failed: ${error instanceof Error ? error.message : String(error)}. ` +
-              `Adapters in this batch will have no pre-generated data.`,
+            `Adapters in this batch will have no pre-generated data.`,
           );
           return null;
         }
       },
     );
 
-    // ------------------------------------------------------------------
-    // Phase 3: Merge batch results into the Phase 1 blueprint
-    // ------------------------------------------------------------------
-    const mergedData = { ...phase1Blueprint.data };
+    let mergedArchetypes: AdapterBatchOutput['apiEntityArchetypes'] | undefined;
+    let mergedEntities: AdapterBatchOutput['apiEntities'] | undefined;
 
     for (const batchResult of batchResults) {
       if (!batchResult) continue;
 
       if (batchResult.apiEntityArchetypes) {
-        mergedData.apiEntityArchetypes = {
-          ...(mergedData.apiEntityArchetypes ?? {}),
-          ...batchResult.apiEntityArchetypes,
-        };
+        mergedArchetypes = { ...(mergedArchetypes ?? {}), ...batchResult.apiEntityArchetypes };
       }
-
       if (batchResult.apiEntities) {
-        mergedData.apiEntities = {
-          ...(mergedData.apiEntities ?? {}),
-          ...batchResult.apiEntities,
-        };
+        mergedEntities = { ...(mergedEntities ?? {}), ...batchResult.apiEntities };
       }
     }
 
-    // Normalize merged data before caching
-    normalizeBlueprintData(mergedData);
+    if (!mergedArchetypes && !mergedEntities) return null;
 
-    const mergedBlueprint: Blueprint = {
-      ...phase1Blueprint,
-      data: mergedData,
-      checksum: '', // recomputed below
+    return {
+      apiEntityArchetypes: mergedArchetypes ?? {},
+      apiEntities: mergedEntities,
     };
-    mergedBlueprint.checksum = computeChecksum(mergedBlueprint);
+  }
 
-    // Cache the merged result
+  // -----------------------------------------------------------------------
+  // Schema mapping (DB↔API field correspondence)
+  // -----------------------------------------------------------------------
+
+  /**
+   * Ask the LLM to map DB columns to API resource fields.
+   *
+   * This is a lightweight call that runs before generation. The result
+   * tells the expander which DB tables are "bridge tables" whose rows
+   * should be derived from API data rather than generated independently.
+   */
+  async generateSchemaMapping(
+    schema: SchemaModel,
+    adapterResources: Record<string, string[]>,
+  ): Promise<SchemaMapping> {
+    logger.step('Generating schema mapping (DB ↔ API)...');
+
+    const adapterIds = Object.keys(adapterResources);
+    if (adapterIds.length === 0) {
+      logger.warn('No adapter resources provided — skipping schema mapping.');
+      return { mappings: [], bridgeTables: [] };
+    }
+
+    const { system, user } = buildSchemaMappingPrompt({
+      schema,
+      adapterResources,
+    });
+
+    // Build a dynamic Zod schema that constrains adapterId to the actual
+    // adapter IDs — prevents the LLM from using wildcards like "all"
+    const schemaMappingSchema = createSchemaMappingOutputSchema(
+      adapterIds as [string, ...string[]],
+    );
+
     try {
-      await this.cache.set(cacheKey, mergedBlueprint);
+      const result = await this.llmClient.generateObject({
+        schema: schemaMappingSchema,
+        schemaName: 'SchemaMapping',
+        schemaDescription:
+          'Mapping between DB table columns and API platform resource fields',
+        system,
+        prompt: user,
+        label: 'schema-mapping',
+        category: 'generation',
+      });
+
+      const mapping = result.object as SchemaMapping;
       logger.success(
-        `Batched blueprint for "${persona.name}" cached (${cacheKey.slice(0, 8)}...)`,
+        `Schema mapping: ${mapping.mappings.length} field mapping(s), ` +
+          `${mapping.bridgeTables.length} bridge table(s): ${mapping.bridgeTables.join(', ') || '(none)'}`,
       );
+      return mapping;
     } catch (error) {
       logger.warn(
-        `Failed to cache blueprint: ${error instanceof Error ? error.message : String(error)}`,
+        `Schema mapping failed: ${error instanceof Error ? error.message : String(error)}. ` +
+          `Falling back to convention-based mapping.`,
       );
+      // Return empty mapping — expander will use existing crossReference logic
+      return { mappings: [], bridgeTables: [] };
     }
-
-    return mergedBlueprint;
   }
 
   /**
@@ -693,6 +932,69 @@ function extractPhase1Summary(blueprint: Blueprint): Phase1Summary {
   }
 
   return { tables, idPrefixes, platformPrefixes };
+}
+
+/**
+ * Extract identity entity counts per adapter from Phase 1 DB archetypes.
+ *
+ * For each identity table, finds the associated API adapter/resource from
+ * table classifications and computes the count per platform based on
+ * archetype billing_platform weights.
+ *
+ * Returns: { adapterId: { resourceType: count } }
+ */
+function extractIdentityEntityCounts(
+  blueprint: Blueprint,
+  identityTableNames?: Set<string>,
+  tableClassifications?: TableClassification[],
+): Record<string, Record<string, number>> {
+  const result: Record<string, Record<string, number>> = {};
+
+  if (!identityTableNames || identityTableNames.size === 0 || !tableClassifications) {
+    return result;
+  }
+
+  for (const classification of tableClassifications) {
+    if (classification.role !== 'identity') continue;
+    if (!classification.sources || classification.sources.length === 0) continue;
+
+    const tableName = classification.table;
+    const dbArchetypes = blueprint.data.entityArchetypes?.[tableName];
+    if (!dbArchetypes) continue;
+
+    const totalCount = dbArchetypes.count;
+
+    // Determine per-platform distribution from archetype billing_platform weights
+    const platformWeights: Record<string, number> = {};
+    for (const arch of dbArchetypes.archetypes) {
+      const platform = arch.fields.billing_platform as string | undefined;
+      if (platform) {
+        platformWeights[platform] = (platformWeights[platform] ?? 0) + arch.weight;
+      }
+    }
+
+    const platformNames = Object.keys(platformWeights);
+
+    if (platformNames.length > 0) {
+      const totalWeight = Object.values(platformWeights).reduce((s, w) => s + w, 0);
+      for (const source of classification.sources) {
+        const weight = platformWeights[source.adapter] ?? (1 / platformNames.length);
+        const count = Math.max(1, Math.round((weight / totalWeight) * totalCount));
+        if (!result[source.adapter]) result[source.adapter] = {};
+        result[source.adapter]![source.resource] = count;
+      }
+    } else {
+      // No explicit billing_platform split — distribute evenly across sources
+      const sources = classification.sources;
+      const countPerSource = Math.max(1, Math.round(totalCount / sources.length));
+      for (const source of sources) {
+        if (!result[source.adapter]) result[source.adapter] = {};
+        result[source.adapter]![source.resource] = countPerSource;
+      }
+    }
+  }
+
+  return result;
 }
 
 /**

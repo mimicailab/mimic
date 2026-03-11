@@ -15,10 +15,16 @@ import type {
   ApiResponseSet,
   ApiResponse,
   PromptContext,
+  SchemaMapping,
+  SchemaMappingEntry,
+  TableClassification,
 } from '../types/index.js';
 import type { Fact } from '../types/fact-manifest.js';
 import { SeededRandom } from './seed-random.js';
 import { FieldGenerator } from './field-generators.js';
+import { classifyTables } from './table-classifier.js';
+import { resolveMirroredFks } from './fk-resolver.js';
+import type { FkResolutionContext } from './fk-resolver.js';
 import { logger } from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
@@ -64,134 +70,80 @@ export class BlueprintExpander {
 
   /**
    * Expand the blueprint into a full ExpandedData payload.
+   *
+   * Uses the **three-role** classification model:
+   *
+   * - **identity** tables: always expanded DB-first (archetypes + patterns).
+   *   These are FK anchors — everything else references them.
+   * - **external-mirrored** tables: rows derived from API entity data, with
+   *   FK resolution back to identity tables. Patterns can augment volume.
+   * - **internal-only** tables: expanded normally (archetypes + patterns).
+   *
+   * When no schema mapping or classifications are available, falls back to
+   * the legacy flow for backward compatibility.
    */
   expand(
     blueprint: Blueprint,
     schema: SchemaModel,
     volume: string,
     promptContexts?: Record<string, PromptContext>,
+    schemaMapping?: SchemaMapping,
+    tableClassifications?: TableClassification[],
+    modelingConfig?: {
+      fieldMappings?: Record<string, Record<string, Record<string, string>>>;
+      identityLinks?: Record<string, Record<string, {
+        column: string;
+        identityTable: string;
+        apiField: string;
+        platformColumn: string;
+        externalIdColumn: string;
+      }[]>>;
+    },
   ): ExpandedData {
     const range = parseVolume(volume);
     const tables: Record<string, Row[]> = {};
     const idTracker = createIdTracker();
     const tableIndex = indexTables(schema);
 
-    logger.debug(
-      `Expanding blueprint "${blueprint.personaId}" over ${volume} ` +
-        `(${range.start.toISOString()} → ${range.end.toISOString()})`,
+    // Build classifications if not provided but schema mapping exists
+    const adapterIds = [
+      ...Object.keys(blueprint.data.apiEntityArchetypes ?? {}),
+      ...Object.keys(blueprint.data.apiEntities ?? {}),
+    ].filter((v, i, a) => a.indexOf(v) === i);
+
+    const classifications = tableClassifications ?? (
+      schema.tables.length > 0 && adapterIds.length > 0
+        ? classifyTables({ schema, schemaMapping, adapterIds })
+        : []
     );
 
-    // ------------------------------------------------------------------
-    // 1. Static entities + archetypes — process together per table in
-    //    topological order so parent PKs are tracked before child FKs
-    //    resolve (e.g. users before feature_flags).
-    // ------------------------------------------------------------------
-    for (const tableName of schema.insertionOrder) {
-      const tableInfo = tableIndex.get(tableName);
+    // Build lookup maps
+    const classificationMap = new Map<string, TableClassification>();
+    for (const c of classifications) classificationMap.set(c.table, c);
 
-      // 1a. Static entities
-      const entityRows = blueprint.data.entities[tableName];
-      if (entityRows && entityRows.length > 0) {
-        const rows: Row[] = [];
-        for (let i = 0; i < entityRows.length; i++) {
-          const row = { ...entityRows[i]! } as Row;
-          resolveInlineVariations(row, tableName, this.fieldGen, i);
-          assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
-          resolveReferences(row, idTracker);
-          rows.push(row);
-          trackRow(row, tableInfo, idTracker, tableName);
-        }
-        tables[tableName] = rows;
-      }
-
-      // 1b. Archetype expansion
-      const archetypeConfig = blueprint.data.entityArchetypes?.[tableName];
-      if (archetypeConfig) {
-        const existingRows = tables[tableName] ?? [];
-        const archetypeRows = this.expandArchetypes(
-          archetypeConfig,
-          tableName,
-          tableInfo,
-          idTracker,
-        );
-        tables[tableName] = [...existingRows, ...archetypeRows];
-      }
+    const identitySet = new Set<string>();
+    const mirroredSet = new Set<string>();
+    for (const c of classifications) {
+      if (c.role === 'identity') identitySet.add(c.table);
+      else if (c.role === 'external-mirrored') mirroredSet.add(c.table);
     }
 
-    // Also expand archetype tables not in insertionOrder — but ONLY when
-    // there is a DB schema. Without a schema, entityArchetypes are just
-    // LLM noise (the real data lives in apiEntityArchetypes).
-    if (blueprint.data.entityArchetypes && schema.tables.length > 0) {
-      for (const [tableName, config] of Object.entries(blueprint.data.entityArchetypes)) {
-        if (schema.insertionOrder.includes(tableName)) continue;
-        const tableInfo = tableIndex.get(tableName);
-        const existingRows = tables[tableName] ?? [];
-        const archetypeRows = this.expandArchetypes(
-          config,
-          tableName,
-          tableInfo,
-          idTracker,
-        );
-        tables[tableName] = [...existingRows, ...archetypeRows];
-      }
-    }
+    const hasThreeRoleFlow = identitySet.size > 0 || mirroredSet.size > 0;
 
-    // ------------------------------------------------------------------
-    // 2. Patterns — expand into transactional rows (only with DB schema)
-    // ------------------------------------------------------------------
-    if (schema.tables.length > 0) {
-      for (const pattern of blueprint.data.patterns) {
-        const existing = tables[pattern.targetTable] ?? [];
-        const tableInfo = tableIndex.get(pattern.targetTable);
+    logger.debug(
+      `Expanding blueprint "${blueprint.personaId}" over ${volume} ` +
+        `(${range.start.toISOString()} → ${range.end.toISOString()})` +
+        (hasThreeRoleFlow
+          ? ` [3-role: ${identitySet.size} identity, ${mirroredSet.size} mirrored]`
+          : ''),
+    );
 
-        const generated = this.expandPattern(
-          pattern,
-          range,
-          tableInfo,
-          idTracker,
-          tables,
-          tableIndex,
-        );
-
-        tables[pattern.targetTable] = [...existing, ...generated];
-      }
-    }
-
-    // ------------------------------------------------------------------
-    // 3. Post-processing: assign IDs & sort chronologically
-    // ------------------------------------------------------------------
-    for (const [tableName, rows] of Object.entries(tables)) {
-      const tableInfo = tableIndex.get(tableName);
-      sortChronologically(rows, tableInfo);
-      reassignSequentialIds(rows, tableInfo, idTracker, tableName);
-    }
-
-    // ------------------------------------------------------------------
-    // 4. Deduplicate by unique constraints
-    // ------------------------------------------------------------------
-    for (const [tableName, rows] of Object.entries(tables)) {
-      const tableInfo = tableIndex.get(tableName);
-      if (tableInfo && rows.length > 1) {
-        tables[tableName] = deduplicateByUniqueConstraints(rows, tableInfo);
-      }
-    }
-
-    // ------------------------------------------------------------------
-    // 5. Fill missing required columns with generated values
-    // ------------------------------------------------------------------
-    for (const [tableName, rows] of Object.entries(tables)) {
-      const tableInfo = tableIndex.get(tableName);
-      if (tableInfo && rows.length > 0) {
-        fillMissingRequiredColumns(rows, tableInfo, this.rng);
-      }
-    }
-
-    // ------------------------------------------------------------------
-    // 5. API entities → apiResponses
-    // ------------------------------------------------------------------
+    // ==================================================================
+    // PHASE A: Expand API entities (always done early)
+    // ==================================================================
     const apiResponses: Record<string, ApiResponseSet> = {};
 
-    // 5a. Expand apiEntityArchetypes (scalable)
+    // A1. Expand apiEntityArchetypes
     if (blueprint.data.apiEntityArchetypes) {
       for (const [adapterId, resources] of Object.entries(
         blueprint.data.apiEntityArchetypes,
@@ -205,7 +157,7 @@ export class BlueprintExpander {
       }
     }
 
-    // 5b. Pass through static apiEntities (small reference data)
+    // A2. Pass through static apiEntities
     if (blueprint.data.apiEntities) {
       for (const [adapterId, resources] of Object.entries(
         blueprint.data.apiEntities,
@@ -215,8 +167,6 @@ export class BlueprintExpander {
           resources,
           blueprint.personaId,
         );
-
-        // Merge with any archetype-expanded responses for this adapter
         if (apiResponses[adapterId]) {
           for (const [resourceType, responses] of Object.entries(
             staticSet.responses,
@@ -233,43 +183,207 @@ export class BlueprintExpander {
       }
     }
 
-    // ------------------------------------------------------------------
-    // 6. Normalize adapter keys: merge _arche / _extra suffixed keys
-    //    into canonical adapter IDs so adapters find their data.
-    // ------------------------------------------------------------------
+    // A3. Normalize, post-process, fill missing, then resolve cross-refs
     this.normalizeAdapterKeys(apiResponses);
-
-    // ------------------------------------------------------------------
-    // 7. Post-process API responses: fix FK references, timestamp
-    //    ordering, logical consistency, and stringified JSON objects.
-    // ------------------------------------------------------------------
     this.postProcessApiResponses(apiResponses);
-
-    // ------------------------------------------------------------------
-    // 7b. Resolve cross-resource FK references within each adapter.
-    //     Replaces `gen_*` placeholder IDs with real IDs from sibling
-    //     resources (e.g. subscription.customer → customers pool).
-    // ------------------------------------------------------------------
-    this.resolveApiCrossReferences(apiResponses);
-
-    // ------------------------------------------------------------------
-    // 8. Fill missing required fields for API responses using adapter
-    //    prompt contexts as the field-level spec.
-    // ------------------------------------------------------------------
     if (promptContexts) {
       this.fillMissingApiRequiredFields(apiResponses, promptContexts);
     }
+    this.resolveApiCrossReferences(apiResponses);
 
-    // ------------------------------------------------------------------
-    // 9. Cross-reference: sync API entity fields with DB rows
-    //    When both DB and API have entities with matching IDs (e.g.
-    //    cus_p1_023), copy name/email/etc from DB to API for consistency.
-    // ------------------------------------------------------------------
+    // ==================================================================
+    // PHASE B: Expand identity tables
+    // ==================================================================
+    // In 3-role flow: derive identity rows FROM API entity data so that
+    // external_id values are guaranteed to match. DB archetypes are used
+    // only as templates for DB-only columns (plan, mrr_cents, etc.).
+    // Without 3-role flow: use legacy DB-first expansion.
+    const expandDbTable = (tableName: string) => {
+      const tableInfo = tableIndex.get(tableName);
+
+      // B1. Static entities
+      const entityRows = blueprint.data.entities[tableName];
+      if (entityRows && entityRows.length > 0) {
+        const rows: Row[] = [];
+        for (let i = 0; i < entityRows.length; i++) {
+          const row = { ...entityRows[i]! } as Row;
+          resolveInlineVariations(row, tableName, this.fieldGen, i);
+          assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+          resolveReferences(row, idTracker);
+          rows.push(row);
+          trackRow(row, tableInfo, idTracker, tableName);
+        }
+        tables[tableName] = [...(tables[tableName] ?? []), ...rows];
+      }
+
+      // B2. Archetype expansion
+      const archetypeConfig = blueprint.data.entityArchetypes?.[tableName];
+      if (archetypeConfig) {
+        const existingRows = tables[tableName] ?? [];
+        const archetypeRows = this.expandArchetypes(
+          archetypeConfig,
+          tableName,
+          tableInfo,
+          idTracker,
+        );
+        tables[tableName] = [...existingRows, ...archetypeRows];
+      }
+    };
+
+    if (hasThreeRoleFlow) {
+      // Derive identity table rows from API entity data
+      for (const tableName of schema.insertionOrder) {
+        if (!identitySet.has(tableName)) continue;
+        const classification = classificationMap.get(tableName)!;
+
+        this.deriveIdentityTableRows(
+          tables, apiResponses, classification, tableIndex, idTracker,
+          blueprint, schema,
+        );
+      }
+
+      // Handle identity tables not in insertionOrder
+      for (const tableName of identitySet) {
+        if (schema.insertionOrder.includes(tableName)) continue;
+        if (tables[tableName] && tables[tableName]!.length > 0) continue;
+        const classification = classificationMap.get(tableName)!;
+
+        this.deriveIdentityTableRows(
+          tables, apiResponses, classification, tableIndex, idTracker,
+          blueprint, schema,
+        );
+      }
+
+      // Expand identity table patterns
+      if (schema.tables.length > 0) {
+        for (const pattern of blueprint.data.patterns) {
+          if (!identitySet.has(pattern.targetTable)) continue;
+          const existing = tables[pattern.targetTable] ?? [];
+          const tableInfo = tableIndex.get(pattern.targetTable);
+          const generated = this.expandPattern(
+            pattern, range, tableInfo, idTracker, tables, tableIndex,
+          );
+          tables[pattern.targetTable] = [...existing, ...generated];
+        }
+      }
+
+      // ==================================================================
+      // PHASE C: Derive external-mirrored table rows (multi-source)
+      // ==================================================================
+      for (const tableName of schema.insertionOrder) {
+        if (!mirroredSet.has(tableName)) continue;
+        const classification = classificationMap.get(tableName)!;
+
+        this.deriveMirroredTableRows(
+          tables, apiResponses, classification, tableIndex, idTracker,
+          schema, schemaMapping, modelingConfig,
+        );
+      }
+
+      // Run patterns that target mirrored tables (augment volume)
+      if (schema.tables.length > 0) {
+        for (const pattern of blueprint.data.patterns) {
+          if (!mirroredSet.has(pattern.targetTable)) continue;
+          const existing = tables[pattern.targetTable] ?? [];
+          const tableInfo = tableIndex.get(pattern.targetTable);
+          const generated = this.expandPattern(
+            pattern, range, tableInfo, idTracker, tables, tableIndex,
+          );
+          tables[pattern.targetTable] = [...existing, ...generated];
+        }
+      }
+
+      // ==================================================================
+      // PHASE D: Expand internal-only tables
+      // ==================================================================
+      for (const tableName of schema.insertionOrder) {
+        if (identitySet.has(tableName) || mirroredSet.has(tableName)) continue;
+        expandDbTable(tableName);
+      }
+
+      // Archetype tables not in insertionOrder and not classified
+      if (blueprint.data.entityArchetypes && schema.tables.length > 0) {
+        for (const [tableName, config] of Object.entries(blueprint.data.entityArchetypes)) {
+          if (schema.insertionOrder.includes(tableName)) continue;
+          if (identitySet.has(tableName) || mirroredSet.has(tableName)) continue;
+          const tableInfo = tableIndex.get(tableName);
+          const existingRows = tables[tableName] ?? [];
+          const archetypeRows = this.expandArchetypes(config, tableName, tableInfo, idTracker);
+          tables[tableName] = [...existingRows, ...archetypeRows];
+        }
+      }
+
+      // Internal-only patterns
+      if (schema.tables.length > 0) {
+        for (const pattern of blueprint.data.patterns) {
+          if (identitySet.has(pattern.targetTable) || mirroredSet.has(pattern.targetTable)) continue;
+          const existing = tables[pattern.targetTable] ?? [];
+          const tableInfo = tableIndex.get(pattern.targetTable);
+          const generated = this.expandPattern(
+            pattern, range, tableInfo, idTracker, tables, tableIndex,
+          );
+          tables[pattern.targetTable] = [...existing, ...generated];
+        }
+      }
+    } else {
+      // Legacy flow: no classification, expand all tables normally
+      for (const tableName of schema.insertionOrder) {
+        expandDbTable(tableName);
+      }
+
+      if (blueprint.data.entityArchetypes && schema.tables.length > 0) {
+        for (const [tableName, config] of Object.entries(blueprint.data.entityArchetypes)) {
+          if (schema.insertionOrder.includes(tableName)) continue;
+          const tableInfo = tableIndex.get(tableName);
+          const existingRows = tables[tableName] ?? [];
+          const archetypeRows = this.expandArchetypes(config, tableName, tableInfo, idTracker);
+          tables[tableName] = [...existingRows, ...archetypeRows];
+        }
+      }
+
+      if (schema.tables.length > 0) {
+        for (const pattern of blueprint.data.patterns) {
+          const existing = tables[pattern.targetTable] ?? [];
+          const tableInfo = tableIndex.get(pattern.targetTable);
+          const generated = this.expandPattern(
+            pattern, range, tableInfo, idTracker, tables, tableIndex,
+          );
+          tables[pattern.targetTable] = [...existing, ...generated];
+        }
+      }
+    }
+
+    // ==================================================================
+    // PHASE E: Post-process all DB tables
+    // ==================================================================
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      sortChronologically(rows, tableInfo);
+      reassignSequentialIds(rows, tableInfo, idTracker, tableName);
+    }
+
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 1) {
+        tables[tableName] = deduplicateByUniqueConstraints(rows, tableInfo);
+      }
+    }
+
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 0) {
+        fillMissingRequiredColumns(rows, tableInfo, this.rng);
+      }
+    }
+
+    // ==================================================================
+    // PHASE F: Cross-reference API ↔ DB (bidirectional sync)
+    // ==================================================================
     this.crossReferenceApiWithDb(tables, apiResponses);
 
-    // ------------------------------------------------------------------
-    // 10. Validate and reconcile facts against actual expanded data
-    // ------------------------------------------------------------------
+    // ==================================================================
+    // PHASE G: Validate facts
+    // ==================================================================
     const validatedFacts = this.validateFacts(
       blueprint.data.facts ?? [],
       tables,
@@ -959,51 +1073,8 @@ export class BlueprintExpander {
       'name', 'email', 'phone', 'status', 'currency', 'country',
     ];
 
-    // ── Phase 2: DB → API sync ──────────────────────────────────────
-    for (const responseSet of Object.values(apiResponses)) {
-      for (const responses of Object.values(responseSet.responses)) {
-        for (const apiResponse of responses) {
-          const body = apiResponse.body as Record<string, unknown>;
-          const apiId = body.id as string | undefined;
-          if (!apiId || typeof apiId !== 'string') continue;
-
-          const match = dbIdIndex.get(apiId);
-          if (!match) continue;
-          const { row: dbRow } = match;
-
-          // Direct field sync (DB → API) — only fill missing API fields
-          for (const field of DB_TO_API_FIELDS) {
-            if (body[field] !== undefined && body[field] !== null) continue;
-            if (dbRow[field] === undefined || dbRow[field] === null) continue;
-            // Skip unresolved placeholders
-            if (typeof dbRow[field] === 'string' && (dbRow[field] as string).includes('{{')) continue;
-            body[field] = dbRow[field];
-          }
-
-          // Overwrite API name/email with DB values when DB has resolved values
-          if (dbRow.email !== undefined && typeof dbRow.email === 'string' && !dbRow.email.includes('{{')) {
-            body.email = dbRow.email;
-          }
-          if (dbRow.name !== undefined && typeof dbRow.name === 'string' && !dbRow.name.includes('{{')) {
-            body.name = dbRow.name;
-          }
-          if (dbRow.company_name !== undefined && typeof dbRow.company_name === 'string') {
-            body.name = dbRow.company_name;
-          }
-
-          // Semantic field mapping (DB → API)
-          for (const [dbField, apiField] of DB_TO_API_SEMANTIC) {
-            if (body[apiField] !== undefined && body[apiField] !== null) continue;
-            if (dbRow[dbField] === undefined || dbRow[dbField] === null) continue;
-            if (typeof dbRow[dbField] === 'string' && (dbRow[dbField] as string).includes('{{')) continue;
-            body[apiField] = dbRow[dbField];
-          }
-        }
-      }
-    }
-
-    // ── Phase 3: API → DB sync (fill unresolved DB placeholders) ────
-    // Build API ID → body map
+    // ── Phase 2: Bidirectional sync ────────────────────────────────
+    // Build API ID → body map first (needed for both directions)
     const apiIdIndex = new Map<string, Record<string, unknown>>();
     for (const responseSet of Object.values(apiResponses)) {
       for (const responses of Object.values(responseSet.responses)) {
@@ -1017,27 +1088,400 @@ export class BlueprintExpander {
       }
     }
 
+    // Phase 2a: API → DB sync
+    // API data is authoritative for overlapping fields (name, email, status, etc.)
+    // because identity table rows are derived from API entities.
     for (const [_tableName, rows] of Object.entries(tables)) {
       for (const row of rows) {
-        // Find all sequence IDs in this row and look for matching API entities
         for (const [_colName, value] of Object.entries(row)) {
           if (typeof value !== 'string' || !SEQ_ID.test(value)) continue;
           const apiBody = apiIdIndex.get(value);
           if (!apiBody) continue;
 
-          // Fill unresolved placeholder values in DB row from API entity
           for (const field of API_TO_DB_FIELDS) {
+            const apiVal = apiBody[field];
+            if (apiVal === undefined || apiVal === null) continue;
             const dbVal = row[field];
-            // Only fill if DB has a placeholder or is missing
-            if (dbVal !== undefined && dbVal !== null) {
-              if (typeof dbVal !== 'string' || !dbVal.includes('{{')) continue;
+            // Overwrite if DB is missing, has a placeholder, or has a generic value
+            if (dbVal === undefined || dbVal === null) {
+              row[field] = apiVal;
+            } else if (typeof dbVal === 'string' && dbVal.includes('{{')) {
+              row[field] = apiVal;
             }
-            if (apiBody[field] === undefined || apiBody[field] === null) continue;
-            row[field] = apiBody[field];
           }
-          break; // one match per row is enough
+          break;
         }
       }
+    }
+
+    // Phase 2b: DB → API sync (fill missing API fields from DB data)
+    for (const responseSet of Object.values(apiResponses)) {
+      for (const responses of Object.values(responseSet.responses)) {
+        for (const apiResponse of responses) {
+          const body = apiResponse.body as Record<string, unknown>;
+          const apiId = body.id as string | undefined;
+          if (!apiId || typeof apiId !== 'string') continue;
+
+          const match = dbIdIndex.get(apiId);
+          if (!match) continue;
+          const { row: dbRow } = match;
+
+          // Fill missing API fields from DB (DB → API for non-overlapping)
+          for (const field of DB_TO_API_FIELDS) {
+            if (body[field] !== undefined && body[field] !== null) continue;
+            if (dbRow[field] === undefined || dbRow[field] === null) continue;
+            if (typeof dbRow[field] === 'string' && (dbRow[field] as string).includes('{{')) continue;
+            body[field] = dbRow[field];
+          }
+
+          // Semantic field mapping (DB → API) for missing fields only
+          for (const [dbField, apiField] of DB_TO_API_SEMANTIC) {
+            if (body[apiField] !== undefined && body[apiField] !== null) continue;
+            if (dbRow[dbField] === undefined || dbRow[dbField] === null) continue;
+            if (typeof dbRow[dbField] === 'string' && (dbRow[dbField] as string).includes('{{')) continue;
+            body[apiField] = dbRow[dbField];
+          }
+        }
+      }
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Mirrored table derivation (three-role flow)
+  // -----------------------------------------------------------------------
+
+  /**
+   * Derive mirrored table rows from expanded API entity data using the
+   * three-role classification model.
+   *
+   * For each source in the classification, creates DB rows by projecting
+   * API entity fields onto DB columns, then resolves FKs back to identity
+   * tables. Supports multi-source tables (e.g. invoices from Stripe +
+   * Chargebee simultaneously).
+   */
+  private deriveMirroredTableRows(
+    tables: Record<string, Row[]>,
+    apiResponses: Record<string, ApiResponseSet>,
+    classification: TableClassification,
+    tableIndex: Map<string, TableInfo>,
+    idTracker: IdTracker,
+    schema: SchemaModel,
+    schemaMapping?: SchemaMapping,
+    modelingConfig?: {
+      fieldMappings?: Record<string, Record<string, Record<string, string>>>;
+      identityLinks?: Record<string, Record<string, {
+        column: string;
+        identityTable: string;
+        apiField: string;
+        platformColumn: string;
+        externalIdColumn: string;
+      }[]>>;
+    },
+  ): void {
+    const tableName = classification.table;
+    const tableInfo = tableIndex.get(tableName);
+    const allRows: Row[] = [];
+
+    if (!classification.sources || classification.sources.length === 0) return;
+
+    // Build field mappings from schema mapping + config overrides
+    const bridgeMappings = new Map<string, SchemaMappingEntry[]>();
+    if (schemaMapping) {
+      for (const entry of schemaMapping.mappings) {
+        if (entry.dbTable !== tableName || !entry.isBridgeTable) continue;
+        const key = `${entry.adapterId}:${entry.apiResource}`;
+        const group = bridgeMappings.get(key) ?? [];
+        group.push(entry);
+        bridgeMappings.set(key, group);
+      }
+    }
+
+    const hasBillingPlatformCol = tableInfo?.columns.some(c => c.name === 'billing_platform');
+    const hasExternalIdCol = tableInfo?.columns.some(c => c.name === 'external_id');
+
+    for (const source of classification.sources) {
+      const sourceKey = `${source.adapter}.${source.resource}`;
+      const responseSet = apiResponses[source.adapter];
+      if (!responseSet) continue;
+
+      const responses = responseSet.responses[source.resource];
+      if (!responses || responses.length === 0) continue;
+
+      // Get field mappings for this source
+      const mappings = bridgeMappings.get(`${source.adapter}:${source.resource}`) ?? [];
+
+      // Get config-level field mapping overrides
+      const configFieldMap = modelingConfig?.fieldMappings?.[tableName];
+      const sourceFieldMap = configFieldMap?.[sourceKey] ?? configFieldMap?.['*'] ?? {};
+
+      const sourceRows: Row[] = [];
+
+      for (const apiResponse of responses) {
+        const body = apiResponse.body as Record<string, unknown>;
+        const row: Row = {};
+
+        // Set discriminator column
+        if (hasBillingPlatformCol && source.discriminator) {
+          row[source.discriminator.column] = source.discriminator.value;
+        } else if (hasBillingPlatformCol) {
+          row.billing_platform = source.adapter;
+        }
+
+        // Set external_id
+        if (hasExternalIdCol && typeof body.id === 'string') {
+          row.external_id = body.id;
+        }
+
+        // Map API fields → DB columns via schema mapping
+        for (const mapping of mappings) {
+          const apiValue = body[mapping.apiField];
+          if (apiValue !== undefined && apiValue !== null) {
+            row[mapping.dbColumn] = apiValue;
+          }
+        }
+
+        // Apply config-level field mapping overrides
+        for (const [dbCol, apiField] of Object.entries(sourceFieldMap)) {
+          const apiValue = body[apiField];
+          if (apiValue !== undefined && apiValue !== null) {
+            row[dbCol] = apiValue;
+          }
+        }
+
+        // Store API ref fields for FK resolution.
+        // Stripe (and similar APIs) sometimes expand refs into full objects
+        // like { id: "cus_...", object: "customer", ... } — extract the id.
+        if (classification.identityFks) {
+          for (const fkRule of classification.identityFks) {
+            let apiRefValue = body[fkRule.apiField];
+            if (apiRefValue !== undefined) {
+              if (typeof apiRefValue === 'object' && apiRefValue !== null && 'id' in apiRefValue) {
+                apiRefValue = (apiRefValue as Record<string, unknown>).id;
+              }
+              row[`_apiRef_${fkRule.apiField}`] = apiRefValue;
+            }
+          }
+        }
+
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        sourceRows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+
+      // Resolve FKs to identity tables
+      if (classification.identityFks && classification.identityFks.length > 0) {
+        const fkCtx: FkResolutionContext = {
+          identityTables: tables,
+          apiResponses,
+          classifications: [],
+          schema,
+          identityLinkOverrides: modelingConfig?.identityLinks,
+        };
+
+        const result = resolveMirroredFks(sourceRows, classification, sourceKey, fkCtx);
+
+        if (result.errors.length > 0) {
+          const errorSummary = result.errors
+            .map(e => `  - ${e.table}.${e.column}: ref "${e.apiRefValue}" → ${e.identityTable}`)
+            .join('\n');
+          throw new Error(
+            `FK resolution failed for mirrored table "${classification.table}" (source: ${sourceKey}).\n` +
+            `${result.errors.length} unresolved reference(s):\n${errorSummary}\n\n` +
+            `This is a hard error to prevent silently broken datasets. Fixes:\n` +
+            `  1. Ensure API entity ref fields produce IDs that exist in the identity table's external_id column.\n` +
+            `  2. Add explicit mappings in modeling.identityLinks to override auto-detection.\n` +
+            `  3. If cross-surface consistency is not needed for this table, reclassify it as "internal-only" in modeling.tableRoles.`,
+          );
+        }
+      }
+
+      // Clean up temporary _apiRef_ fields
+      for (const row of sourceRows) {
+        for (const key of Object.keys(row)) {
+          if (key.startsWith('_apiRef_')) delete row[key];
+        }
+      }
+
+      allRows.push(...sourceRows);
+    }
+
+    if (allRows.length > 0) {
+      tables[tableName] = [...(tables[tableName] ?? []), ...allRows];
+
+      // Dedup + fill mirrored tables immediately
+      if (tableInfo) {
+        tables[tableName] = deduplicateByUniqueConstraints(tables[tableName]!, tableInfo);
+        fillMissingRequiredColumns(tables[tableName]!, tableInfo, this.rng);
+      }
+
+      logger.debug(
+        `Mirrored table "${tableName}": derived ${allRows.length} rows from ${classification.sources!.length} source(s)`,
+      );
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Identity table derivation (three-role flow)
+  // -----------------------------------------------------------------------
+
+  /**
+   * Derive identity table rows FROM expanded API entity data.
+   *
+   * Instead of expanding DB archetypes independently (which would produce
+   * non-matching external_id values), this creates one DB row per API
+   * entity, copying the API entity's `id` into `external_id` and setting
+   * `billing_platform` from the adapter ID.
+   *
+   * DB-only columns (like `plan`, `mrr_cents`) are populated from:
+   * 1. DB archetype templates (round-robin across archetypes for variety)
+   * 2. Common field mapping from API → DB (name, email, status, etc.)
+   * 3. `fillMissingRequiredColumns` as a final safety net
+   */
+  private deriveIdentityTableRows(
+    tables: Record<string, Row[]>,
+    apiResponses: Record<string, ApiResponseSet>,
+    classification: TableClassification,
+    tableIndex: Map<string, TableInfo>,
+    idTracker: IdTracker,
+    blueprint: Blueprint,
+    schema: SchemaModel,
+  ): void {
+    const tableName = classification.table;
+    const tableInfo = tableIndex.get(tableName);
+    const allRows: Row[] = [];
+
+    if (!classification.sources || classification.sources.length === 0) {
+      logger.debug(`Identity table "${tableName}" has no sources — falling back to DB archetype expansion`);
+      return;
+    }
+
+    // Get DB archetype templates for DB-only column values
+    const dbArchetypes = blueprint.data.entityArchetypes?.[tableName];
+    const archetypeTemplates = dbArchetypes?.archetypes ?? [];
+    const distribution = archetypeTemplates.length > 0
+      ? distributeByWeight(archetypeTemplates, dbArchetypes!.count)
+      : [];
+
+    const hasBillingPlatformCol = tableInfo?.columns.some(c => c.name === 'billing_platform');
+    const hasExternalIdCol = tableInfo?.columns.some(c => c.name === 'external_id');
+
+    // Common API → DB field mappings for identity tables.
+    // Only map fields that actually exist in the target table schema.
+    const allApiToDbMappings: [string, string][] = [
+      ['name', 'name'],
+      ['email', 'email'],
+      ['phone', 'phone'],
+      ['description', 'description'],
+      ['currency', 'currency'],
+      ['status', 'status'],
+      ['metadata', 'metadata'],
+    ];
+    const dbColumnNames = new Set(tableInfo?.columns.map(c => c.name) ?? []);
+    const API_TO_DB_MAP = allApiToDbMappings.filter(([, dbCol]) => dbColumnNames.has(dbCol));
+
+    for (const source of classification.sources) {
+      const responseSet = apiResponses[source.adapter];
+      if (!responseSet) continue;
+
+      const responses = responseSet.responses[source.resource];
+      if (!responses || responses.length === 0) continue;
+
+      logger.debug(
+        `Deriving identity table "${tableName}" rows from ${source.adapter}.${source.resource} (${responses.length} entities)`,
+      );
+
+      // Build a round-robin index into archetypes for DB-only column variety.
+      // Match archetypes by billing_platform where possible.
+      const platformArchetypes = archetypeTemplates.filter(
+        a => a.fields.billing_platform === source.adapter ||
+             a.fields.billing_platform === source.discriminator?.value,
+      );
+      const templatePool = platformArchetypes.length > 0 ? platformArchetypes : archetypeTemplates;
+
+      for (let i = 0; i < responses.length; i++) {
+        const apiResponse = responses[i]!;
+        const body = apiResponse.body as Record<string, unknown>;
+        const row: Row = {};
+
+        // 1. Set billing_platform
+        if (hasBillingPlatformCol) {
+          if (source.discriminator) {
+            row[source.discriminator.column] = source.discriminator.value;
+          } else {
+            row.billing_platform = source.adapter;
+          }
+        }
+
+        // 2. Set external_id from API entity ID
+        if (hasExternalIdCol && typeof body.id === 'string') {
+          row.external_id = body.id;
+        }
+
+        // 3. Map common fields from API → DB
+        for (const [apiField, dbCol] of API_TO_DB_MAP) {
+          const apiValue = body[apiField];
+          if (apiValue !== undefined && apiValue !== null) {
+            row[dbCol] = apiValue;
+          }
+        }
+
+        // 4. Apply DB-only columns from archetype template (round-robin).
+        // Only set fields that exist in the DB schema to avoid inserting
+        // columns that don't exist in the target table.
+        if (templatePool.length > 0) {
+          const template = templatePool[i % templatePool.length]!;
+          for (const [field, value] of Object.entries(template.fields)) {
+            if (row[field] !== undefined) continue;
+            if (field === 'billing_platform' || field === 'external_id') continue;
+            if (dbColumnNames.size > 0 && !dbColumnNames.has(field)) continue;
+            row[field] = value;
+          }
+
+          for (const [field, variation] of Object.entries(template.vary)) {
+            if (row[field] !== undefined) continue;
+            if (field === 'billing_platform' || field === 'external_id') continue;
+            if (dbColumnNames.size > 0 && !dbColumnNames.has(field)) continue;
+            row[field] = this.fieldGen.resolveVariation(
+              variation, row, i, `${tableName}.${field}`,
+            );
+          }
+        }
+
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        allRows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+    }
+
+    // Also include any static entities from the blueprint
+    const entityRows = blueprint.data.entities[tableName];
+    if (entityRows && entityRows.length > 0) {
+      for (let i = 0; i < entityRows.length; i++) {
+        const row = { ...entityRows[i]! } as Row;
+        // Only include static entities that aren't already covered by API derivation
+        const extId = row.external_id as string | undefined;
+        if (extId && allRows.some(r => r.external_id === extId)) continue;
+
+        resolveInlineVariations(row, tableName, this.fieldGen, i);
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        resolveReferences(row, idTracker);
+        allRows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+    }
+
+    if (allRows.length > 0) {
+      tables[tableName] = [...(tables[tableName] ?? []), ...allRows];
+
+      // Dedup + fill identity tables immediately
+      if (tableInfo) {
+        tables[tableName] = deduplicateByUniqueConstraints(tables[tableName]!, tableInfo);
+        fillMissingRequiredColumns(tables[tableName]!, tableInfo, this.rng);
+      }
+
+      logger.debug(
+        `Identity table "${tableName}": derived ${allRows.length} rows from ${classification.sources!.length} source(s)`,
+      );
     }
   }
 
@@ -1990,10 +2434,13 @@ function inferApiFieldDefault(
     lower === 'current_billing_period' ||
     lower === 'billing_cycle' ||
     lower === 'amount_money' ||
-    lower === 'customer' ||
     lower === 'payer'
   ) {
     return {};
+  }
+  // customer/merchant are string FK refs in Stripe/payment APIs, not objects
+  if (lower === 'customer' || lower === 'merchant') {
+    return `gen_${fieldName}_${Math.random().toString(36).slice(2, 10)}`;
   }
   if (lower.endsWith('_account') || lower.endsWith('_bank_account')) {
     return body.id ? String(body.id) : `ba_${Math.random().toString(36).slice(2, 10)}`;

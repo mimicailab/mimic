@@ -15,3 +15,12 @@ export {
   BlueprintLLMOutputSchema,
 } from './blueprint-zod.js';
 export type { BlueprintLLMOutput } from './blueprint-zod.js';
+
+export { classifyTables } from './table-classifier.js';
+export type { ClassifyTablesOptions } from './table-classifier.js';
+
+export { FkResolutionError, resolveMirroredFks } from './fk-resolver.js';
+export type { FkResolutionContext, FkResolutionResult } from './fk-resolver.js';
+
+export { assembleResourceArchetypes } from './resource-assembler.js';
+export type { ResourceDistribution, DistributionOutput } from './resource-assembler.js';

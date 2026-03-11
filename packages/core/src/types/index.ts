@@ -22,6 +22,11 @@ export type {
   FieldVariation,
   EntityArchetype,
   EntityArchetypeConfig,
+  SchemaMapping,
+  SchemaMappingEntry,
+  TableRole,
+  MirrorSource,
+  TableClassification,
 } from './blueprint.js';
 
 export type {
@@ -37,7 +42,14 @@ export type {
   HealthCheckResult,
   AdapterManifest,
   PromptContext,
+  DataSpec,
+  SemanticType,
+  ResourceFieldSpec,
+  ResourceSpec,
+  AdapterResourceSpecs,
 } from './adapter.js';
+
+export { derivePromptContext, deriveDataSpec } from './adapter.js';
 
 export { MimicConfigSchema } from './config.js';
 export type { MimicConfig } from './config.js';

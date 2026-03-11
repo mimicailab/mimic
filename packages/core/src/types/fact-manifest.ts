@@ -12,7 +12,12 @@ export type FactType =
   | 'dispute'
   | 'churn'
   | 'fraud'
-  | 'compliance';
+  | 'compliance'
+  | 'refund'
+  | 'upgrade'
+  | 'downgrade'
+  | 'payment'
+  | 'cancellation';
 
 export type FactSeverity = 'info' | 'warn' | 'critical';
 
