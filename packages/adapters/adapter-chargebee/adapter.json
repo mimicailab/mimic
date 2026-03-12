@@ -1,0 +1,17 @@
+{
+  "id": "chargebee",
+  "name": "Chargebee",
+  "description": "Chargebee subscription billing mock adapter",
+  "type": "api-mock",
+  "basePath": "/chargebee",
+  "versions": ["v2"],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://apidocs.chargebee.com/docs/api",
+  "specUrl": "https://github.com/chargebee/openapi/blob/main/spec/chargebee_api_v2_pc_v2_spec.json",
+  "specFile": "chargebee-spec.json",
+  "mcp": {
+    "serverName": "mimic-chargebee",
+    "serverVersion": "0.8.0",
+    "description": "Mimic MCP server for Chargebee"
+  }
+}

@@ -4,11 +4,12 @@ export type { ChargebeeConfig } from './config.js';
 export { registerChargebeeTools, createChargebeeMcpServer, startChargebeeMcpServer } from './mcp.js';
 
 import type { AdapterManifest } from '@mimicai/adapter-sdk';
+import meta from './adapter-meta.js';
 
 export const manifest: AdapterManifest = {
-  id: 'chargebee',
-  name: 'Chargebee API',
-  type: 'api-mock',
-  description: 'Chargebee subscriptions, invoicing, billing, product catalog mock adapter',
-  versions: ['2'],
+  id: meta.id,
+  name: meta.name,
+  type: meta.type as AdapterManifest['type'],
+  description: meta.description,
+  versions: meta.versions,
 };
