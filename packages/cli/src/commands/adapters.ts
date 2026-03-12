@@ -6,6 +6,7 @@ import { loadConfig, logger } from '@mimicai/core';
 import type { ApiMockAdapter, AdapterManifest } from '@mimicai/core';
 import { readConfig, writeConfig } from '../utils/config-writer.js';
 import { detectPackageManager, installCmd, uninstallCmd } from '../utils/package-manager.js';
+import { importFromProject } from '../utils/import.js';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -113,7 +114,7 @@ async function addAdapter(
 
   // 3. Show endpoints
   try {
-    const mod = await import(/* @vite-ignore */ pkg);
+    const mod = await importFromProject(pkg, cwd);
     const AdapterClass = findAdapterClass(mod);
     if (AdapterClass) {
       const adapter = new AdapterClass();
@@ -241,7 +242,7 @@ async function listAdapters(): Promise<void> {
       let installStatus: string;
       let adapterName = adapterId;
       try {
-        const mod = await import(/* @vite-ignore */ pkg);
+        const mod = await importFromProject(pkg, cwd);
         const manifest = mod.manifest as AdapterManifest | undefined;
         adapterName = manifest?.name ?? adapterId;
         installStatus = chalk.green('installed');
@@ -278,7 +279,7 @@ async function inspectAdapter(id: string): Promise<void> {
 
   let mod: Record<string, unknown>;
   try {
-    mod = await import(/* @vite-ignore */ pkg);
+    mod = await importFromProject(pkg, cwd);
   } catch {
     logger.error(`Adapter ${chalk.cyan(pkg)} is not installed`);
     logger.info(`Install it with: ${chalk.yellow(installCmd(pm, pkg))}`);

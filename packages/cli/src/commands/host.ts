@@ -1,6 +1,5 @@
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import chalk from 'chalk';
 
@@ -16,6 +15,7 @@ import {
 } from '@mimicai/core';
 import type { SchemaModel, ExpandedData, ApiMockAdapter } from '@mimicai/core';
 import { resolveEnvVars } from '../utils/env.js';
+import { importFromProject, importFromAncestors } from '../utils/import.js';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -194,7 +194,7 @@ async function runHost(opts: HostOptions): Promise<void> {
       let mod: Record<string, unknown>;
       const pkg = `@mimicai/adapter-${adapterId}`;
       try {
-        mod = await import(/* @vite-ignore */ pkg);
+        mod = await importFromProject(pkg, process.cwd());
       } catch {
         try {
           mod = await importFromAncestors(pkg, process.argv[1]);
@@ -326,22 +326,3 @@ async function loadPersonaDataMap(
   return dataMap;
 }
 
-/**
- * Walk up from `startPath` to find a node_modules that can resolve `pkg`.
- * Works in pnpm workspaces where the adapter symlink lives in the monorepo root.
- */
-async function importFromAncestors(pkg: string, startPath: string): Promise<Record<string, unknown>> {
-  let dir = join(startPath, '..');
-  for (let i = 0; i < 10; i++) {
-    try {
-      const require = createRequire(join(dir, 'package.json'));
-      const resolved = require.resolve(pkg);
-      return await import(/* @vite-ignore */ resolved) as Record<string, unknown>;
-    } catch {
-      const parent = join(dir, '..');
-      if (parent === dir) break;
-      dir = parent;
-    }
-  }
-  throw new Error(`Cannot find ${pkg}`);
-}

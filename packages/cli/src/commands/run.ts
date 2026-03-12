@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { join } from 'node:path';
-import { createRequire } from 'node:module';
 
 import {
   loadConfig,
@@ -26,6 +25,7 @@ import {
 import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, SchemaMapping, Fact, FactManifest, PromptContext, DataSpec, AdapterResourceSpecs, ApiMockAdapter, TableClassification } from '@mimicai/core';
 import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
 import { resolveEnvVars } from '../utils/env.js';
+import { importFromProject } from '../utils/import.js';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -119,9 +119,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
       const adapterId = (apiConfig as { adapter?: string }).adapter ?? name;
       try {
         const pkg = `@mimicai/adapter-${adapterId}`;
-        const cwdRequire = createRequire(join(process.cwd(), 'package.json'));
-        const resolved = cwdRequire.resolve(pkg);
-        const mod = await import(resolved);
+        const mod = await importFromProject(pkg, process.cwd());
         const AdapterClass = Object.values(mod).find((v) => {
           if (typeof v !== 'function') return false;
           try {
@@ -162,22 +160,18 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const engine = new BlueprintEngine(llmClient, cache, costTracker);
 
   // ── Resolve schema mapping (DB↔API) when both are configured ─────────
-  // Skip the schema mapping LLM call when all adapters have ResourceSpecs —
-  // table classification uses ResourceSpec metadata directly.
+  // Always run the LLM schema mapping when both DB tables and API adapters
+  // exist. ResourceSpecs describe the API side but can't infer how a user's
+  // DB tables (which could be named anything) map to API resources.
   let schemaMapping: SchemaMapping | undefined;
-  const allAdaptersHaveSpecs = resourceSpecs && promptContexts
-    && Object.keys(promptContexts).length > 0
-    && Object.keys(promptContexts).every(id => resourceSpecs![id]);
 
-  if (schema.tables.length > 0 && promptContexts && Object.keys(promptContexts).length > 0 && !allAdaptersHaveSpecs) {
+  if (schema.tables.length > 0 && promptContexts && Object.keys(promptContexts).length > 0) {
     const adapterResources: Record<string, string[]> = {};
     for (const [adapterId, ctx] of Object.entries(promptContexts)) {
       adapterResources[adapterId] = ctx.resources;
     }
     schemaMapping = await engine.generateSchemaMapping(schema, adapterResources);
     logger.debugFile('SCHEMA_MAPPING', schemaMapping);
-  } else if (allAdaptersHaveSpecs) {
-    logger.debug('All adapters have ResourceSpecs — skipping schema mapping LLM call');
   }
 
   // ── Classify tables BEFORE generation ─────────────────────────────────
@@ -292,7 +286,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
 
       const expanded = expander.expand(
         blueprint, schema, config.generate.volume, promptContexts,
-        schemaMapping, tableClassifications, modelingConfig,
+        schemaMapping, tableClassifications, modelingConfig, resourceSpecs,
       );
 
       // Log expansion output summary
