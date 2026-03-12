@@ -4,13 +4,6 @@
   "private": true,
   "dependencies": {
     "@mimicai/cli": "workspace:*",
-    "@mimicai/adapter-stripe": "workspace:*",
-    "@mimicai/adapter-paddle": "workspace:*",
-    "@mimicai/adapter-chargebee": "workspace:*",
-    "@mimicai/adapter-gocardless": "workspace:*",
-    "@mimicai/adapter-revenuecat": "workspace:*",
-    "@mimicai/adapter-lemonsqueezy": "workspace:*",
-    "@mimicai/adapter-zuora": "workspace:*",
-    "@mimicai/adapter-recurly": "workspace:*"
+    "@mimicai/adapter-stripe": "workspace:*"
   }
 }

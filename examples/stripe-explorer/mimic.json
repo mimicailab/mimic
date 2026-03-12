@@ -31,6 +31,9 @@
     "stripe": {
       "enabled": true,
       "mcp": true
+    },
+    "plaid": {
+      "enabled": true
     }
   }
 }
