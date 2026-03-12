@@ -1,0 +1,17 @@
+{
+  "id": "recurly",
+  "name": "Recurly API",
+  "description": "Recurly subscription management, recurring billing, and revenue recognition mock adapter",
+  "type": "api-mock",
+  "basePath": "/recurly",
+  "versions": ["v2021-02-25"],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://developers.recurly.com/api/v2021-02-25",
+  "specUrl": "https://raw.githubusercontent.com/recurly/recurly-client-python/master/openapi/api.yaml",
+  "specFile": "recurly-spec.yaml",
+  "mcp": {
+    "serverName": "mimic-recurly",
+    "serverVersion": "0.5.0",
+    "description": "Mimic MCP server for Recurly subscription management and billing API"
+  }
+}

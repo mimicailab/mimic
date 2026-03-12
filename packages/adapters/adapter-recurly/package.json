@@ -1,0 +1,47 @@
+{
+  "name": "@mimicai/adapter-recurly",
+  "version": "0.8.0",
+  "type": "module",
+  "description": "Recurly API mock adapter for Mimic — subscription management, recurring billing, revenue recognition",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "bin": {
+    "mimic-mcp-recurly": "./dist/bin/mcp.js"
+  },
+  "files": [
+    "dist",
+    "adapter.json",
+    "logo.svg"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "generate": "tsx scripts/recurly-codegen.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mimicai/adapter-sdk": "workspace:*",
+    "@mimicai/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "fastify": "^5.7.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4",
+    "yaml": "^2.7.1"
+  }
+}
