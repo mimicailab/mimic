@@ -536,6 +536,13 @@ function normalizeRowColumns(rows: Row[], tableInfo: TableInfo): string[] {
   // For each column, check if every row has it
   const finalColumns: string[] = [];
   for (const colName of allCols) {
+    // Skip columns that don't exist in the DB schema (e.g. API fields
+    // like "phone" that were copied from API entities but aren't DB columns)
+    if (!colInfoMap.has(colName)) {
+      for (const row of rows) delete row[colName];
+      continue;
+    }
+
     const allPresent = rows.every(
       (row) => row[colName] !== undefined,
     );

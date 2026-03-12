@@ -1,0 +1,21 @@
+{
+  "id": "stripe",
+  "name": "Stripe API",
+  "description": "Stripe payments, billing, subscriptions mock adapter",
+  "type": "api-mock",
+  "basePath": "/stripe",
+  "versions": [
+    "2025-03-31.basil",
+    "2025-09-30.clover",
+    "2026-02-25.clover"
+  ],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://docs.stripe.com",
+  "specUrl": "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json",
+  "specFile": "stripe-spec3.json",
+  "mcp": {
+    "serverName": "mimic-stripe",
+    "serverVersion": "0.5.0",
+    "description": "Mimic MCP server for Stripe — payments, billing, subscriptions against mock data"
+  }
+}
