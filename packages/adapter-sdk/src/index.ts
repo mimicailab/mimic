@@ -1,5 +1,17 @@
-// ── Base class ──────────────────────────────────────────────────────────────
+// ── Base classes ─────────────────────────────────────────────────────────────
 export { BaseApiMockAdapter } from './base-api-mock-adapter.js';
+export { OpenApiMockAdapter } from './openapi-mock-adapter.js';
+export type {
+  OverrideHandler,
+  OverrideMap,
+  DefaultFactory,
+  ListResponse,
+  NotFoundError,
+  StripeNotFoundError,
+} from './openapi-mock-adapter.js';
+
+// ── Shared OpenAPI types (used by codegen + runtime) ─────────────────────────
+export type { GeneratedRoute, RouteMethod, RouteOperation } from './openapi-types.js';
 
 // ── Test helpers ────────────────────────────────────────────────────────────
 export { buildTestServer } from './test-helpers.js';
