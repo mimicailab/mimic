@@ -491,7 +491,7 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
       const sample = factory();
       const id = sample.id as string | undefined;
       if (!id) return '';
-      const match = id.match(/^([a-z_]+_)/);
+      const match = id.match(/^([a-zA-Z]+_?)/);
       return match ? match[1]! : '';
     } catch {
       return '';
