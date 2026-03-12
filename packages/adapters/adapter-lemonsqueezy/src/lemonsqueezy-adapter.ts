@@ -1,7 +1,7 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply, RouteHandlerMethod } from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
-import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
+import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
@@ -75,6 +75,19 @@ export class LemonSqueezyAdapter extends OpenApiMockAdapter<LemonSqueezyConfig> 
     data: Map<string, ExpandedData>,
     store: StateStore,
   ): Promise<void> {
+    // Register content type parser for JSON:API media type
+    server.addContentTypeParser(
+      'application/vnd.api+json',
+      { parseAs: 'string' },
+      (_req, body, done) => {
+        try {
+          done(null, JSON.parse(body as string));
+        } catch (err) {
+          done(err as Error, undefined);
+        }
+      },
+    );
+
     this.mountOverrides(store);
     await this.registerGeneratedRoutes(server, data, store, ns);
   }
@@ -253,7 +266,7 @@ export class LemonSqueezyAdapter extends OpenApiMockAdapter<LemonSqueezyConfig> 
       const body = this.parseBody(req);
       const obj = factory
         ? factory(body)
-        : { id: (body.id as string) || require('@mimicai/core').generateId('', 14), ...body };
+        : { id: (body.id as string) || generateId('', 14), ...body };
       store.set(ns(route.resource), obj.id as string, obj);
       return reply.code(201).send(wrapJsonApi(route.objectType ?? route.resource, obj));
     };

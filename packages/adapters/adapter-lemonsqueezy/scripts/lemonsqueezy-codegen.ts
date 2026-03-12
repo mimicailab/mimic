@@ -305,6 +305,7 @@ const RESOURCES: ResourceDef[] = [
     },
     relationships: ['store', 'customer', 'order-items', 'subscriptions', 'license-keys', 'discount-redemptions'],
     endpoints: [
+      { method: 'POST', path: '/v1/orders', operation: 'create', description: 'Create an order (mock)' },
       { method: 'GET', path: '/v1/orders/:id', operation: 'retrieve', description: 'Retrieve an order', idParam: 'id' },
       { method: 'GET', path: '/v1/orders', operation: 'list', description: 'List all orders', queryFilters: ['store_id', 'user_email'] },
     ],
@@ -346,6 +347,7 @@ const RESOURCES: ResourceDef[] = [
     },
     relationships: ['store', 'customer', 'order', 'order-item', 'product', 'variant', 'subscription-invoices', 'subscription-items'],
     endpoints: [
+      { method: 'POST', path: '/v1/subscriptions', operation: 'create', description: 'Create a subscription (mock — real LS creates via checkout)' },
       { method: 'GET', path: '/v1/subscriptions/:id', operation: 'retrieve', description: 'Retrieve a subscription', idParam: 'id' },
       { method: 'PATCH', path: '/v1/subscriptions/:id', operation: 'update', description: 'Update a subscription', idParam: 'id' },
       { method: 'DELETE', path: '/v1/subscriptions/:id', operation: 'delete', description: 'Cancel a subscription', idParam: 'id' },

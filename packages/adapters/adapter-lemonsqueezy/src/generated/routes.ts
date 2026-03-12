@@ -154,6 +154,16 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
     objectType: "prices",
   },
   {
+    method: "POST",
+    fastifyPath: "/lemonsqueezy/v1/orders",
+    stripePath: "/v1/orders",
+    resource: "orders",
+    operation: "create",
+    description: "Create an order (mock)",
+    queryFilters: [],
+    objectType: "orders",
+  },
+  {
     method: "GET",
     fastifyPath: "/lemonsqueezy/v1/orders/:id",
     stripePath: "/v1/orders/:id",
@@ -173,6 +183,16 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
     description: "List all orders",
     queryFilters: ["store_id","user_email"],
     objectType: "orders",
+  },
+  {
+    method: "POST",
+    fastifyPath: "/lemonsqueezy/v1/subscriptions",
+    stripePath: "/v1/subscriptions",
+    resource: "subscriptions",
+    operation: "create",
+    description: "Create a subscription (mock — real LS creates via checkout)",
+    queryFilters: [],
+    objectType: "subscriptions",
   },
   {
     method: "GET",
