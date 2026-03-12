@@ -79,7 +79,7 @@ export type {
 } from './types/fact-manifest.js';
 
 // Config
-export { loadConfig } from './config/index.js';
+export { loadConfig, resolveConfigEnvVar } from './config/index.js';
 export {
   DEFAULT_LLM,
   DEFAULT_GENERATE,

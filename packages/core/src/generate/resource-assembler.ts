@@ -70,21 +70,87 @@ export function assembleResourceArchetypes(
   const result: Record<string, EntityArchetypeConfig> = {};
   const personaIndex = options?.personaIndex;
 
+  // Build a lookup from objectType → spec key for plural/singular resolution.
+  // The LLM may return "charges" but the spec key is "charge".
+  const specByObjectType = new Map<string, [string, ResourceSpec]>();
+  for (const [key, spec] of Object.entries(specs.resources)) {
+    if (spec.objectType) {
+      specByObjectType.set(spec.objectType, [key, spec]);
+    }
+    specByObjectType.set(key, [key, spec]);
+  }
+
+  const assembled = new Set<string>();
+
   for (const [resourceType, distribution] of Object.entries(distributions)) {
-    const spec = specs.resources[resourceType];
-    if (!spec) continue;
+    const resolved = resolveSpecKey(resourceType, specs, specByObjectType);
+    if (!resolved) continue;
+
+    const [specKey, spec] = resolved;
+    assembled.add(specKey);
 
     const archetypes = distribution.archetypes.map(dist =>
-      buildArchetype(spec, dist, personaIndex),
+      buildArchetype(spec, dist, personaIndex, specs),
     );
 
-    result[resourceType] = {
+    result[specKey] = {
       count: distribution.count,
       archetypes,
     };
   }
 
+  // Backfill: ensure every resource in the spec gets at least some data.
+  // The LLM may skip resources it deems irrelevant, but mock endpoints
+  // need data for all resource types to be useful.
+  for (const [specKey, spec] of Object.entries(specs.resources)) {
+    if (assembled.has(specKey)) continue;
+
+    const defaultCount = spec.volumeHint === 'entity' ? 5 : 2;
+    const defaultArchetype: ArchetypeDistribution = {
+      label: 'default',
+      weight: 1.0,
+    };
+
+    result[specKey] = {
+      count: defaultCount,
+      archetypes: [buildArchetype(spec, defaultArchetype, personaIndex, specs)],
+    };
+  }
+
   return result;
+}
+
+/**
+ * Resolve a distribution key (which may be plural, e.g. "charges") to the
+ * matching spec key (singular, e.g. "charge"). Tries in order:
+ *   1. Exact match
+ *   2. Singularized (strip trailing "s" or "es")
+ *   3. Match by objectType
+ */
+function resolveSpecKey(
+  key: string,
+  specs: AdapterResourceSpecs,
+  byObjectType: Map<string, [string, ResourceSpec]>,
+): [string, ResourceSpec] | undefined {
+  if (specs.resources[key]) {
+    return [key, specs.resources[key]];
+  }
+
+  // Try singularizing common English plurals
+  const singular = key.endsWith('ies')
+    ? key.slice(0, -3) + 'y'
+    : key.endsWith('ses') || key.endsWith('zes') || key.endsWith('xes')
+      ? key.slice(0, -2)
+      : key.endsWith('s')
+        ? key.slice(0, -1)
+        : key;
+
+  if (singular !== key && specs.resources[singular]) {
+    return [singular, specs.resources[singular]];
+  }
+
+  // Try objectType lookup
+  return byObjectType.get(key) ?? byObjectType.get(singular);
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +161,7 @@ function buildArchetype(
   spec: ResourceSpec,
   dist: ArchetypeDistribution,
   personaIndex?: number,
+  allSpecs?: AdapterResourceSpecs,
 ): EntityArchetype {
   const fields: Record<string, unknown> = {};
   const vary: Record<string, FieldVariation> = {};
@@ -107,12 +174,17 @@ function buildArchetype(
     // Per-archetype LLM vary spec takes precedence over assembler derivation
     const llmVary = dist.vary?.[fieldName] as FieldVariation | undefined;
 
-    if (overrideValue !== undefined) {
-      fields[fieldName] = overrideValue;
+    // For ref fields, ignore null/empty LLM overrides — the cross-reference
+    // resolver handles these fields and needs gen_* placeholders to work.
+    const isRefNulledByLlm = fieldSpec.ref && (overrideValue === null || overrideValue === '');
+    const effectiveOverride = isRefNulledByLlm ? undefined : overrideValue;
+
+    if (effectiveOverride !== undefined) {
+      fields[fieldName] = effectiveOverride;
     } else if (llmVary) {
       vary[fieldName] = llmVary;
     } else {
-      const variation = deriveVariation(fieldName, fieldSpec, spec, personaIndex);
+      const variation = deriveVariation(fieldName, fieldSpec, spec, personaIndex, allSpecs);
       if (variation) {
         vary[fieldName] = variation;
       } else if (fieldSpec.default !== undefined) {
@@ -142,6 +214,7 @@ function deriveVariation(
   spec: ResourceFieldSpec,
   resource: ResourceSpec,
   personaIndex?: number,
+  allSpecs?: AdapterResourceSpecs,
 ): FieldVariation | null {
   // ID field with prefix → sequence, namespaced by persona to prevent collisions
   if (spec.idPrefix) {
@@ -166,10 +239,13 @@ function deriveVariation(
     return { type: 'pick', values: spec.enum };
   }
 
-  // Ref field → sequence with ref's ID prefix
+  // Ref field → generate `gen_*` placeholder that the expander's
+  // cross-reference resolver will replace with real IDs from the pool.
+  // Generate for ALL ref fields regardless of required/nullable — realistic
+  // mock data needs relationships populated. The resolver's cleanup pass
+  // will null out any unresolved placeholders for truly optional refs.
   if (spec.ref) {
-    // Will be resolved by the expander's cross-reference logic
-    return null;
+    return { type: 'sequence', prefix: `gen_${spec.ref}_` };
   }
 
   // Semantic type derivations

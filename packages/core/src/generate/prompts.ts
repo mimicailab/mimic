@@ -986,6 +986,7 @@ Examples:
 - Archetype weights must sum to ~1.0 per resource type
 - Reference data (volumeHint: "reference") should have low counts (1-10)
 - Entity data (volumeHint: "entity") scales with the persona context (20-200)
+- ⚠ IMPORTANT: You MUST include ALL listed resource types in your output. Every resource must have count >= 1. Even if the persona is unlikely to have many of a resource type (e.g. disputes, refunds), include at least a small realistic count (1-5). Mock API endpoints need data for all resource types to be useful.
 - Field overrides set CONSTANT values that define the archetype (e.g. status, plan, currency)
 - Output ONLY valid JSON matching the provided schema. No markdown, no commentary.`;
 

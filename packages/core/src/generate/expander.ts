@@ -18,6 +18,7 @@ import type {
   SchemaMapping,
   SchemaMappingEntry,
   TableClassification,
+  AdapterResourceSpecs,
 } from '../types/index.js';
 import type { Fact } from '../types/fact-manifest.js';
 import { SeededRandom } from './seed-random.js';
@@ -99,6 +100,7 @@ export class BlueprintExpander {
         externalIdColumn: string;
       }[]>>;
     },
+    resourceSpecs?: Record<string, AdapterResourceSpecs>,
   ): ExpandedData {
     const range = parseVolume(volume);
     const tables: Record<string, Row[]> = {};
@@ -189,7 +191,7 @@ export class BlueprintExpander {
     if (promptContexts) {
       this.fillMissingApiRequiredFields(apiResponses, promptContexts);
     }
-    this.resolveApiCrossReferences(apiResponses);
+    this.resolveApiCrossReferences(apiResponses, resourceSpecs);
 
     // ==================================================================
     // PHASE B: Expand identity tables
@@ -953,34 +955,61 @@ export class BlueprintExpander {
    */
   private resolveApiCrossReferences(
     apiResponses: Record<string, ApiResponseSet>,
+    allResourceSpecs?: Record<string, AdapterResourceSpecs>,
   ): void {
-    // FK field name → parent resource type (convention-based)
-    const FK_MAP: Record<string, string> = {
-      customer: 'customers', customer_id: 'customers', customerId: 'customers',
-      plan_id: 'plans', planId: 'plans',
-      product_id: 'products', productId: 'products',
-      price_id: 'prices', priceId: 'prices',
-      subscription_id: 'subscriptions', subscriptionId: 'subscriptions',
-      invoice_id: 'invoices', invoiceId: 'invoices',
-      charge_id: 'charges', chargeId: 'charges',
-      payment_intent_id: 'payment_intents',
-      payment_method_id: 'payment_methods',
-      accountId: 'accounts', account_id: 'accounts',
-      merchantAccountId: 'merchants',
-      mandate_id: 'mandates',
-      order_id: 'orders', orderId: 'orders',
-      refund_id: 'refunds',
-      payout_id: 'payouts',
-      item_id: 'items',
-      source_id: 'sources',
-      transaction_id: 'transactions',
-      user_id: 'users', userId: 'users',
-      team_id: 'teams', teamId: 'teams',
-      channel_id: 'channels', channelId: 'channels',
+    // Hardcoded fallback FK map for adapters without ResourceSpecs
+    const FALLBACK_FK_MAP: Record<string, string> = {
+      customer: 'customer', customer_id: 'customer', customerId: 'customer',
+      plan_id: 'plan', planId: 'plan',
+      product_id: 'product', productId: 'product',
+      price_id: 'price', priceId: 'price',
+      subscription_id: 'subscription', subscriptionId: 'subscription',
+      invoice_id: 'invoice', invoiceId: 'invoice',
+      charge_id: 'charge', chargeId: 'charge',
+      payment_intent_id: 'payment_intent', payment_intent: 'payment_intent',
+      payment_method_id: 'payment_method', payment_method: 'payment_method',
+      accountId: 'account', account_id: 'account',
+      merchantAccountId: 'merchant',
+      mandate_id: 'mandate', mandate: 'mandate',
+      order_id: 'order', orderId: 'order',
+      refund_id: 'refund',
+      payout_id: 'payout',
+      item_id: 'item',
+      source_id: 'source',
+      transaction_id: 'transaction',
+      user_id: 'user', userId: 'user',
+      team_id: 'team', teamId: 'team',
+      channel_id: 'channel', channelId: 'channel',
     };
 
     for (const responseSet of Object.values(apiResponses)) {
-      // Build ID pools per resource type within this adapter
+      // Build the FK map: field name → target resource key.
+      // Prefer ResourceSpecs (explicit ref declarations) over the hardcoded fallback.
+      const fkMap = new Map<string, string>();
+      const adapterSpecs = allResourceSpecs?.[responseSet.adapterId];
+
+      if (adapterSpecs) {
+        // Build from ResourceSpecs — each field with a `ref` property tells us
+        // exactly which resource it references
+        for (const [, spec] of Object.entries(adapterSpecs.resources)) {
+          for (const [fieldName, fieldSpec] of Object.entries(spec.fields)) {
+            if (fieldSpec.ref && !fkMap.has(fieldName)) {
+              fkMap.set(fieldName, fieldSpec.ref);
+            }
+          }
+        }
+      }
+
+      // Merge hardcoded fallback for any fields not already covered
+      for (const [field, target] of Object.entries(FALLBACK_FK_MAP)) {
+        if (!fkMap.has(field)) {
+          fkMap.set(field, target);
+        }
+      }
+
+      // Build ID pools per resource type within this adapter.
+      // Register under both singular and plural forms so lookups
+      // work regardless of whether the adapter uses "customer" or "customers".
       const idPools = new Map<string, string[]>();
       for (const [resourceType, responses] of Object.entries(responseSet.responses)) {
         const ids: string[] = [];
@@ -988,16 +1017,23 @@ export class BlueprintExpander {
           const body = r.body as Record<string, unknown>;
           if (typeof body.id === 'string') ids.push(body.id);
         }
-        if (ids.length > 0) idPools.set(resourceType, ids);
+        if (ids.length > 0) {
+          idPools.set(resourceType, ids);
+          const plural = resourceType.endsWith('s') ? resourceType : resourceType + 's';
+          const singular = resourceType.endsWith('s') ? resourceType.slice(0, -1) : resourceType;
+          if (!idPools.has(plural)) idPools.set(plural, ids);
+          if (!idPools.has(singular)) idPools.set(singular, ids);
+        }
       }
 
       if (idPools.size === 0) continue;
 
       let resolvedCount = 0;
+      let nulledCount = 0;
       for (const responses of Object.values(responseSet.responses)) {
         for (const r of responses) {
           const body = r.body as Record<string, unknown>;
-          for (const [field, parentResource] of Object.entries(FK_MAP)) {
+          for (const [field, parentResource] of fkMap) {
             const val = body[field];
             if (typeof val !== 'string') continue;
             if (!val.startsWith('gen_')) continue;
@@ -1005,14 +1041,17 @@ export class BlueprintExpander {
             if (pool && pool.length > 0) {
               body[field] = this.rng.pick(pool);
               resolvedCount++;
+            } else {
+              body[field] = null;
+              nulledCount++;
             }
           }
         }
       }
 
-      if (resolvedCount > 0) {
+      if (resolvedCount > 0 || nulledCount > 0) {
         logger.debug(
-          `Resolved ${resolvedCount} cross-resource FK(s) in ${responseSet.adapterId}`,
+          `Cross-ref resolution in ${responseSet.adapterId}: ${resolvedCount} resolved, ${nulledCount} nulled (no pool)`,
         );
       }
     }
