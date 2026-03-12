@@ -1,0 +1,17 @@
+{
+  "id": "paddle",
+  "name": "Paddle API",
+  "description": "Paddle Billing subscriptions, transactions, and revenue management mock adapter",
+  "type": "api-mock",
+  "basePath": "/paddle",
+  "versions": ["1"],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://developer.paddle.com",
+  "specUrl": "https://raw.githubusercontent.com/PaddleHQ/paddle-openapi/main/v1/openapi.yaml",
+  "specFile": "paddle-spec.yaml",
+  "mcp": {
+    "serverName": "mimic-paddle",
+    "serverVersion": "0.5.0",
+    "description": "Mimic MCP server for Paddle — subscriptions, transactions, billing against mock data"
+  }
+}
