@@ -544,7 +544,7 @@ function normalizeRowColumns(rows: Row[], tableInfo: TableInfo): string[] {
     }
 
     const allPresent = rows.every(
-      (row) => row[colName] !== undefined,
+      (row) => row[colName] !== undefined && row[colName] !== null,
     );
 
     if (allPresent) {
@@ -556,7 +556,8 @@ function normalizeRowColumns(rows: Row[], tableInfo: TableInfo): string[] {
     const colInfo = colInfoMap.get(colName);
 
     if (colInfo?.hasDefault) {
-      // DB has a default — drop this column entirely, remove from rows that have it
+      // DB has a default — drop this column entirely when any row is missing/null,
+      // so Postgres applies the default consistently instead of receiving NULL.
       for (const row of rows) {
         delete row[colName];
       }
