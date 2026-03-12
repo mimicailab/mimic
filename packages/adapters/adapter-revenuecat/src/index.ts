@@ -4,11 +4,12 @@ export type { RevenueCatConfig } from './config.js';
 export { registerRevenueCatTools, createRevenueCatMcpServer, startRevenueCatMcpServer } from './mcp.js';
 
 import type { AdapterManifest } from '@mimicai/adapter-sdk';
+import meta from './adapter-meta.js';
 
 export const manifest: AdapterManifest = {
-  id: 'revenuecat',
-  name: 'RevenueCat API',
-  type: 'api-mock',
-  description: 'RevenueCat mobile subscriptions, in-app purchases, entitlements, offerings mock adapter',
-  versions: ['v2'],
+  id: meta.id,
+  name: meta.name,
+  type: meta.type as AdapterManifest['type'],
+  description: meta.description,
+  versions: meta.versions,
 };
