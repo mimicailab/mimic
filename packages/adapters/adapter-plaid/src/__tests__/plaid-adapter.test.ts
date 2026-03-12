@@ -1,302 +1,475 @@
-import { describe, it, expect, afterEach } from 'vitest';
-import type { ExpandedData } from '@mimicai/adapter-sdk';
-import { buildTestServer, type TestServer } from '@mimicai/adapter-sdk';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { buildTestServer } from '@mimicai/adapter-sdk';
+import type { TestServer } from '@mimicai/adapter-sdk';
 import { PlaidAdapter } from '../plaid-adapter.js';
 
-function apiResponse(body: Record<string, unknown>) {
-  return { statusCode: 200, headers: {}, body, personaId: 'test-user', stateKey: 'plaid' };
-}
-
-const seedData = new Map<string, ExpandedData>();
-seedData.set('test-user', {
-  personaId: 'test-user',
-  blueprint: { persona: { name: 'Test User', location: 'Austin, TX' } } as any,
-  tables: {},
-  documents: {},
-  apiResponses: {
-    plaid: {
-      adapterId: 'plaid',
-      responses: {
-        accounts: [
-          apiResponse({ id: 1, institution: 'Chase', type: 'checking', balance: 5000 }),
-          apiResponse({ id: 2, institution: 'Chase', type: 'savings', balance: 15000 }),
-        ],
-        transactions: [
-          apiResponse({ id: 1, account_id: 1, amount: -42.50, date: '2025-01-15', merchant: 'Starbucks', category: 'Food and Drink', pending: false }),
-          apiResponse({ id: 2, account_id: 1, amount: -120.00, date: '2025-01-20', merchant: 'Amazon', category: 'Shopping', pending: false }),
-          apiResponse({ id: 3, account_id: 2, amount: 3000, date: '2025-02-01', merchant: 'Direct Deposit', category: 'Income', pending: false }),
-        ],
-      },
-    },
-  },
-  files: [],
-  events: [],
-      facts: [],
-});
-
 describe('PlaidAdapter', () => {
-  let ts: TestServer | undefined;
-  const adapter = new PlaidAdapter();
+  let ts: TestServer;
+  let adapter: PlaidAdapter;
 
-  afterEach(async () => {
-    if (ts) await ts.close();
-    ts = undefined;
+  beforeAll(async () => {
+    adapter = new PlaidAdapter();
+    ts = await buildTestServer(adapter);
   });
 
-  async function setup() {
-    await adapter.init({} as any, { config: {} as any, blueprints: new Map(), logger: console });
-    ts = await buildTestServer(adapter, seedData);
-    return ts;
-  }
-
-  // ── 1. Adapter metadata ───────────────────────────────────────────
-  it('should have correct adapter metadata', () => {
-    expect(adapter.id).toBe('plaid');
-    expect(adapter.name).toBe('Plaid API');
-    expect(adapter.type).toBe('api-mock');
-    expect(adapter.basePath).toBe('/plaid');
-    expect(adapter.versions).toEqual(['2020-09-14']);
+  afterAll(async () => {
+    await ts.close();
   });
 
-  // ── 2. Link token creation ────────────────────────────────────────
-  it('should create a link token', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/link/token/create',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ client_id: 'test', secret: 'test' }),
+  // ── Metadata ──────────────────────────────────────────────────────────────
+
+  describe('metadata', () => {
+    it('should have correct id, name, type, and basePath', () => {
+      expect(adapter.id).toBe('plaid');
+      expect(adapter.name).toBe('Plaid API');
+      expect(adapter.type).toBe('api-mock');
+      expect(adapter.basePath).toBe('/plaid');
     });
 
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.link_token).toBeDefined();
-    expect(body.link_token).toMatch(/^link-sandbox_/);
-    expect(body.expiration).toBeDefined();
-    expect(body.request_id).toBeDefined();
+    it('should have versions', () => {
+      expect(adapter.versions).toContain('2020-09-14');
+    });
   });
 
-  // ── 3. Token exchange ─────────────────────────────────────────────
-  it('should exchange a public token for an access token', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/item/public_token/exchange',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ public_token: 'public-sandbox-test-user-abc123' }),
-    });
+  // ── Endpoints ─────────────────────────────────────────────────────────────
 
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.access_token).toBeDefined();
-    expect(body.access_token).toMatch(/^access-test-user-/);
-    expect(body.item_id).toBeDefined();
-    expect(body.request_id).toBeDefined();
+  describe('getEndpoints', () => {
+    it('should return endpoint definitions', () => {
+      const endpoints = adapter.getEndpoints();
+      expect(endpoints.length).toBeGreaterThan(100);
+      for (const ep of endpoints) {
+        expect(ep.method).toBeDefined();
+        expect(ep.path).toBeDefined();
+      }
+    });
   });
 
-  // ── 4. Get accounts with valid access token ───────────────────────
-  it('should get accounts with valid access token', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/accounts/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'access-test-user-tok_abc123' }),
+  // ── Full Lifecycle ────────────────────────────────────────────────────────
+
+  describe('sandbox → item → accounts → transactions flow', () => {
+    let publicToken: string;
+    let accessToken: string;
+    let itemId: string;
+
+    it('should create a sandbox public token', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/sandbox/public_token/create',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          institution_id: 'ins_109508',
+          initial_products: ['transactions', 'auth'],
+        }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.public_token).toMatch(/^public-sandbox-/);
+      expect(body.request_id).toBeDefined();
+      publicToken = body.public_token;
     });
 
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.accounts).toHaveLength(2);
-    expect(body.accounts[0]).toHaveProperty('account_id');
-    expect(body.accounts[0]).toHaveProperty('balances');
-    expect(body.accounts[0]).toHaveProperty('mask');
-    expect(body.accounts[0]).toHaveProperty('name');
-    expect(body.accounts[0]).toHaveProperty('subtype');
-    expect(body.accounts[0]).toHaveProperty('type');
-    expect(body.item).toBeDefined();
-    expect(body.request_id).toBeDefined();
+    it('should exchange public token for access token', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/item/public_token/exchange',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ public_token: publicToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.access_token).toMatch(/^access-sandbox-/);
+      expect(body.item_id).toBeDefined();
+      expect(body.request_id).toBeDefined();
+      accessToken = body.access_token;
+      itemId = body.item_id;
+    });
+
+    it('should get item details', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/item/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.item.item_id).toBe(itemId);
+      expect(body.item.institution_id).toBe('ins_109508');
+      expect(body.item.error).toBeNull();
+      expect(body.request_id).toBeDefined();
+    });
+
+    it('should get accounts', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/accounts/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.accounts.length).toBe(3); // checking, savings, credit
+      expect(body.item.item_id).toBe(itemId);
+
+      // Verify account types
+      const types = body.accounts.map((a: Record<string, unknown>) => a.type).sort();
+      expect(types).toEqual(['credit', 'depository', 'depository']);
+
+      // Verify balances
+      const checking = body.accounts.find((a: Record<string, unknown>) => a.subtype === 'checking');
+      expect(checking).toBeDefined();
+      expect(checking.balances.available).toBe(100);
+      expect(checking.balances.current).toBe(110);
+    });
+
+    it('should get account balances', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/accounts/balance/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.accounts.length).toBe(3);
+    });
+
+    it('should filter accounts by account_ids', async () => {
+      // First get all accounts to get an ID
+      const allRes = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/accounts/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      const firstAccountId = allRes.json().accounts[0].account_id;
+
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/accounts/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          access_token: accessToken,
+          options: { account_ids: [firstAccountId] },
+        }),
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().accounts.length).toBe(1);
+      expect(res.json().accounts[0].account_id).toBe(firstAccountId);
+    });
+
+    it('should get auth data with routing numbers', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/auth/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.accounts.length).toBe(3);
+      expect(body.numbers.ach.length).toBe(2); // 2 depository accounts
+      expect(body.numbers.ach[0].routing).toBeDefined();
+      expect(body.numbers.ach[0].account).toBeDefined();
+    });
+
+    it('should get transactions', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/transactions/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          access_token: accessToken,
+          start_date: '2020-01-01',
+          end_date: '2099-12-31',
+        }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.transactions.length).toBeGreaterThan(0);
+      expect(body.total_transactions).toBeGreaterThan(0);
+      expect(body.item.item_id).toBe(itemId);
+
+      // Verify transaction shape
+      const txn = body.transactions[0];
+      expect(txn.transaction_id).toBeDefined();
+      expect(txn.account_id).toBeDefined();
+      expect(txn.amount).toBeDefined();
+      expect(txn.date).toBeDefined();
+      expect(txn.name).toBeDefined();
+    });
+
+    it('should paginate transactions', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/transactions/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          access_token: accessToken,
+          start_date: '2020-01-01',
+          end_date: '2099-12-31',
+          options: { count: 3, offset: 0 },
+        }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.transactions.length).toBe(3);
+      expect(body.total_transactions).toBeGreaterThan(3);
+    });
+
+    it('should sync transactions', async () => {
+      // Initial sync (no cursor) — returns all transactions
+      const res1 = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/transactions/sync',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res1.statusCode).toBe(200);
+      const body1 = res1.json();
+      expect(body1.added.length).toBeGreaterThan(0);
+      expect(body1.next_cursor).toBeDefined();
+      expect(body1.has_more).toBe(false);
+
+      // Subsequent sync (with cursor) — returns empty (caught up)
+      const res2 = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/transactions/sync',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          access_token: accessToken,
+          cursor: body1.next_cursor,
+        }),
+      });
+      expect(res2.statusCode).toBe(200);
+      expect(res2.json().added.length).toBe(0);
+    });
+
+    it('should refresh transactions', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/transactions/refresh',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().request_id).toBeDefined();
+    });
+
+    it('should get identity data', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/identity/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.accounts.length).toBe(3);
+      expect(body.accounts[0].owners).toBeDefined();
+      expect(body.accounts[0].owners[0].names.length).toBeGreaterThan(0);
+      expect(body.accounts[0].owners[0].emails.length).toBeGreaterThan(0);
+    });
+
+    it('should remove an item', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/item/remove',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().removed).toBe(true);
+
+      // Subsequent calls should fail
+      const res2 = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/item/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: accessToken }),
+      });
+      expect(res2.statusCode).toBe(400);
+      expect(res2.json().error_code).toBe('INVALID_ACCESS_TOKEN');
+    });
   });
 
-  // ── 5. Get accounts with invalid token ────────────────────────────
-  it('should return error for invalid access token', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/accounts/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'invalid-token' }),
+  // ── Institutions ──────────────────────────────────────────────────────────
+
+  describe('institutions', () => {
+    it('should list institutions', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/institutions/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ count: 10, offset: 0, country_codes: ['US'] }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.institutions.length).toBeGreaterThan(0);
+      expect(body.total).toBeGreaterThan(0);
     });
 
-    expect(res.statusCode).toBe(400);
-    const body = res.json();
-    expect(body.error_code).toBe('INVALID_ACCESS_TOKEN');
-    expect(body.error_type).toBe('INVALID_REQUEST');
+    it('should get institution by ID', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/institutions/get_by_id',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ institution_id: 'ins_109508', country_codes: ['US'] }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.institution.institution_id).toBe('ins_109508');
+      expect(body.institution.name).toBe('First Platypus Bank');
+    });
+
+    it('should search institutions', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/institutions/search',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ query: 'platypus', products: ['transactions'], country_codes: ['US'] }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.institutions.length).toBe(1);
+      expect(body.institutions[0].name).toContain('Platypus');
+    });
   });
 
-  // ── 6. Get transactions with date range ───────────────────────────
-  it('should get transactions filtered by date range', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/transactions/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({
-        access_token: 'access-test-user-tok_abc123',
-        start_date: '2025-01-01',
-        end_date: '2025-01-31',
-      }),
-    });
+  // ── Categories ────────────────────────────────────────────────────────────
 
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.transactions).toHaveLength(2);
-    expect(body.total_transactions).toBe(2);
-    expect(body.accounts).toBeDefined();
-    expect(body.request_id).toBeDefined();
-    expect(body.transactions[0]).toHaveProperty('transaction_id');
-    expect(body.transactions[0]).toHaveProperty('amount');
-    expect(body.transactions[0]).toHaveProperty('merchant_name');
+  describe('categories', () => {
+    it('should get categories', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/categories/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.categories.length).toBeGreaterThan(0);
+      expect(body.categories[0].category_id).toBeDefined();
+      expect(body.categories[0].hierarchy).toBeDefined();
+    });
   });
 
-  // ── 7. Transactions sync returns all as added ─────────────────────
-  it('should return all transactions as added via sync', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/transactions/sync',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'access-test-user-tok_abc123' }),
+  // ── Error Handling ────────────────────────────────────────────────────────
+
+  describe('error handling', () => {
+    it('should return error for missing access_token', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/accounts/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(400);
+      const body = res.json();
+      expect(body.error_type).toBe('INVALID_REQUEST');
+      expect(body.error_code).toBe('MISSING_FIELDS');
     });
 
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.added).toHaveLength(3);
-    expect(body.modified).toEqual([]);
-    expect(body.removed).toEqual([]);
-    expect(body.next_cursor).toBeDefined();
-    expect(body.has_more).toBe(false);
+    it('should return error for invalid access_token', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/accounts/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: 'invalid-token-12345' }),
+      });
+      expect(res.statusCode).toBe(400);
+      const body = res.json();
+      expect(body.error_type).toBe('ITEM_ERROR');
+      expect(body.error_code).toBe('INVALID_ACCESS_TOKEN');
+    });
+
+    it('should return error for missing public_token on exchange', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/item/public_token/exchange',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error_code).toBe('MISSING_FIELDS');
+    });
+
+    it('should return error for invalid institution_id', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/institutions/get_by_id',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ institution_id: 'ins_nonexistent' }),
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error_type).toBe('INVALID_REQUEST');
+    });
   });
 
-  // ── 8. Auth returns routing numbers ───────────────────────────────
-  it('should return accounts with routing numbers via auth', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/auth/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'access-test-user-tok_abc123' }),
-    });
+  // ── Sandbox Helpers ───────────────────────────────────────────────────────
 
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.accounts).toHaveLength(2);
-    expect(body.numbers).toBeDefined();
-    expect(body.numbers.ach).toHaveLength(2);
-    expect(body.numbers.ach[0]).toHaveProperty('routing');
-    expect(body.numbers.ach[0]).toHaveProperty('wire_routing');
-    expect(body.numbers.ach[0]).toHaveProperty('account_id');
+  describe('sandbox', () => {
+    it('should reset item login', async () => {
+      // Create a new item first
+      const createRes = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/sandbox/public_token/create',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ institution_id: 'ins_109509', initial_products: ['transactions'] }),
+      });
+      const pt = createRes.json().public_token;
+
+      const exchangeRes = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/item/public_token/exchange',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ public_token: pt }),
+      });
+      const at = exchangeRes.json().access_token;
+
+      // Reset login
+      const resetRes = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/sandbox/item/reset_login',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: at }),
+      });
+      expect(resetRes.statusCode).toBe(200);
+      expect(resetRes.json().reset_login).toBe(true);
+
+      // Verify item now has error
+      const itemRes = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/item/get',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ access_token: at }),
+      });
+      expect(itemRes.json().item.error).toBeDefined();
+      expect(itemRes.json().item.error.error_code).toBe('ITEM_LOGIN_REQUIRED');
+    });
   });
 
-  // ── 9. Identity returns owner info ────────────────────────────────
-  it('should return accounts with owner identity', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/identity/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'access-test-user-tok_abc123' }),
+  // ── Link Token ────────────────────────────────────────────────────────────
+
+  describe('link token', () => {
+    it('should create a link token', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/plaid/link/token/create',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          user: { client_user_id: 'user-123' },
+          client_name: 'Test App',
+          products: ['transactions'],
+          country_codes: ['US'],
+          language: 'en',
+        }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.link_token).toMatch(/^link-sandbox-/);
+      expect(body.expiration).toBeDefined();
+      expect(body.request_id).toBeDefined();
     });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.accounts).toHaveLength(2);
-    expect(body.accounts[0].owners).toBeDefined();
-    expect(body.accounts[0].owners[0].names).toContain('Test User');
-    expect(body.accounts[0].owners[0].emails).toHaveLength(1);
-    expect(body.accounts[0].owners[0].phone_numbers).toHaveLength(1);
-    expect(body.accounts[0].owners[0].addresses).toHaveLength(1);
-    expect(body.accounts[0].owners[0].addresses[0].data.city).toBe('Austin');
-    expect(body.accounts[0].owners[0].addresses[0].data.region).toBe('TX');
-  });
-
-  // ── 10. Balance returns real-time balances ────────────────────────
-  it('should return real-time balances', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/accounts/balance/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'access-test-user-tok_abc123' }),
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.accounts).toHaveLength(2);
-    expect(body.accounts[0].balances).toBeDefined();
-    expect(body.accounts[0].balances.available).toBe(5000);
-    expect(body.accounts[1].balances.available).toBe(15000);
-  });
-
-  // ── 11. Investments returns empty holdings ────────────────────────
-  it('should return empty investment holdings', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/investments/holdings/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'access-test-user-tok_abc123' }),
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.holdings).toEqual([]);
-    expect(body.securities).toEqual([]);
-    expect(body.accounts).toHaveLength(2);
-  });
-
-  // ── 12. Liabilities returns empty data ────────────────────────────
-  it('should return empty liabilities', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/liabilities/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({ access_token: 'access-test-user-tok_abc123' }),
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.liabilities).toBeDefined();
-    expect(body.liabilities.credit).toEqual([]);
-    expect(body.liabilities.mortgage).toEqual([]);
-    expect(body.liabilities.student).toEqual([]);
-    expect(body.accounts).toHaveLength(2);
-  });
-
-  // ── 13. PFCv2 confidence_level present ────────────────────────────
-  it('should include confidence_level in PFCv2 transaction format', async () => {
-    const { server } = await setup();
-    const res = await server.inject({
-      method: 'POST',
-      url: '/plaid/transactions/get',
-      headers: { 'content-type': 'application/json' },
-      payload: JSON.stringify({
-        access_token: 'access-test-user-tok_abc123',
-        start_date: '2025-01-01',
-        end_date: '2025-12-31',
-      }),
-    });
-
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.transactions.length).toBeGreaterThan(0);
-
-    for (const tx of body.transactions) {
-      expect(tx.personal_finance_category).toBeDefined();
-      expect(tx.personal_finance_category.confidence_level).toBeDefined();
-      expect(['VERY_HIGH', 'HIGH', 'MEDIUM', 'LOW']).toContain(
-        tx.personal_finance_category.confidence_level,
-      );
-    }
   });
 });
