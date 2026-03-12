@@ -215,9 +215,14 @@ async function tryImport(pkg: string, cwd: string): Promise<Record<string, unkno
   try {
     return await import(/* @vite-ignore */ pkg);
   } catch {
-    // Try resolving from the project's node_modules
-    const require = createRequire(join(cwd, 'package.json'));
-    const resolved = require.resolve(pkg);
+    // Resolve from the project's node_modules using createRequire, then
+    // import the ESM entry (.js) since dynamic import() of CJS bundles
+    // can fail due to missing path context in ESM/CJS interop.
+    const req = createRequire(join(cwd, 'package.json'));
+    let resolved = req.resolve(pkg);
+    if (resolved.endsWith('.cjs')) {
+      resolved = resolved.replace(/\.cjs$/, '.js');
+    }
     return await import(/* @vite-ignore */ resolved);
   }
 }

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import type { AdapterInfo } from '@/lib/api';
 import { RawJsonViewer } from '@/components/explorer/json-viewer';
+import { groupEndpoints } from '@/lib/group-endpoints';
 
 interface EndpointTesterProps {
   adapter: AdapterInfo;
@@ -29,6 +30,29 @@ export function EndpointTester({ adapter, initialEndpoint }: EndpointTesterProps
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<Record<string, boolean>>({});
+  const groups = useMemo(() => groupEndpoints(adapter.endpoints, adapter.basePath), [adapter]);
+
+  // Find which group the initial/selected endpoint belongs to, keep that expanded
+  const initialGroup = useMemo(() => {
+    if (!selectedEndpoint) return null;
+    return groups.find((g) =>
+      g.endpoints.some((ep) => ep.method === selectedEndpoint.method && ep.path === selectedEndpoint.path),
+    )?.label ?? null;
+  }, []);
+
+  // Start with all groups collapsed except the one containing the selected endpoint
+  const [sidebarInited] = useState(() => {
+    const init: Record<string, boolean> = {};
+    for (const g of groups) {
+      init[g.label] = g.label !== initialGroup;
+    }
+    return init;
+  });
+
+  const getCollapsed = (label: string) => sidebarCollapsed[label] ?? sidebarInited[label] ?? true;
+  const toggleSidebar = (label: string) =>
+    setSidebarCollapsed((prev) => ({ ...prev, [label]: !getCollapsed(label) }));
 
   const handleSend = async () => {
     if (!selectedEndpoint || !adapter.port) return;
@@ -73,35 +97,59 @@ export function EndpointTester({ adapter, initialEndpoint }: EndpointTesterProps
       </div>
 
       <div className="flex gap-6">
-        {/* Endpoint list */}
-        <div className="w-72 shrink-0 space-y-1">
-          {adapter.endpoints.map((ep, i) => (
-            <button
-              key={i}
-              onClick={() => {
-                setSelectedEndpoint(ep);
-                setResponse(null);
-                setError(null);
-              }}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-                'hover:bg-accent',
-                selectedEndpoint?.path === ep.path && selectedEndpoint?.method === ep.method
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground',
-              )}
-            >
-              <span
-                className={cn(
-                  'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold',
-                  METHOD_COLORS[ep.method] ?? 'bg-muted',
-                )}
-              >
-                {ep.method}
-              </span>
-              <span className="truncate font-mono text-xs">{ep.path}</span>
-            </button>
-          ))}
+        {/* Endpoint list (grouped) */}
+        <div className="w-72 shrink-0 space-y-0.5 overflow-y-auto max-h-[calc(100vh-12rem)]">
+          {groups.map(({ label, endpoints }) => {
+            const isCollapsed = getCollapsed(label);
+            const hasSelected = endpoints.some(
+              (ep) => ep.method === selectedEndpoint?.method && ep.path === selectedEndpoint?.path,
+            );
+            return (
+              <div key={label}>
+                <button
+                  onClick={() => toggleSidebar(label)}
+                  className={cn(
+                    'flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-accent',
+                    hasSelected && isCollapsed && 'text-accent-foreground',
+                  )}
+                >
+                  <span className={cn('text-[10px] text-muted-foreground transition-transform', !isCollapsed && 'rotate-90')}>
+                    ▶
+                  </span>
+                  <span className="font-medium truncate">{label}</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">{endpoints.length}</span>
+                </button>
+                {!isCollapsed &&
+                  endpoints.map((ep, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setSelectedEndpoint(ep);
+                        setResponse(null);
+                        setError(null);
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-md px-3 pl-6 py-1.5 text-sm transition-colors',
+                        'hover:bg-accent',
+                        selectedEndpoint?.path === ep.path && selectedEndpoint?.method === ep.method
+                          ? 'bg-accent text-accent-foreground'
+                          : 'text-muted-foreground',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold',
+                          METHOD_COLORS[ep.method] ?? 'bg-muted',
+                        )}
+                      >
+                        {ep.method}
+                      </span>
+                      <span className="truncate font-mono text-xs">{ep.path}</span>
+                    </button>
+                  ))}
+              </div>
+            );
+          })}
         </div>
 
         {/* Request / Response */}

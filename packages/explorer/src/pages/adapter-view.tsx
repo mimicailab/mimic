@@ -1,6 +1,8 @@
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import type { AdapterInfo } from '@/lib/api';
 import type { Page } from '@/App';
+import { groupEndpoints } from '@/lib/group-endpoints';
 
 interface AdapterViewProps {
   adapter: AdapterInfo;
@@ -16,6 +18,12 @@ const METHOD_COLORS: Record<string, string> = {
 };
 
 export function AdapterView({ adapter, onNavigate }: AdapterViewProps) {
+  const groups = useMemo(() => groupEndpoints(adapter.endpoints, adapter.basePath), [adapter]);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const toggle = (group: string) =>
+    setCollapsed((prev) => ({ ...prev, [group]: !prev[group] }));
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -42,70 +50,77 @@ export function AdapterView({ adapter, onNavigate }: AdapterViewProps) {
         </button>
       </div>
 
-      {/* Endpoints table */}
+      {/* Endpoints grouped */}
       <div>
         <h2 className="mb-3 text-lg font-semibold">
           Endpoints ({adapter.endpoints.length})
         </h2>
-        <div className="rounded-lg border">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground w-24">
-                  Method
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                  Path
-                </th>
-                <th className="px-4 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                  Description
-                </th>
-                <th className="px-4 py-2 text-right text-xs font-medium uppercase text-muted-foreground w-20">
-                  Test
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {adapter.endpoints.map((ep, i) => (
-                <tr
-                  key={i}
-                  className={cn(
-                    'transition-colors hover:bg-muted/30',
-                    i < adapter.endpoints.length - 1 && 'border-b',
-                  )}
+        <div className="space-y-2">
+          {groups.map(({ label, endpoints }) => {
+            const isCollapsed = collapsed[label] ?? false;
+            return (
+              <div key={label} className="rounded-lg border">
+                <button
+                  onClick={() => toggle(label)}
+                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left hover:bg-muted/30 transition-colors"
                 >
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={cn(
-                        'inline-block rounded px-2 py-0.5 text-xs font-bold',
-                        METHOD_COLORS[ep.method] ?? 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {ep.method}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 font-mono text-sm">{ep.path}</td>
-                  <td className="px-4 py-2.5 text-sm text-muted-foreground">
-                    {ep.description}
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <button
-                      onClick={() =>
-                        onNavigate({
-                          type: 'tester',
-                          adapterId: adapter.id,
-                          endpoint: { method: ep.method, path: ep.path },
-                        })
-                      }
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Try it
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  <span className={cn(
+                    'text-muted-foreground transition-transform text-xs',
+                    isCollapsed ? '' : 'rotate-90',
+                  )}>
+                    ▶
+                  </span>
+                  <span className="font-medium text-sm">{label}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {endpoints.length} endpoint{endpoints.length !== 1 ? 's' : ''}
+                  </span>
+                </button>
+                {!isCollapsed && (
+                  <table className="w-full">
+                    <tbody>
+                      {endpoints.map((ep, i) => (
+                        <tr
+                          key={i}
+                          className={cn(
+                            'transition-colors hover:bg-muted/30 border-t',
+                          )}
+                        >
+                          <td className="px-4 py-2.5 w-24">
+                            <span
+                              className={cn(
+                                'inline-block rounded px-2 py-0.5 text-xs font-bold',
+                                METHOD_COLORS[ep.method] ?? 'bg-muted text-muted-foreground',
+                              )}
+                            >
+                              {ep.method}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 font-mono text-sm">{ep.path}</td>
+                          <td className="px-4 py-2.5 text-sm text-muted-foreground">
+                            {ep.description}
+                          </td>
+                          <td className="px-4 py-2.5 text-right w-20">
+                            <button
+                              onClick={() =>
+                                onNavigate({
+                                  type: 'tester',
+                                  adapterId: adapter.id,
+                                  endpoint: { method: ep.method, path: ep.path },
+                                })
+                              }
+                              className="text-xs text-primary hover:underline"
+                            >
+                              Try it
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
