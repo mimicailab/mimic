@@ -559,9 +559,6 @@ importers:
       '@mimicai/adapter-revenuecat':
         specifier: workspace:*
         version: link:../adapters/adapter-revenuecat
-      '@mimicai/adapter-slack':
-        specifier: workspace:*
-        version: link:../adapters/adapter-slack
       '@mimicai/adapter-stripe':
         specifier: workspace:*
         version: link:../adapters/adapter-stripe
