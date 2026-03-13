@@ -1,5 +1,13 @@
 # cfo-agent-example
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`6ce4e0b`](https://github.com/mimicailab/mimic/commit/6ce4e0b8f331ee11866afe55be2bfb5c60a7981d)]:
+  - @mimicai/cli@0.9.0
+  - @mimicai/adapter-stripe@0.9.0
+
 ## 0.0.3
 
 ### Patch Changes

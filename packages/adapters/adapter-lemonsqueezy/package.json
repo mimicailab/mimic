@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-lemonsqueezy",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "exports": {
     ".": {
@@ -12,7 +12,11 @@
   "bin": {
     "mimic-mcp-lemonsqueezy": "./dist/bin/mcp.js"
   },
-  "files": ["dist", "adapter.json", "logo.svg"],
+  "files": [
+    "dist",
+    "adapter.json",
+    "logo.svg"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",

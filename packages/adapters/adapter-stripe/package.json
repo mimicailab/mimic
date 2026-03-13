@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-stripe",
-  "version": "0.7.0",
+  "version": "0.9.0",
   "description": "Stripe API mock adapter for Mimic — payments, billing, subscriptions, invoices",
   "type": "module",
   "license": "Apache-2.0",

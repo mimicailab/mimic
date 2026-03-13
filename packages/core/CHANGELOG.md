@@ -1,5 +1,15 @@
 # @mimicailab/core
 
+## 0.9.0
+
+### Minor Changes
+
+- [#24](https://github.com/mimicailab/mimic/pull/24) [`6ce4e0b`](https://github.com/mimicailab/mimic/commit/6ce4e0b8f331ee11866afe55be2bfb5c60a7981d) Thanks [@ajollie](https://github.com/ajollie)! - Generate facts post-expansion from actual data stats instead of regex-based enforcement. Facts are now LLM-generated from real expanded data (counts, distributions, aggregates), guaranteeing 100% accuracy by construction.
+
+### Patch Changes
+
+- [#24](https://github.com/mimicailab/mimic/pull/24) [`6ce4e0b`](https://github.com/mimicailab/mimic/commit/6ce4e0b8f331ee11866afe55be2bfb5c60a7981d) Thanks [@ajollie](https://github.com/ajollie)! - Fix `@updatedAt` fields incorrectly treated as having default values in Prisma schema parser.
+
 ## 0.7.0
 
 ### Minor Changes

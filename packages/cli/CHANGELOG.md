@@ -1,5 +1,21 @@
 # @mimicailab/cli
 
+## 0.9.0
+
+### Minor Changes
+
+- [#24](https://github.com/mimicailab/mimic/pull/24) [`6ce4e0b`](https://github.com/mimicailab/mimic/commit/6ce4e0b8f331ee11866afe55be2bfb5c60a7981d) Thanks [@ajollie](https://github.com/ajollie)! - Generate facts post-expansion from actual data stats instead of regex-based enforcement. Facts are now LLM-generated from real expanded data (counts, distributions, aggregates), guaranteeing 100% accuracy by construction.
+
+### Patch Changes
+
+- Updated dependencies [[`6ce4e0b`](https://github.com/mimicailab/mimic/commit/6ce4e0b8f331ee11866afe55be2bfb5c60a7981d), [`6ce4e0b`](https://github.com/mimicailab/mimic/commit/6ce4e0b8f331ee11866afe55be2bfb5c60a7981d)]:
+  - @mimicai/core@0.9.0
+  - @mimicai/adapter-mongodb@0.9.0
+  - @mimicai/adapter-mysql@0.9.0
+  - @mimicai/adapter-postgres@0.9.0
+  - @mimicai/adapter-sqlite@0.9.0
+  - @mimicai/blueprints@0.9.0
+
 ## 0.7.0
 
 ### Minor Changes
