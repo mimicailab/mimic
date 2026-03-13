@@ -58,8 +58,7 @@
     "@mimicai/adapter-lemonsqueezy": "workspace:*",
     "@mimicai/adapter-zuora": "workspace:*",
     "@mimicai/adapter-recurly": "workspace:*",
-    "@mimicai/adapter-plaid": "workspace:*",
-    "@mimicai/adapter-slack": "workspace:*"
+    "@mimicai/adapter-plaid": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "^8.11.11",

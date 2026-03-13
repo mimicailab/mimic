@@ -27,7 +27,6 @@ const ADAPTER_PACKAGES = [
   '@mimicai/adapter-mongodb',
   '@mimicai/adapter-stripe',
   '@mimicai/adapter-plaid',
-  '@mimicai/adapter-slack',
   '@mimicai/adapter-paddle',
   '@mimicai/adapter-chargebee',
   '@mimicai/adapter-gocardless',
