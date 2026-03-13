@@ -174,7 +174,8 @@ export type SemanticType =
   | 'email' | 'url' | 'phone' | 'currency_code' | 'country_code' | 'locale'
   | 'ip_address' | 'uuid' | 'slug' | 'color_hex'
   | 'platform_id' | 'timestamp' | 'amount' | 'percentage'
-  | 'city' | 'region' | 'postal_code' | 'street_address';
+  | 'city' | 'region' | 'postal_code' | 'street_address'
+  | 'company' | 'vat_number';
 
 export interface ResourceFieldSpec {
   type: 'string' | 'integer' | 'number' | 'boolean' | 'object' | 'array';
@@ -208,7 +209,7 @@ export interface ResourceSpec {
 export interface AdapterResourceSpecs {
   platform: {
     timestampFormat: 'unix_seconds' | 'unix_ms' | 'iso8601';
-    amountFormat: 'integer_cents' | 'decimal_string' | 'currency_object';
+    amountFormat: 'integer_cents' | 'decimal_string' | 'decimal_float' | 'currency_object';
     idPrefix?: string;
   };
   resources: Record<string, ResourceSpec>;
@@ -225,6 +226,7 @@ export function derivePromptContext(specs: AdapterResourceSpecs): PromptContext 
   const amountFormatMap: Record<string, string> = {
     integer_cents: 'integer cents (e.g. 2999 = $29.99)',
     decimal_string: 'decimal string (e.g. "29.99")',
+    decimal_float: 'decimal float (e.g. 29.99)',
     currency_object: 'object with value and currency (e.g. {"value": "29.99", "currency": "USD"})',
   };
   const amountFormat = amountFormatMap[specs.platform.amountFormat] ?? specs.platform.amountFormat;
