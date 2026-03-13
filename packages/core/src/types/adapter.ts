@@ -173,7 +173,8 @@ export interface PromptContext {
 export type SemanticType =
   | 'email' | 'url' | 'phone' | 'currency_code' | 'country_code' | 'locale'
   | 'ip_address' | 'uuid' | 'slug' | 'color_hex'
-  | 'platform_id' | 'timestamp' | 'amount' | 'percentage';
+  | 'platform_id' | 'timestamp' | 'amount' | 'percentage'
+  | 'city' | 'region' | 'postal_code' | 'street_address';
 
 export interface ResourceFieldSpec {
   type: 'string' | 'integer' | 'number' | 'boolean' | 'object' | 'array';
