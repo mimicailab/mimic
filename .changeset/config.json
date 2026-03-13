@@ -16,7 +16,7 @@
       "@mimicai/adapter-mongodb",
       "@mimicai/adapter-sqlite",
       "@mimicai/adapter-plaid",
-      "@mimicai/adapter-slack",
+
       "@mimicai/adapter-stripe",
       "@mimicai/adapter-paddle",
       "@mimicai/adapter-chargebee",
