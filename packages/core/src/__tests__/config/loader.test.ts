@@ -95,7 +95,11 @@ describe('loadConfig', () => {
     await writeFile(join(testDir, 'mimic.json'), JSON.stringify(config));
     const loaded = await loadConfig(testDir);
     // Lazy resolution keeps $VAR as-is so commands that don't need it won't fail
-    expect(loaded.databases!.primary.url).toBe('$UNSET_VAR_FOR_MIMIC_TEST');
+    const primary = loaded.databases!.primary;
+    expect(primary.type).toBe('postgres');
+    if (primary.type === 'postgres') {
+      expect(primary.url).toBe('$UNSET_VAR_FOR_MIMIC_TEST');
+    }
   });
 
   it('should validate persona name format', async () => {
