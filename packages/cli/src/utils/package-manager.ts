@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 export type PackageManager = 'pnpm' | 'yarn' | 'npm' | 'bun';
 
@@ -12,24 +12,33 @@ export type PackageManager = 'pnpm' | 'yarn' | 'npm' | 'bun';
  * 3. Falls back to npm
  */
 export function detectPackageManager(cwd: string = process.cwd()): PackageManager {
-  // Check lock files
-  if (existsSync(join(cwd, 'pnpm-lock.yaml'))) return 'pnpm';
-  if (existsSync(join(cwd, 'yarn.lock'))) return 'yarn';
-  if (existsSync(join(cwd, 'bun.lockb')) || existsSync(join(cwd, 'bun.lock'))) return 'bun';
-  if (existsSync(join(cwd, 'package-lock.json'))) return 'npm';
+  // Check cwd and ancestors so nested projects (e.g. examples/* in a monorepo)
+  // can inherit the workspace package manager from the repo root.
+  let dir = cwd;
+  while (true) {
+    // 1) Lock files (most reliable)
+    if (existsSync(join(dir, 'pnpm-lock.yaml'))) return 'pnpm';
+    if (existsSync(join(dir, 'yarn.lock'))) return 'yarn';
+    if (existsSync(join(dir, 'bun.lockb')) || existsSync(join(dir, 'bun.lock'))) return 'bun';
+    if (existsSync(join(dir, 'package-lock.json'))) return 'npm';
 
-  // Check packageManager field in package.json
-  try {
-    const pkg = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf-8'));
-    const pm = pkg.packageManager as string | undefined;
-    if (pm) {
-      if (pm.startsWith('pnpm')) return 'pnpm';
-      if (pm.startsWith('yarn')) return 'yarn';
-      if (pm.startsWith('bun')) return 'bun';
-      if (pm.startsWith('npm')) return 'npm';
+    // 2) packageManager field in package.json
+    try {
+      const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
+      const pm = pkg.packageManager as string | undefined;
+      if (pm) {
+        if (pm.startsWith('pnpm')) return 'pnpm';
+        if (pm.startsWith('yarn')) return 'yarn';
+        if (pm.startsWith('bun')) return 'bun';
+        if (pm.startsWith('npm')) return 'npm';
+      }
+    } catch {
+      // No package.json or unreadable — keep walking up
     }
-  } catch {
-    // No package.json or unreadable
+
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
   }
 
   return 'npm';

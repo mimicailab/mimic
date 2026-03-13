@@ -1,0 +1,17 @@
+{
+  "id": "revenuecat",
+  "name": "RevenueCat API",
+  "description": "RevenueCat subscription management, entitlements, and in-app purchase mock adapter",
+  "type": "api-mock",
+  "basePath": "/revenuecat",
+  "versions": ["2.0.0"],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://www.revenuecat.com/docs/api-v2",
+  "specUrl": "https://www.revenuecat.com/docs/api-v2",
+  "specFile": "revenuecat-spec.yaml",
+  "mcp": {
+    "serverName": "mimic-revenuecat",
+    "serverVersion": "0.8.0",
+    "description": "Mimic MCP server for RevenueCat — subscriptions, entitlements, purchases against mock data"
+  }
+}

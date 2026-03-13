@@ -11,3 +11,8 @@ private/
 *.db
 *.db-shm
 *.db-wal
+
+# Large OpenAPI spec files — download or generate locally
+packages/adapters/*/*-spec*.json
+packages/adapters/*/*-spec*.yaml
+packages/adapters/*/*-spec*.yml

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://github.com/mimicailab/mimic/blob/main/packages/core/mimic.schema.json",
+  "domain": "B2B SaaS subscription billing. A growth-stage developer tools company (NovaDev) that uses Stripe for all billing. Core product: API monitoring SaaS with starter ($29/mo), pro ($99/mo), and enterprise ($299/mo) tiers. Internal Postgres database is the source of truth for customer identity and links to Stripe via billing_platform + external_id.",
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-5-mini-2025-08-07",
+    "timeoutMs": 600000
+  },
+  "personas": [
+    {
+      "name": "growing-startup",
+      "description": "NovaDev — a growth-stage B2B SaaS company with ~30 customers in the internal Postgres database across 3 plans (starter $29/mo, pro $99/mo, enterprise $299/mo). All customers use Stripe for billing. Each customer in the Postgres customers table has billing_platform='stripe' + external_id linking to their Stripe customer ID. Mix of monthly and annual billing, some overdue invoices, a few disputed charges, recent upgrades. 6 months of history."
+    }
+  ],
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "prisma",
+        "path": "./prisma/schema.prisma"
+      },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+  "apis": {
+    "stripe": {
+      "enabled": true,
+      "mcp": true
+    },
+    "plaid": {
+      "enabled": true
+    }
+  }
+}

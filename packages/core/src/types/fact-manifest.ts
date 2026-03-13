@@ -8,7 +8,16 @@ export type FactType =
   | 'pending'
   | 'integrity'
   | 'growth'
-  | 'risk';
+  | 'risk'
+  | 'dispute'
+  | 'churn'
+  | 'fraud'
+  | 'compliance'
+  | 'refund'
+  | 'upgrade'
+  | 'downgrade'
+  | 'payment'
+  | 'cancellation';
 
 export type FactSeverity = 'info' | 'warn' | 'critical';
 

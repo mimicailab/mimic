@@ -9,7 +9,7 @@ export default defineConfig({
   sourcemap: true,
   target: 'node22',
   outDir: 'dist',
-  external: ['pg'],
+  external: ['pg', '@mimicai/explorer', /^@mimicai\/adapter-/],
   banner: {
     js: '',
   },

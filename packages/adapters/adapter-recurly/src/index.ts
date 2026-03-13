@@ -4,11 +4,12 @@ export type { RecurlyConfig } from './config.js';
 export { registerRecurlyTools, createRecurlyMcpServer, startRecurlyMcpServer } from './mcp.js';
 
 import type { AdapterManifest } from '@mimicai/adapter-sdk';
+import meta from './adapter-meta.js';
 
 export const manifest: AdapterManifest = {
-  id: 'recurly',
-  name: 'Recurly API',
-  type: 'api-mock',
-  description: 'Recurly subscription management, recurring billing, revenue recognition mock adapter',
-  versions: ['v2021-02-25'],
+  id: meta.id,
+  name: meta.name,
+  type: meta.type as AdapterManifest['type'],
+  description: meta.description,
+  versions: meta.versions,
 };

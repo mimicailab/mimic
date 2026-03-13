@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
+import { execSync } from 'node:child_process';
 import { Command } from 'commander';
 import chalk from 'chalk';
 
@@ -16,6 +16,7 @@ import {
 } from '@mimicai/core';
 import type { SchemaModel, ExpandedData, ApiMockAdapter } from '@mimicai/core';
 import { resolveEnvVars } from '../utils/env.js';
+import { importFromProject, importFromAncestors } from '../utils/import.js';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -89,6 +90,17 @@ async function runHost(opts: HostOptions): Promise<void> {
 
   const mcpBasePort = opts.mcpBasePort ?? 4201;
   const apiBasePort = opts.apiBasePort ?? 4101;
+
+  // Always clean up ports before starting host so repeated runs don't fail
+  // with EADDRINUSE when previous sessions were not shut down cleanly.
+  cleanupHostPorts({
+    transport,
+    totalServers,
+    hasApis: Boolean(hasApis),
+    apiCount: hasApis ? Object.entries(apis!).filter(([, v]) => (v as Record<string, unknown>).enabled !== false).length : 0,
+    mcpBasePort,
+    apiBasePort,
+  });
 
   logger.header('mimic host');
   logger.step(`Domain: ${chalk.yellow(config.domain)}`);
@@ -194,7 +206,7 @@ async function runHost(opts: HostOptions): Promise<void> {
       let mod: Record<string, unknown>;
       const pkg = `@mimicai/adapter-${adapterId}`;
       try {
-        mod = await import(/* @vite-ignore */ pkg);
+        mod = await importFromProject(pkg, process.cwd());
       } catch {
         try {
           mod = await importFromAncestors(pkg, process.argv[1]);
@@ -326,22 +338,65 @@ async function loadPersonaDataMap(
   return dataMap;
 }
 
-/**
- * Walk up from `startPath` to find a node_modules that can resolve `pkg`.
- * Works in pnpm workspaces where the adapter symlink lives in the monorepo root.
- */
-async function importFromAncestors(pkg: string, startPath: string): Promise<Record<string, unknown>> {
-  let dir = join(startPath, '..');
-  for (let i = 0; i < 10; i++) {
-    try {
-      const require = createRequire(join(dir, 'package.json'));
-      const resolved = require.resolve(pkg);
-      return await import(/* @vite-ignore */ resolved) as Record<string, unknown>;
-    } catch {
-      const parent = join(dir, '..');
-      if (parent === dir) break;
-      dir = parent;
+function cleanupHostPorts(input: {
+  transport: 'stdio' | 'sse';
+  totalServers: number;
+  hasApis: boolean;
+  apiCount: number;
+  mcpBasePort: number;
+  apiBasePort: number;
+}): void {
+  const ports = new Set<number>();
+
+  // In SSE mode each server gets a dedicated MCP HTTP port.
+  if (input.transport === 'sse') {
+    for (let i = 0; i < input.totalServers; i++) {
+      ports.add(input.mcpBasePort + i);
     }
   }
-  throw new Error(`Cannot find ${pkg}`);
+
+  // Each enabled API adapter gets a mock API port.
+  if (input.hasApis) {
+    for (let i = 0; i < input.apiCount; i++) {
+      ports.add(input.apiBasePort + i);
+    }
+  }
+
+  if (ports.size === 0) return;
+
+  const sorted = [...ports].sort((a, b) => a - b);
+  const killedPids = new Set<number>();
+
+  for (const port of sorted) {
+    let output = '';
+    try {
+      // macOS/Linux: list listeners on a TCP port.
+      output = execSync(`lsof -nP -ti tcp:${port}`, { encoding: 'utf8' }).trim();
+    } catch {
+      continue;
+    }
+    if (!output) continue;
+
+    const pids = output
+      .split('\n')
+      .map((v) => Number(v.trim()))
+      .filter((v) => Number.isInteger(v) && v > 0 && v !== process.pid);
+
+    for (const pid of pids) {
+      if (killedPids.has(pid)) continue;
+      try {
+        process.kill(pid, 'SIGKILL');
+        killedPids.add(pid);
+      } catch {
+        // Process may have exited between lookup and kill.
+      }
+    }
+  }
+
+  if (killedPids.size > 0) {
+    logger.debug(
+      `Cleaned up ${killedPids.size} existing process(es) on host ports: ${sorted.join(', ')}`,
+    );
+  }
 }
+

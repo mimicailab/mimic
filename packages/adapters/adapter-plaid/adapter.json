@@ -1,0 +1,17 @@
+{
+  "id": "plaid",
+  "name": "Plaid API",
+  "description": "Plaid banking data — accounts, transactions, auth, identity, balance, investments",
+  "type": "api-mock",
+  "basePath": "/plaid",
+  "versions": ["2020-09-14"],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://plaid.com/docs/api",
+  "specUrl": "https://raw.githubusercontent.com/plaid/plaid-openapi/refs/heads/master/2020-09-14.yml",
+  "specFile": "plaid-spec.yaml",
+  "mcp": {
+    "serverName": "mimic-plaid",
+    "serverVersion": "0.8.0",
+    "description": "Mimic MCP server for Plaid — banking, transactions, accounts, identity against mock data"
+  }
+}

@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import meta from './adapter-meta.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -334,7 +335,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   }, async ({ query }) => {
     return text(
       `Stripe documentation search for "${query}":\n\n` +
-      `This is a mock Mimic server. For real Stripe documentation, visit https://docs.stripe.com\n\n` +
+      `This is a mock Mimic server. For real Stripe documentation, visit ${meta.documentationUrl}\n\n` +
       `Common topics:\n` +
       `• Payments: POST /v1/payment_intents with amount + currency\n` +
       `• Customers: POST /v1/customers with email + name\n` +
@@ -393,9 +394,9 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
  */
 export function createStripeMcpServer(baseUrl: string = 'http://localhost:4100'): McpServer {
   const server = new McpServer({
-    name: 'mimic-stripe',
-    version: '0.5.0',
-    description: 'Mimic MCP server for Stripe — payments, billing, subscriptions against mock data',
+    name: meta.mcp.serverName,
+    version: meta.mcp.serverVersion,
+    description: meta.mcp.description,
   });
   registerStripeTools(server, baseUrl);
   return server;

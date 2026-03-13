@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const LemonSqueezyConfigSchema = z.object({
-  environment: z.enum(['test', 'production']).default('test'),
-  port: z.number().optional(),
+  version: z.literal('v1').default('v1'),
+  port: z.number().int().positive().default(4100),
 });
 
 export type LemonSqueezyConfig = z.infer<typeof LemonSqueezyConfigSchema>;

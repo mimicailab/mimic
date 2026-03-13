@@ -52,8 +52,8 @@ For a deeper architecture walkthrough, see `ARCHITECTURE.md`.
 - `pnpm` for rebuilding workspace packages
 - Docker for PostgreSQL
 - One model provider key:
-  - `ANTHROPIC_API_KEY` for Claude models, or
-  - `OPENAI_API_KEY` for OpenAI fallback
+  - `OPENAI_API_KEY` for OpenAI models (default: gpt-5.4), or
+  - `ANTHROPIC_API_KEY` for Claude models
 
 ## Quick Start
 
@@ -73,7 +73,8 @@ This starts PostgreSQL 17 on port `5435` with:
 
 ```bash
 cp .env.example .env
-# Add ANTHROPIC_API_KEY and/or OPENAI_API_KEY
+# Add OPENAI_API_KEY (required for data generation with gpt-5.4)
+# Optionally add ANTHROPIC_API_KEY for the agent
 ```
 
 ### 3. Generate Prisma client and run the schema
@@ -89,18 +90,31 @@ npx prisma migrate dev --name init
 From the `examples/cfo-agent` root:
 
 ```bash
-pnpm exec mimic run
-pnpm exec mimic seed --verbose
+pnpm exec mimic run -g        # generate blueprints + expand + generate facts
+pnpm exec mimic seed --verbose # push DB tables into PostgreSQL
 ```
+
+The `-g` flag forces fresh blueprint generation. Without it, cached blueprints under `.mimic/blueprints/` are reused and only expansion runs.
+
+After expansion, Mimic makes an additional LLM call to **generate facts from the actual data** — these are testable assertions (counts, statuses, amounts) that are guaranteed to match the expanded dataset. Facts are written to `.mimic/fact-manifest.json`.
 
 Generated artifacts are written under:
 
-- `.mimic/blueprints/`
-- `.mimic/data/`
+- `.mimic/blueprints/` — cached LLM blueprint output
+- `.mimic/data/` — expanded persona data (DB rows + API responses)
+- `.mimic/fact-manifest.json` — testable facts derived from actual data
 
 `mimic seed` writes the `tables` section of the generated dataset into PostgreSQL. Adapter API data stays in `.mimic/data/*.json` and is loaded by `mimic host` at runtime.
 
-### 5. Start `mimic host`
+### 5. Explore the data (optional)
+
+```bash
+pnpm exec mimic explore
+```
+
+Opens an interactive UI at `http://localhost:7879` showing all adapters, endpoint counts, persona data, and facts.
+
+### 6. Start `mimic host`
 
 In a new terminal, from the `examples/cfo-agent` root:
 
@@ -123,7 +137,7 @@ zuora        API :4107 | MCP :4208
 recurly      API :4108 | MCP :4209
 ```
 
-### 6. Start the agent
+### 7. Start the agent
 
 In another terminal:
 
@@ -142,7 +156,7 @@ Current behavior:
 - otherwise falls back to `gpt-4o` if `OPENAI_API_KEY` is present
 - remaps `gpt-5-chat-latest` to `gpt-4o` for compatibility with this setup
 
-### 7. Start the UI
+### 8. Start the UI
 
 In a third terminal:
 

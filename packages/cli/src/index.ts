@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { createRequire } from 'node:module';
 
+import { loadEnvFile } from './utils/env.js';
 import { registerInitCommand } from './commands/init.js';
 import { registerRunCommand } from './commands/run.js';
 import { registerSeedCommand } from './commands/seed.js';
@@ -11,6 +12,12 @@ import { registerInspectCommand } from './commands/inspect.js';
 import { registerCleanCommand } from './commands/clean.js';
 import { registerAdaptersCommand } from './commands/adapters.js';
 import { registerInfoCommand } from './commands/info.js';
+import { registerExploreCommand } from './commands/explore.js';
+
+// Auto-load .env from the project directory (cwd). Does not override
+// variables already set in the environment. This means users can just
+// put OPENAI_API_KEY, DATABASE_URL, etc. in a .env file in their project.
+loadEnvFile(process.cwd());
 
 const require = createRequire(import.meta.url);
 const { version } = require('../../package.json') as { version: string };
@@ -37,6 +44,7 @@ registerInspectCommand(program);
 registerCleanCommand(program);
 registerAdaptersCommand(program);
 registerInfoCommand(program);
+registerExploreCommand(program);
 
 // ---------------------------------------------------------------------------
 // Global error handling

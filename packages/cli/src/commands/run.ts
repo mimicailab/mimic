@@ -17,10 +17,15 @@ import {
   LLMClient,
   CostTracker,
   providerConfigFromMimic,
+  DataValidator,
+  classifyTables,
+  derivePromptContext,
+  deriveDataSpec,
 } from '@mimicai/core';
-import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, Fact, FactManifest } from '@mimicai/core';
+import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, SchemaMapping, Fact, FactManifest, PromptContext, DataSpec, AdapterResourceSpecs, ApiMockAdapter, TableClassification } from '@mimicai/core';
 import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
 import { resolveEnvVars } from '../utils/env.js';
+import { importFromProject } from '../utils/import.js';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -70,6 +75,12 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const cwd = process.cwd();
   const config = await loadConfig(cwd);
 
+  // Initialize file-based debug log under .mimic/debug/
+  const debugDir = join(cwd, '.mimic', 'debug');
+  const debugLogFile = join(debugDir, `run-${Date.now()}.log`);
+  logger.initDebugLog(debugLogFile);
+  logger.debugFile('CONFIG', config);
+
   logger.header('mimic run');
 
   // ── Resolve personas ────────────────────────────────────────────────────
@@ -96,14 +107,113 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     throw err;
   }
 
+  // ── Resolve API adapter resource specs, prompt contexts, and data specs ──
+  let promptContexts: Record<string, PromptContext> | undefined;
+  let dataSpecs: Record<string, DataSpec> | undefined;
+  let resourceSpecs: Record<string, AdapterResourceSpecs> | undefined;
+  if (config.apis && Object.keys(config.apis).length > 0) {
+    promptContexts = {};
+    dataSpecs = {};
+    resourceSpecs = {};
+    for (const [name, apiConfig] of Object.entries(config.apis)) {
+      const adapterId = (apiConfig as { adapter?: string }).adapter ?? name;
+      try {
+        const pkg = `@mimicai/adapter-${adapterId}`;
+        const mod = await importFromProject(pkg, process.cwd());
+        const AdapterClass = Object.values(mod).find((v) => {
+          if (typeof v !== 'function') return false;
+          try {
+            const instance = new (v as new () => unknown)() as { type?: string };
+            return instance.type === 'api-mock';
+          } catch { return false; }
+        }) as (new () => ApiMockAdapter) | undefined;
+        if (AdapterClass) {
+          const adapter = new AdapterClass();
+          if (adapter.resourceSpecs) {
+            // ResourceSpec is the source of truth — derive legacy types from it
+            resourceSpecs![adapterId] = adapter.resourceSpecs;
+            promptContexts![adapterId] = derivePromptContext(adapter.resourceSpecs);
+            dataSpecs![adapterId] = deriveDataSpec(adapter.resourceSpecs);
+          } else {
+            // Legacy adapter without resourceSpecs — use direct properties
+            if (adapter.promptContext) {
+              promptContexts![adapterId] = adapter.promptContext;
+            }
+            if (adapter.dataSpec) {
+              dataSpecs![adapterId] = adapter.dataSpec;
+            }
+          }
+        }
+      } catch {
+        logger.debug(`Could not resolve adapter "${adapterId}" for prompt context`);
+      }
+    }
+    if (Object.keys(promptContexts).length === 0) promptContexts = undefined;
+    if (Object.keys(dataSpecs!).length === 0) dataSpecs = undefined;
+    if (Object.keys(resourceSpecs!).length === 0) resourceSpecs = undefined;
+  }
+
   // ── Create shared core instances ───────────────────────────────────────
   const costTracker = new CostTracker();
   const llmClient = new LLMClient(providerConfigFromMimic(config), costTracker);
   const cache = new BlueprintCache(blueprintDir);
   const engine = new BlueprintEngine(llmClient, cache, costTracker);
 
+  // ── Resolve schema mapping (DB↔API) when both are configured ─────────
+  // Always run the LLM schema mapping when both DB tables and API adapters
+  // exist. ResourceSpecs describe the API side but can't infer how a user's
+  // DB tables (which could be named anything) map to API resources.
+  let schemaMapping: SchemaMapping | undefined;
+
+  if (schema.tables.length > 0 && promptContexts && Object.keys(promptContexts).length > 0) {
+    const adapterResources: Record<string, string[]> = {};
+    for (const [adapterId, ctx] of Object.entries(promptContexts)) {
+      adapterResources[adapterId] = ctx.resources;
+    }
+    schemaMapping = await engine.generateSchemaMapping(schema, adapterResources);
+    logger.debugFile('SCHEMA_MAPPING', schemaMapping);
+  }
+
+  // ── Classify tables BEFORE generation ─────────────────────────────────
+  // Classification must happen early so the blueprint engine knows which
+  // tables are identity tables (driven by API data, not independent DB archetypes).
+  const configAdapterIds = config.apis
+    ? Object.entries(config.apis).map(([name, cfg]) => (cfg as { adapter?: string }).adapter ?? name)
+    : [];
+
+  let tableClassifications: TableClassification[] | undefined;
+  const modelingOverrides = (config as Record<string, unknown>).modeling as
+    | { tableRoles?: Record<string, { role: 'identity' | 'external-mirrored' | 'internal-only'; sources?: { adapter: string; resource: string; discriminatorValue?: string }[] }> }
+    | undefined;
+
+  if (schema.tables.length > 0 && configAdapterIds.length > 0) {
+    tableClassifications = classifyTables({
+      schema,
+      schemaMapping,
+      adapterIds: configAdapterIds,
+      modelingOverrides: modelingOverrides?.tableRoles,
+    });
+
+    const identityTables = tableClassifications.filter(c => c.role === 'identity').map(c => c.table);
+    const mirroredTables = tableClassifications.filter(c => c.role === 'external-mirrored').map(c => c.table);
+    if (identityTables.length > 0 || mirroredTables.length > 0) {
+      logger.debug(
+        `Table classification: ${identityTables.length} identity, ${mirroredTables.length} mirrored, ` +
+        `${tableClassifications.length - identityTables.length - mirroredTables.length} internal-only`,
+      );
+      if (identityTables.length > 0) logger.debug(`  Identity: ${identityTables.join(', ')}`);
+      if (mirroredTables.length > 0) logger.debug(`  Mirrored: ${mirroredTables.join(', ')}`);
+    }
+  }
+
+  // Build the set of identity table names for the blueprint engine
+  const identityTableNames = new Set(
+    (tableClassifications ?? []).filter(c => c.role === 'identity').map(c => c.table),
+  );
+
   const summary: { persona: string; tables: Record<string, number>; apis?: Record<string, number> }[] = [];
   const allFacts: Fact[] = [];
+  const expandedResults: { persona: { name: string; description: string }; expanded: ExpandedData }[] = [];
 
   // ── Phase 1: Obtain all blueprints (parallel for LLM calls) ──────────
   const blueprintSpin = logger.spinner(
@@ -124,12 +234,23 @@ async function runGenerate(opts: RunOptions): Promise<void> {
       } else if (!opts.generate && (await fileExists(cachedPath))) {
         blueprint = await readJson<Blueprint>(cachedPath);
       } else {
-        blueprint = await engine.generate(
+        blueprint = await engine.generateBatched(
           schema,
           { name: persona.name, description: persona.description },
           config.domain,
-          { force: opts.generate, personaIndex, totalPersonas: targetPersonas.length, volume: config.generate.volume },
+          {
+            force: opts.generate,
+            personaIndex,
+            totalPersonas: targetPersonas.length,
+            volume: config.generate.volume,
+            adapterBatchSize: config.generate.adapterBatchSize,
+            adapterBatchConcurrency: config.generate.adapterBatchConcurrency,
+            identityTableNames,
+          },
           config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
+          promptContexts,
+          resourceSpecs,
+          tableClassifications,
         );
 
         if (!opts.dryRun) {
@@ -160,7 +281,39 @@ async function runGenerate(opts: RunOptions): Promise<void> {
 
     const expandSpin = logger.spinner('Expanding blueprint into rows...');
     try {
-      const expanded = expander.expand(blueprint, schema, config.generate.volume);
+      const modelingConfig = (config as Record<string, unknown>).modeling as
+        | { fieldMappings?: Record<string, Record<string, Record<string, string>>>; identityLinks?: Record<string, Record<string, { column: string; identityTable: string; apiField: string; platformColumn: string; externalIdColumn: string }[]>> }
+        | undefined;
+
+      const expanded = expander.expand(
+        blueprint, schema, config.generate.volume, promptContexts,
+        schemaMapping, tableClassifications, modelingConfig, resourceSpecs,
+      );
+
+      // Log expansion output summary
+      const expandedTableSummary: Record<string, number> = {};
+      for (const [t, rows] of Object.entries(expanded.tables)) {
+        expandedTableSummary[t] = (rows as unknown[]).length;
+      }
+      const expandedApiSummary: Record<string, Record<string, number>> = {};
+      for (const [adapterId, rs] of Object.entries(expanded.apiResponses)) {
+        expandedApiSummary[adapterId] = {};
+        for (const [resource, rows] of Object.entries(rs.responses)) {
+          expandedApiSummary[adapterId]![resource] = (rows as unknown[]).length;
+        }
+      }
+      logger.debugFile(`EXPANDER OUTPUT [${persona.name}]`, {
+        tables: expandedTableSummary,
+        apiResponses: expandedApiSummary,
+        facts: expanded.facts?.length ?? 0,
+      });
+
+      // Post-expansion validation and repair using adapter specs
+      if (promptContexts) {
+        const validator = new DataValidator(promptContexts, dataSpecs);
+        const repairStats = validator.validateAndRepair(expanded, schema);
+        logger.debugFile(`VALIDATOR REPAIRS [${persona.name}]`, repairStats);
+      }
 
       if (!opts.dryRun) {
         const outPath = join(dataDir, `${persona.name}.json`);
@@ -180,17 +333,32 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         if (total > 0) apiCounts[adapterId] = total;
       }
 
-      // Collect facts for fact manifest
-      if (expanded.facts && expanded.facts.length > 0) {
-        allFacts.push(...expanded.facts);
-      }
-
+      expandedResults.push({ persona, expanded });
       summary.push({ persona: persona.name, tables: tableCounts, apis: apiCounts });
 
       expandSpin.succeed('Data expanded');
     } catch (err) {
       expandSpin.fail('Expansion failed');
       throw err;
+    }
+  }
+
+  // ── Phase 3: Generate facts from actual data (post-expansion LLM call) ──
+  const { generateFacts } = await import('@mimicai/core');
+  for (const { persona, expanded } of expandedResults) {
+    expanded.facts = await generateFacts(
+      llmClient,
+      expanded,
+      persona,
+      config.domain,
+    );
+    if (expanded.facts.length > 0) {
+      allFacts.push(...expanded.facts);
+    }
+    // Re-write expanded data with generated facts
+    if (!opts.dryRun) {
+      const outPath = join(dataDir, `${persona.name}.json`);
+      await writeJson(outPath, expanded);
     }
   }
 
@@ -251,6 +419,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     logger.done(`Generated ${totalRows} rows across ${summary.length} persona(s)`);
     logger.info(`Data written to ${chalk.cyan(dataDir)}`);
   }
+  logger.info(`Debug log: ${chalk.cyan(debugLogFile)}`);
   console.log();
 }
 

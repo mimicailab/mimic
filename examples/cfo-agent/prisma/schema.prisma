@@ -56,7 +56,7 @@ model usage_metrics {
   id         String   @id @default(uuid()) @db.Uuid
   user_id    String   @db.Uuid
   /// Billing period in YYYY-MM format
-  period     String   @db.VarChar(7)
+  period     String   @db.VarChar(10)
   api_calls  Int      @default(0)
   seats_used Int      @default(0)
   storage_gb Float    @default(0)

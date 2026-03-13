@@ -33,10 +33,11 @@ next: { slug: "testing", title: "Testing & Auto-Scenarios" }
              │  API Mock  │ │  MCP   │
              │  Adapters  │ │Servers │
              │            │ │        │
-             │ Stripe     │ │per-    │
-             │ Plaid      │ │adapter │
-             │ Slack      │ │(stdio/ │
-             │ + 7 more   │ │ SSE)   │
+             │ OpenAPI    │ │per-    │
+             │ spec &rarr;     │ │adapter │
+             │ codegen &rarr;  │ │(stdio/ │
+             │ CRUD +     │ │ SSE)   │
+             │ overrides  │ │        │
              └────────────┘ └────────┘</code></pre>
 </div>
 
@@ -66,11 +67,13 @@ next: { slug: "testing", title: "Testing & Auto-Scenarios" }
   <pre><code>Agent sends: GET /stripe/v1/customers?email=alex@example.com
 &#8203;
 Mock Server (Fastify, port 4101)
-  ├─ Route matched: /stripe/* &rarr; StripeAdapter
-  ├─ StripeAdapter.registerRoutes handler
-  │   ├─ Lazy seed &mdash; populate state store from blueprint on first request
-  │   ├─ Filter customers by email query param
-  │   ├─ Format response matching Stripe's real shape
+  ├─ Route matched: /stripe/* &rarr; StripeAdapter (OpenApiMockAdapter)
+  ├─ Generated CRUD scaffolding (616 routes from OpenAPI spec)
+  │   ├─ Seed ExpandedData into StateStore on first request
+  │   ├─ Check override map &mdash; use custom handler if registered
+  │   ├─ Otherwise auto-handle: list (cursor pagination), create,
+  │   │   retrieve, update, delete
+  │   ├─ Default factories enrich responses with spec-faithful defaults
   │   └─ reply.send({ object: "list", data: [...], has_more: false })
   └─ Response returned to agent</code></pre>
 </div>
@@ -115,7 +118,8 @@ Achieved through a two-phase process:
   │     ├── blueprint engine, persona generation, expander
   │     └── schema parsing (prisma-ast, pgsql-parser)
   ├── @mimicai/adapter-sdk
-  │     └── BaseApiMockAdapter, StateStore, buildTestServer
+  │     ├── BaseApiMockAdapter, OpenApiMockAdapter
+  │     └── StateStore, buildTestServer, generateId
   ├── @mimicai/blueprints
   │     └── pre-built persona blueprints (JSON)
   │
@@ -138,9 +142,13 @@ Achieved through a two-phase process:
         └── @mimicai/adapter-zuora
 &#8203;
 Each API adapter contains:
-  ├── src/mcp.ts          &mdash; registerTools() + startMcpServer()
-  ├── src/bin/mcp.ts      &mdash; standalone binary entry point (3 lines)
-  └── src/*-adapter.ts    &mdash; BaseApiMockAdapter implementation
+  ├── adapter.json         &mdash; identity, basePath, versions, spec URL
+  ├── scripts/*-codegen.ts &mdash; OpenAPI spec &rarr; generated TypeScript
+  ├── src/generated/       &mdash; routes.ts, schemas.ts, resource-specs.ts, meta.ts
+  ├── src/overrides/       &mdash; state-machine handlers (confirm, capture, etc.)
+  ├── src/*-adapter.ts     &mdash; OpenApiMockAdapter implementation
+  ├── src/mcp.ts           &mdash; registerTools() + startMcpServer()
+  └── src/bin/mcp.ts       &mdash; standalone binary entry point
 &#8203;
 Shared peer deps across adapters:
   ├── @mimicai/adapter-sdk

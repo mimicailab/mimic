@@ -1,15 +1,42 @@
-export function lsError(status: number, title: string, detail: string) {
+/**
+ * Lemon Squeezy error format (JSON:API style):
+ *   { errors: [{ detail, status, title }] }
+ */
+
+export interface LemonSqueezyError {
+  errors: Array<{
+    detail: string;
+    status: string;
+    title: string;
+  }>;
+}
+
+export function lsNotFound(resource: string, id: string): LemonSqueezyError {
   return {
-    errors: [
-      {
-        status: String(status),
-        title,
-        detail,
-      },
-    ],
+    errors: [{
+      detail: `${resource} with id '${id}' not found.`,
+      status: '404',
+      title: 'Not Found',
+    }],
   };
 }
 
-export function notFound(resource: string, id: string) {
-  return lsError(404, 'Not Found', `${resource} with id '${id}' not found`);
+export function lsValidationError(detail: string): LemonSqueezyError {
+  return {
+    errors: [{
+      detail,
+      status: '422',
+      title: 'Unprocessable Entity',
+    }],
+  };
+}
+
+export function lsStateError(detail: string): LemonSqueezyError {
+  return {
+    errors: [{
+      detail,
+      status: '422',
+      title: 'Invalid state transition',
+    }],
+  };
 }

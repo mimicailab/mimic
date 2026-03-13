@@ -1,12 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const BP = '/recurly/v2021-02-25';
+import meta from './adapter-meta.js';
 
 function makeCall(baseUrl: string) {
   return async (method: string, path: string, body?: unknown): Promise<unknown> => {
@@ -35,470 +30,258 @@ function text(msg: string) {
   return { content: [{ type: 'text' as const, text: msg }] };
 }
 
-function json(data: unknown) {
-  return text(JSON.stringify(data, null, 2));
-}
-
-// ---------------------------------------------------------------------------
-// Factory — Recurly MCP tools (Tier 3: Mimic-built)
-// ---------------------------------------------------------------------------
-
 export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http://localhost:4100'): void {
   const call = makeCall(baseUrl);
 
-  // ── Accounts ────────────────────────────────────────────────────
+  // ── Accounts ──────────────────────────────────────────────────────────
 
-  server.tool('create_account', 'Create a new Recurly account', {
-    code: z.string().optional().describe('Account code (user-defined identifier)'),
+  server.tool('create_account', 'Create a Recurly account', {
+    code: z.string().describe('Unique account code'),
     email: z.string().optional().describe('Email address'),
     first_name: z.string().optional().describe('First name'),
     last_name: z.string().optional().describe('Last name'),
     company: z.string().optional().describe('Company name'),
   }, async (params) => {
-    const data = await call('POST', `${BP}/accounts`, params) as any;
-    return text(`Created account ${data.id} (code: ${data.code})`);
-  });
-
-  server.tool('get_account', 'Get a Recurly account by ID', {
-    account_id: z.string().describe('Account ID'),
-  }, async ({ account_id }) => {
-    const data = await call('GET', `${BP}/accounts/${account_id}`);
-    return json(data);
+    const data = await call('POST', '/recurly/accounts', params) as any;
+    return text(`Created account ${data.id}: ${data.first_name ?? ''} ${data.last_name ?? ''} (${data.email ?? 'no email'})`);
   });
 
   server.tool('list_accounts', 'List Recurly accounts', {
-    email: z.string().optional().describe('Filter by email'),
-    state: z.string().optional().describe('Filter by state'),
-  }, async ({ email, state }) => {
-    const data = await call('GET', `${BP}/accounts${qs({ email, state })}`) as any;
+    limit: z.number().int().min(1).max(200).optional().describe('Max results'),
+  }, async ({ limit }) => {
+    const data = await call('GET', `/recurly/accounts${qs({ limit: limit ?? 20 })}`) as any;
     if (!data.data?.length) return text('No accounts found.');
-    const lines = data.data.map((a: any) => `• ${a.id} — ${a.first_name ?? ''} ${a.last_name ?? ''} (${a.email ?? 'no email'}) [${a.state}]`);
+    const lines = data.data.map((a: any) => `• ${a.id} — ${a.first_name ?? ''} ${a.last_name ?? ''} [${a.state}]`);
     return text(`Accounts (${data.data.length}):\n${lines.join('\n')}`);
   });
 
-  server.tool('update_account', 'Update a Recurly account', {
-    account_id: z.string().describe('Account ID'),
-    first_name: z.string().optional().describe('First name'),
-    last_name: z.string().optional().describe('Last name'),
-    email: z.string().optional().describe('Email'),
-    company: z.string().optional().describe('Company'),
-  }, async ({ account_id, ...rest }) => {
-    const data = await call('PUT', `${BP}/accounts/${account_id}`, rest) as any;
-    return text(`Updated account ${data.id}`);
-  });
-
-  server.tool('deactivate_account', 'Deactivate a Recurly account', {
+  server.tool('get_account', 'Get a specific account', {
     account_id: z.string().describe('Account ID'),
   }, async ({ account_id }) => {
-    const data = await call('DELETE', `${BP}/accounts/${account_id}`) as any;
-    return text(`Deactivated account ${data.id} [${data.state}]`);
+    const data = await call('GET', `/recurly/accounts/${account_id}`) as any;
+    return text(JSON.stringify(data, null, 2));
   });
 
-  // ── Subscriptions ───────────────────────────────────────────────
+  // ── Plans ─────────────────────────────────────────────────────────────
 
-  server.tool('create_subscription', 'Create a new Recurly subscription', {
-    plan_code: z.string().optional().describe('Plan code'),
-    account_id: z.string().optional().describe('Account ID'),
-    currency: z.string().optional().describe('Currency code'),
-    unit_amount: z.number().optional().describe('Unit amount (decimal)'),
-    quantity: z.number().int().optional().describe('Quantity'),
-  }, async (params) => {
-    const data = await call('POST', `${BP}/subscriptions`, params) as any;
-    return text(`Created subscription ${data.id} [${data.state}]`);
-  });
-
-  server.tool('get_subscription', 'Get a Recurly subscription by ID', {
-    subscription_id: z.string().describe('Subscription ID'),
-  }, async ({ subscription_id }) => {
-    const data = await call('GET', `${BP}/subscriptions/${subscription_id}`);
-    return json(data);
-  });
-
-  server.tool('list_subscriptions', 'List Recurly subscriptions', {
-    state: z.string().optional().describe('Filter by state'),
-    account_id: z.string().optional().describe('Filter by account'),
-  }, async ({ state, account_id }) => {
-    const data = await call('GET', `${BP}/subscriptions${qs({ state, account_id })}`) as any;
-    if (!data.data?.length) return text('No subscriptions found.');
-    const lines = data.data.map((s: any) => `• ${s.id} — ${s.plan_code ?? 'unknown'} [${s.state}]`);
-    return text(`Subscriptions (${data.data.length}):\n${lines.join('\n')}`);
-  });
-
-  server.tool('update_subscription', 'Update a Recurly subscription', {
-    subscription_id: z.string().describe('Subscription ID'),
-    plan_code: z.string().optional().describe('New plan code'),
-    unit_amount: z.number().optional().describe('New unit amount'),
-    quantity: z.number().int().optional().describe('New quantity'),
-  }, async ({ subscription_id, ...rest }) => {
-    const data = await call('PUT', `${BP}/subscriptions/${subscription_id}`, rest) as any;
-    return text(`Updated subscription ${data.id}`);
-  });
-
-  server.tool('cancel_subscription', 'Cancel a Recurly subscription (end of term)', {
-    subscription_id: z.string().describe('Subscription ID'),
-  }, async ({ subscription_id }) => {
-    const data = await call('PUT', `${BP}/subscriptions/${subscription_id}/cancel`) as any;
-    return text(`Cancelled subscription ${data.id} [${data.state}]`);
-  });
-
-  server.tool('terminate_subscription', 'Terminate a Recurly subscription immediately', {
-    subscription_id: z.string().describe('Subscription ID'),
-  }, async ({ subscription_id }) => {
-    const data = await call('PUT', `${BP}/subscriptions/${subscription_id}/terminate`) as any;
-    return text(`Terminated subscription ${data.id} [${data.state}]`);
-  });
-
-  server.tool('reactivate_subscription', 'Reactivate a cancelled Recurly subscription', {
-    subscription_id: z.string().describe('Subscription ID'),
-  }, async ({ subscription_id }) => {
-    const data = await call('PUT', `${BP}/subscriptions/${subscription_id}/reactivate`) as any;
-    return text(`Reactivated subscription ${data.id}`);
-  });
-
-  server.tool('pause_subscription', 'Pause a Recurly subscription', {
-    subscription_id: z.string().describe('Subscription ID'),
-  }, async ({ subscription_id }) => {
-    const data = await call('PUT', `${BP}/subscriptions/${subscription_id}/pause`) as any;
-    return text(`Paused subscription ${data.id}`);
-  });
-
-  server.tool('resume_subscription', 'Resume a paused Recurly subscription', {
-    subscription_id: z.string().describe('Subscription ID'),
-  }, async ({ subscription_id }) => {
-    const data = await call('PUT', `${BP}/subscriptions/${subscription_id}/resume`) as any;
-    return text(`Resumed subscription ${data.id}`);
-  });
-
-  // ── Plans ───────────────────────────────────────────────────────
-
-  server.tool('create_plan', 'Create a Recurly plan', {
-    code: z.string().describe('Plan code'),
-    name: z.string().describe('Plan name'),
+  server.tool('create_plan', 'Create a subscription plan', {
+    code: z.string().describe('Unique plan code'),
+    name: z.string().describe('Display name'),
     interval_unit: z.enum(['days', 'months']).optional().describe('Billing interval unit'),
-    interval_length: z.number().int().optional().describe('Billing interval length'),
+    interval_length: z.number().int().positive().optional().describe('Billing interval length'),
   }, async (params) => {
-    const data = await call('POST', `${BP}/plans`, params) as any;
-    return text(`Created plan ${data.id} (code: ${data.code})`);
+    const data = await call('POST', '/recurly/plans', params) as any;
+    return text(`Created plan ${data.id}: ${data.name} (${data.code})`);
   });
 
-  server.tool('get_plan', 'Get a Recurly plan by ID', {
-    plan_id: z.string().describe('Plan ID'),
-  }, async ({ plan_id }) => {
-    const data = await call('GET', `${BP}/plans/${plan_id}`);
-    return json(data);
-  });
-
-  server.tool('list_plans', 'List Recurly plans', {
-    state: z.string().optional().describe('Filter by state'),
-  }, async ({ state }) => {
-    const data = await call('GET', `${BP}/plans${qs({ state })}`) as any;
+  server.tool('list_plans', 'List subscription plans', {}, async () => {
+    const data = await call('GET', '/recurly/plans') as any;
     if (!data.data?.length) return text('No plans found.');
-    const lines = data.data.map((p: any) => `• ${p.id} — ${p.name} (${p.code})`);
+    const lines = data.data.map((p: any) => `• ${p.id} — ${p.name} (${p.code}) [${p.state}]`);
     return text(`Plans (${data.data.length}):\n${lines.join('\n')}`);
   });
 
-  server.tool('update_plan', 'Update a Recurly plan', {
-    plan_id: z.string().describe('Plan ID'),
-    name: z.string().optional().describe('Plan name'),
-  }, async ({ plan_id, ...rest }) => {
-    const data = await call('PUT', `${BP}/plans/${plan_id}`, rest) as any;
-    return text(`Updated plan ${data.id}`);
+  // ── Subscriptions ─────────────────────────────────────────────────────
+
+  server.tool('create_subscription', 'Create a subscription', {
+    plan_code: z.string().describe('Plan code'),
+    account_code: z.string().describe('Account code'),
+    currency: z.string().length(3).optional().describe('Currency (default USD)'),
+  }, async ({ plan_code, account_code, currency }) => {
+    const data = await call('POST', '/recurly/subscriptions', {
+      plan_code,
+      account: { code: account_code },
+      currency: currency ?? 'USD',
+    }) as any;
+    return text(`Created subscription ${data.id} [${data.state}]`);
   });
 
-  // ── Add-Ons ─────────────────────────────────────────────────────
-
-  server.tool('create_add_on', 'Create an add-on for a Recurly plan', {
-    plan_id: z.string().describe('Plan ID'),
-    code: z.string().describe('Add-on code'),
-    name: z.string().describe('Add-on name'),
-    add_on_type: z.enum(['fixed', 'usage']).optional().describe('Add-on type'),
-  }, async ({ plan_id, ...rest }) => {
-    const data = await call('POST', `${BP}/plans/${plan_id}/add_ons`, rest) as any;
-    return text(`Created add-on ${data.id} (code: ${data.code})`);
+  server.tool('list_subscriptions', 'List subscriptions', {
+    state: z.enum(['active', 'canceled', 'expired', 'future', 'paused']).optional().describe('Filter by state'),
+    limit: z.number().int().min(1).max(200).optional().describe('Max results'),
+  }, async ({ state, limit }) => {
+    const data = await call('GET', `/recurly/subscriptions${qs({ state, limit: limit ?? 20 })}`) as any;
+    if (!data.data?.length) return text('No subscriptions found.');
+    const lines = data.data.map((s: any) => `• ${s.id} — [${s.state}]`);
+    return text(`Subscriptions (${data.data.length}):\n${lines.join('\n')}`);
   });
 
-  server.tool('get_add_on', 'Get an add-on by ID', {
-    plan_id: z.string().describe('Plan ID'),
-    add_on_id: z.string().describe('Add-on ID'),
-  }, async ({ plan_id, add_on_id }) => {
-    const data = await call('GET', `${BP}/plans/${plan_id}/add_ons/${add_on_id}`);
-    return json(data);
+  server.tool('cancel_subscription', 'Cancel a subscription', {
+    subscription_id: z.string().describe('Subscription ID'),
+  }, async ({ subscription_id }) => {
+    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/cancel`) as any;
+    return text(`Cancelled subscription ${data.id} [${data.state}]`);
   });
 
-  server.tool('list_add_ons', 'List add-ons for a plan', {
-    plan_id: z.string().describe('Plan ID'),
-  }, async ({ plan_id }) => {
-    const data = await call('GET', `${BP}/plans/${plan_id}/add_ons`) as any;
-    if (!data.data?.length) return text('No add-ons found.');
-    const lines = data.data.map((a: any) => `• ${a.id} — ${a.name} (${a.code})`);
-    return text(`Add-ons (${data.data.length}):\n${lines.join('\n')}`);
+  server.tool('reactivate_subscription', 'Reactivate a canceled subscription', {
+    subscription_id: z.string().describe('Subscription ID'),
+  }, async ({ subscription_id }) => {
+    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/reactivate`) as any;
+    return text(`Reactivated subscription ${data.id} [${data.state}]`);
   });
 
-  server.tool('update_add_on', 'Update an add-on', {
-    plan_id: z.string().describe('Plan ID'),
-    add_on_id: z.string().describe('Add-on ID'),
-    name: z.string().optional().describe('Add-on name'),
-  }, async ({ plan_id, add_on_id, ...rest }) => {
-    const data = await call('PUT', `${BP}/plans/${plan_id}/add_ons/${add_on_id}`, rest) as any;
-    return text(`Updated add-on ${data.id}`);
+  server.tool('pause_subscription', 'Pause a subscription', {
+    subscription_id: z.string().describe('Subscription ID'),
+    remaining_pause_cycles: z.number().int().positive().optional().describe('Number of pause cycles'),
+  }, async ({ subscription_id, remaining_pause_cycles }) => {
+    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/pause`, {
+      remaining_pause_cycles: remaining_pause_cycles ?? 1,
+    }) as any;
+    return text(`Paused subscription ${data.id} [${data.state}]`);
   });
 
-  server.tool('delete_add_on', 'Delete an add-on from a plan', {
-    plan_id: z.string().describe('Plan ID'),
-    add_on_id: z.string().describe('Add-on ID'),
-  }, async ({ plan_id, add_on_id }) => {
-    await call('DELETE', `${BP}/plans/${plan_id}/add_ons/${add_on_id}`);
-    return text(`Deleted add-on ${add_on_id}`);
+  server.tool('resume_subscription', 'Resume a paused subscription', {
+    subscription_id: z.string().describe('Subscription ID'),
+  }, async ({ subscription_id }) => {
+    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/resume`) as any;
+    return text(`Resumed subscription ${data.id} [${data.state}]`);
   });
 
-  // ── Invoices ────────────────────────────────────────────────────
+  // ── Invoices ──────────────────────────────────────────────────────────
 
-  server.tool('get_invoice', 'Get a Recurly invoice by ID', {
+  server.tool('list_invoices', 'List invoices', {
+    state: z.enum(['pending', 'processing', 'past_due', 'paid', 'failed', 'voided']).optional().describe('Filter by state'),
+    limit: z.number().int().min(1).max(200).optional().describe('Max results'),
+  }, async ({ state, limit }) => {
+    const data = await call('GET', `/recurly/invoices${qs({ state, limit: limit ?? 20 })}`) as any;
+    if (!data.data?.length) return text('No invoices found.');
+    const lines = data.data.map((inv: any) => `• ${inv.id} — ${inv.total ?? 0} ${inv.currency ?? 'USD'} [${inv.state}]`);
+    return text(`Invoices (${data.data.length}):\n${lines.join('\n')}`);
+  });
+
+  server.tool('get_invoice', 'Get a specific invoice', {
     invoice_id: z.string().describe('Invoice ID'),
   }, async ({ invoice_id }) => {
-    const data = await call('GET', `${BP}/invoices/${invoice_id}`);
-    return json(data);
-  });
-
-  server.tool('list_invoices', 'List Recurly invoices', {
-    account_id: z.string().optional().describe('Filter by account'),
-    state: z.string().optional().describe('Filter by state'),
-    subscription_id: z.string().optional().describe('Filter by subscription'),
-  }, async ({ account_id, state, subscription_id }) => {
-    const data = await call('GET', `${BP}/invoices${qs({ account_id, state, subscription_id })}`) as any;
-    if (!data.data?.length) return text('No invoices found.');
-    const lines = data.data.map((i: any) => `• ${i.id} — ${i.total ?? 0} ${i.currency ?? 'USD'} [${i.state}]`);
-    return text(`Invoices (${data.data.length}):\n${lines.join('\n')}`);
+    const data = await call('GET', `/recurly/invoices/${invoice_id}`) as any;
+    return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('collect_invoice', 'Collect payment on an invoice', {
     invoice_id: z.string().describe('Invoice ID'),
   }, async ({ invoice_id }) => {
-    const data = await call('POST', `${BP}/invoices/${invoice_id}/collect`) as any;
-    return text(`Collected payment for invoice ${data.id} [${data.state}]`);
+    const data = await call('PUT', `/recurly/invoices/${invoice_id}/collect`) as any;
+    return text(`Collected invoice ${data.id} [${data.state}]`);
   });
 
   server.tool('void_invoice', 'Void an invoice', {
     invoice_id: z.string().describe('Invoice ID'),
   }, async ({ invoice_id }) => {
-    const data = await call('PUT', `${BP}/invoices/${invoice_id}/void`) as any;
-    return text(`Voided invoice ${data.id}`);
+    const data = await call('PUT', `/recurly/invoices/${invoice_id}/void`) as any;
+    return text(`Voided invoice ${data.id} [${data.state}]`);
   });
 
-  server.tool('mark_invoice_failed', 'Mark an invoice as failed', {
-    invoice_id: z.string().describe('Invoice ID'),
-  }, async ({ invoice_id }) => {
-    const data = await call('PUT', `${BP}/invoices/${invoice_id}/mark_failed`) as any;
-    return text(`Marked invoice ${data.id} as failed`);
-  });
+  // ── Coupons ───────────────────────────────────────────────────────────
 
-  // ── Line Items ──────────────────────────────────────────────────
-
-  server.tool('create_line_item', 'Create a line item (charge/credit) on an account', {
-    account_id: z.string().describe('Account ID'),
-    type: z.enum(['charge', 'credit']).describe('Line item type'),
-    currency: z.string().optional().describe('Currency code'),
-    unit_amount: z.number().describe('Unit amount (decimal)'),
-    description: z.string().optional().describe('Description'),
-    quantity: z.number().int().optional().describe('Quantity'),
-  }, async ({ account_id, ...rest }) => {
-    const data = await call('POST', `${BP}/accounts/${account_id}/line_items`, rest) as any;
-    return text(`Created line item ${data.id} (${data.type}: ${data.unit_amount} ${data.currency})`);
-  });
-
-  server.tool('list_line_items', 'List line items for an account', {
-    account_id: z.string().describe('Account ID'),
-  }, async ({ account_id }) => {
-    const data = await call('GET', `${BP}/accounts/${account_id}/line_items`) as any;
-    if (!data.data?.length) return text('No line items found.');
-    const lines = data.data.map((i: any) => `• ${i.id} — ${i.type} ${i.unit_amount} ${i.currency}`);
-    return text(`Line items (${data.data.length}):\n${lines.join('\n')}`);
-  });
-
-  server.tool('delete_line_item', 'Delete a pending line item', {
-    line_item_id: z.string().describe('Line item ID'),
-  }, async ({ line_item_id }) => {
-    await call('DELETE', `${BP}/line_items/${line_item_id}`);
-    return text(`Deleted line item ${line_item_id}`);
-  });
-
-  // ── Transactions ────────────────────────────────────────────────
-
-  server.tool('get_transaction', 'Get a Recurly transaction by ID', {
-    transaction_id: z.string().describe('Transaction ID'),
-  }, async ({ transaction_id }) => {
-    const data = await call('GET', `${BP}/transactions/${transaction_id}`);
-    return json(data);
-  });
-
-  server.tool('list_transactions', 'List Recurly transactions', {
-    account_id: z.string().optional().describe('Filter by account'),
-  }, async ({ account_id }) => {
-    const data = await call('GET', `${BP}/transactions${qs({ account_id })}`) as any;
-    if (!data.data?.length) return text('No transactions found.');
-    const lines = data.data.map((t: any) => `• ${t.id}`);
-    return text(`Transactions (${data.data.length}):\n${lines.join('\n')}`);
-  });
-
-  // ── Billing Info ────────────────────────────────────────────────
-
-  server.tool('update_billing_info', 'Update billing info for an account', {
-    account_id: z.string().describe('Account ID'),
-    token_id: z.string().optional().describe('Token ID from Recurly.js'),
-  }, async ({ account_id, ...rest }) => {
-    const data = await call('PUT', `${BP}/accounts/${account_id}/billing_info`, rest) as any;
-    return text(`Updated billing info for account ${account_id}`);
-  });
-
-  server.tool('get_billing_info', 'Get billing info for an account', {
-    account_id: z.string().describe('Account ID'),
-  }, async ({ account_id }) => {
-    const data = await call('GET', `${BP}/accounts/${account_id}/billing_info`);
-    return json(data);
-  });
-
-  server.tool('remove_billing_info', 'Remove billing info from an account', {
-    account_id: z.string().describe('Account ID'),
-  }, async ({ account_id }) => {
-    await call('DELETE', `${BP}/accounts/${account_id}/billing_info`);
-    return text(`Removed billing info for account ${account_id}`);
-  });
-
-  // ── Coupons ─────────────────────────────────────────────────────
-
-  server.tool('create_coupon', 'Create a Recurly coupon', {
-    code: z.string().describe('Coupon code'),
-    name: z.string().describe('Coupon name'),
-    discount_type: z.enum(['percent', 'fixed', 'free_trial']).describe('Discount type'),
-    discount_percent: z.number().optional().describe('Discount percentage'),
-    duration: z.enum(['single_use', 'temporal', 'forever']).optional().describe('Duration'),
-    max_redemptions: z.number().int().optional().describe('Max redemptions'),
+  server.tool('create_coupon', 'Create a coupon', {
+    code: z.string().describe('Unique coupon code'),
+    name: z.string().describe('Display name'),
+    discount_type: z.enum(['percent', 'fixed', 'free_trial']).optional().describe('Discount type'),
+    discount_percent: z.number().min(0).max(100).optional().describe('Percent discount (for percent type)'),
   }, async (params) => {
-    const data = await call('POST', `${BP}/coupons`, params) as any;
-    return text(`Created coupon ${data.id} (code: ${data.code})`);
+    const data = await call('POST', '/recurly/coupons', params) as any;
+    return text(`Created coupon ${data.id}: ${data.name} (${data.code})`);
   });
 
-  server.tool('get_coupon', 'Get a Recurly coupon by ID', {
-    coupon_id: z.string().describe('Coupon ID'),
-  }, async ({ coupon_id }) => {
-    const data = await call('GET', `${BP}/coupons/${coupon_id}`);
-    return json(data);
-  });
-
-  server.tool('list_coupons', 'List Recurly coupons', {
-    state: z.string().optional().describe('Filter by state'),
-  }, async ({ state }) => {
-    const data = await call('GET', `${BP}/coupons${qs({ state })}`) as any;
+  server.tool('list_coupons', 'List coupons', {}, async () => {
+    const data = await call('GET', '/recurly/coupons') as any;
     if (!data.data?.length) return text('No coupons found.');
     const lines = data.data.map((c: any) => `• ${c.id} — ${c.name} (${c.code}) [${c.state}]`);
     return text(`Coupons (${data.data.length}):\n${lines.join('\n')}`);
   });
 
-  server.tool('redeem_coupon', 'Redeem a coupon on an account', {
-    account_id: z.string().describe('Account ID'),
-    coupon_id: z.string().describe('Coupon ID'),
-    currency: z.string().optional().describe('Currency code'),
-  }, async ({ account_id, ...rest }) => {
-    const data = await call('POST', `${BP}/accounts/${account_id}/coupon_redemptions`, rest) as any;
-    return text(`Redeemed coupon on account ${account_id}`);
+  // ── Items ─────────────────────────────────────────────────────────────
+
+  server.tool('create_item', 'Create a catalog item', {
+    code: z.string().describe('Unique item code'),
+    name: z.string().describe('Display name'),
+    description: z.string().optional().describe('Item description'),
+  }, async (params) => {
+    const data = await call('POST', '/recurly/items', params) as any;
+    return text(`Created item ${data.id}: ${data.name} (${data.code})`);
   });
 
-  // ── Usage Records ───────────────────────────────────────────────
-
-  server.tool('create_usage', 'Create a usage record for metered billing', {
-    subscription_id: z.string().describe('Subscription ID'),
-    add_on_id: z.string().describe('Add-on ID'),
-    amount: z.number().describe('Usage amount'),
-    merchant_tag: z.string().optional().describe('Merchant tag for tracking'),
-  }, async ({ subscription_id, add_on_id, ...rest }) => {
-    const data = await call('POST', `${BP}/subscriptions/${subscription_id}/add_ons/${add_on_id}/usage`, rest) as any;
-    return text(`Created usage record ${data.id}`);
+  server.tool('list_items', 'List catalog items', {}, async () => {
+    const data = await call('GET', '/recurly/items') as any;
+    if (!data.data?.length) return text('No items found.');
+    const lines = data.data.map((i: any) => `• ${i.id} — ${i.name} (${i.code}) [${i.state}]`);
+    return text(`Items (${data.data.length}):\n${lines.join('\n')}`);
   });
 
-  server.tool('list_usage', 'List usage records for a subscription add-on', {
-    subscription_id: z.string().describe('Subscription ID'),
-    add_on_id: z.string().describe('Add-on ID'),
-  }, async ({ subscription_id, add_on_id }) => {
-    const data = await call('GET', `${BP}/subscriptions/${subscription_id}/add_ons/${add_on_id}/usage`) as any;
-    if (!data.data?.length) return text('No usage records found.');
-    const lines = data.data.map((u: any) => `• ${u.id} — amount: ${u.amount}`);
-    return text(`Usage records (${data.data.length}):\n${lines.join('\n')}`);
+  // ── Transactions ──────────────────────────────────────────────────────
+
+  server.tool('list_transactions', 'List transactions', {
+    limit: z.number().int().min(1).max(200).optional().describe('Max results'),
+  }, async ({ limit }) => {
+    const data = await call('GET', `/recurly/transactions${qs({ limit: limit ?? 20 })}`) as any;
+    if (!data.data?.length) return text('No transactions found.');
+    const lines = data.data.map((t: any) => `• ${t.id} — ${t.amount ?? 0} ${t.currency ?? 'USD'} [${t.status ?? t.type}]`);
+    return text(`Transactions (${data.data.length}):\n${lines.join('\n')}`);
   });
 
-  // ── Shipping Addresses ──────────────────────────────────────────
+  // ── Generic resource tools ────────────────────────────────────────────
 
-  server.tool('create_shipping_address', 'Create a shipping address for an account', {
-    account_id: z.string().describe('Account ID'),
-    first_name: z.string().optional().describe('First name'),
-    last_name: z.string().optional().describe('Last name'),
-    street1: z.string().describe('Street address'),
-    city: z.string().describe('City'),
-    region: z.string().optional().describe('State/region'),
-    postal_code: z.string().describe('Postal code'),
-    country: z.string().describe('Country code'),
-  }, async ({ account_id, ...rest }) => {
-    const data = await call('POST', `${BP}/accounts/${account_id}/shipping_addresses`, rest) as any;
-    return text(`Created shipping address ${data.id}`);
+  server.tool('search_recurly_resources', 'Search across Recurly resources', {
+    query: z.string().describe('Search query string'),
+    resource: z.enum(['accounts', 'subscriptions', 'invoices', 'plans', 'transactions']).optional().describe('Limit to resource type'),
+  }, async ({ query, resource }) => {
+    const types = resource ? [resource] : ['accounts', 'subscriptions', 'invoices', 'plans', 'transactions'];
+    const results: string[] = [];
+
+    for (const type of types) {
+      try {
+        const data = await call('GET', `/recurly/${type}`) as any;
+        if (!data.data?.length) continue;
+        const matches = data.data.filter((item: any) => {
+          const str = JSON.stringify(item).toLowerCase();
+          return str.includes(query.toLowerCase());
+        });
+        for (const m of matches) {
+          results.push(`[${type}] ${m.id} — ${JSON.stringify(m).slice(0, 120)}`);
+        }
+      } catch { /* skip */ }
+    }
+
+    if (!results.length) return text(`No results found for "${query}".`);
+    return text(`Search results (${results.length}):\n${results.join('\n')}`);
   });
 
-  server.tool('list_shipping_addresses', 'List shipping addresses for an account', {
-    account_id: z.string().describe('Account ID'),
-  }, async ({ account_id }) => {
-    const data = await call('GET', `${BP}/accounts/${account_id}/shipping_addresses`) as any;
-    if (!data.data?.length) return text('No shipping addresses found.');
-    const lines = data.data.map((a: any) => `• ${a.id} — ${a.street1}, ${a.city} ${a.postal_code}`);
-    return text(`Shipping addresses (${data.data.length}):\n${lines.join('\n')}`);
+  server.tool('fetch_recurly_resource', 'Fetch a specific Recurly resource', {
+    resource_type: z.enum([
+      'accounts', 'subscriptions', 'plans', 'invoices', 'transactions',
+      'coupons', 'items', 'add_ons', 'line_items',
+    ]).describe('Resource type'),
+    resource_id: z.string().describe('Resource ID'),
+  }, async ({ resource_type, resource_id }) => {
+    const data = await call('GET', `/recurly/${resource_type}/${resource_id}`) as any;
+    return text(JSON.stringify(data, null, 2));
   });
 
-  server.tool('update_shipping_address', 'Update a shipping address', {
-    account_id: z.string().describe('Account ID'),
-    address_id: z.string().describe('Shipping address ID'),
-    street1: z.string().optional().describe('Street address'),
-    city: z.string().optional().describe('City'),
-    region: z.string().optional().describe('State/region'),
-    postal_code: z.string().optional().describe('Postal code'),
-    country: z.string().optional().describe('Country code'),
-  }, async ({ account_id, address_id, ...rest }) => {
-    const data = await call('PUT', `${BP}/accounts/${account_id}/shipping_addresses/${address_id}`, rest) as any;
-    return text(`Updated shipping address ${data.id}`);
-  });
-
-  server.tool('delete_shipping_address', 'Delete a shipping address', {
-    account_id: z.string().describe('Account ID'),
-    address_id: z.string().describe('Shipping address ID'),
-  }, async ({ account_id, address_id }) => {
-    await call('DELETE', `${BP}/accounts/${account_id}/shipping_addresses/${address_id}`);
-    return text(`Deleted shipping address ${address_id}`);
-  });
-
-  // ── Entitlements ────────────────────────────────────────────────
-
-  server.tool('list_entitlements', 'List entitlements for an account', {
-    account_id: z.string().describe('Account ID'),
-  }, async ({ account_id }) => {
-    const data = await call('GET', `${BP}/accounts/${account_id}/entitlements`) as any;
-    if (!data.data?.length) return text('No entitlements found.');
-    const lines = data.data.map((e: any) => `• ${e.id}`);
-    return text(`Entitlements (${data.data.length}):\n${lines.join('\n')}`);
+  server.tool('search_recurly_documentation', 'Search Recurly documentation', {
+    query: z.string().describe('Documentation topic to search for'),
+  }, async ({ query }) => {
+    return text(
+      `Recurly documentation search for "${query}":\n\n` +
+      `This is a mock Mimic server. For real Recurly docs, visit ${meta.documentationUrl}\n\n` +
+      `Common topics:\n` +
+      `• Accounts: POST /accounts with code + email\n` +
+      `• Plans: POST /plans with code + name\n` +
+      `• Subscriptions: POST /subscriptions with plan_code + account\n` +
+      `• Invoices: GET /invoices, PUT /invoices/{id}/collect\n` +
+      `• Coupons: POST /coupons with code + name + discount_type\n`,
+    );
   });
 }
 
-/**
- * Create a standalone Mimic MCP server for Recurly.
- */
 export function createRecurlyMcpServer(baseUrl: string = 'http://localhost:4100'): McpServer {
   const server = new McpServer({
-    name: 'mimic-recurly',
-    version: '0.5.0',
-    description: 'Mimic MCP server for Recurly — subscription management, recurring billing, revenue recognition',
+    name: meta.mcp.serverName,
+    version: meta.mcp.serverVersion,
+    description: meta.mcp.description,
   });
   registerRecurlyTools(server, baseUrl);
   return server;
 }
 
-/**
- * Start the Recurly MCP server on stdio transport.
- */
 export async function startRecurlyMcpServer(): Promise<void> {
   const baseUrl = process.env.MIMIC_BASE_URL || 'http://localhost:4100';
   const server = createRecurlyMcpServer(baseUrl);

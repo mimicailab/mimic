@@ -1,908 +1,367 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { EndpointDefinition, ExpandedData } from '@mimicai/core';
+import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
+import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { BaseApiMockAdapter, generateId, unixNow } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, unixNow } from '@mimicai/adapter-sdk';
+import type { DefaultFactory } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
-import { stripeError } from './stripe-errors.js';
 import { registerStripeTools } from './mcp.js';
+import meta from './adapter-meta.js';
+
+// Generated files — do not edit directly; run `pnpm generate` to regenerate
+import { stripeResourceSpecs } from './generated/resource-specs.js';
+import { SCHEMA_DEFAULTS } from './generated/schemas.js';
+import { GENERATED_ROUTES } from './generated/routes.js';
+import type { GeneratedRoute } from './generated/routes.js';
+
+// State-machine overrides
+import * as piOverrides from './overrides/payment-intents.js';
+import * as siOverrides from './overrides/setup-intents.js';
+import * as invOverrides from './overrides/invoices.js';
+import * as chOverrides from './overrides/charges.js';
+import * as bpOverrides from './overrides/billing-portal.js';
+import * as refundOverrides from './overrides/refunds.js';
+import * as pmOverrides from './overrides/payment-methods.js';
+import * as custOverrides from './overrides/customers.js';
+import * as subItemOverrides from './overrides/subscription-items.js';
 
 // ---------------------------------------------------------------------------
-// Namespace constants
+// Namespace helper
 // ---------------------------------------------------------------------------
 
-const NS = {
-  customers: 'stripe_customers',
-  pis: 'stripe_pis',
-  charges: 'stripe_charges',
-  subs: 'stripe_subs',
-  invoices: 'stripe_invoices',
-  invoiceItems: 'stripe_invoice_items',
-  refunds: 'stripe_refunds',
-  products: 'stripe_products',
-  prices: 'stripe_prices',
-  coupons: 'stripe_coupons',
-  disputes: 'stripe_disputes',
-  paymentLinks: 'stripe_payment_links',
-  events: 'stripe_events',
-} as const;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function listWrap(data: unknown[], resource: string, hasMore = false) {
-  return {
-    object: 'list' as const,
-    data,
-    has_more: hasMore,
-    url: `/v1/${resource}`,
-  };
+/** StateStore namespace key for a Stripe resource type. */
+function ns(resource: string): string {
+  return `stripe:${resource}`;
 }
 
 // ---------------------------------------------------------------------------
-// Stripe Adapter
+// StripeAdapter
 // ---------------------------------------------------------------------------
 
-export class StripeAdapter extends BaseApiMockAdapter<StripeConfig> {
-  readonly id = 'stripe';
-  readonly name = 'Stripe API';
-  readonly basePath = '/stripe/v1';
-  readonly versions = [
-    '2025-03-31.basil',
-    '2025-09-30.clover',
-    '2026-02-25.clover',
-  ];
+export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
+  readonly id = meta.id;
+  readonly name = meta.name;
+  readonly basePath = meta.basePath;
+  readonly versions = meta.versions;
 
-  registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
-    registerStripeTools(mcpServer, mockBaseUrl);
-  }
+  /** Full resource specs generated from the Stripe OpenAPI spec (1335 schemas → 142 resources, 2262 fields) */
+  readonly resourceSpecs = stripeResourceSpecs;
 
-  resolvePersona(req: FastifyRequest): string | null {
-    const auth = req.headers.authorization;
-    if (!auth) return null;
-    const match = auth.match(/^Bearer\s+sk_test_([a-z0-9-]+)_/);
-    return match ? match[1] : null;
-  }
+  /** @deprecated Use resourceSpecs. */
+  readonly promptContext = derivePromptContext(stripeResourceSpecs);
+
+  /** @deprecated Use resourceSpecs. */
+  readonly dataSpec: DataSpec = deriveDataSpec(stripeResourceSpecs);
+
+  protected readonly generatedRoutes: GeneratedRoute[] = GENERATED_ROUTES;
+  protected readonly defaultFactories: Record<string, DefaultFactory> = SCHEMA_DEFAULTS;
+
+  // ---------------------------------------------------------------------------
+  // Route registration
+  // ---------------------------------------------------------------------------
 
   async registerRoutes(
     server: FastifyInstance,
     data: Map<string, ExpandedData>,
     store: StateStore,
   ): Promise<void> {
-    // ── Seed from expanded apiResponses ──────────────────────────────────
-    this.seedFromApiResponses(data, store);
-
-    // ── Customers ──────────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/customers', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const customer = {
-        id: generateId('cus', 14),
-        object: 'customer',
-        created: now,
-        email: body.email ?? null,
-        name: body.name ?? null,
-        description: body.description ?? null,
-        metadata: body.metadata ?? {},
-        livemode: false,
-        ...body,
-      };
-      store.set(NS.customers, customer.id, customer);
-      return reply.code(200).send(customer);
-    });
-
-    server.get('/stripe/v1/customers', async (req, reply) => {
-      const query = req.query as Record<string, string>;
-      let customers = store.list<Record<string, unknown>>(NS.customers);
-
-      if (query.email) {
-        customers = customers.filter((c) => c.email === query.email);
-      }
-
-      // Cursor-based pagination via starting_after + limit
-      const limit = query.limit ? Math.min(parseInt(query.limit, 10), 100) : 10;
-      let startIdx = 0;
-
-      if (query.starting_after) {
-        const idx = customers.findIndex((c) => c.id === query.starting_after);
-        if (idx >= 0) startIdx = idx + 1;
-      }
-
-      const page = customers.slice(startIdx, startIdx + limit);
-      const hasMore = startIdx + limit < customers.length;
-
-      return reply.code(200).send(listWrap(page, 'customers', hasMore));
-    });
-
-    server.get('/stripe/v1/customers/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const customer = store.get(NS.customers, id);
-      if (!customer) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such customer: '${id}'`));
-      }
-      return reply.code(200).send(customer);
-    });
-
-    server.post('/stripe/v1/customers/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const existing = store.get<Record<string, unknown>>(NS.customers, id);
-      if (!existing) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such customer: '${id}'`));
-      }
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const updated = { ...existing, ...body };
-      store.set(NS.customers, id, updated);
-      return reply.code(200).send(updated);
-    });
-
-    server.delete('/stripe/v1/customers/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      store.delete(NS.customers, id);
-      return reply.code(200).send({ id, object: 'customer', deleted: true });
-    });
-
-    // ── Payment Intents ────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/payment_intents', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const id = generateId('pi', 24);
-      const pi = {
-        ...body,
-        id,
-        object: 'payment_intent',
-        amount: body.amount ?? 0,
-        currency: body.currency ?? 'usd',
-        capture_method: body.capture_method ?? 'automatic',
-        client_secret: `${id}_secret_${generateId('', 12).slice(1)}`,
-        created: now,
-        metadata: body.metadata ?? {},
-        latest_charge: null,
-        livemode: false,
-        status: 'requires_payment_method',
-      };
-      store.set(NS.pis, pi.id, pi);
-      return reply.code(200).send(pi);
-    });
-
-    server.get('/stripe/v1/payment_intents', async (req, reply) => {
-      const query = req.query as Record<string, string>;
-      let pis = store.list<Record<string, unknown>>(NS.pis);
-
-      if (query.customer) {
-        pis = pis.filter((p) => p.customer === query.customer);
-      }
-
-      const limit = query.limit ? Math.min(parseInt(query.limit, 10), 100) : 10;
-      const page = pis.slice(0, limit);
-      const hasMore = limit < pis.length;
-
-      return reply.code(200).send(listWrap(page, 'payment_intents', hasMore));
-    });
-
-    server.get('/stripe/v1/payment_intents/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const pi = store.get(NS.pis, id);
-      if (!pi) {
-        return reply
-          .code(404)
-          .send(
-            stripeError('resource_missing', `No such payment_intent: '${id}'`),
-          );
-      }
-      return reply.code(200).send(pi);
-    });
-
-    server.post(
-      '/stripe/v1/payment_intents/:id/confirm',
-      async (req, reply) => {
-        const { id } = req.params as { id: string };
-        const pi = store.get<Record<string, unknown>>(NS.pis, id);
-        if (!pi) {
-          return reply
-            .code(404)
-            .send(
-              stripeError(
-                'resource_missing',
-                `No such payment_intent: '${id}'`,
-              ),
-            );
-        }
-
-        const body = (req.body ?? {}) as Record<string, unknown>;
-
-        // Create a charge
-        const chargeId = generateId('ch', 24);
-        const now = unixNow();
-        const charge = {
-          id: chargeId,
-          object: 'charge',
-          amount: pi.amount,
-          currency: pi.currency,
-          status: 'succeeded',
-          payment_intent: id,
-          created: now,
-          livemode: false,
-        };
-        store.set(NS.charges, chargeId, charge);
-
-        // Determine capture method — check body first, then existing PI
-        const captureMethod =
-          body.capture_method ?? pi.capture_method ?? 'automatic';
-
-        const newStatus =
-          captureMethod === 'manual' ? 'requires_capture' : 'succeeded';
-
-        const updated = {
-          ...pi,
-          ...body,
-          status: newStatus,
-          latest_charge: chargeId,
-          capture_method: captureMethod,
-        };
-        store.set(NS.pis, id, updated);
-        return reply.code(200).send(updated);
-      },
-    );
-
-    server.post(
-      '/stripe/v1/payment_intents/:id/capture',
-      async (req, reply) => {
-        const { id } = req.params as { id: string };
-        const pi = store.get<Record<string, unknown>>(NS.pis, id);
-        if (!pi) {
-          return reply
-            .code(404)
-            .send(
-              stripeError(
-                'resource_missing',
-                `No such payment_intent: '${id}'`,
-              ),
-            );
-        }
-
-        if (pi.status !== 'requires_capture') {
-          return reply
-            .code(400)
-            .send(
-              stripeError(
-                'payment_intent_unexpected_state',
-                `This PaymentIntent's status is ${pi.status}, but must be requires_capture to capture.`,
-              ),
-            );
-        }
-
-        const body = (req.body ?? {}) as Record<string, unknown>;
-
-        // Support partial capture via amount_to_capture
-        const capturedAmount =
-          body.amount_to_capture != null
-            ? Number(body.amount_to_capture)
-            : pi.amount;
-
-        const updated = {
-          ...pi,
-          status: 'succeeded',
-          amount_captured: capturedAmount,
-        };
-        store.set(NS.pis, id, updated);
-        return reply.code(200).send(updated);
-      },
-    );
-
-    server.post(
-      '/stripe/v1/payment_intents/:id/cancel',
-      async (req, reply) => {
-        const { id } = req.params as { id: string };
-        const pi = store.get<Record<string, unknown>>(NS.pis, id);
-        if (!pi) {
-          return reply
-            .code(404)
-            .send(
-              stripeError(
-                'resource_missing',
-                `No such payment_intent: '${id}'`,
-              ),
-            );
-        }
-        const updated = { ...pi, status: 'canceled' };
-        store.set(NS.pis, id, updated);
-        return reply.code(200).send(updated);
-      },
-    );
-
-    // ── Charges ────────────────────────────────────────────────────────────
-
-    server.get('/stripe/v1/charges', async (_req, reply) => {
-      const charges = store.list(NS.charges);
-      return reply.code(200).send(listWrap(charges, 'charges'));
-    });
-
-    server.get('/stripe/v1/charges/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const charge = store.get(NS.charges, id);
-      if (!charge) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such charge: '${id}'`));
-      }
-      return reply.code(200).send(charge);
-    });
-
-    // ── Subscriptions ──────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/subscriptions', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const id = generateId('sub', 14);
-
-      // Build subscription items from the items array if provided
-      const rawItems = (body.items ?? []) as Record<string, unknown>[];
-      const subItems = rawItems.map((item) => ({
-        id: generateId('si', 14),
-        object: 'subscription_item',
-        ...item,
-      }));
-
-      const sub = {
-        ...body,
-        id,
-        object: 'subscription',
-        customer: body.customer ?? null,
-        items: {
-          object: 'list',
-          data: subItems,
-        },
-        current_period_start: now,
-        current_period_end: now + 30 * 86400,
-        created: now,
-        metadata: body.metadata ?? {},
-        livemode: false,
-        status: 'active',
-      };
-      store.set(NS.subs, sub.id, sub);
-      return reply.code(200).send(sub);
-    });
-
-    server.get('/stripe/v1/subscriptions', async (req, reply) => {
-      const query = req.query as Record<string, string>;
-      let subs = store.list<Record<string, unknown>>(NS.subs);
-
-      if (query.customer) {
-        subs = subs.filter((s) => s.customer === query.customer);
-      }
-      if (query.status) {
-        subs = subs.filter((s) => s.status === query.status);
-      }
-
-      return reply.code(200).send(listWrap(subs, 'subscriptions'));
-    });
-
-    server.get('/stripe/v1/subscriptions/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const sub = store.get(NS.subs, id);
-      if (!sub) {
-        return reply
-          .code(404)
-          .send(
-            stripeError('resource_missing', `No such subscription: '${id}'`),
-          );
-      }
-      return reply.code(200).send(sub);
-    });
-
-    server.post('/stripe/v1/subscriptions/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const existing = store.get<Record<string, unknown>>(NS.subs, id);
-      if (!existing) {
-        return reply
-          .code(404)
-          .send(
-            stripeError('resource_missing', `No such subscription: '${id}'`),
-          );
-      }
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const updated = { ...existing, ...body };
-      store.set(NS.subs, id, updated);
-      return reply.code(200).send(updated);
-    });
-
-    server.delete('/stripe/v1/subscriptions/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const existing = store.get<Record<string, unknown>>(NS.subs, id);
-      if (!existing) {
-        return reply
-          .code(404)
-          .send(
-            stripeError('resource_missing', `No such subscription: '${id}'`),
-          );
-      }
-      const canceled = { ...existing, status: 'canceled' };
-      store.set(NS.subs, id, canceled);
-      return reply.code(200).send(canceled);
-    });
-
-    // ── Invoices ───────────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/invoices', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const id = generateId('in', 14);
-      const invoice = {
-        ...body,
-        id,
-        object: 'invoice',
-        customer: body.customer ?? null,
-        amount_due: body.amount_due ?? 0,
-        currency: body.currency ?? 'usd',
-        created: now,
-        metadata: body.metadata ?? {},
-        livemode: false,
-        status: 'draft',
-      };
-      store.set(NS.invoices, invoice.id, invoice);
-      return reply.code(200).send(invoice);
-    });
-
-    server.get('/stripe/v1/invoices', async (_req, reply) => {
-      const invoices = store.list(NS.invoices);
-      return reply.code(200).send(listWrap(invoices, 'invoices'));
-    });
-
-    server.get('/stripe/v1/invoices/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const invoice = store.get(NS.invoices, id);
-      if (!invoice) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such invoice: '${id}'`));
-      }
-      return reply.code(200).send(invoice);
-    });
-
-    server.post('/stripe/v1/invoices/:id/pay', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const invoice = store.get<Record<string, unknown>>(NS.invoices, id);
-      if (!invoice) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such invoice: '${id}'`));
-      }
-      const paid = { ...invoice, status: 'paid' };
-      store.set(NS.invoices, id, paid);
-      return reply.code(200).send(paid);
-    });
-
-    // ── Refunds ────────────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/refunds', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const refund = {
-        ...body,
-        id: generateId('re', 24),
-        object: 'refund',
-        amount: body.amount ?? 0,
-        charge: body.charge ?? null,
-        payment_intent: body.payment_intent ?? null,
-        currency: body.currency ?? 'usd',
-        created: now,
-        metadata: body.metadata ?? {},
-        status: 'succeeded',
-      };
-      store.set(NS.refunds, refund.id, refund);
-      return reply.code(200).send(refund);
-    });
-
-    server.get('/stripe/v1/refunds', async (_req, reply) => {
-      const refunds = store.list(NS.refunds);
-      return reply.code(200).send(listWrap(refunds, 'refunds'));
-    });
-
-    // ── Products ───────────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/products', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const product = {
-        id: generateId('prod', 14),
-        object: 'product',
-        name: body.name ?? '',
-        active: true,
-        created: now,
-        metadata: body.metadata ?? {},
-        livemode: false,
-        ...body,
-      };
-      store.set(NS.products, product.id, product);
-      return reply.code(200).send(product);
-    });
-
-    server.get('/stripe/v1/products', async (_req, reply) => {
-      const products = store.list(NS.products);
-      return reply.code(200).send(listWrap(products, 'products'));
-    });
-
-    // ── Prices ─────────────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/prices', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const price = {
-        id: generateId('price', 14),
-        object: 'price',
-        active: true,
-        currency: body.currency ?? 'usd',
-        unit_amount: body.unit_amount ?? 0,
-        product: body.product ?? null,
-        type: body.type ?? 'one_time',
-        created: now,
-        metadata: body.metadata ?? {},
-        livemode: false,
-        ...body,
-      };
-      store.set(NS.prices, price.id, price);
-      return reply.code(200).send(price);
-    });
-
-    server.get('/stripe/v1/prices', async (_req, reply) => {
-      const prices = store.list(NS.prices);
-      return reply.code(200).send(listWrap(prices, 'prices'));
-    });
-
-    // ── Coupons ──────────────────────────────────────────────────────────
-
-    server.post('/stripe/v1/coupons', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const coupon = {
-        id: (body.id as string) || generateId('', 8).slice(1),
-        object: 'coupon',
-        percent_off: body.percent_off != null ? Number(body.percent_off) : null,
-        amount_off: body.amount_off != null ? Number(body.amount_off) : null,
-        currency: body.currency ?? (body.amount_off != null ? 'usd' : null),
-        duration: body.duration ?? 'once',
-        duration_in_months: body.duration_in_months ?? null,
-        max_redemptions: body.max_redemptions ?? null,
-        times_redeemed: 0,
-        valid: true,
-        created: now,
-        livemode: false,
-        metadata: body.metadata ?? {},
-      };
-      store.set(NS.coupons, coupon.id, coupon);
-      return reply.code(200).send(coupon);
-    });
-
-    server.get('/stripe/v1/coupons', async (_req, reply) => {
-      const coupons = store.list(NS.coupons);
-      return reply.code(200).send(listWrap(coupons, 'coupons'));
-    });
-
-    server.get('/stripe/v1/coupons/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const coupon = store.get(NS.coupons, id);
-      if (!coupon) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such coupon: '${id}'`));
-      }
-      return reply.code(200).send(coupon);
-    });
-
-    server.delete('/stripe/v1/coupons/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      store.delete(NS.coupons, id);
-      return reply.code(200).send({ id, object: 'coupon', deleted: true });
-    });
-
-    // ── Disputes ────────────────────────────────────────────────────────
-
-    server.get('/stripe/v1/disputes', async (_req, reply) => {
-      const disputes = store.list(NS.disputes);
-      return reply.code(200).send(listWrap(disputes, 'disputes'));
-    });
-
-    server.get('/stripe/v1/disputes/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const dispute = store.get(NS.disputes, id);
-      if (!dispute) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such dispute: '${id}'`));
-      }
-      return reply.code(200).send(dispute);
-    });
-
-    server.post('/stripe/v1/disputes/:id', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const existing = store.get<Record<string, unknown>>(NS.disputes, id);
-      if (!existing) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such dispute: '${id}'`));
-      }
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const updated = { ...existing, ...body };
-      store.set(NS.disputes, id, updated);
-      return reply.code(200).send(updated);
-    });
-
-    server.post('/stripe/v1/disputes/:id/close', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const existing = store.get<Record<string, unknown>>(NS.disputes, id);
-      if (!existing) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such dispute: '${id}'`));
-      }
-      const updated = { ...existing, status: 'lost' };
-      store.set(NS.disputes, id, updated);
-      return reply.code(200).send(updated);
-    });
-
-    // ── Invoice Items ───────────────────────────────────────────────────
-
-    server.post('/stripe/v1/invoiceitems', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const item = {
-        id: generateId('ii', 24),
-        object: 'invoiceitem',
-        customer: body.customer ?? null,
-        amount: body.amount != null ? Number(body.amount) : 0,
-        currency: body.currency ?? 'usd',
-        description: body.description ?? null,
-        invoice: body.invoice ?? null,
-        price: body.price ?? null,
-        quantity: body.quantity ?? 1,
-        created: now,
-        livemode: false,
-        metadata: body.metadata ?? {},
-      };
-      store.set(NS.invoiceItems, item.id, item);
-      return reply.code(200).send(item);
-    });
-
-    // ── Invoice Finalize ────────────────────────────────────────────────
-
-    server.post('/stripe/v1/invoices/:id/finalize', async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const invoice = store.get<Record<string, unknown>>(NS.invoices, id);
-      if (!invoice) {
-        return reply
-          .code(404)
-          .send(stripeError('resource_missing', `No such invoice: '${id}'`));
-      }
-      const finalized = { ...invoice, status: 'open' };
-      store.set(NS.invoices, id, finalized);
-      return reply.code(200).send(finalized);
-    });
-
-    // ── Payment Links ───────────────────────────────────────────────────
-
-    server.post('/stripe/v1/payment_links', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const link = {
-        id: generateId('plink', 14),
-        object: 'payment_link',
-        active: true,
-        url: `https://buy.stripe.com/${generateId('', 12).slice(1)}`,
-        line_items: body.line_items ?? null,
-        metadata: body.metadata ?? {},
-        created: now,
-        livemode: false,
-      };
-      store.set(NS.paymentLinks, link.id, link);
-      return reply.code(200).send(link);
-    });
-
-    server.get('/stripe/v1/payment_links', async (_req, reply) => {
-      const links = store.list(NS.paymentLinks);
-      return reply.code(200).send(listWrap(links, 'payment_links'));
-    });
-
-    // ── Billing Portal ──────────────────────────────────────────────────
-
-    server.post('/stripe/v1/billing_portal/sessions', async (req, reply) => {
-      const body = (req.body ?? {}) as Record<string, unknown>;
-      const now = unixNow();
-      const session = {
-        id: generateId('bps', 24),
-        object: 'billing_portal.session',
-        customer: body.customer ?? null,
-        url: `https://billing.stripe.com/session/${generateId('', 20).slice(1)}`,
-        return_url: body.return_url ?? null,
-        created: now,
-        livemode: false,
-      };
-      return reply.code(200).send(session);
-    });
-
-    // ── Account ─────────────────────────────────────────────────────────
-
-    server.get('/stripe/v1/account', async (_req, reply) => {
-      return reply.code(200).send({
-        id: 'acct_1234567890',
-        object: 'account',
-        business_type: 'company',
-        country: 'US',
-        email: 'test@example.com',
-        charges_enabled: true,
-        payouts_enabled: true,
-        capabilities: { card_payments: 'active', transfers: 'active' },
-        created: unixNow(),
-        livemode: false,
-      });
-    });
-
-    // ── Balance ────────────────────────────────────────────────────────────
-
-    server.get('/stripe/v1/balance', async (_req, reply) => {
-      return reply.code(200).send({
-        object: 'balance',
-        available: [{ amount: 125000, currency: 'usd', source_types: { card: 125000 } }],
-        pending: [{ amount: 35000, currency: 'usd', source_types: { card: 35000 } }],
-        livemode: false,
-      });
-    });
-
-    // ── Events ─────────────────────────────────────────────────────────────
-
-    server.get('/stripe/v1/events', async (_req, reply) => {
-      const events = store.list(NS.events);
-      return reply.code(200).send(listWrap(events, 'events'));
-    });
+    // ── Register all override handlers before CRUD scaffolding ───────────────
+    // Overrides are accumulated first so that registerGeneratedRoutes()
+    // skips these routes and lets the override handler take precedence.
+    // This includes both state-machine actions (confirm/capture/cancel/pay/etc.)
+    // and singleton resources (balance, account) that aren't standard CRUD.
+    this.mountOverrides(store);
+
+    // ── Generated CRUD scaffolding (616 routes across v1 + v2 Stripe paths) ───
+    await this.registerGeneratedRoutes(server, data, store, ns);
   }
 
   getEndpoints(): EndpointDefinition[] {
-    return [
-      // Customers
-      { method: 'GET', path: '/stripe/v1/customers', description: 'List customers' },
-      { method: 'GET', path: '/stripe/v1/customers/:id', description: 'Get customer' },
-      { method: 'POST', path: '/stripe/v1/customers', description: 'Create customer' },
-      { method: 'POST', path: '/stripe/v1/customers/:id', description: 'Update customer' },
-      { method: 'DELETE', path: '/stripe/v1/customers/:id', description: 'Delete customer' },
-
-      // Payment Intents
-      { method: 'POST', path: '/stripe/v1/payment_intents', description: 'Create payment intent' },
-      { method: 'GET', path: '/stripe/v1/payment_intents', description: 'List payment intents' },
-      { method: 'GET', path: '/stripe/v1/payment_intents/:id', description: 'Get payment intent' },
-      { method: 'POST', path: '/stripe/v1/payment_intents/:id/confirm', description: 'Confirm payment intent' },
-      { method: 'POST', path: '/stripe/v1/payment_intents/:id/capture', description: 'Capture payment intent' },
-      { method: 'POST', path: '/stripe/v1/payment_intents/:id/cancel', description: 'Cancel payment intent' },
-
-      // Charges
-      { method: 'GET', path: '/stripe/v1/charges', description: 'List charges' },
-      { method: 'GET', path: '/stripe/v1/charges/:id', description: 'Get charge' },
-
-      // Subscriptions
-      { method: 'POST', path: '/stripe/v1/subscriptions', description: 'Create subscription' },
-      { method: 'GET', path: '/stripe/v1/subscriptions', description: 'List subscriptions' },
-      { method: 'GET', path: '/stripe/v1/subscriptions/:id', description: 'Get subscription' },
-      { method: 'POST', path: '/stripe/v1/subscriptions/:id', description: 'Update subscription' },
-      { method: 'DELETE', path: '/stripe/v1/subscriptions/:id', description: 'Cancel subscription' },
-
-      // Invoices
-      { method: 'POST', path: '/stripe/v1/invoices', description: 'Create invoice' },
-      { method: 'GET', path: '/stripe/v1/invoices', description: 'List invoices' },
-      { method: 'GET', path: '/stripe/v1/invoices/:id', description: 'Get invoice' },
-      { method: 'POST', path: '/stripe/v1/invoices/:id/finalize', description: 'Finalize invoice' },
-      { method: 'POST', path: '/stripe/v1/invoices/:id/pay', description: 'Pay invoice' },
-
-      // Invoice Items
-      { method: 'POST', path: '/stripe/v1/invoiceitems', description: 'Create invoice item' },
-
-      // Refunds
-      { method: 'POST', path: '/stripe/v1/refunds', description: 'Create refund' },
-      { method: 'GET', path: '/stripe/v1/refunds', description: 'List refunds' },
-
-      // Products
-      { method: 'POST', path: '/stripe/v1/products', description: 'Create product' },
-      { method: 'GET', path: '/stripe/v1/products', description: 'List products' },
-
-      // Prices
-      { method: 'POST', path: '/stripe/v1/prices', description: 'Create price' },
-      { method: 'GET', path: '/stripe/v1/prices', description: 'List prices' },
-
-      // Coupons
-      { method: 'POST', path: '/stripe/v1/coupons', description: 'Create coupon' },
-      { method: 'GET', path: '/stripe/v1/coupons', description: 'List coupons' },
-      { method: 'GET', path: '/stripe/v1/coupons/:id', description: 'Get coupon' },
-      { method: 'DELETE', path: '/stripe/v1/coupons/:id', description: 'Delete coupon' },
-
-      // Disputes
-      { method: 'GET', path: '/stripe/v1/disputes', description: 'List disputes' },
-      { method: 'GET', path: '/stripe/v1/disputes/:id', description: 'Get dispute' },
-      { method: 'POST', path: '/stripe/v1/disputes/:id', description: 'Update dispute' },
-      { method: 'POST', path: '/stripe/v1/disputes/:id/close', description: 'Close dispute' },
-
-      // Payment Links
-      { method: 'POST', path: '/stripe/v1/payment_links', description: 'Create payment link' },
-      { method: 'GET', path: '/stripe/v1/payment_links', description: 'List payment links' },
-
-      // Billing Portal
-      { method: 'POST', path: '/stripe/v1/billing_portal/sessions', description: 'Create billing portal session' },
-
-      // Account
-      { method: 'GET', path: '/stripe/v1/account', description: 'Get account info' },
-
-      // Balance
-      { method: 'GET', path: '/stripe/v1/balance', description: 'Get balance' },
-
-      // Events
-      { method: 'GET', path: '/stripe/v1/events', description: 'List events' },
-    ];
+    return this.endpointsFromRoutes();
   }
 
-  // ── Cross-surface seeding ────────────────────────────────────────────────
+  resolvePersona(req: FastifyRequest): string | null {
+    // Extract persona ID from test-mode API key: sk_test_{personaId}_
+    const auth = req.headers.authorization;
+    if (!auth) return null;
+    const match = auth.match(/^Bearer\s+sk_test_([a-z0-9-]+)_/);
+    return match ? match[1]! : null;
+  }
 
-  private readonly RESOURCE_NS: Record<string, string> = {
-    customers: NS.customers,
-    payment_intents: NS.pis,
-    charges: NS.charges,
-    subscriptions: NS.subs,
-    invoices: NS.invoices,
-    invoice_items: NS.invoiceItems,
-    refunds: NS.refunds,
-    products: NS.products,
-    prices: NS.prices,
-    coupons: NS.coupons,
-    disputes: NS.disputes,
-    payment_links: NS.paymentLinks,
-  };
+  registerMcpTools(mcpServer: McpServer, mockBaseUrl: string): void {
+    registerStripeTools(mcpServer, mockBaseUrl);
+  }
 
-  private readonly RESOURCE_OBJECT: Record<string, string> = {
-    customers: 'customer',
-    payment_intents: 'payment_intent',
-    charges: 'charge',
-    subscriptions: 'subscription',
-    invoices: 'invoice',
-    invoice_items: 'invoiceitem',
-    refunds: 'refund',
-    products: 'product',
-    prices: 'price',
-    coupons: 'coupon',
-    disputes: 'dispute',
-    payment_links: 'payment_link',
-  };
+  // ---------------------------------------------------------------------------
+  // Override registration
+  // ---------------------------------------------------------------------------
 
-  private seedFromApiResponses(
-    data: Map<string, ExpandedData>,
-    store: StateStore,
-  ): void {
-    for (const [, expanded] of data) {
-      const stripeData = expanded.apiResponses?.stripe;
-      if (!stripeData) continue;
+  /**
+   * Register all state-machine and singleton override handlers.
+   * Called before `registerGeneratedRoutes()` so the CRUD scaffolding
+   * skips these paths and uses the override handlers instead.
+   */
+  private mountOverrides(store: StateStore): void {
+    // ── Payment Intents ───────────────────────────────────────────────────────
+    this.registerOverride(
+      'POST', '/stripe/v1/payment_intents/:intent/confirm',
+      piOverrides.buildConfirmHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/payment_intents/:intent/capture',
+      piOverrides.buildCaptureHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/payment_intents/:intent/cancel',
+      piOverrides.buildCancelHandler(store),
+    );
 
-      for (const [resourceType, responses] of Object.entries(
-        stripeData.responses,
-      )) {
-        const namespace = this.RESOURCE_NS[resourceType];
-        if (!namespace) continue;
+    // ── Setup Intents ─────────────────────────────────────────────────────────
+    this.registerOverride(
+      'POST', '/stripe/v1/setup_intents/:intent/confirm',
+      siOverrides.buildConfirmHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/setup_intents/:intent/cancel',
+      siOverrides.buildCancelHandler(store),
+    );
 
-        for (const response of responses) {
-          const body = response.body as Record<string, unknown>;
-          if (!body.id) continue;
+    // ── Invoices ──────────────────────────────────────────────────────────────
+    this.registerOverride(
+      'POST', '/stripe/v1/invoices/:invoice/finalize',
+      invOverrides.buildFinalizeHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/invoices/:invoice/pay',
+      invOverrides.buildPayHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/invoices/:invoice/void',
+      invOverrides.buildVoidHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/invoices/:invoice/mark_uncollectible',
+      invOverrides.buildMarkUncollectibleHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/invoices/:invoice/send',
+      invOverrides.buildSendHandler(store),
+    );
 
-          const enriched = {
-            object: this.RESOURCE_OBJECT[resourceType] ?? resourceType,
-            livemode: false,
-            created: body.created ?? unixNow(),
-            metadata: body.metadata ?? {},
-            ...body,
-          };
+    // ── Charges ───────────────────────────────────────────────────────────────
+    this.registerOverride(
+      'POST', '/stripe/v1/charges/:charge/capture',
+      chOverrides.buildCaptureHandler(store),
+    );
 
-          store.set(namespace, String(body.id), enriched);
+    // ── Billing Portal ────────────────────────────────────────────────────────
+    this.registerOverride(
+      'POST', '/stripe/v1/billing_portal/sessions',
+      bpOverrides.buildCreateSessionHandler(store),
+    );
+
+    // ── Subscriptions — create converts items array to Stripe list format ────────
+    this.registerOverride(
+      'POST', '/stripe/v1/subscriptions',
+      async (req, reply) => {
+        const body = (req.body ?? {}) as Record<string, unknown>;
+        const now = unixNow();
+        const subId = generateId('sub_', 14);
+
+        // Convert items array → subscription items with proper si_ IDs
+        const rawItems = Array.isArray(body.items) ? body.items as Record<string, unknown>[] : [];
+        const itemObjects = rawItems.map((item: Record<string, unknown>) => ({
+          id: generateId('si_', 14),
+          object: 'subscription_item',
+          created: now,
+          metadata: {},
+          price: item.price ?? null,
+          quantity: item.quantity ?? 1,
+          subscription: subId,
+          tax_rates: [],
+          billing_thresholds: null,
+          discounts: [],
+        }));
+
+        const sub: Record<string, unknown> = {
+          id: subId,
+          object: 'subscription',
+          cancel_at_period_end: false,
+          collection_method: 'charge_automatically',
+          created: now,
+          currency: body.currency ?? 'usd',
+          customer: body.customer ?? '',
+          default_payment_method: body.default_payment_method ?? null,
+          description: body.description ?? null,
+          discounts: [],
+          items: { object: 'list', data: itemObjects, has_more: false, url: '/v1/subscription_items' },
+          latest_invoice: null,
+          livemode: false,
+          metadata: (body.metadata as Record<string, unknown>) ?? {},
+          payment_settings: null,
+          pending_setup_intent: null,
+          pending_update: null,
+          schedule: null,
+          start_date: now,
+          status: 'active',
+          trial_end: body.trial_end ?? null,
+          trial_start: null,
+        };
+        store.set(ns('subscriptions'), subId, sub);
+        return reply.code(200).send(sub);
+      },
+    );
+
+    // ── Subscriptions — cancel returns updated object, not deleted stub ────────
+    this.registerOverride(
+      'DELETE', '/stripe/v1/subscriptions/:subscription_exposed_id',
+      async (req, reply) => {
+        const { subscription_exposed_id } = (req.params as { subscription_exposed_id: string });
+        const sub = store.get<Record<string, unknown>>(ns('subscriptions'), subscription_exposed_id);
+        if (!sub) {
+          return reply.code(404).send({
+            error: { type: 'invalid_request_error', code: 'resource_missing',
+              message: `No such subscription: '${subscription_exposed_id}'`, param: null },
+          });
         }
-      }
-    }
+        const canceled = { ...sub, status: 'canceled', canceled_at: Math.floor(Date.now() / 1000) };
+        store.set(ns('subscriptions'), subscription_exposed_id, canceled);
+        return reply.code(200).send(canceled);
+      },
+    );
+
+    // ── Refunds — sync charge.amount_refunded on create/cancel ───────────────
+    this.registerOverride(
+      'POST', '/stripe/v1/refunds',
+      refundOverrides.buildCreateHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/refunds/:refund/cancel',
+      refundOverrides.buildCancelHandler(store),
+    );
+
+    // ── Payment Methods — attach/detach mutate existing PM, not create new ────
+    this.registerOverride(
+      'POST', '/stripe/v1/payment_methods/:payment_method/attach',
+      pmOverrides.buildAttachHandler(store),
+    );
+    this.registerOverride(
+      'POST', '/stripe/v1/payment_methods/:payment_method/detach',
+      pmOverrides.buildDetachHandler(store),
+    );
+
+    // ── Customers — cascade-cancel subscriptions on delete ───────────────────
+    this.registerOverride(
+      'DELETE', '/stripe/v1/customers/:customer',
+      custOverrides.buildDeleteHandler(store),
+    );
+
+    // ── Invoices — only draft invoices can be deleted ─────────────────────────
+    this.registerOverride(
+      'DELETE', '/stripe/v1/invoices/:invoice',
+      invOverrides.buildDeleteHandler(store),
+    );
+
+    // ── Subscription Items — keep parent subscription.items in sync ───────────
+    this.registerOverride(
+      'POST', '/stripe/v1/subscription_items',
+      subItemOverrides.buildCreateHandler(store),
+    );
+    this.registerOverride(
+      'DELETE', '/stripe/v1/subscription_items/:item',
+      subItemOverrides.buildDeleteHandler(store),
+    );
+
+    // ── Balance — computed from store charges/refunds ─────────────────────────
+    this.registerOverride(
+      'GET', '/stripe/v1/balance',
+      async (_req, reply) => {
+        const charges = store.list<Record<string, unknown>>(ns('charges'));
+        const refunds = store.list<Record<string, unknown>>(ns('refunds'));
+        const collected = charges
+          .filter(c => c.status === 'succeeded' && c.captured)
+          .reduce((sum, c) => sum + ((c.amount_captured as number) ?? (c.amount as number) ?? 0), 0);
+        const refunded = refunds
+          .filter(r => r.status === 'succeeded')
+          .reduce((sum, r) => sum + ((r.amount as number) ?? 0), 0);
+        const available = Math.max(0, collected - refunded);
+        return reply.code(200).send({
+          object: 'balance',
+          available: [{ amount: available, currency: 'usd', source_types: { card: available } }],
+          connect_reserved: [],
+          instant_available: [],
+          issuing: { available: [] },
+          livemode: false,
+          pending: [{ amount: 0, currency: 'usd', source_types: { card: 0 } }],
+        });
+      },
+    );
+
+    // ── Account — return first seeded account or domain-derived default ────────
+    this.registerOverride(
+      'GET', '/stripe/v1/account',
+      async (_req, reply) => {
+        const accounts = store.list<Record<string, unknown>>(ns('accounts'));
+        if (accounts.length > 0) {
+          return reply.code(200).send(accounts[0]);
+        }
+
+        // Build a realistic account from the domain/persona config
+        const domain = this.context?.config?.domain ?? '';
+        const companyName = extractCompanyName(domain) || 'Acme Inc';
+        const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const sixMonthsAgo = unixNow() - 180 * 86400;
+
+        return reply.code(200).send({
+          id: generateId('acct_', 16),
+          object: 'account',
+          business_profile: {
+            mcc: '5734',
+            name: companyName,
+            product_description: domain.split('.')[0] || null,
+            support_email: `billing@${slug}.com`,
+            support_phone: null,
+            support_url: `https://${slug}.com/support`,
+            url: `https://${slug}.com`,
+          },
+          business_type: 'company',
+          capabilities: {
+            card_payments: 'active',
+            transfers: 'active',
+          },
+          charges_enabled: true,
+          country: 'US',
+          created: sixMonthsAgo,
+          default_currency: 'usd',
+          details_submitted: true,
+          email: `billing@${slug}.com`,
+          livemode: false,
+          metadata: {},
+          payouts_enabled: true,
+          settings: {
+            branding: { icon: null, logo: null, primary_color: null, secondary_color: null },
+            dashboard: { display_name: companyName, timezone: 'America/Los_Angeles' },
+            payments: { statement_descriptor: slug.toUpperCase().slice(0, 22) },
+          },
+          type: 'standard',
+        });
+      },
+    );
   }
+}
+
+/**
+ * Extract a company name from the domain description string.
+ * Looks for parenthesized names like "(NovaDev)" or capitalized multi-word
+ * phrases that look like company names.
+ */
+function extractCompanyName(domain: string): string {
+  const parenMatch = domain.match(/\(([A-Z][A-Za-z0-9 &.-]+)\)/);
+  if (parenMatch) return parenMatch[1]!;
+
+  const nameMatch = domain.match(/(?:called|named|company)\s+([A-Z][A-Za-z0-9 &.-]+?)(?:\s+(?:that|which|is|—|-|,|\.))/i);
+  if (nameMatch) return nameMatch[1]!;
+
+  return '';
 }

@@ -1,7 +1,7 @@
 {
   "name": "@mimicai/adapter-plaid",
-  "version": "0.7.0",
-  "description": "Plaid API mock adapter for Mimic — bank accounts, transactions, identity, auth",
+  "version": "0.8.0",
+  "description": "Plaid API mock adapter for Mimic — banking, transactions, accounts, identity, auth",
   "type": "module",
   "license": "Apache-2.0",
   "author": "Mimic AI Lab",
@@ -16,7 +16,8 @@
     "adapter",
     "plaid",
     "api-mock",
-    "banking"
+    "banking",
+    "transactions"
   ],
   "engines": {
     "node": ">=22"
@@ -29,11 +30,14 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "adapter.json",
+    "logo.svg"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "generate": "tsx scripts/plaid-codegen.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
@@ -45,12 +49,14 @@
     "@mimicai/adapter-sdk": "workspace:*",
     "@mimicai/core": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.11.0",
+    "fastify": "^5.7.4",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "fastify": "^5.7.4",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3",
-    "vitest": "^3.0.5"
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4",
+    "yaml": "^2.7.1"
   }
 }

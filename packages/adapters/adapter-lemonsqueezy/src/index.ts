@@ -4,11 +4,12 @@ export type { LemonSqueezyConfig } from './config.js';
 export { registerLemonSqueezyTools, createLemonSqueezyMcpServer, startLemonSqueezyMcpServer } from './mcp.js';
 
 import type { AdapterManifest } from '@mimicai/adapter-sdk';
+import meta from './adapter-meta.js';
 
 export const manifest: AdapterManifest = {
-  id: 'lemonsqueezy',
-  name: 'Lemon Squeezy API',
-  type: 'api-mock',
-  description: 'Lemon Squeezy payments, subscriptions, license keys, and checkouts mock adapter',
-  versions: ['1'],
+  id: meta.id,
+  name: meta.name,
+  type: meta.type as AdapterManifest['type'],
+  description: meta.description,
+  versions: meta.versions,
 };

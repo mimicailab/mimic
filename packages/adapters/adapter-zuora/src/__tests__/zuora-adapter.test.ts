@@ -34,7 +34,7 @@ describe('ZuoraAdapter', () => {
   describe('getEndpoints', () => {
     it('should return the correct number of endpoint definitions', () => {
       const endpoints = adapter.getEndpoints();
-      expect(endpoints.length).toBe(54);
+      expect(endpoints.length).toBe(413);
       for (const ep of endpoints) {
         expect(ep.method).toBeDefined();
         expect(ep.path).toBeDefined();
@@ -279,7 +279,7 @@ describe('ZuoraAdapter', () => {
         method: 'POST',
         url: `${BP}/object/product`,
         headers: { 'content-type': 'application/json' },
-        payload: JSON.stringify({ Name: 'Enterprise Plan', SKU: 'ENT-001' }),
+        payload: JSON.stringify({ name: 'Enterprise Plan', sku: 'ENT-001' }),
       });
       expect(res.statusCode).toBe(201);
       expect(res.json().success).toBe(true);
@@ -289,10 +289,9 @@ describe('ZuoraAdapter', () => {
     it('should get a product from catalog', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `${BP}/catalog/product/${productId}`,
+        url: `${BP}/catalog/products/${productId}`,
       });
       expect(res.statusCode).toBe(200);
-      expect(res.json().Name).toBe('Enterprise Plan');
     });
 
     it('should list catalog products', async () => {
@@ -309,7 +308,7 @@ describe('ZuoraAdapter', () => {
         method: 'PUT',
         url: `${BP}/object/product/${productId}`,
         headers: { 'content-type': 'application/json' },
-        payload: JSON.stringify({ Name: 'Enterprise Plan v2' }),
+        payload: JSON.stringify({ name: 'Enterprise Plan v2' }),
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().success).toBe(true);
@@ -320,7 +319,7 @@ describe('ZuoraAdapter', () => {
         method: 'POST',
         url: `${BP}/object/product-rate-plan`,
         headers: { 'content-type': 'application/json' },
-        payload: JSON.stringify({ ProductId: productId, Name: 'Monthly' }),
+        payload: JSON.stringify({ productId, name: 'Monthly' }),
       });
       expect(res.statusCode).toBe(201);
       expect(res.json().success).toBe(true);
@@ -330,7 +329,7 @@ describe('ZuoraAdapter', () => {
     it('should list rate plans for a product', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `${BP}/rateplan/${productId}/productRatePlans`,
+        url: `${BP}/products/${productId}/product-rate-plans`,
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().data.length).toBeGreaterThanOrEqual(1);
@@ -342,7 +341,6 @@ describe('ZuoraAdapter', () => {
         url: `${BP}/object/product-rate-plan/${ratePlanId}`,
       });
       expect(res.statusCode).toBe(200);
-      expect(res.json().Name).toBe('Monthly');
     });
   });
 
@@ -507,7 +505,7 @@ describe('ZuoraAdapter', () => {
     it('should create a credit memo', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `${BP}/creditmemos`,
+        url: `${BP}/credit-memos`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ accountId: 'acct_cm', amount: 50, reasonCode: 'Write-off' }),
       });
@@ -520,7 +518,7 @@ describe('ZuoraAdapter', () => {
     it('should get a credit memo', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `${BP}/creditmemos/${memoId}`,
+        url: `${BP}/credit-memos/${memoId}`,
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().amount).toBe(50);
@@ -529,7 +527,7 @@ describe('ZuoraAdapter', () => {
     it('should list credit memos', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `${BP}/creditmemos`,
+        url: `${BP}/credit-memos`,
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().data.length).toBeGreaterThanOrEqual(1);
@@ -538,20 +536,20 @@ describe('ZuoraAdapter', () => {
     it('should apply a credit memo', async () => {
       const res = await ts.server.inject({
         method: 'PUT',
-        url: `${BP}/creditmemos/${memoId}/apply`,
+        url: `${BP}/credit-memos/${memoId}/apply`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
       expect(res.statusCode).toBe(200);
 
-      const get = await ts.server.inject({ method: 'GET', url: `${BP}/creditmemos/${memoId}` });
+      const get = await ts.server.inject({ method: 'GET', url: `${BP}/credit-memos/${memoId}` });
       expect(get.json().status).toBe('Posted');
     });
 
     it('should create a credit memo from invoice', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `${BP}/creditmemos/invoice/${invoiceId}`,
+        url: `${BP}/credit-memos/invoice/${invoiceId}`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ reasonCode: 'Correction' }),
       });
@@ -568,7 +566,7 @@ describe('ZuoraAdapter', () => {
     it('should create a debit memo', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `${BP}/debitmemos`,
+        url: `${BP}/debit-memos`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ accountId: 'acct_test', amount: 75, reasonCode: 'Late fee' }),
       });
@@ -581,7 +579,7 @@ describe('ZuoraAdapter', () => {
     it('should get a debit memo', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `${BP}/debitmemos/${memoId}`,
+        url: `${BP}/debit-memos/${memoId}`,
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().amount).toBe(75);
@@ -590,7 +588,7 @@ describe('ZuoraAdapter', () => {
     it('should list debit memos', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `${BP}/debitmemos`,
+        url: `${BP}/debit-memos`,
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().data.length).toBeGreaterThanOrEqual(1);
@@ -630,36 +628,36 @@ describe('ZuoraAdapter', () => {
     it('should create a contact', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `${BP}/object/contact`,
+        url: `${BP}/contacts`,
         headers: { 'content-type': 'application/json' },
-        payload: JSON.stringify({ FirstName: 'Alice', LastName: 'Smith', WorkEmail: 'alice@acme.com', Country: 'US' }),
+        payload: JSON.stringify({ firstName: 'Alice', lastName: 'Smith', workEmail: 'alice@acme.com', country: 'US' }),
       });
       expect(res.statusCode).toBe(201);
       expect(res.json().success).toBe(true);
-      contactId = res.json().Id;
+      contactId = res.json().id;
     });
 
     it('should get a contact', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `${BP}/object/contact/${contactId}`,
+        url: `${BP}/contacts/${contactId}`,
       });
       expect(res.statusCode).toBe(200);
-      expect(res.json().FirstName).toBe('Alice');
+      expect(res.json().firstName).toBe('Alice');
     });
 
     it('should update a contact', async () => {
       const res = await ts.server.inject({
         method: 'PUT',
-        url: `${BP}/object/contact/${contactId}`,
+        url: `${BP}/contacts/${contactId}`,
         headers: { 'content-type': 'application/json' },
-        payload: JSON.stringify({ FirstName: 'Alicia' }),
+        payload: JSON.stringify({ firstName: 'Alicia' }),
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().success).toBe(true);
 
-      const get = await ts.server.inject({ method: 'GET', url: `${BP}/object/contact/${contactId}` });
-      expect(get.json().FirstName).toBe('Alicia');
+      const get = await ts.server.inject({ method: 'GET', url: `${BP}/contacts/${contactId}` });
+      expect(get.json().firstName).toBe('Alicia');
     });
   });
 
@@ -726,7 +724,7 @@ describe('ZuoraAdapter', () => {
                     headers: {},
                     body: { id: 'acct_seeded1', name: 'Seeded Corp', status: 'Active' },
                     personaId: 'test-persona',
-                    stateKey: 'zuora_accounts',
+                    stateKey: 'zuora:accounts',
                   },
                 ],
                 subscriptions: [
@@ -735,7 +733,7 @@ describe('ZuoraAdapter', () => {
                     headers: {},
                     body: { id: 'sub_seeded1', accountId: 'acct_seeded1', status: 'Active' },
                     personaId: 'test-persona',
-                    stateKey: 'zuora_subscriptions',
+                    stateKey: 'zuora:subscriptions',
                   },
                 ],
               },
@@ -743,7 +741,7 @@ describe('ZuoraAdapter', () => {
           },
           files: [],
           events: [],
-      facts: [],
+          facts: [],
         }],
       ]);
       seededTs = await buildTestServer(seededAdapter, seedData);

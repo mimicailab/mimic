@@ -1,28 +1,7 @@
 {
   "name": "@mimicai/adapter-lemonsqueezy",
-  "version": "0.7.0",
-  "description": "Lemon Squeezy API mock adapter for Mimic — digital products, subscriptions, license keys, checkouts",
+  "version": "0.8.0",
   "type": "module",
-  "license": "Apache-2.0",
-  "author": "Mimic AI Lab",
-  "homepage": "https://github.com/mimicailab/mimic",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mimicailab/mimic.git",
-    "directory": "packages/adapters/adapter-lemonsqueezy"
-  },
-  "keywords": [
-    "mimic",
-    "adapter",
-    "lemonsqueezy",
-    "api-mock",
-    "payments",
-    "subscriptions",
-    "license-keys"
-  ],
-  "engines": {
-    "node": ">=22"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -30,18 +9,17 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "bin": {
+    "mimic-mcp-lemonsqueezy": "./dist/bin/mcp.js"
+  },
+  "files": ["dist", "adapter.json", "logo.svg"],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "generate": "tsx scripts/lemonsqueezy-codegen.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
-  },
-  "bin": {
-    "mimic-mcp-lemonsqueezy": "./dist/bin/mcp.js"
   },
   "dependencies": {
     "@mimicai/adapter-sdk": "workspace:*",
@@ -51,8 +29,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3",
-    "vitest": "^3.0.5"
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4"
   }
 }

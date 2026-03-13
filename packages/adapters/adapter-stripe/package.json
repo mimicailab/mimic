@@ -29,11 +29,14 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "adapter.json",
+    "logo.svg"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "generate": "tsx scripts/stripe-codegen.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
@@ -50,6 +53,7 @@
   },
   "devDependencies": {
     "tsup": "^8.3.6",
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

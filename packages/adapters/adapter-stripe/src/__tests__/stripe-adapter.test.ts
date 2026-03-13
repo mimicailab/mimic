@@ -23,7 +23,7 @@ describe('StripeAdapter', () => {
       expect(adapter.id).toBe('stripe');
       expect(adapter.name).toBe('Stripe API');
       expect(adapter.type).toBe('api-mock');
-      expect(adapter.basePath).toBe('/stripe/v1');
+      expect(adapter.basePath).toBe('/stripe');
     });
   });
 
@@ -32,10 +32,8 @@ describe('StripeAdapter', () => {
   describe('getEndpoints', () => {
     it('should return the correct number of endpoint definitions', () => {
       const endpoints = adapter.getEndpoints();
-      // 5 customer + 6 PI + 2 charges + 5 subscriptions + 5 invoices + 1 invoice items
-      // + 2 refunds + 2 products + 2 prices + 4 coupons + 4 disputes
-      // + 2 payment links + 1 billing portal + 1 account + 1 balance + 1 events = 44
-      expect(endpoints.length).toBe(44);
+      // v1 (587) + v2 (29 — billing meter events, core accounts, event destinations)
+      expect(endpoints.length).toBe(616);
       for (const ep of endpoints) {
         expect(ep.method).toBeDefined();
         expect(ep.path).toBeDefined();
@@ -376,10 +374,10 @@ describe('StripeAdapter', () => {
     });
   });
 
-  // ── 10. Refund creation ───────────────────────────────────────────────
+  // ── 10. Refund creation and charge sync ──────────────────────────────
 
   describe('Refunds', () => {
-    it('should create a refund', async () => {
+    it('should create a refund (no linked charge)', async () => {
       const res = await ts.server.inject({
         method: 'POST',
         url: '/stripe/v1/refunds',
@@ -392,6 +390,109 @@ describe('StripeAdapter', () => {
       expect(body.object).toBe('refund');
       expect(body.status).toBe('succeeded');
       expect(body.amount).toBe(1000);
+    });
+
+    it('should sync charge.amount_refunded when creating a refund', async () => {
+      // Create a charge via PI confirm
+      const piRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/payment_intents',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ amount: 5000, currency: 'usd' }),
+      });
+      const piId = piRes.json().id;
+
+      await ts.server.inject({
+        method: 'POST',
+        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+
+      const chargeId = (await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_intents/${piId}` }))
+        .json().latest_charge;
+
+      // Create a partial refund
+      const refundRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/refunds',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ amount: 2000, charge: chargeId }),
+      });
+      expect(refundRes.statusCode).toBe(200);
+      expect(refundRes.json().charge).toBe(chargeId);
+
+      // Charge should reflect the refund
+      const chargeRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/charges/${chargeId}` });
+      const charge = chargeRes.json();
+      expect(charge.amount_refunded).toBe(2000);
+      expect(charge.refunded).toBe(false); // partial refund, not fully refunded
+    });
+
+    it('should set charge.refunded=true on full refund', async () => {
+      const piRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/payment_intents',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ amount: 3000, currency: 'usd' }),
+      });
+      const piId = piRes.json().id;
+      await ts.server.inject({
+        method: 'POST',
+        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+      const chargeId = (await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_intents/${piId}` }))
+        .json().latest_charge;
+
+      await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/refunds',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ amount: 3000, charge: chargeId }),
+      });
+
+      const chargeRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/charges/${chargeId}` });
+      const charge = chargeRes.json();
+      expect(charge.amount_refunded).toBe(3000);
+      expect(charge.refunded).toBe(true);
+    });
+
+    it('should reflect refunds in GET /balance', async () => {
+      const balanceBefore = (await ts.server.inject({ method: 'GET', url: '/stripe/v1/balance' }))
+        .json().available[0].amount;
+
+      const piRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/payment_intents',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ amount: 4000, currency: 'usd' }),
+      });
+      const piId = piRes.json().id;
+      await ts.server.inject({
+        method: 'POST',
+        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+      const chargeId = (await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_intents/${piId}` }))
+        .json().latest_charge;
+
+      const balanceAfterCharge = (await ts.server.inject({ method: 'GET', url: '/stripe/v1/balance' }))
+        .json().available[0].amount;
+      expect(balanceAfterCharge).toBe(balanceBefore + 4000);
+
+      await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/refunds',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ amount: 4000, charge: chargeId }),
+      });
+
+      const balanceAfterRefund = (await ts.server.inject({ method: 'GET', url: '/stripe/v1/balance' }))
+        .json().available[0].amount;
+      expect(balanceAfterRefund).toBe(balanceBefore);
     });
   });
 
@@ -647,7 +748,216 @@ describe('StripeAdapter', () => {
     });
   });
 
-  // ── 20. Cross-surface seeding from apiResponses ────────────────────────
+  // ── 20. Payment Method attach/detach ─────────────────────────────────
+
+  describe('PaymentMethod attach/detach', () => {
+    let pmId: string;
+
+    it('should create a payment method', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/payment_methods',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ type: 'card' }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.id).toMatch(/^pm_/);
+      expect(body.customer).toBeNull();
+      pmId = body.id;
+    });
+
+    it('should attach a payment method to a customer', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: `/stripe/v1/payment_methods/${pmId}/attach`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ customer: 'cus_attach_test' }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.id).toBe(pmId); // same PM, not a new object
+      expect(body.customer).toBe('cus_attach_test');
+    });
+
+    it('should retrieve the same PM with updated customer field', async () => {
+      const res = await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_methods/${pmId}` });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().customer).toBe('cus_attach_test');
+    });
+
+    it('should detach a payment method from a customer', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: `/stripe/v1/payment_methods/${pmId}/detach`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.id).toBe(pmId);
+      expect(body.customer).toBeNull();
+    });
+
+    it('should return 400 when detaching an already-detached payment method', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: `/stripe/v1/payment_methods/${pmId}/detach`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error.code).toBe('payment_method_not_attached');
+    });
+  });
+
+  // ── 21. Customer delete cascade ───────────────────────────────────────
+
+  describe('Customer delete cascade', () => {
+    it('should cancel subscriptions when customer is deleted', async () => {
+      // Create a customer
+      const cusRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/customers',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ email: 'cascade@test.com' }),
+      });
+      const cusId = cusRes.json().id;
+
+      // Create a subscription for that customer
+      const subRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/subscriptions',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ customer: cusId, items: [{ price: 'price_cascade' }] }),
+      });
+      const subId = subRes.json().id;
+      expect(subRes.json().status).toBe('active');
+
+      // Delete the customer
+      const delRes = await ts.server.inject({
+        method: 'DELETE',
+        url: `/stripe/v1/customers/${cusId}`,
+      });
+      expect(delRes.statusCode).toBe(200);
+      expect(delRes.json().deleted).toBe(true);
+
+      // Customer should be gone
+      const cusCheck = await ts.server.inject({ method: 'GET', url: `/stripe/v1/customers/${cusId}` });
+      expect(cusCheck.statusCode).toBe(404);
+
+      // Subscription should be canceled
+      const subCheck = await ts.server.inject({ method: 'GET', url: `/stripe/v1/subscriptions/${subId}` });
+      expect(subCheck.statusCode).toBe(200);
+      expect(subCheck.json().status).toBe('canceled');
+    });
+  });
+
+  // ── 22. Invoice delete (draft only) ──────────────────────────────────
+
+  describe('Invoice delete', () => {
+    it('should delete a draft invoice', async () => {
+      const createRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/invoices',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ customer: 'cus_del_test', amount_due: 500 }),
+      });
+      const invId = createRes.json().id;
+      expect(createRes.json().status).toBe('draft');
+
+      const delRes = await ts.server.inject({
+        method: 'DELETE',
+        url: `/stripe/v1/invoices/${invId}`,
+      });
+      expect(delRes.statusCode).toBe(200);
+      expect(delRes.json().deleted).toBe(true);
+
+      const check = await ts.server.inject({ method: 'GET', url: `/stripe/v1/invoices/${invId}` });
+      expect(check.statusCode).toBe(404);
+    });
+
+    it('should reject deleting an open invoice', async () => {
+      const createRes = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/invoices',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ customer: 'cus_del_test2', amount_due: 800 }),
+      });
+      const invId = createRes.json().id;
+
+      await ts.server.inject({
+        method: 'POST',
+        url: `/stripe/v1/invoices/${invId}/finalize`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({}),
+      });
+
+      const delRes = await ts.server.inject({
+        method: 'DELETE',
+        url: `/stripe/v1/invoices/${invId}`,
+      });
+      expect(delRes.statusCode).toBe(400);
+      expect(delRes.json().error.code).toBe('invoice_not_editable');
+    });
+  });
+
+  // ── 23. Subscription items sync ───────────────────────────────────────
+
+  describe('Subscription items', () => {
+    let subId: string;
+    let itemId: string;
+
+    it('should create a subscription with one item', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/subscriptions',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          customer: 'cus_si_test',
+          items: [{ price: 'price_base' }],
+        }),
+      });
+      expect(res.statusCode).toBe(200);
+      subId = res.json().id;
+      expect(res.json().items.data.length).toBe(1);
+    });
+
+    it('should add a subscription item and update parent subscription', async () => {
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: '/stripe/v1/subscription_items',
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ subscription: subId, price: 'price_addon', quantity: 2 }),
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.id).toMatch(/^si_/);
+      expect(body.subscription).toBe(subId);
+      expect(body.quantity).toBe(2);
+      itemId = body.id;
+
+      // Parent subscription should now have 2 items
+      const subRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/subscriptions/${subId}` });
+      expect(subRes.json().items.data.length).toBe(2);
+    });
+
+    it('should delete a subscription item and update parent subscription', async () => {
+      const delRes = await ts.server.inject({
+        method: 'DELETE',
+        url: `/stripe/v1/subscription_items/${itemId}`,
+      });
+      expect(delRes.statusCode).toBe(200);
+      expect(delRes.json().deleted).toBe(true);
+
+      // Parent subscription should be back to 1 item
+      const subRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/subscriptions/${subId}` });
+      expect(subRes.json().items.data.length).toBe(1);
+      expect(subRes.json().items.data.some((i: Record<string, unknown>) => i.id === itemId)).toBe(false);
+    });
+  });
+
+  // ── 24. Cross-surface seeding from apiResponses ────────────────────────
 
   describe('Cross-surface seeding', () => {
     let seededTs: TestServer;

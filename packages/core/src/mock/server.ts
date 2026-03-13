@@ -45,6 +45,18 @@ export class MockServer {
   }
 
   async start(port: number = 4100): Promise<void> {
+    // CORS — allow explorer UI and other local tools to call the mock server
+    this.server.addHook('onRequest', (req, reply, done) => {
+      reply.header('Access-Control-Allow-Origin', '*');
+      reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Stripe-Version');
+      if (req.method === 'OPTIONS') {
+        reply.status(204).send();
+        return;
+      }
+      done();
+    });
+
     // Request logging
     this.server.addHook('onRequest', (req, _reply, done) => {
       logger.debug(`${req.method} ${req.url}`);

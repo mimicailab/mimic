@@ -3,8 +3,11 @@ import type {
   ApiMockAdapter,
   AdapterContext,
   AdapterResult,
+  AdapterResourceSpecs,
+  DataSpec,
   EndpointDefinition,
   ExpandedData,
+  PromptContext,
 } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 
@@ -24,6 +27,12 @@ export abstract class BaseApiMockAdapter<TConfig = unknown>
   readonly type = 'api-mock' as const;
   abstract readonly basePath: string;
   readonly versions?: string[];
+  /** Canonical resource specs — the single source of platform truth */
+  readonly resourceSpecs?: AdapterResourceSpecs;
+  /** @deprecated Use resourceSpecs. Will be removed. */
+  readonly promptContext?: PromptContext;
+  /** @deprecated Use resourceSpecs. Will be removed. */
+  readonly dataSpec?: DataSpec;
 
   protected config!: TConfig;
   protected context?: AdapterContext;

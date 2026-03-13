@@ -1,0 +1,17 @@
+{
+  "id": "gocardless",
+  "name": "GoCardless API",
+  "description": "GoCardless Direct Debit payments, mandates, and subscriptions mock adapter",
+  "type": "api-mock",
+  "basePath": "/gocardless",
+  "versions": ["2015-07-06"],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://developer.gocardless.com",
+  "specUrl": "https://raw.githubusercontent.com/gocardless/openapi/main/openapi.json",
+  "specFile": "gocardless-spec.json",
+  "mcp": {
+    "serverName": "mimic-gocardless",
+    "serverVersion": "0.5.0",
+    "description": "Mimic MCP server for GoCardless — Direct Debit payments, mandates, subscriptions against mock data"
+  }
+}

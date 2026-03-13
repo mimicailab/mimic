@@ -4,11 +4,12 @@ export type { StripeConfig } from './config.js';
 export { registerStripeTools, createStripeMcpServer, startStripeMcpServer } from './mcp.js';
 
 import type { AdapterManifest } from '@mimicai/adapter-sdk';
+import meta from './adapter-meta.js';
 
 export const manifest: AdapterManifest = {
-  id: 'stripe',
-  name: 'Stripe API',
-  type: 'api-mock',
-  description: 'Stripe payments, billing, subscriptions mock adapter',
-  versions: ['2025-03-31.basil', '2025-09-30.clover', '2026-02-25.clover'],
+  id: meta.id,
+  name: meta.name,
+  type: meta.type as AdapterManifest['type'],
+  description: meta.description,
+  versions: meta.versions,
 };

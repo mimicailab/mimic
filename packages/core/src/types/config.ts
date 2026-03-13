@@ -6,10 +6,12 @@ export const MimicConfigSchema = z.object({
 
   llm: z
     .object({
-      provider: z.enum(['anthropic', 'openai', 'ollama', 'custom']),
+      provider: z.enum(['anthropic', 'openai', 'xai', 'ollama', 'custom']),
       model: z.string(),
       apiKey: z.string().optional(),
       baseUrl: z.string().optional(),
+      /** Request timeout in ms (default 120000). Aborts stalled streams. */
+      timeoutMs: z.number().int().min(5000).optional(),
     })
     .default({ provider: 'anthropic', model: 'claude-haiku-4-5' }),
 
@@ -27,6 +29,10 @@ export const MimicConfigSchema = z.object({
     .object({
       volume: z.string().default('6 months'),
       seed: z.number().int().default(42),
+      /** Max API adapters per LLM call. 1 = individual calls per platform (best quality). */
+      adapterBatchSize: z.number().int().min(1).default(1),
+      /** Max concurrent LLM calls during batched generation. Prevents rate limiting. */
+      adapterBatchConcurrency: z.number().int().min(1).default(4),
       tables: z
         .record(z.union([z.number(), z.literal('auto')]))
         .optional(),
@@ -146,6 +152,47 @@ export const MimicConfigSchema = z.object({
         topics: z.array(z.string()).optional(),
       }),
     )
+    .optional(),
+
+  modeling: z
+    .object({
+      tableRoles: z
+        .record(
+          z.object({
+            role: z.enum(['identity', 'external-mirrored', 'internal-only']),
+            sources: z
+              .array(
+                z.object({
+                  adapter: z.string(),
+                  resource: z.string(),
+                  discriminatorValue: z.string().optional(),
+                }),
+              )
+              .optional(),
+          }),
+        )
+        .optional(),
+
+      fieldMappings: z
+        .record(z.record(z.record(z.string())))
+        .optional(),
+
+      identityLinks: z
+        .record(
+          z.record(
+            z.array(
+              z.object({
+                column: z.string(),
+                identityTable: z.string(),
+                apiField: z.string(),
+                platformColumn: z.string().default('billing_platform'),
+                externalIdColumn: z.string().default('external_id'),
+              }),
+            ),
+          ),
+        )
+        .optional(),
+    })
     .optional(),
 
   test: z

@@ -49,6 +49,7 @@
     "pg": "^8.13.3"
   },
   "optionalDependencies": {
+    "@mimicai/explorer": "workspace:*",
     "@mimicai/adapter-stripe": "workspace:*",
     "@mimicai/adapter-paddle": "workspace:*",
     "@mimicai/adapter-chargebee": "workspace:*",

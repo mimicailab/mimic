@@ -1,0 +1,17 @@
+{
+  "id": "lemonsqueezy",
+  "name": "Lemon Squeezy",
+  "description": "Lemon Squeezy payment and subscription platform mock adapter",
+  "type": "api-mock",
+  "basePath": "/lemonsqueezy",
+  "versions": ["v1"],
+  "logoFile": "logo.svg",
+  "documentationUrl": "https://docs.lemonsqueezy.com/api",
+  "specUrl": "",
+  "specFile": "",
+  "mcp": {
+    "serverName": "mimic-lemonsqueezy",
+    "serverVersion": "0.8.0",
+    "description": "Mimic MCP server for Lemon Squeezy"
+  }
+}

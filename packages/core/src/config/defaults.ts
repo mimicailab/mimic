@@ -8,6 +8,8 @@ export const DEFAULT_LLM: MimicConfig['llm'] = {
 export const DEFAULT_GENERATE: MimicConfig['generate'] = {
   volume: '6 months',
   seed: 42,
+  adapterBatchSize: 2,
+  adapterBatchConcurrency: 4,
 };
 
 export const DEFAULT_TEST_MODE = 'text' as const;

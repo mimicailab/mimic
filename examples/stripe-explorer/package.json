@@ -1,0 +1,18 @@
+{
+  "name": "stripe-explorer-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "mimic run",
+    "host": "mimic host",
+    "explore": "mimic explore",
+    "demo": "mimic run && echo '\\n✅ Data generated. Starting servers...' && mimic host"
+  },
+  "dependencies": {
+    "@mimicai/adapter-plaid": "workspace:*",
+    "@mimicai/adapter-stripe": "workspace:*",
+    "@mimicai/cli": "workspace:*",
+    "@mimicai/explorer": "workspace:*"
+  }
+}
