@@ -308,6 +308,17 @@ const SEMANTIC_FIELD_NAMES: Record<string, string> = {
   currency_code: 'currency_code',
 };
 
+const FIELD_REFS: Record<string, string> = {
+  customer_id: 'customer',
+  address_id: 'address',
+  business_id: 'business',
+  product_id: 'product',
+  price_id: 'price',
+  discount_id: 'discount',
+  subscription_id: 'subscription',
+  transaction_id: 'transaction',
+};
+
 function mapProperty(
   fieldName: string,
   rawSchema: OaSchema,
@@ -362,14 +373,6 @@ function mapProperty(
     defaultValue = '';
   }
 
-  // Detect refs to other Paddle resources
-  let ref: string | undefined;
-  if (fieldName.endsWith('_id') && fieldName !== idField) {
-    const refResource = fieldName.replace(/_id$/, '');
-    const known = PADDLE_RESOURCES.find(r => r.resourceId === refResource);
-    if (known) ref = known.resourceId;
-  }
-
   return {
     type,
     required: isRequired,
@@ -381,7 +384,7 @@ function mapProperty(
     timestamp: isTimestamp ? 'iso8601' : undefined,
     isAmount: isAmount || undefined,
     semanticType,
-    ref,
+    ref: FIELD_REFS[fieldName],
   };
 }
 

@@ -126,40 +126,40 @@ interface ZuoraResourceDef {
 const ZUORA_RESOURCES: ZuoraResourceDef[] = [
   // Use flat/expanded schemas for internal storage — NOT the wrapped GET response schemas
   // ExpandedAccount has flat fields (id, accountNumber, name, status, ...) vs GETAccountType which wraps in basicInfo/billToContact/etc.
-  { resourceId: 'account', resourceKey: 'accounts', objectType: 'account', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'ExpandedAccount', listKey: 'accounts' },
+  { resourceId: 'account', resourceKey: 'accounts', objectType: 'account', idField: 'id', idPrefix: 'zu_acct_', volumeHint: 'entity', schemaName: 'ExpandedAccount', listKey: 'accounts' },
   // GETSubscriptionType has flat fields (id, subscriptionNumber, status, ...) — the "WithSuccess" variant wraps in success envelope
-  { resourceId: 'subscription', resourceKey: 'subscriptions', objectType: 'subscription', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'GETSubscriptionType', listKey: 'subscriptions' },
+  { resourceId: 'subscription', resourceKey: 'subscriptions', objectType: 'subscription', idField: 'id', idPrefix: 'zu_sub_', volumeHint: 'entity', schemaName: 'GETSubscriptionType', listKey: 'subscriptions' },
   // Order schema is flat with orderNumber as ID
-  { resourceId: 'order', resourceKey: 'orders', objectType: 'order', idField: 'orderNumber', idPrefix: '', volumeHint: 'entity', schemaName: 'Order', listKey: 'orders' },
+  { resourceId: 'order', resourceKey: 'orders', objectType: 'order', idField: 'orderNumber', idPrefix: 'zu_ord_', volumeHint: 'entity', schemaName: 'Order', listKey: 'orders' },
   // ExpandedInvoice has flat fields (id, invoiceNumber, amount, status, ...)
-  { resourceId: 'invoice', resourceKey: 'invoices', objectType: 'invoice', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'ExpandedInvoice', listKey: 'invoices' },
+  { resourceId: 'invoice', resourceKey: 'invoices', objectType: 'invoice', idField: 'id', idPrefix: 'zu_inv_', volumeHint: 'entity', schemaName: 'ExpandedInvoice', listKey: 'invoices' },
   // GETARPaymentTypewithSuccess is the flat payment schema (lowercase 'id', no success wrapper despite the name)
-  { resourceId: 'payment', resourceKey: 'payments', objectType: 'payment', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'GETARPaymentTypewithSuccess', listKey: 'payments' },
+  { resourceId: 'payment', resourceKey: 'payments', objectType: 'payment', idField: 'id', idPrefix: 'zu_pay_', volumeHint: 'entity', schemaName: 'GETARPaymentTypewithSuccess', listKey: 'payments' },
   // GETCreditMemoTypewithSuccess is the flat credit memo schema (has 'number' field, not 'memoNumber')
-  { resourceId: 'credit_memo', resourceKey: 'credit-memos', objectType: 'credit_memo', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'GETCreditMemoTypewithSuccess', listKey: 'creditmemos' },
+  { resourceId: 'credit_memo', resourceKey: 'credit-memos', objectType: 'credit_memo', idField: 'id', idPrefix: 'zu_cm_', volumeHint: 'entity', schemaName: 'GETCreditMemoTypewithSuccess', listKey: 'creditmemos' },
   // GETDebitMemoTypewithSuccess is the flat debit memo schema
-  { resourceId: 'debit_memo', resourceKey: 'debit-memos', objectType: 'debit_memo', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'GETDebitMemoTypewithSuccess', listKey: 'debitmemos' },
-  { resourceId: 'payment_method', resourceKey: 'payment-methods', objectType: 'payment_method', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'GETPaymentMethodResponse', listKey: 'paymentMethods' },
+  { resourceId: 'debit_memo', resourceKey: 'debit-memos', objectType: 'debit_memo', idField: 'id', idPrefix: 'zu_dm_', volumeHint: 'entity', schemaName: 'GETDebitMemoTypewithSuccess', listKey: 'debitmemos' },
+  { resourceId: 'payment_method', resourceKey: 'payment-methods', objectType: 'payment_method', idField: 'id', idPrefix: 'zu_pm_', volumeHint: 'entity', schemaName: 'GETPaymentMethodResponse', listKey: 'paymentMethods' },
   // GETRefundTypewithSuccess is the flat refund schema
-  { resourceId: 'refund', resourceKey: 'refunds', objectType: 'refund', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'GETRefundTypewithSuccess', listKey: 'refunds' },
-  { resourceId: 'product', resourceKey: 'products', objectType: 'product', idField: 'id', idPrefix: '', volumeHint: 'reference', schemaName: 'GETProductType', listKey: 'products' },
+  { resourceId: 'refund', resourceKey: 'refunds', objectType: 'refund', idField: 'id', idPrefix: 'zu_ref_', volumeHint: 'entity', schemaName: 'GETRefundTypewithSuccess', listKey: 'refunds' },
+  { resourceId: 'product', resourceKey: 'products', objectType: 'product', idField: 'id', idPrefix: 'zu_prod_', volumeHint: 'reference', schemaName: 'GETProductType', listKey: 'products' },
   // ExpandedContact has flat fields (id, firstName, lastName, ...)
-  { resourceId: 'contact', resourceKey: 'contacts', objectType: 'contact', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'ExpandedContact', listKey: 'contacts' },
+  { resourceId: 'contact', resourceKey: 'contacts', objectType: 'contact', idField: 'id', idPrefix: 'zu_con_', volumeHint: 'entity', schemaName: 'ExpandedContact', listKey: 'contacts' },
   // ExpandedUsage has flat fields (id, accountId, quantity, ...)
-  { resourceId: 'usage', resourceKey: 'usage', objectType: 'usage', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'ExpandedUsage', listKey: 'usage' },
-  { resourceId: 'product_rate_plan', resourceKey: 'product-rate-plans', objectType: 'product_rate_plan', idField: 'id', idPrefix: '', volumeHint: 'reference', schemaName: 'GETProductRatePlanType', listKey: 'productRatePlans' },
-  { resourceId: 'bill_run', resourceKey: 'bill-runs', objectType: 'bill_run', idField: 'billRunId', idPrefix: '', volumeHint: 'skip', schemaName: 'GetBillRunResponseType' },
-  { resourceId: 'journal_entry', resourceKey: 'journal-entries', objectType: 'journal_entry', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'GETJournalEntryDetailType', listKey: 'journalEntries' },
-  { resourceId: 'accounting_period', resourceKey: 'accounting-periods', objectType: 'accounting_period', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'GETAccountingPeriodType', listKey: 'accountingPeriods' },
-  { resourceId: 'accounting_code', resourceKey: 'accounting-codes', objectType: 'accounting_code', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'GETAccountingCodeItemType', listKey: 'accountingCodes' },
-  { resourceId: 'invoice_schedule', resourceKey: 'invoice-schedules', objectType: 'invoice_schedule', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'InvoiceScheduleResponses' },
-  { resourceId: 'payment_schedule', resourceKey: 'payment-schedules', objectType: 'payment_schedule', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'PaymentScheduleItemCommonResponse' },
-  { resourceId: 'payment_run', resourceKey: 'payment-runs', objectType: 'payment_run', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'GETPaymentRunType' },
-  { resourceId: 'order_line_item', resourceKey: 'order-line-items', objectType: 'order_line_item', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'GetOrderLineItemResponseType' },
-  { resourceId: 'fulfillment', resourceKey: 'fulfillments', objectType: 'fulfillment', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'FulfillmentGet' },
-  { resourceId: 'adjustment', resourceKey: 'adjustments', objectType: 'adjustment', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'GETAdjustmentByIdResponseType' },
-  { resourceId: 'catalog_group', resourceKey: 'catalog-groups', objectType: 'catalog_group', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'CatalogGroupResponse' },
-  { resourceId: 'sequence_set', resourceKey: 'sequence-sets', objectType: 'sequence_set', idField: 'id', idPrefix: '', volumeHint: 'skip', schemaName: 'GETSequenceSetResponse' },
+  { resourceId: 'usage', resourceKey: 'usage', objectType: 'usage', idField: 'id', idPrefix: 'zu_usg_', volumeHint: 'entity', schemaName: 'ExpandedUsage', listKey: 'usage' },
+  { resourceId: 'product_rate_plan', resourceKey: 'product-rate-plans', objectType: 'product_rate_plan', idField: 'id', idPrefix: 'zu_rp_', volumeHint: 'reference', schemaName: 'GETProductRatePlanType', listKey: 'productRatePlans' },
+  { resourceId: 'bill_run', resourceKey: 'bill-runs', objectType: 'bill_run', idField: 'billRunId', idPrefix: 'zu_br_', volumeHint: 'skip', schemaName: 'GetBillRunResponseType' },
+  { resourceId: 'journal_entry', resourceKey: 'journal-entries', objectType: 'journal_entry', idField: 'id', idPrefix: 'zu_je_', volumeHint: 'skip', schemaName: 'GETJournalEntryDetailType', listKey: 'journalEntries' },
+  { resourceId: 'accounting_period', resourceKey: 'accounting-periods', objectType: 'accounting_period', idField: 'id', idPrefix: 'zu_ap_', volumeHint: 'skip', schemaName: 'GETAccountingPeriodType', listKey: 'accountingPeriods' },
+  { resourceId: 'accounting_code', resourceKey: 'accounting-codes', objectType: 'accounting_code', idField: 'id', idPrefix: 'zu_ac_', volumeHint: 'skip', schemaName: 'GETAccountingCodeItemType', listKey: 'accountingCodes' },
+  { resourceId: 'invoice_schedule', resourceKey: 'invoice-schedules', objectType: 'invoice_schedule', idField: 'id', idPrefix: 'zu_is_', volumeHint: 'skip', schemaName: 'InvoiceScheduleResponses' },
+  { resourceId: 'payment_schedule', resourceKey: 'payment-schedules', objectType: 'payment_schedule', idField: 'id', idPrefix: 'zu_ps_', volumeHint: 'skip', schemaName: 'PaymentScheduleItemCommonResponse' },
+  { resourceId: 'payment_run', resourceKey: 'payment-runs', objectType: 'payment_run', idField: 'id', idPrefix: 'zu_pr_', volumeHint: 'skip', schemaName: 'GETPaymentRunType' },
+  { resourceId: 'order_line_item', resourceKey: 'order-line-items', objectType: 'order_line_item', idField: 'id', idPrefix: 'zu_oli_', volumeHint: 'skip', schemaName: 'GetOrderLineItemResponseType' },
+  { resourceId: 'fulfillment', resourceKey: 'fulfillments', objectType: 'fulfillment', idField: 'id', idPrefix: 'zu_ful_', volumeHint: 'skip', schemaName: 'FulfillmentGet' },
+  { resourceId: 'adjustment', resourceKey: 'adjustments', objectType: 'adjustment', idField: 'id', idPrefix: 'zu_adj_', volumeHint: 'skip', schemaName: 'GETAdjustmentByIdResponseType' },
+  { resourceId: 'catalog_group', resourceKey: 'catalog-groups', objectType: 'catalog_group', idField: 'id', idPrefix: 'zu_cg_', volumeHint: 'skip', schemaName: 'CatalogGroupResponse' },
+  { resourceId: 'sequence_set', resourceKey: 'sequence-sets', objectType: 'sequence_set', idField: 'id', idPrefix: 'zu_ss_', volumeHint: 'skip', schemaName: 'GETSequenceSetResponse' },
 ];
 
 // Schema field overrides: fix defaults for typical mock usage
@@ -331,6 +331,24 @@ interface MappedField {
   ref?: string;
 }
 
+// FK field name → referenced resource type
+const FIELD_REFS: Record<string, string> = {
+  accountId: 'account',
+  account_id: 'account',
+  subscriptionId: 'subscription',
+  subscription_id: 'subscription',
+  invoiceId: 'invoice',
+  invoice_id: 'invoice',
+  paymentMethodId: 'payment_method',
+  payment_method_id: 'payment_method',
+  productId: 'product',
+  product_id: 'product',
+  productRatePlanId: 'product_rate_plan',
+  product_rate_plan_id: 'product_rate_plan',
+  orderId: 'order',
+  order_id: 'order',
+};
+
 const AMOUNT_FIELDS = new Set([
   'amount', 'totalAmount', 'balance', 'creditBalance', 'contractedMrr',
   'totalContractedValue', 'taxAmount', 'discountAmount', 'subtotal',
@@ -397,10 +415,11 @@ function mapProperty(
     nullable,
     default: defaultValue,
     enum: flat.enum && flat.enum.length > 0 ? flat.enum : undefined,
-    idPrefix: fieldName === idField ? '' : undefined,
+    idPrefix: undefined,
     auto: isTimestamp || undefined,
     timestamp: isTimestamp ? 'iso8601' : undefined,
     isAmount: isAmount || undefined,
+    ref: FIELD_REFS[fieldName],
   };
 }
 
@@ -476,15 +495,17 @@ function extractResources(spec: OaSpec): Map<string, ResourceInfo> {
       fields[fieldName] = mapped;
     }
 
-    // Ensure id field exists
+    // Ensure id field exists and has correct idPrefix from resource def
     if (!fields[def.idField]) {
       fields[def.idField] = {
         type: 'string',
         required: true,
         nullable: false,
         default: '',
-        idPrefix: '',
+        idPrefix: def.idPrefix,
       };
+    } else {
+      fields[def.idField]!.idPrefix = def.idPrefix;
     }
 
     resources.set(def.resourceId, {

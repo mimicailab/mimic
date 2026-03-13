@@ -77,7 +77,7 @@ const RESOURCES: ResourceDef[] = [
   {
     type: 'users',
     resourceKey: 'users',
-    idPrefix: '',
+    idPrefix: 'ls_',
     volumeHint: 'skip',
     attributes: {
       name: { type: 'string' },
@@ -690,6 +690,19 @@ export const LEMONSQUEEZY_SPEC_GENERATED_AT = ${JSON.stringify(generatedAt)};
 `;
 }
 
+const FIELD_REFS: Record<string, string> = {
+  store_id: 'stores',
+  customer_id: 'customers',
+  product_id: 'products',
+  variant_id: 'variants',
+  order_id: 'orders',
+  order_item_id: 'order_items',
+  subscription_id: 'subscriptions',
+  discount_id: 'discounts',
+  license_key_id: 'license_keys',
+  price_id: 'prices',
+};
+
 function generateResourceSpecsTs(): string {
   const lines: string[] = [
     `// !! AUTO-GENERATED — do not edit. Run: pnpm --filter @mimicai/adapter-lemonsqueezy generate`,
@@ -722,6 +735,7 @@ function generateResourceSpecsTs(): string {
       if (field.enum) parts.push(`enum: ${JSON.stringify(field.enum)}`);
       if (field.isTimestamp) parts.push(`auto: true`);
       if (field.isAmount) parts.push(`isAmount: true`);
+      if (FIELD_REFS[fieldName]) parts.push(`ref: ${JSON.stringify(FIELD_REFS[fieldName])}`);
       lines.push(`        ${JSON.stringify(fieldName)}: { ${parts.join(', ')} },`);
     }
 

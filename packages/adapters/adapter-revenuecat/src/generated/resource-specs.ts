@@ -14,7 +14,7 @@ export const revenuecatResourceSpecs: AdapterResourceSpecs = {
       refs: ["project"],
       fields: {
         "object": { type: "string", required: true, default: "customer", enum: ["customer"] },
-        "id": { type: "string", required: true, default: "", idPrefix: "" },
+        "id": { type: "string", required: true, default: "", idPrefix: "rc_cus_" },
         "project_id": { type: "string", required: true, default: "", ref: "project" },
         "first_seen_at": { type: "integer", required: true, auto: true, timestamp: "epoch_ms" },
         "last_seen_at": { type: "integer", required: true, nullable: true, auto: true, timestamp: "epoch_ms" },
@@ -160,7 +160,7 @@ export const revenuecatResourceSpecs: AdapterResourceSpecs = {
         "state": { type: "string", required: true, default: "active", enum: ["active","inactive"] },
         "object": { type: "string", required: true, default: "virtual_currency", enum: ["virtual_currency"] },
         "project_id": { type: "string", required: true, default: "", ref: "project" },
-        "code": { type: "string", required: true, default: "", idPrefix: "" },
+        "code": { type: "string", required: true, default: "", idPrefix: "rc_vc_" },
         "name": { type: "string", required: true, default: "" },
         "created_at": { type: "integer", required: true, auto: true, timestamp: "epoch_ms" },
         "description": { type: "string", required: false, nullable: true, default: null },

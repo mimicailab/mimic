@@ -276,6 +276,17 @@ interface MappedField {
   ref?: string;
 }
 
+const FIELD_REFS: Record<string, string> = {
+  customer_id: 'customer',
+  customer_bank_account_id: 'customer_bank_account',
+  mandate_id: 'mandate',
+  subscription_id: 'subscription',
+  payment_id: 'payment',
+  creditor_id: 'creditor',
+  creditor_bank_account_id: 'creditor_bank_account',
+  payout_id: 'payout',
+};
+
 const AMOUNT_FIELDS = new Set(['amount', 'amount_refunded', 'deducted_fees', 'total_amount', 'app_fee']);
 
 const SEMANTIC_FIELD_NAMES: Record<string, string> = {
@@ -343,6 +354,7 @@ function mapProperty(
     timestamp: (isTimestamp || isDate) ? 'iso8601' : undefined,
     isAmount: isAmount || undefined,
     semanticType,
+    ref: FIELD_REFS[fieldName],
   };
 }
 

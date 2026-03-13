@@ -120,7 +120,7 @@ interface RCResourceDef {
 
 const RC_RESOURCES: RCResourceDef[] = [
   { resourceId: 'project', resourceKey: 'projects', objectType: 'project', idField: 'id', idPrefix: 'proj', volumeHint: 'skip', schemaName: 'Project' },
-  { resourceId: 'customer', resourceKey: 'customers', objectType: 'customer', idField: 'id', idPrefix: '', volumeHint: 'entity', schemaName: 'Customer' },
+  { resourceId: 'customer', resourceKey: 'customers', objectType: 'customer', idField: 'id', idPrefix: 'rc_cus_', volumeHint: 'entity', schemaName: 'Customer' },
   { resourceId: 'entitlement', resourceKey: 'entitlements', objectType: 'entitlement', idField: 'id', idPrefix: 'entl', volumeHint: 'reference', schemaName: 'Entitlement' },
   { resourceId: 'offering', resourceKey: 'offerings', objectType: 'offering', idField: 'id', idPrefix: 'ofrng', volumeHint: 'reference', schemaName: 'Offering' },
   { resourceId: 'package', resourceKey: 'packages', objectType: 'package', idField: 'id', idPrefix: 'pkg', volumeHint: 'reference', schemaName: 'Package' },
@@ -130,7 +130,7 @@ const RC_RESOURCES: RCResourceDef[] = [
   { resourceId: 'paywall', resourceKey: 'paywalls', objectType: 'paywall', idField: 'id', idPrefix: 'pw', volumeHint: 'reference', schemaName: 'Paywall' },
   { resourceId: 'app', resourceKey: 'apps', objectType: 'app', idField: 'id', idPrefix: 'app', volumeHint: 'skip', schemaName: 'App' },
   { resourceId: 'collaborator', resourceKey: 'collaborators', objectType: 'collaborator', idField: 'id', idPrefix: 'collab', volumeHint: 'skip', schemaName: 'Collaborator' },
-  { resourceId: 'virtual_currency', resourceKey: 'virtual_currencies', objectType: 'virtual_currency', idField: 'code', idPrefix: '', volumeHint: 'reference', schemaName: 'VirtualCurrency' },
+  { resourceId: 'virtual_currency', resourceKey: 'virtual_currencies', objectType: 'virtual_currency', idField: 'code', idPrefix: 'rc_vc_', volumeHint: 'reference', schemaName: 'VirtualCurrency' },
   { resourceId: 'webhook_integration', resourceKey: 'webhooks', objectType: 'webhook_integration', idField: 'id', idPrefix: 'whi', volumeHint: 'skip', schemaName: 'WebhookIntegration' },
   { resourceId: 'invoice', resourceKey: 'invoices', objectType: 'invoice', idField: 'id', idPrefix: 'rcbin', volumeHint: 'entity', schemaName: 'Invoice' },
 ];
@@ -298,6 +298,15 @@ const SEMANTIC_FIELD_NAMES: Record<string, string> = {
   currency: 'currency_code',
 };
 
+const FIELD_REFS: Record<string, string> = {
+  customer_id: 'customer',
+  product_id: 'product',
+  entitlement_id: 'entitlement',
+  offering_id: 'offering',
+  package_id: 'package',
+  subscription_id: 'subscription',
+};
+
 function mapProperty(
   fieldName: string,
   rawSchema: OaSchema,
@@ -354,9 +363,9 @@ function mapProperty(
     defaultValue = '';
   }
 
-  // Detect refs to other RC resources
-  let ref: string | undefined;
-  if (fieldName.endsWith('_id') && fieldName !== idField) {
+  // Detect refs to other RC resources (explicit map first, then auto-detect)
+  let ref: string | undefined = FIELD_REFS[fieldName];
+  if (!ref && fieldName.endsWith('_id') && fieldName !== idField) {
     const refResource = fieldName.replace(/_id$/, '');
     const known = RC_RESOURCES.find(r => r.resourceId === refResource);
     if (known) ref = known.resourceId;

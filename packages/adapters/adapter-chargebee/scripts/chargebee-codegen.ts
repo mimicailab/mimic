@@ -117,21 +117,21 @@ interface ResourceDef {
 }
 
 const RESOURCES: ResourceDef[] = [
-  // Core billing entities
-  { resourceId: 'customer', resourceKey: 'customers', objectType: 'customer', schemaName: 'Customer', idField: 'id', idPrefix: '', volumeHint: 'entity', pathParamName: 'customer-id' },
-  { resourceId: 'subscription', resourceKey: 'subscriptions', objectType: 'subscription', schemaName: 'Subscription', idField: 'id', idPrefix: '', volumeHint: 'entity', pathParamName: 'subscription-id' },
-  { resourceId: 'invoice', resourceKey: 'invoices', objectType: 'invoice', schemaName: 'Invoice', idField: 'id', idPrefix: '', volumeHint: 'entity', pathParamName: 'invoice-id' },
-  { resourceId: 'credit_note', resourceKey: 'credit_notes', objectType: 'credit_note', schemaName: 'CreditNote', idField: 'id', idPrefix: '', volumeHint: 'reference', pathParamName: 'credit-note-id' },
+  // Core billing entities — Chargebee uses alphanumeric IDs; we use cb_ prefixes for uniqueness
+  { resourceId: 'customer', resourceKey: 'customers', objectType: 'customer', schemaName: 'Customer', idField: 'id', idPrefix: 'cb_cus_', volumeHint: 'entity', pathParamName: 'customer-id' },
+  { resourceId: 'subscription', resourceKey: 'subscriptions', objectType: 'subscription', schemaName: 'Subscription', idField: 'id', idPrefix: 'cb_sub_', volumeHint: 'entity', pathParamName: 'subscription-id' },
+  { resourceId: 'invoice', resourceKey: 'invoices', objectType: 'invoice', schemaName: 'Invoice', idField: 'id', idPrefix: 'cb_inv_', volumeHint: 'entity', pathParamName: 'invoice-id' },
+  { resourceId: 'credit_note', resourceKey: 'credit_notes', objectType: 'credit_note', schemaName: 'CreditNote', idField: 'id', idPrefix: 'cb_cn_', volumeHint: 'reference', pathParamName: 'credit-note-id' },
   { resourceId: 'transaction', resourceKey: 'transactions', objectType: 'transaction', schemaName: 'Transaction', idField: 'id', idPrefix: 'txn_', volumeHint: 'reference', pathParamName: 'transaction-id' },
-  { resourceId: 'order', resourceKey: 'orders', objectType: 'order', schemaName: 'Order', idField: 'id', idPrefix: '', volumeHint: 'reference', pathParamName: 'order-id' },
+  { resourceId: 'order', resourceKey: 'orders', objectType: 'order', schemaName: 'Order', idField: 'id', idPrefix: 'cb_ord_', volumeHint: 'reference', pathParamName: 'order-id' },
 
   // Product catalog
-  { resourceId: 'item', resourceKey: 'items', objectType: 'item', schemaName: 'Item', idField: 'id', idPrefix: '', volumeHint: 'reference', pathParamName: 'item-id' },
-  { resourceId: 'item_price', resourceKey: 'item_prices', objectType: 'item_price', schemaName: 'ItemPrice', idField: 'id', idPrefix: '', volumeHint: 'reference', pathParamName: 'item-price-id' },
-  { resourceId: 'item_family', resourceKey: 'item_families', objectType: 'item_family', schemaName: 'ItemFamily', idField: 'id', idPrefix: '', volumeHint: 'reference', pathParamName: 'item-family-id' },
-  { resourceId: 'attached_item', resourceKey: 'attached_items', objectType: 'attached_item', schemaName: 'AttachedItem', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'attached-item-id' },
-  { resourceId: 'differential_price', resourceKey: 'differential_prices', objectType: 'differential_price', schemaName: 'DifferentialPrice', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'differential-price-id' },
-  { resourceId: 'price_variant', resourceKey: 'price_variants', objectType: 'price_variant', schemaName: 'PriceVariant', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'price-variant-id' },
+  { resourceId: 'item', resourceKey: 'items', objectType: 'item', schemaName: 'Item', idField: 'id', idPrefix: 'cb_item_', volumeHint: 'reference', pathParamName: 'item-id' },
+  { resourceId: 'item_price', resourceKey: 'item_prices', objectType: 'item_price', schemaName: 'ItemPrice', idField: 'id', idPrefix: 'cb_ip_', volumeHint: 'reference', pathParamName: 'item-price-id' },
+  { resourceId: 'item_family', resourceKey: 'item_families', objectType: 'item_family', schemaName: 'ItemFamily', idField: 'id', idPrefix: 'cb_if_', volumeHint: 'reference', pathParamName: 'item-family-id' },
+  { resourceId: 'attached_item', resourceKey: 'attached_items', objectType: 'attached_item', schemaName: 'AttachedItem', idField: 'id', idPrefix: 'cb_ai_', volumeHint: 'skip', pathParamName: 'attached-item-id' },
+  { resourceId: 'differential_price', resourceKey: 'differential_prices', objectType: 'differential_price', schemaName: 'DifferentialPrice', idField: 'id', idPrefix: 'cb_dp_', volumeHint: 'skip', pathParamName: 'differential-price-id' },
+  { resourceId: 'price_variant', resourceKey: 'price_variants', objectType: 'price_variant', schemaName: 'PriceVariant', idField: 'id', idPrefix: 'cb_pv_', volumeHint: 'skip', pathParamName: 'price-variant-id' },
 
   // Payment
   { resourceId: 'payment_source', resourceKey: 'payment_sources', objectType: 'payment_source', schemaName: 'PaymentSource', idField: 'id', idPrefix: 'pm_', volumeHint: 'reference', pathParamName: 'payment-source-id' },
@@ -139,29 +139,29 @@ const RESOURCES: ResourceDef[] = [
   { resourceId: 'virtual_bank_account', resourceKey: 'virtual_bank_accounts', objectType: 'virtual_bank_account', schemaName: 'VirtualBankAccount', idField: 'id', idPrefix: 'vba_', volumeHint: 'skip', pathParamName: 'virtual-bank-account-id' },
 
   // Discount/promo
-  { resourceId: 'coupon', resourceKey: 'coupons', objectType: 'coupon', schemaName: 'Coupon', idField: 'id', idPrefix: '', volumeHint: 'reference', pathParamName: 'coupon-id' },
-  { resourceId: 'coupon_set', resourceKey: 'coupon_sets', objectType: 'coupon_set', schemaName: 'CouponSet', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'coupon-set-id' },
-  { resourceId: 'coupon_code', resourceKey: 'coupon_codes', objectType: 'coupon_code', schemaName: 'CouponCode', idField: 'code', idPrefix: '', volumeHint: 'skip', pathParamName: 'coupon-code-code' },
+  { resourceId: 'coupon', resourceKey: 'coupons', objectType: 'coupon', schemaName: 'Coupon', idField: 'id', idPrefix: 'cb_cpn_', volumeHint: 'reference', pathParamName: 'coupon-id' },
+  { resourceId: 'coupon_set', resourceKey: 'coupon_sets', objectType: 'coupon_set', schemaName: 'CouponSet', idField: 'id', idPrefix: 'cb_cs_', volumeHint: 'skip', pathParamName: 'coupon-set-id' },
+  { resourceId: 'coupon_code', resourceKey: 'coupon_codes', objectType: 'coupon_code', schemaName: 'CouponCode', idField: 'code', idPrefix: 'cb_cc_', volumeHint: 'skip', pathParamName: 'coupon-code-code' },
   { resourceId: 'promotional_credit', resourceKey: 'promotional_credits', objectType: 'promotional_credit', schemaName: 'PromotionalCredit', idField: 'id', idPrefix: 'pc_', volumeHint: 'skip', pathParamName: 'promotional-credit-id' },
 
   // Features & entitlements
-  { resourceId: 'feature', resourceKey: 'features', objectType: 'feature', schemaName: 'Feature', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'feature-id' },
+  { resourceId: 'feature', resourceKey: 'features', objectType: 'feature', schemaName: 'Feature', idField: 'id', idPrefix: 'cb_feat_', volumeHint: 'skip', pathParamName: 'feature-id' },
 
   // Other
-  { resourceId: 'comment', resourceKey: 'comments', objectType: 'comment', schemaName: 'Comment', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'comment-id' },
-  { resourceId: 'gift', resourceKey: 'gifts', objectType: 'gift', schemaName: 'Gift', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'gift-id' },
-  { resourceId: 'quote', resourceKey: 'quotes', objectType: 'quote', schemaName: 'Quote', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'quote-id' },
-  { resourceId: 'unbilled_charge', resourceKey: 'unbilled_charges', objectType: 'unbilled_charge', schemaName: 'UnbilledCharge', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'unbilled-charge-id' },
-  { resourceId: 'hosted_page', resourceKey: 'hosted_pages', objectType: 'hosted_page', schemaName: 'HostedPage', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'hosted-page-id' },
-  { resourceId: 'portal_session', resourceKey: 'portal_sessions', objectType: 'portal_session', schemaName: 'PortalSession', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'portal-session-id' },
-  { resourceId: 'token', resourceKey: 'tokens', objectType: 'token', schemaName: 'Token', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'cb-token-id' },
-  { resourceId: 'card', resourceKey: 'cards', objectType: 'card', schemaName: 'Card', idField: 'payment_source_id', idPrefix: '', volumeHint: 'skip', pathParamName: 'card-id' },
-  { resourceId: 'address', resourceKey: 'addresses', objectType: 'address', schemaName: 'Address', idField: 'label', idPrefix: '', volumeHint: 'skip', pathParamName: 'address-label' },
+  { resourceId: 'comment', resourceKey: 'comments', objectType: 'comment', schemaName: 'Comment', idField: 'id', idPrefix: 'cb_cmt_', volumeHint: 'skip', pathParamName: 'comment-id' },
+  { resourceId: 'gift', resourceKey: 'gifts', objectType: 'gift', schemaName: 'Gift', idField: 'id', idPrefix: 'cb_gift_', volumeHint: 'skip', pathParamName: 'gift-id' },
+  { resourceId: 'quote', resourceKey: 'quotes', objectType: 'quote', schemaName: 'Quote', idField: 'id', idPrefix: 'cb_qt_', volumeHint: 'skip', pathParamName: 'quote-id' },
+  { resourceId: 'unbilled_charge', resourceKey: 'unbilled_charges', objectType: 'unbilled_charge', schemaName: 'UnbilledCharge', idField: 'id', idPrefix: 'cb_uc_', volumeHint: 'skip', pathParamName: 'unbilled-charge-id' },
+  { resourceId: 'hosted_page', resourceKey: 'hosted_pages', objectType: 'hosted_page', schemaName: 'HostedPage', idField: 'id', idPrefix: 'cb_hp_', volumeHint: 'skip', pathParamName: 'hosted-page-id' },
+  { resourceId: 'portal_session', resourceKey: 'portal_sessions', objectType: 'portal_session', schemaName: 'PortalSession', idField: 'id', idPrefix: 'cb_ps_', volumeHint: 'skip', pathParamName: 'portal-session-id' },
+  { resourceId: 'token', resourceKey: 'tokens', objectType: 'token', schemaName: 'Token', idField: 'id', idPrefix: 'cb_tok_', volumeHint: 'skip', pathParamName: 'cb-token-id' },
+  { resourceId: 'card', resourceKey: 'cards', objectType: 'card', schemaName: 'Card', idField: 'payment_source_id', idPrefix: 'cb_card_', volumeHint: 'skip', pathParamName: 'card-id' },
+  { resourceId: 'address', resourceKey: 'addresses', objectType: 'address', schemaName: 'Address', idField: 'label', idPrefix: 'cb_addr_', volumeHint: 'skip', pathParamName: 'address-label' },
   { resourceId: 'event', resourceKey: 'events', objectType: 'event', schemaName: 'Event', idField: 'id', idPrefix: 'ev_', volumeHint: 'skip', pathParamName: 'event-id' },
-  { resourceId: 'usage', resourceKey: 'usages', objectType: 'usage', schemaName: 'Usage', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'usage-id' },
-  { resourceId: 'ramp', resourceKey: 'ramps', objectType: 'ramp', schemaName: 'Ramp', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'ramp-id' },
-  { resourceId: 'product', resourceKey: 'products', objectType: 'product', schemaName: 'Product', idField: 'id', idPrefix: '', volumeHint: 'reference', pathParamName: 'product-id' },
-  { resourceId: 'variant', resourceKey: 'variants', objectType: 'variant', schemaName: 'Variant', idField: 'id', idPrefix: '', volumeHint: 'skip', pathParamName: 'variant-id' },
+  { resourceId: 'usage', resourceKey: 'usages', objectType: 'usage', schemaName: 'Usage', idField: 'id', idPrefix: 'cb_usg_', volumeHint: 'skip', pathParamName: 'usage-id' },
+  { resourceId: 'ramp', resourceKey: 'ramps', objectType: 'ramp', schemaName: 'Ramp', idField: 'id', idPrefix: 'cb_ramp_', volumeHint: 'skip', pathParamName: 'ramp-id' },
+  { resourceId: 'product', resourceKey: 'products', objectType: 'product', schemaName: 'Product', idField: 'id', idPrefix: 'cb_prod_', volumeHint: 'reference', pathParamName: 'product-id' },
+  { resourceId: 'variant', resourceKey: 'variants', objectType: 'variant', schemaName: 'Variant', idField: 'id', idPrefix: 'cb_var_', volumeHint: 'skip', pathParamName: 'variant-id' },
 ];
 
 // Build lookup maps
@@ -356,6 +356,32 @@ function resolveType(schema: OaSchema): { type: string; nullable: boolean } {
 }
 
 // ---------------------------------------------------------------------------
+// Explicit FK references
+// ---------------------------------------------------------------------------
+
+/**
+ * Chargebee's OpenAPI spec uses plain `{type: "string"}` for FK fields —
+ * no $ref pointers. We define refs explicitly per field name.
+ */
+const FIELD_REFS: Record<string, string> = {
+  customer_id: 'customer',
+  subscription_id: 'subscription',
+  invoice_id: 'invoice',
+  credit_note_id: 'credit_note',
+  transaction_id: 'transaction',
+  order_id: 'order',
+  item_id: 'item',
+  item_price_id: 'item_price',
+  item_family_id: 'item_family',
+  payment_source_id: 'payment_source',
+  coupon_id: 'coupon',
+  product_id: 'product',
+  parent_item_id: 'item',
+  plan_id: 'item_price',
+  addon_id: 'item_price',
+};
+
+// ---------------------------------------------------------------------------
 // Property → MappedField
 // ---------------------------------------------------------------------------
 
@@ -450,6 +476,7 @@ function mapProperty(
     timestamp: isTimestamp ? 'unix_seconds' : undefined,
     isAmount: isAmount || undefined,
     semanticType,
+    ref: FIELD_REFS[fieldName],
     description: flat.description,
   };
 }

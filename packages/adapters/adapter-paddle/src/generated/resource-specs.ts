@@ -108,7 +108,7 @@ export const paddleResourceSpecs: AdapterResourceSpecs = {
     "discount": {
       objectType: "discount",
       volumeHint: "reference",
-      refs: ["discount_group"],
+      refs: [],
       fields: {
         "id": { type: "string", required: true, default: "", idPrefix: "dsc_" },
         "status": { type: "string", required: true, default: "active", enum: ["active","archived"] },
@@ -126,7 +126,7 @@ export const paddleResourceSpecs: AdapterResourceSpecs = {
         "expires_at": { type: "string", required: true, nullable: true, auto: true, timestamp: "iso8601" },
         "custom_data": { type: "object", required: true, nullable: true, default: null },
         "times_used": { type: "integer", required: true, default: 0 },
-        "discount_group_id": { type: "string", required: true, nullable: true, default: null, ref: "discount_group" },
+        "discount_group_id": { type: "string", required: true, nullable: true, default: null },
         "created_at": { type: "string", required: true, auto: true, timestamp: "iso8601" },
         "updated_at": { type: "string", required: true, auto: true, timestamp: "iso8601" },
         "import_meta": { type: "object", required: true, nullable: true, default: null },

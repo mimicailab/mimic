@@ -21,7 +21,7 @@ export function defaultProject(overrides: Record<string, unknown> = {}): Record<
 export function defaultCustomer(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     "object": "customer",
-    "id": crypto.randomUUID(),
+    "id": generateId("rc_cus_", 14),
     "project_id": "",
     "first_seen_at": Date.now(),
     "last_seen_at": Date.now(),
@@ -192,7 +192,7 @@ export function defaultVirtualCurrency(overrides: Record<string, unknown> = {}):
     "object": "virtual_currency",
     "state": "active",
     "project_id": "",
-    "code": crypto.randomUUID(),
+    "code": generateId("rc_vc_", 14),
     "name": "",
     "created_at": Date.now(),
     "description": null,

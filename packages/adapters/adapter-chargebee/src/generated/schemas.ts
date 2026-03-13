@@ -8,7 +8,7 @@ import { unixNow, generateId } from '@mimicai/adapter-sdk';
 
 export function defaultCustomer(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_cus_", 14),
     "first_name": null,
     "last_name": null,
     "email": null,
@@ -79,7 +79,7 @@ export function defaultCustomer(overrides: Record<string, unknown> = {}): Record
 
 export function defaultSubscription(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_sub_", 14),
     "currency_code": "",
     "billing_period": 0,
     "billing_period_unit": "day",
@@ -150,7 +150,7 @@ export function defaultSubscription(overrides: Record<string, unknown> = {}): Re
 
 export function defaultInvoice(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_inv_", 14),
     "customer_id": "",
     "payment_owner": null,
     "subscription_id": null,
@@ -227,7 +227,7 @@ export function defaultInvoice(overrides: Record<string, unknown> = {}): Record<
 
 export function defaultCreditNote(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_cn_", 14),
     "customer_id": "",
     "subscription_id": null,
     "reference_invoice_id": null,
@@ -334,7 +334,7 @@ export function defaultTransaction(overrides: Record<string, unknown> = {}): Rec
 
 export function defaultOrder(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_ord_", 14),
     "document_number": null,
     "invoice_id": null,
     "subscription_id": null,
@@ -396,7 +396,7 @@ export function defaultOrder(overrides: Record<string, unknown> = {}): Record<st
 
 export function defaultItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_item_", 14),
     "name": "",
     "external_name": null,
     "description": null,
@@ -431,7 +431,7 @@ export function defaultItem(overrides: Record<string, unknown> = {}): Record<str
 
 export function defaultItemPrice(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_ip_", 14),
     "name": "",
     "item_family_id": null,
     "item_id": null,
@@ -478,7 +478,7 @@ export function defaultItemPrice(overrides: Record<string, unknown> = {}): Recor
 
 export function defaultItemFamily(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_if_", 14),
     "name": "",
     "description": null,
     "status": "active",
@@ -493,7 +493,7 @@ export function defaultItemFamily(overrides: Record<string, unknown> = {}): Reco
 
 export function defaultAttachedItem(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_ai_", 14),
     "parent_item_id": "",
     "item_id": "",
     "type": "recommended",
@@ -515,7 +515,7 @@ export function defaultAttachedItem(overrides: Record<string, unknown> = {}): Re
 
 export function defaultDifferentialPrice(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_dp_", 14),
     "item_price_id": "",
     "parent_item_id": "",
     "price": 0,
@@ -536,7 +536,7 @@ export function defaultDifferentialPrice(overrides: Record<string, unknown> = {}
 
 export function defaultPriceVariant(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_pv_", 14),
     "name": "",
     "external_name": null,
     "variant_group": null,
@@ -631,7 +631,7 @@ export function defaultVirtualBankAccount(overrides: Record<string, unknown> = {
 
 export function defaultCoupon(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_cpn_", 14),
     "name": "",
     "invoice_name": null,
     "discount_type": "fixed_amount",
@@ -664,7 +664,7 @@ export function defaultCoupon(overrides: Record<string, unknown> = {}): Record<s
 
 export function defaultCouponSet(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_cs_", 14),
     "coupon_id": "",
     "name": "",
     "total_count": 0,
@@ -677,7 +677,7 @@ export function defaultCouponSet(overrides: Record<string, unknown> = {}): Recor
 
 export function defaultCouponCode(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "code": generateId("", 14),
+    "code": generateId("cb_cc_", 14),
     "status": "not_redeemed",
     "coupon_id": "",
     "coupon_set_id": "",
@@ -707,7 +707,7 @@ export function defaultPromotionalCredit(overrides: Record<string, unknown> = {}
 
 export function defaultFeature(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_feat_", 14),
     "name": "",
     "description": null,
     "status": "active",
@@ -723,7 +723,7 @@ export function defaultFeature(overrides: Record<string, unknown> = {}): Record<
 
 export function defaultComment(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_cmt_", 14),
     "entity_type": "customer",
     "added_by": null,
     "notes": "",
@@ -737,7 +737,7 @@ export function defaultComment(overrides: Record<string, unknown> = {}): Record<
 
 export function defaultGift(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_gift_", 14),
     "status": "scheduled",
     "scheduled_at": undefined,
     "auto_claim": false,
@@ -754,7 +754,7 @@ export function defaultGift(overrides: Record<string, unknown> = {}): Record<str
 
 export function defaultQuote(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_qt_", 14),
     "name": null,
     "po_number": null,
     "customer_id": "",
@@ -801,7 +801,7 @@ export function defaultQuote(overrides: Record<string, unknown> = {}): Record<st
 
 export function defaultUnbilledCharge(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_uc_", 14),
     "customer_id": null,
     "subscription_id": null,
     "date_from": 0,
@@ -831,7 +831,7 @@ export function defaultUnbilledCharge(overrides: Record<string, unknown> = {}): 
 
 export function defaultHostedPage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_hp_", 14),
     "type": "checkout_new",
     "url": null,
     "state": "created",
@@ -849,7 +849,7 @@ export function defaultHostedPage(overrides: Record<string, unknown> = {}): Reco
 
 export function defaultPortalSession(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_ps_", 14),
     "token": "",
     "access_url": "",
     "redirect_url": null,
@@ -868,7 +868,7 @@ export function defaultPortalSession(overrides: Record<string, unknown> = {}): R
 
 export function defaultToken(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_tok_", 14),
     "gateway": "chargebee",
     "gateway_account_id": "",
     "payment_method_type": "card",
@@ -957,7 +957,7 @@ export function defaultEvent(overrides: Record<string, unknown> = {}): Record<st
 
 export function defaultUsage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_usg_", 14),
     "usage_date": 0,
     "subscription_id": "",
     "item_price_id": "",
@@ -975,7 +975,7 @@ export function defaultUsage(overrides: Record<string, unknown> = {}): Record<st
 
 export function defaultRamp(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_ramp_", 14),
     "description": null,
     "subscription_id": "",
     "effective_from": 0,
@@ -1000,7 +1000,7 @@ export function defaultRamp(overrides: Record<string, unknown> = {}): Record<str
 
 export function defaultProduct(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_prod_", 14),
     "name": "",
     "external_name": "",
     "description": null,
@@ -1020,7 +1020,7 @@ export function defaultProduct(overrides: Record<string, unknown> = {}): Record<
 
 export function defaultVariant(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    "id": generateId("", 14),
+    "id": generateId("cb_var_", 14),
     "name": "",
     "external_name": null,
     "description": null,

@@ -5,7 +5,7 @@ function isoNow(): string { return new Date().toISOString(); }
 
 export function defaultUsers(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: generateId("", 14),
+    id: generateId("ls_", 14),
     "name": '',
     "email": '',
     "color": "#898FA9",
