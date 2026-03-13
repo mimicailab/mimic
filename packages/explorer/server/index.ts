@@ -212,19 +212,62 @@ async function loadDataSummaries(config: MimicConfig, cwd: string): Promise<Pers
 }
 
 async function tryImport(pkg: string, cwd: string): Promise<Record<string, unknown>> {
+  // 1. Bare specifier — works when resolvable from calling context
   try {
     return await import(/* @vite-ignore */ pkg);
   } catch {
-    // Resolve from the project's node_modules using createRequire, then
-    // import the ESM entry (.js) since dynamic import() of CJS bundles
-    // can fail due to missing path context in ESM/CJS interop.
+    // fall through
+  }
+
+  // 2. Resolve from the project's node_modules
+  try {
     const req = createRequire(join(cwd, 'package.json'));
     let resolved = req.resolve(pkg);
     if (resolved.endsWith('.cjs')) {
       resolved = resolved.replace(/\.cjs$/, '.js');
     }
     return await import(/* @vite-ignore */ resolved);
+  } catch {
+    // fall through
   }
+
+  // 3. Resolve from @mimicai/cli's location — adapters are dependencies of
+  //    the CLI package, so they're resolvable from the CLI's node_modules.
+  //    This works in both real user projects (npm install @mimicai/cli) and
+  //    monorepos (workspace symlinks).
+  try {
+    const cliEntry = createRequire(join(cwd, 'package.json')).resolve('@mimicai/cli');
+    const cliDir = dirname(cliEntry);
+    const req = createRequire(join(cliDir, 'package.json'));
+    let resolved = req.resolve(pkg);
+    if (resolved.endsWith('.cjs')) {
+      resolved = resolved.replace(/\.cjs$/, '.js');
+    }
+    return await import(/* @vite-ignore */ resolved);
+  } catch {
+    // fall through
+  }
+
+  // 4. Walk up from the CLI binary (process.argv[1]) — covers pnpm
+  //    workspaces where packages are hoisted to a .pnpm store.
+  const startPath = process.argv[1] ?? cwd;
+  let dir = dirname(startPath);
+  for (let i = 0; i < 10; i++) {
+    try {
+      const req = createRequire(join(dir, 'package.json'));
+      let resolved = req.resolve(pkg);
+      if (resolved.endsWith('.cjs')) {
+        resolved = resolved.replace(/\.cjs$/, '.js');
+      }
+      return await import(/* @vite-ignore */ resolved);
+    } catch {
+      const parent = dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  }
+
+  throw new Error(`Cannot find ${pkg}`);
 }
 
 function findManifest(mod: Record<string, unknown>): AdapterManifest | undefined {
