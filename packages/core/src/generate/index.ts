@@ -24,3 +24,6 @@ export type { FkResolutionContext, FkResolutionResult } from './fk-resolver.js';
 
 export { assembleResourceArchetypes } from './resource-assembler.js';
 export type { ResourceDistribution, DistributionOutput } from './resource-assembler.js';
+
+export { generateFacts, buildDataStats } from './fact-generator.js';
+export type { DataStats } from './fact-generator.js';

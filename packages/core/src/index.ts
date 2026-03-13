@@ -131,6 +131,7 @@ export { classifyTables } from './generate/table-classifier.js';
 export { FkResolutionError, resolveMirroredFks } from './generate/fk-resolver.js';
 export { assembleResourceArchetypes } from './generate/resource-assembler.js';
 export type { AssembleOptions } from './generate/resource-assembler.js';
+export { generateFacts, buildDataStats } from './generate/fact-generator.js';
 export { derivePromptContext, deriveDataSpec } from './types/adapter.js';
 
 // Seed (adapters are now in @mimicai/adapter-* packages)

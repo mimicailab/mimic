@@ -213,6 +213,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
 
   const summary: { persona: string; tables: Record<string, number>; apis?: Record<string, number> }[] = [];
   const allFacts: Fact[] = [];
+  const expandedResults: { persona: { name: string; description: string }; expanded: ExpandedData }[] = [];
 
   // ── Phase 1: Obtain all blueprints (parallel for LLM calls) ──────────
   const blueprintSpin = logger.spinner(
@@ -332,17 +333,32 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         if (total > 0) apiCounts[adapterId] = total;
       }
 
-      // Collect facts for fact manifest
-      if (expanded.facts && expanded.facts.length > 0) {
-        allFacts.push(...expanded.facts);
-      }
-
+      expandedResults.push({ persona, expanded });
       summary.push({ persona: persona.name, tables: tableCounts, apis: apiCounts });
 
       expandSpin.succeed('Data expanded');
     } catch (err) {
       expandSpin.fail('Expansion failed');
       throw err;
+    }
+  }
+
+  // ── Phase 3: Generate facts from actual data (post-expansion LLM call) ──
+  const { generateFacts } = await import('@mimicai/core');
+  for (const { persona, expanded } of expandedResults) {
+    expanded.facts = await generateFacts(
+      llmClient,
+      expanded,
+      persona,
+      config.domain,
+    );
+    if (expanded.facts.length > 0) {
+      allFacts.push(...expanded.facts);
+    }
+    // Re-write expanded data with generated facts
+    if (!opts.dryRun) {
+      const outPath = join(dataDir, `${persona.name}.json`);
+      await writeJson(outPath, expanded);
     }
   }
 

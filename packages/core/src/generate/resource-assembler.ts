@@ -216,11 +216,15 @@ function deriveVariation(
   personaIndex?: number,
   allSpecs?: AdapterResourceSpecs,
 ): FieldVariation | null {
-  // ID field with prefix → sequence, namespaced by persona to prevent collisions
-  if (spec.idPrefix) {
+  // ID field with prefix → sequence, namespaced by persona to prevent collisions.
+  // When idPrefix is defined (even as empty string), treat it as an ID field.
+  // Use objectType as fallback prefix so adapters without conventional prefixes
+  // (e.g. Chargebee, Zuora) still get unique IDs.
+  if (spec.idPrefix !== undefined) {
+    const basePrefix = spec.idPrefix || `${resource.objectType}_`;
     const prefix = personaIndex != null
-      ? `${spec.idPrefix}p${personaIndex}_`
-      : spec.idPrefix;
+      ? `${basePrefix}p${personaIndex}_`
+      : basePrefix;
     return { type: 'sequence', prefix };
   }
 

@@ -341,7 +341,45 @@ If the parent table has 40 rows and the date range is 6 months, this produces 40
 - \`periodic\` + \`forEachParent\` → periodic rows per parent (weekly reports per team, biweekly timesheets per employee)
 
 **RULE G — WHEN TO USE \`forEachParent\` (MANDATORY):**
-Examine the schema foreign keys. For EVERY child table where the business relationship is "each parent has many of these over time", you MUST use \`forEachParent\` pointing to the parent entity table. Without it, your patterns will produce unrealistically few rows. The expander infers the FK column from the schema automatically — you only need to set \`forEachParent.table\` and include a \`{{parentTable.pk}}\` placeholder in the pattern fields for that FK column.`;
+Examine the schema foreign keys. For EVERY child table where the business relationship is "each parent has many of these over time", you MUST use \`forEachParent\` pointing to the parent entity table. Without it, your patterns will produce unrealistically few rows. The expander infers the FK column from the schema automatically — you only need to set \`forEachParent.table\` and include a \`{{parentTable.pk}}\` placeholder in the pattern fields for that FK column.
+
+##############################################################################
+# FACT-DRIVEN DATA GENERATION — PERSONA CLAIMS ARE HARD CONSTRAINTS
+##############################################################################
+
+**RULE H — FACT-DRIVEN ARCHETYPES (MANDATORY):**
+The persona description contains specific numeric claims about the data (e.g., "3 overdue invoices totalling £12,400", "847 free-tier users", "14 pro customers who haven't logged in for 30+ days"). These are NOT suggestions — they are **hard constraints** that your archetypes MUST satisfy after expansion.
+
+**How to honour fact claims:**
+1. **Parse every number** in the persona description — counts, totals, percentages, amounts.
+2. **Design archetypes so expansion produces those exact numbers.** For example:
+   - "3 overdue invoices totalling £12,400" → create an archetype with \`count: 3\` (not as a weight fraction — as a dedicated archetype), status "payment_due"/"overdue", and amounts that sum to 1240000 (in pence/cents).
+   - "847 free-tier users" → create a "free-tier" archetype in \`entityArchetypes\` for the users table with the right count/weight to produce exactly 847 rows.
+   - "14 Pro customers who haven't logged in for 30+ days" → create a "pro-inactive" archetype with count matching 14, plan "pro", and \`last_login_at\` set to a timestamp >30 days ago.
+   - "~2,847 paying customers" → total customer count across all paid archetypes = 2847.
+   - "£127k MRR" → archetype amounts × counts must sum to ~£127,000.
+3. **Use dedicated small archetypes for specific claims.** If the persona says "3 overdue invoices", create a separate archetype with weight that produces exactly 3 entities — do NOT rely on random status distribution from a larger pool.
+4. **For percentage claims**, compute the exact count from the total and create appropriately weighted archetypes.
+5. **Include all claimed facts** in the \`facts\` array with structured \`data\` fields matching the claim.
+
+**Example — encoding "3 overdue invoices totalling £12,400":**
+\`\`\`json
+{
+  "chargebee": {
+    "invoices": {
+      "count": 50,
+      "archetypes": [
+        { "label": "paid", "weight": 0.84, "fields": { "status": "paid" }, "vary": { "amount": { "type": "range", "min": 2900, "max": 49900 } } },
+        { "label": "overdue-specific", "weight": 0.06, "fields": { "status": "payment_due", "amount": 413333 }, "vary": {} },
+        { "label": "pending", "weight": 0.10, "fields": { "status": "pending" }, "vary": { "amount": { "type": "range", "min": 2900, "max": 9900 } } }
+      ]
+    }
+  }
+}
+\`\`\`
+Here weight 0.06 × count 50 = 3 overdue invoices. The amount 413333 × 3 ≈ £12,400.
+
+**CRITICAL:** Do NOT generate random distributions and hope they match the persona. The persona description IS your specification — treat every specific number as a requirement.`;
 
 
 // ---------------------------------------------------------------------------
@@ -451,6 +489,12 @@ API responses.
 
 **RULE E — VARY KEY NAMES:** Keys in \`vary\` must be actual field names from
 the resource's required fields list, not values or IDs.
+
+**RULE F — FACT-DRIVEN ARCHETYPES (MANDATORY):**
+The persona description contains specific numeric claims (e.g., "3 overdue invoices totalling £12,400"). These are HARD CONSTRAINTS — design archetypes so expansion produces those exact numbers.
+- Create dedicated small archetypes for specific claims (e.g., an overdue archetype with weight producing exactly 3 entities)
+- For amount totals, set amounts so count × amount = claimed total
+- Do NOT rely on random distributions matching the persona — encode claims directly into archetype weights and field values
 
 ##############################################################################
 # ARCHETYPE FORMAT
@@ -976,11 +1020,13 @@ Use "vary" ONLY when you have a specific opinion the assembler cannot infer:
 - Derived templates: { "field": "description", "type": "derived", "template": "Invoice for {{name}}" }
 Do NOT include vary for: IDs (assembler handles prefixes), timestamps, emails, names, phones.
 
-## Facts
-Include 3-10 testable facts about your distribution choices. These enable auto-scenario generation.
-Examples:
-- { "id": "fact_001", "type": "overdue", "platform": "stripe", "severity": "warn", "detail": "3 overdue invoices older than 30 days totalling $12,400" }
-- { "id": "fact_002", "type": "churn", "platform": "stripe", "severity": "info", "detail": "8% of subscriptions are canceled within first 3 months" }
+## CRITICAL — FACT-DRIVEN DISTRIBUTIONS
+The persona description contains specific numeric claims (counts, totals, percentages, amounts).
+These are HARD CONSTRAINTS — your archetype distributions MUST produce those exact numbers.
+- "3 overdue invoices totalling £12,400" → create an archetype with weight producing exactly 3 entities, status "payment_due"/"overdue", amounts summing to the total
+- "8% churn rate" → canceled archetype weight = 0.08
+- Do NOT generate random distributions and hope they match. Encode every persona claim directly into archetype weights, counts, and field values.
+- Do NOT include a "facts" array — facts are generated automatically after expansion from actual data.
 
 ## Rules
 - Archetype weights must sum to ~1.0 per resource type

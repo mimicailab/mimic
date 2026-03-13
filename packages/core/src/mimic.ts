@@ -5,6 +5,7 @@ import type { ExpandedData } from './types/dataset.js';
 import { parseSchema, type ParseSchemaOptions } from './schema/index.js';
 import { BlueprintEngine } from './generate/blueprint-engine.js';
 import { BlueprintExpander } from './generate/expander.js';
+import { generateFacts } from './generate/fact-generator.js';
 import { BlueprintCache } from './generate/blueprint-cache.js';
 import { LLMClient } from './llm/client.js';
 import { CostTracker } from './llm/cost-tracker.js';
@@ -88,6 +89,20 @@ export class Mimic {
       const expander = new BlueprintExpander(seed);
       const expanded = expander.expand(blueprint, schema, this.config.generate.volume);
       data.set(blueprint.personaId, expanded);
+    }
+
+    // 3b. Generate facts from actual expanded data (post-expansion LLM call)
+    for (let i = 0; i < this.config.personas.length; i++) {
+      const persona = this.config.personas[i]!;
+      const expanded = data.get(blueprints[i]!.personaId);
+      if (expanded) {
+        expanded.facts = await generateFacts(
+          llm,
+          expanded,
+          persona,
+          this.config.domain,
+        );
+      }
     }
 
     // 4. Seed databases

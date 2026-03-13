@@ -20,7 +20,6 @@ import type {
   TableClassification,
   AdapterResourceSpecs,
 } from '../types/index.js';
-import type { Fact } from '../types/fact-manifest.js';
 import { SeededRandom } from './seed-random.js';
 import { FieldGenerator } from './field-generators.js';
 import { classifyTables } from './table-classifier.js';
@@ -384,13 +383,9 @@ export class BlueprintExpander {
     this.crossReferenceApiWithDb(tables, apiResponses);
 
     // ==================================================================
-    // PHASE G: Validate facts
+    // PHASE G: Pass through blueprint facts (legacy) — real facts are
+    // generated post-expansion from actual data stats via LLM call
     // ==================================================================
-    const validatedFacts = this.validateFacts(
-      blueprint.data.facts ?? [],
-      tables,
-      apiResponses,
-    );
 
     return {
       personaId: blueprint.personaId,
@@ -400,7 +395,7 @@ export class BlueprintExpander {
       apiResponses,
       files: [],
       events: [],
-      facts: validatedFacts,
+      facts: blueprint.data.facts ?? [],
     };
   }
 
@@ -1509,6 +1504,38 @@ export class BlueprintExpander {
       }
     }
 
+    // Expand DB archetypes for non-API-linked entities (e.g., free-tier users
+    // with no billing_platform). In 3-role flow, identity rows are derived from
+    // API entities, but archetypes that don't reference any billing platform
+    // still need to be expanded independently.
+    if (dbArchetypes && hasBillingPlatformCol) {
+      const sourceAdapters = new Set(
+        (classification.sources ?? []).map(s => s.discriminator?.value ?? s.adapter),
+      );
+      const nonApiArchetypes = archetypeTemplates.filter(a => {
+        const bp = a.fields.billing_platform;
+        // Include archetypes with no billing_platform or null/empty
+        if (bp === undefined || bp === null || bp === '' || bp === 'none') return true;
+        // Exclude archetypes already covered by API derivation
+        if (sourceAdapters.has(bp as string)) return false;
+        return true;
+      });
+      if (nonApiArchetypes.length > 0) {
+        const totalNonApiWeight = nonApiArchetypes.reduce((s, a) => s + a.weight, 0);
+        const nonApiCount = Math.round(dbArchetypes.count * totalNonApiWeight);
+        if (nonApiCount > 0) {
+          const nonApiConfig = { count: nonApiCount, archetypes: nonApiArchetypes };
+          const dbOnlyRows = this.expandArchetypes(
+            nonApiConfig, tableName, tableInfo, idTracker,
+          );
+          allRows.push(...dbOnlyRows);
+          logger.debug(
+            `Identity table "${tableName}": expanded ${dbOnlyRows.length} non-API-linked rows from ${nonApiArchetypes.length} archetype(s)`,
+          );
+        }
+      }
+    }
+
     if (allRows.length > 0) {
       tables[tableName] = [...(tables[tableName] ?? []), ...allRows];
 
@@ -1524,159 +1551,6 @@ export class BlueprintExpander {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Fact validation against actual expanded data
-  // -----------------------------------------------------------------------
-
-  /**
-   * Validate LLM-generated facts against the actual expanded data.
-   *
-   * Removes facts that reference platforms with no data, corrects numeric
-   * claims where possible, and recalculates counts/totals from the real
-   * expanded entities. Facts that can't be validated are kept but marked
-   * with reduced severity.
-   */
-  private validateFacts(
-    facts: Fact[],
-    tables: Record<string, Row[]>,
-    apiResponses: Record<string, ApiResponseSet>,
-  ): Fact[] {
-    if (facts.length === 0) return [];
-
-    const validated: Fact[] = [];
-    const availablePlatforms = new Set([
-      'database',
-      ...Object.keys(apiResponses),
-    ]);
-
-    for (const fact of facts) {
-      // Drop facts that reference platforms with no data
-      if (fact.platform !== 'database' && !availablePlatforms.has(fact.platform)) {
-        logger.debug(
-          `Dropping fact "${fact.id}": platform "${fact.platform}" has no data`,
-        );
-        continue;
-      }
-
-      // Try to reconcile numeric claims with actual data
-      const reconciled = this.reconcileFact(fact, tables, apiResponses);
-      validated.push(reconciled);
-    }
-
-    const dropped = facts.length - validated.length;
-    if (dropped > 0) {
-      logger.debug(
-        `Fact validation: kept ${validated.length}/${facts.length} facts (${dropped} dropped for missing platforms)`,
-      );
-    }
-
-    return validated;
-  }
-
-  /**
-   * Reconcile a single fact's numeric claims against expanded data.
-   * Updates `data` fields with actual counts/totals where possible.
-   */
-  private reconcileFact(
-    fact: Fact,
-    tables: Record<string, Row[]>,
-    apiResponses: Record<string, ApiResponseSet>,
-  ): Fact {
-    const reconciled = { ...fact, data: { ...fact.data } };
-
-    // Get the relevant data source
-    const getApiEntities = (platform: string, resource: string): Record<string, unknown>[] => {
-      const responseSet = apiResponses[platform];
-      if (!responseSet) return [];
-      const responses = responseSet.responses[resource];
-      if (!responses) return [];
-      return responses.map((r) => r.body as Record<string, unknown>);
-    };
-
-    try {
-      switch (fact.type) {
-        case 'overdue': {
-          // Count invoices/items with overdue-like status
-          const platform = fact.platform === 'database' ? null : fact.platform;
-          let overdueCount = 0;
-          let overdueTotal = 0;
-
-          if (platform) {
-            const invoices = getApiEntities(platform, 'invoices');
-            for (const inv of invoices) {
-              const status = inv.status as string;
-              if (['past_due', 'overdue', 'unpaid', 'not_paid', 'payment_due'].includes(status)) {
-                overdueCount++;
-                overdueTotal += (inv.amount_due as number) ?? (inv.amount as number) ?? 0;
-              }
-            }
-          } else {
-            // Check DB invoices table
-            const dbInvoices = tables.invoices ?? [];
-            for (const row of dbInvoices) {
-              const status = row.status as string;
-              if (['past_due', 'overdue', 'unpaid'].includes(status)) {
-                overdueCount++;
-                overdueTotal += (row.amount_cents as number) ?? (row.amount as number) ?? 0;
-              }
-            }
-          }
-
-          if (overdueCount > 0) {
-            reconciled.data.count = overdueCount;
-            reconciled.data.total_amount = overdueTotal;
-          }
-          break;
-        }
-
-        case 'dispute': {
-          const platform = fact.platform === 'database' ? null : fact.platform;
-          if (platform) {
-            const disputes = getApiEntities(platform, 'disputes');
-            if (disputes.length > 0) {
-              reconciled.data.count = disputes.length;
-              const totalAmount = disputes.reduce(
-                (sum, d) => sum + ((d.amount as number) ?? 0), 0,
-              );
-              if (totalAmount > 0) reconciled.data.total_amount = totalAmount;
-            }
-          }
-          break;
-        }
-
-        case 'churn': {
-          const platform = fact.platform === 'database' ? null : fact.platform;
-          if (platform) {
-            const subs = getApiEntities(platform, 'subscriptions');
-            const canceled = subs.filter(
-              (s) => ['canceled', 'cancelled', 'expired'].includes(s.status as string),
-            );
-            if (subs.length > 0) {
-              reconciled.data.canceled_count = canceled.length;
-              reconciled.data.total_subscriptions = subs.length;
-              reconciled.data.churn_rate = subs.length > 0
-                ? Math.round((canceled.length / subs.length) * 100) / 100
-                : 0;
-            }
-          }
-          break;
-        }
-
-        default:
-          // For other fact types, keep the LLM claims as-is but flag
-          // them as unverified if they have numeric data
-          if (Object.keys(reconciled.data).length > 0) {
-            reconciled.data._verified = false;
-          }
-          break;
-      }
-    } catch {
-      // Reconciliation failure is non-fatal — keep the original fact
-      logger.debug(`Could not reconcile fact "${fact.id}": error during validation`);
-    }
-
-    return reconciled;
-  }
 
   // -----------------------------------------------------------------------
   // Normalize adapter keys: merge _arche / _extra suffixed entries
