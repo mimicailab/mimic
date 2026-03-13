@@ -313,7 +313,10 @@ function mapPrismaField(
   // Check for @id with autoincrement
   const isId = hasAttribute(field, 'id');
   const defaultAttr = getAttribute(field, 'default');
-  let hasDefault = defaultAttr != null || hasAttribute(field, 'updatedAt');
+  // Note: @updatedAt is a Prisma runtime behaviour, NOT a SQL DEFAULT.
+  // When seeding via COPY (bypassing Prisma Client), the column has no default
+  // and will be NULL → NOT NULL violation. So we do NOT treat it as hasDefault.
+  let hasDefault = defaultAttr != null;
   let defaultValue: string | undefined;
   let isAutoIncrement = false;
 
