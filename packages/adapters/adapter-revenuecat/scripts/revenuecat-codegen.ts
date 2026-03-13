@@ -744,7 +744,7 @@ function generateResourceSpecsTs(resources: Map<string, ResourceInfo>): string {
     `export const revenuecatResourceSpecs: AdapterResourceSpecs = {`,
     `  platform: {`,
     `    timestampFormat: 'epoch_ms',`,
-    `    amountFormat: 'object',`,
+    `    amountFormat: 'currency_object',`,
     `    idPrefix: '',`,
     `  },`,
     `  resources: {`,

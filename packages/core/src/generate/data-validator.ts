@@ -473,7 +473,7 @@ export class DataValidator {
 
   private coerceTimestamps(
     body: Record<string, unknown>,
-    tsFormat: 'unix_seconds' | 'unix_ms' | 'iso8601',
+    tsFormat: 'unix_seconds' | 'unix_ms' | 'epoch_ms' | 'iso8601',
     tsFields: Set<string>,
   ): void {
     for (const [key, value] of Object.entries(body)) {
@@ -494,7 +494,8 @@ export class DataValidator {
           }
           break;
         }
-        case 'unix_ms': {
+        case 'unix_ms':
+        case 'epoch_ms': {
           if (typeof value === 'string') {
             const date = new Date(value);
             if (!isNaN(date.getTime())) {

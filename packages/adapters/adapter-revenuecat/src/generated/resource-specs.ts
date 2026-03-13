@@ -4,7 +4,7 @@ import type { AdapterResourceSpecs } from '@mimicai/core';
 export const revenuecatResourceSpecs: AdapterResourceSpecs = {
   platform: {
     timestampFormat: 'epoch_ms',
-    amountFormat: 'object',
+    amountFormat: 'currency_object',
     idPrefix: '',
   },
   resources: {

@@ -129,7 +129,7 @@ export interface HealthCheckResult {
  */
 export interface DataSpec {
   /** How timestamps should be formatted in API responses */
-  timestampFormat: 'unix_seconds' | 'unix_ms' | 'iso8601';
+  timestampFormat: 'unix_seconds' | 'unix_ms' | 'epoch_ms' | 'iso8601';
   /** Per-resource ID prefix (e.g. { customers: 'cus_', invoices: 'in_' }) */
   idPrefixes?: Record<string, string>;
   /** Field names that contain monetary amounts and should be type-coerced */
@@ -186,7 +186,7 @@ export interface ResourceFieldSpec {
   enum?: unknown[];
   idPrefix?: string;
   auto?: boolean;
-  timestamp?: 'unix_seconds' | 'unix_ms' | 'iso8601';
+  timestamp?: 'unix_seconds' | 'unix_ms' | 'epoch_ms' | 'iso8601';
   isAmount?: boolean;
   semanticType?: SemanticType;
   description?: string;
@@ -208,7 +208,7 @@ export interface ResourceSpec {
 
 export interface AdapterResourceSpecs {
   platform: {
-    timestampFormat: 'unix_seconds' | 'unix_ms' | 'iso8601';
+    timestampFormat: 'unix_seconds' | 'unix_ms' | 'epoch_ms' | 'iso8601';
     amountFormat: 'integer_cents' | 'decimal_string' | 'decimal_float' | 'currency_object';
     idPrefix?: string;
   };
