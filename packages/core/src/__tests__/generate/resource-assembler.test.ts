@@ -134,7 +134,13 @@ describe('assembleResourceArchetypes', () => {
 
   it('should handle empty distribution gracefully', () => {
     const result = assembleResourceArchetypes(stripeSpecs, {});
-    expect(Object.keys(result)).toHaveLength(0);
+    // Backfill ensures every spec resource gets default data even with empty distributions
+    expect(Object.keys(result)).toHaveLength(Object.keys(stripeSpecs.resources).length);
+    for (const key of Object.keys(stripeSpecs.resources)) {
+      expect(result[key]).toBeDefined();
+      expect(result[key]!.archetypes).toHaveLength(1);
+      expect(result[key]!.archetypes[0]!.label).toBe('default');
+    }
   });
 
   it('should skip resources not in specs', () => {
