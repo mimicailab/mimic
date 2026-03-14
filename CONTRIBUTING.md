@@ -55,7 +55,13 @@ packages/
     adapter-mongodb/      # MongoDB database adapter
     adapter-stripe/       # Stripe API mock adapter (with MCP server)
     adapter-plaid/        # Plaid API mock adapter (with MCP server)
-    adapter-slack/        # Slack API mock adapter (with MCP server)
+    adapter-paddle/       # Paddle API mock adapter (with MCP server)
+    adapter-chargebee/    # Chargebee API mock adapter (with MCP server)
+    adapter-gocardless/   # GoCardless API mock adapter (with MCP server)
+    adapter-lemonsqueezy/ # Lemon Squeezy API mock adapter (with MCP server)
+    adapter-recurly/      # Recurly API mock adapter (with MCP server)
+    adapter-revenuecat/   # RevenueCat API mock adapter (with MCP server)
+    adapter-zuora/        # Zuora API mock adapter (with MCP server)
   docs/                   # Astro documentation site
 examples/                 # Example projects using Mimic
 docs/                     # Architecture and guide documents

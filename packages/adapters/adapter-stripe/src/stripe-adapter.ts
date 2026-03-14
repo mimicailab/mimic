@@ -73,7 +73,7 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
     // and singleton resources (balance, account) that aren't standard CRUD.
     this.mountOverrides(store);
 
-    // ── Generated CRUD scaffolding (616 routes across v1 + v2 Stripe paths) ───
+    // ── Generated CRUD scaffolding (617 routes across v1 + v2 Stripe paths) ───
     await this.registerGeneratedRoutes(server, data, store, ns);
   }
 

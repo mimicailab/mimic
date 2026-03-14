@@ -112,7 +112,7 @@ That's it. Two fields and you can run `mimic run` to generate blueprints. Add a 
       <tr><td><code>llm</code></td><td>No</td><td>object</td><td>LLM provider and model for blueprint generation</td></tr>
       <tr><td><code>generate</code></td><td>No</td><td>object</td><td>Volume, seed, and per-table row overrides</td></tr>
       <tr><td><code>databases</code></td><td>No</td><td>object</td><td>Named database targets to seed</td></tr>
-      <tr><td><code>apis</code></td><td>No</td><td>object</td><td>API mock adapters to enable (Stripe, Plaid, Slack, etc.)</td></tr>
+      <tr><td><code>apis</code></td><td>No</td><td>object</td><td>API mock adapters to enable (Stripe, Plaid, Paddle, etc.)</td></tr>
       <tr><td><code>test</code></td><td>No</td><td>object</td><td>Agent endpoint and test scenarios</td></tr>
     </tbody>
   </table>
@@ -384,14 +384,13 @@ MongoDB does not require a schema file. Mimic generates document shapes from the
 
 <h3 id="config-apis">apis</h3>
 
-A named map of API mock adapters. Each key is the adapter ID (e.g. `"stripe"`, `"plaid"`, `"slack"`), and the value configures the adapter's behaviour. When `mimic host` runs, enabled adapters are registered as Fastify routes on the mock server. When `mcp: true`, the adapter's tools are also registered on the unified MCP server.
+A named map of API mock adapters. Each key is the adapter ID (e.g. `"stripe"`, `"plaid"`, `"paddle"`), and the value configures the adapter's behaviour. When `mimic host` runs, enabled adapters are registered as Fastify routes on the mock server. When `mcp: true`, the adapter's tools are also registered on the unified MCP server.
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">json</span><button class="code-copy">Copy</button></div>
   <pre><code><span class="yk">"apis"</span>: {
   <span class="yk">"stripe"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
-  <span class="yk">"plaid"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
-  <span class="yk">"slack"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">false</span> }
+  <span class="yk">"plaid"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> }
 }</code></pre>
 </div>
 

@@ -1481,24 +1481,37 @@
 
       <div class="callout tip">
         <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
-        <p><strong>Shipped in v0.2.0:</strong> Stripe, Plaid, and Slack adapters are the first three API mock adapters shipped as publishable packages with full MCP server support, dedicated test suites, and working example agents. Each includes a standalone MCP binary (<code>adapter-{name}/src/bin/mcp.ts</code>) and is built on the <code>@mimicai/adapter-sdk</code>.</p>
+        <p><strong>9 adapters shipped:</strong> All adapters below are published packages with full mock route coverage, MCP server support, and a standalone MCP binary (<code>src/bin/mcp.ts</code>). Each is built on <code>@mimicai/adapter-sdk</code>.</p>
       </div>
 
       <div class="doc-table-wrap">
         <table class="doc-table">
           <thead><tr><th>Adapter</th><th>Package</th><th>MCP Tools</th><th>Status</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td>17</td><td style="color: var(--green);">Shipped</td><td>Customers, payment intents, charges, refunds, subscriptions, invoices, products, prices, balance</td></tr>
-            <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td>10</td><td style="color: var(--green);">Shipped</td><td>Bank accounts, transactions, identity, auth, balance, link tokens</td></tr>
-            <tr><td><strong>Slack</strong></td><td><code>@mimicai/adapter-slack</code></td><td>12</td><td style="color: var(--green);">Shipped</td><td>Channels, messages, threads, reactions, users, search, team info</td></tr>
+            <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td>617</td><td style="color: var(--green);">Shipped</td><td>Full v1 + v2 coverage: customers, payment intents, charges, refunds, subscriptions, invoices, products, prices, balance, billing meters, event destinations</td></tr>
+            <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td>326</td><td style="color: var(--green);">Shipped</td><td>Accounts, transactions, identity, auth, balance, institutions, link tokens</td></tr>
+            <tr><td><strong>Paddle</strong></td><td><code>@mimicai/adapter-paddle</code></td><td>88</td><td style="color: var(--green);">Shipped</td><td>Subscriptions, products, prices, transactions, customers, discounts, adjustments</td></tr>
+            <tr><td><strong>Chargebee</strong></td><td><code>@mimicai/adapter-chargebee</code></td><td>410</td><td style="color: var(--green);">Shipped</td><td>Subscriptions, customers, invoices, plans, addons, credit notes, payment sources</td></tr>
+            <tr><td><strong>GoCardless</strong></td><td><code>@mimicai/adapter-gocardless</code></td><td>134</td><td style="color: var(--green);">Shipped</td><td>Mandates, payments, customers, subscriptions, bank accounts, refunds</td></tr>
+            <tr><td><strong>Lemon Squeezy</strong></td><td><code>@mimicai/adapter-lemonsqueezy</code></td><td>53</td><td style="color: var(--green);">Shipped</td><td>Products, variants, orders, subscriptions, customers, discounts, license keys</td></tr>
+            <tr><td><strong>Recurly</strong></td><td><code>@mimicai/adapter-recurly</code></td><td>194</td><td style="color: var(--green);">Shipped</td><td>Accounts, subscriptions, invoices, transactions, plans, coupons, credit adjustments</td></tr>
+            <tr><td><strong>RevenueCat</strong></td><td><code>@mimicai/adapter-revenuecat</code></td><td>95</td><td style="color: var(--green);">Shipped</td><td>Subscribers, entitlements, offerings, products, purchases, receipts</td></tr>
+            <tr><td><strong>Zuora</strong></td><td><code>@mimicai/adapter-zuora</code></td><td>414</td><td style="color: var(--green);">Shipped</td><td>Accounts, subscriptions, invoices, payments, products, rate plans, usage records</td></tr>
           </tbody>
         </table>
       </div>
 
       <h4>Fintech / Payments (24 adapters)</h4>
       <div class="adapter-doc-grid">
-        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Stripe</span><span class="adapter-doc-routes">29 routes</span></div>
-        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Plaid</span><span class="adapter-doc-routes">15 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Stripe</span><span class="adapter-doc-routes">617 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Plaid</span><span class="adapter-doc-routes">326 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Paddle</span><span class="adapter-doc-routes">88 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Chargebee</span><span class="adapter-doc-routes">410 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">GoCardless</span><span class="adapter-doc-routes">134 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Lemon Squeezy</span><span class="adapter-doc-routes">53 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Recurly</span><span class="adapter-doc-routes">194 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">RevenueCat</span><span class="adapter-doc-routes">95 routes</span></div>
+        <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Zuora</span><span class="adapter-doc-routes">414 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Square</span><span class="adapter-doc-routes">16 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Wise</span><span class="adapter-doc-routes">14 routes</span></div>
         <div class="adapter-doc-item"><span class="adapter-doc-name">Adyen</span><span class="adapter-doc-routes">12 routes</span></div>
@@ -1927,7 +1940,13 @@ MCP Server (@mimicai/mcp-jira)
   ├── @mimicai/adapter-sqlite      (shipped)
   ├── @mimicai/adapter-stripe      (shipped, + MCP)
   ├── @mimicai/adapter-plaid       (shipped, + MCP)
-  ├── @mimicai/adapter-slack       (shipped, + MCP)
+  ├── @mimicai/adapter-paddle      (shipped, + MCP)
+  ├── @mimicai/adapter-chargebee   (shipped, + MCP)
+  ├── @mimicai/adapter-gocardless  (shipped, + MCP)
+  ├── @mimicai/adapter-lemonsqueezy (shipped, + MCP)
+  ├── @mimicai/adapter-recurly     (shipped, + MCP)
+  ├── @mimicai/adapter-revenuecat  (shipped, + MCP)
+  ├── @mimicai/adapter-zuora       (shipped, + MCP)
   └── @mimicai/blueprints
         └── pre-built personas (JSON)
 

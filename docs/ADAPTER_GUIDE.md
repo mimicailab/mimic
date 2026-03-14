@@ -14,7 +14,7 @@ Every adapter runs inside Mimic's Fastify mock server at a unique base path (e.g
 
 ## Getting Started
 
-Copy an existing adapter as a starting point — `adapter-stripe` and `adapter-plaid` are the best reference implementations.
+Copy an existing adapter as a starting point — `adapter-stripe` and `adapter-plaid` are the best reference implementations. See `private/building-adapters.md` for the comprehensive guide covering codegen, overrides, and the full `OpenApiMockAdapter` pipeline.
 
 ```bash
 cp -r packages/adapters/adapter-stripe packages/adapters/adapter-my-platform
@@ -342,6 +342,5 @@ The adapter SDK re-exports useful helpers from `@mimicai/core`:
 
 ## Reference Implementations
 
-- [`adapter-stripe`](../packages/adapters/adapter-stripe/) — Full Stripe API mock with 29 endpoints, webhooks, Zod config
-- [`adapter-plaid`](../packages/adapters/adapter-plaid/) — Plaid API mock with link flow, transactions, formatters
-- [`adapter-slack`](../packages/adapters/adapter-slack/) — Slack Web API mock with channels, messages, reactions
+- [`adapter-stripe`](../packages/adapters/adapter-stripe/) — Full Stripe API mock with 617 routes, OpenAPI codegen, overrides
+- [`adapter-plaid`](../packages/adapters/adapter-plaid/) — Plaid API mock with 326 routes, link flow, transactions

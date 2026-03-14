@@ -9,7 +9,7 @@ next: { slug: "mcp", title: "MCP Servers" }
 
 <h2 id="adapter-list">Adapter Catalog</h2>
 
-Mimic ships **10 API mock adapters** and **4 database adapters** today, with more planned. Every adapter is open source (Apache 2.0) and community-contributable.
+Mimic ships **9 API mock adapters** and **4 database adapters** today, with more planned. Every adapter is open source (Apache 2.0) and community-contributable.
 
 <h3 id="adapter-databases">Database Adapters</h3>
 
@@ -31,23 +31,22 @@ Mimic ships **10 API mock adapters** and **4 database adapters** today, with mor
 
 <div class="callout tip">
   <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
-  <div><p><strong>10 adapters shipped:</strong> All adapters below are published packages with full mock route coverage, MCP server support, and a standalone MCP binary (<code>src/bin/mcp.ts</code>). Each is built on <code>@mimicai/adapter-sdk</code>.</p></div>
+  <div><p><strong>9 adapters shipped:</strong> All adapters below are published packages with full mock route coverage, MCP server support, and a standalone MCP binary (<code>src/bin/mcp.ts</code>). Each is built on <code>@mimicai/adapter-sdk</code>.</p></div>
 </div>
 
 <div class="doc-table-wrap">
   <table class="doc-table">
     <thead><tr><th>Adapter</th><th>Package</th><th>Routes</th><th>Status</th><th>Description</th></tr></thead>
     <tbody>
-      <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td>616</td><td style="color: var(--green);">Shipped</td><td>Full v1 + v2 coverage: customers, payment intents, charges, refunds, subscriptions, invoices, products, prices, balance, billing meters, event destinations</td></tr>
-      <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td>10</td><td style="color: var(--green);">Shipped</td><td>Accounts, transactions, identity, auth, balance, institutions, link tokens</td></tr>
-      <tr><td><strong>Slack</strong></td><td><code>@mimicai/adapter-slack</code></td><td>28</td><td style="color: var(--green);">Shipped</td><td>Channels, messages, threads, reactions, users, search, team info</td></tr>
-      <tr><td><strong>Paddle</strong></td><td><code>@mimicai/adapter-paddle</code></td><td>83</td><td style="color: var(--green);">Shipped</td><td>Subscriptions, products, prices, transactions, customers, discounts, adjustments</td></tr>
-      <tr><td><strong>Chargebee</strong></td><td><code>@mimicai/adapter-chargebee</code></td><td>55</td><td style="color: var(--green);">Shipped</td><td>Subscriptions, customers, invoices, plans, addons, credit notes, payment sources</td></tr>
-      <tr><td><strong>GoCardless</strong></td><td><code>@mimicai/adapter-gocardless</code></td><td>45</td><td style="color: var(--green);">Shipped</td><td>Mandates, payments, customers, subscriptions, bank accounts, refunds</td></tr>
-      <tr><td><strong>Lemon Squeezy</strong></td><td><code>@mimicai/adapter-lemonsqueezy</code></td><td>50</td><td style="color: var(--green);">Shipped</td><td>Products, variants, orders, subscriptions, customers, discounts, license keys</td></tr>
-      <tr><td><strong>Recurly</strong></td><td><code>@mimicai/adapter-recurly</code></td><td>47</td><td style="color: var(--green);">Shipped</td><td>Accounts, subscriptions, invoices, transactions, plans, coupons, credit adjustments</td></tr>
-      <tr><td><strong>RevenueCat</strong></td><td><code>@mimicai/adapter-revenuecat</code></td><td>42</td><td style="color: var(--green);">Shipped</td><td>Subscribers, entitlements, offerings, products, purchases, receipts</td></tr>
-      <tr><td><strong>Zuora</strong></td><td><code>@mimicai/adapter-zuora</code></td><td>54</td><td style="color: var(--green);">Shipped</td><td>Accounts, subscriptions, invoices, payments, products, rate plans, usage records</td></tr>
+      <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td>617</td><td style="color: var(--green);">Shipped</td><td>Full v1 + v2 coverage: customers, payment intents, charges, refunds, subscriptions, invoices, products, prices, balance, billing meters, event destinations</td></tr>
+      <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td>326</td><td style="color: var(--green);">Shipped</td><td>Accounts, transactions, identity, auth, balance, institutions, link tokens</td></tr>
+      <tr><td><strong>Paddle</strong></td><td><code>@mimicai/adapter-paddle</code></td><td>88</td><td style="color: var(--green);">Shipped</td><td>Subscriptions, products, prices, transactions, customers, discounts, adjustments</td></tr>
+      <tr><td><strong>Chargebee</strong></td><td><code>@mimicai/adapter-chargebee</code></td><td>410</td><td style="color: var(--green);">Shipped</td><td>Subscriptions, customers, invoices, plans, addons, credit notes, payment sources</td></tr>
+      <tr><td><strong>GoCardless</strong></td><td><code>@mimicai/adapter-gocardless</code></td><td>134</td><td style="color: var(--green);">Shipped</td><td>Mandates, payments, customers, subscriptions, bank accounts, refunds</td></tr>
+      <tr><td><strong>Lemon Squeezy</strong></td><td><code>@mimicai/adapter-lemonsqueezy</code></td><td>53</td><td style="color: var(--green);">Shipped</td><td>Products, variants, orders, subscriptions, customers, discounts, license keys</td></tr>
+      <tr><td><strong>Recurly</strong></td><td><code>@mimicai/adapter-recurly</code></td><td>194</td><td style="color: var(--green);">Shipped</td><td>Accounts, subscriptions, invoices, transactions, plans, coupons, credit adjustments</td></tr>
+      <tr><td><strong>RevenueCat</strong></td><td><code>@mimicai/adapter-revenuecat</code></td><td>95</td><td style="color: var(--green);">Shipped</td><td>Subscribers, entitlements, offerings, products, purchases, receipts</td></tr>
+      <tr><td><strong>Zuora</strong></td><td><code>@mimicai/adapter-zuora</code></td><td>414</td><td style="color: var(--green);">Shipped</td><td>Accounts, subscriptions, invoices, payments, products, rate plans, usage records</td></tr>
     </tbody>
   </table>
 </div>
@@ -55,15 +54,15 @@ Mimic ships **10 API mock adapters** and **4 database adapters** today, with mor
 #### Fintech / Payments — shipped
 
 <div class="adapter-doc-grid">
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Stripe</span><span class="adapter-doc-routes">616 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Plaid</span><span class="adapter-doc-routes">10 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Paddle</span><span class="adapter-doc-routes">83 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Chargebee</span><span class="adapter-doc-routes">55 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">GoCardless</span><span class="adapter-doc-routes">45 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Lemon Squeezy</span><span class="adapter-doc-routes">50 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Recurly</span><span class="adapter-doc-routes">47 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">RevenueCat</span><span class="adapter-doc-routes">42 routes</span></div>
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Zuora</span><span class="adapter-doc-routes">54 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Stripe</span><span class="adapter-doc-routes">617 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Plaid</span><span class="adapter-doc-routes">326 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Paddle</span><span class="adapter-doc-routes">88 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Chargebee</span><span class="adapter-doc-routes">410 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">GoCardless</span><span class="adapter-doc-routes">134 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Lemon Squeezy</span><span class="adapter-doc-routes">53 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Recurly</span><span class="adapter-doc-routes">194 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">RevenueCat</span><span class="adapter-doc-routes">95 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Zuora</span><span class="adapter-doc-routes">414 routes</span></div>
 </div>
 
 #### Fintech / Payments — planned
@@ -85,7 +84,7 @@ Mimic ships **10 API mock adapters** and **4 database adapters** today, with mor
 #### Communication
 
 <div class="adapter-doc-grid">
-  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Slack</span><span class="adapter-doc-routes">28 routes</span></div>
+  <div class="adapter-doc-item"><span class="adapter-doc-name">Slack</span><span class="adapter-doc-routes">28 routes</span></div>
   <div class="adapter-doc-item"><span class="adapter-doc-name">Twilio</span><span class="adapter-doc-routes">14 routes</span></div>
   <div class="adapter-doc-item"><span class="adapter-doc-name">SendGrid</span><span class="adapter-doc-routes">11 routes</span></div>
   <div class="adapter-doc-item"><span class="adapter-doc-name">Discord</span><span class="adapter-doc-routes">13 routes</span></div>
@@ -212,7 +211,7 @@ Adapters are built from OpenAPI specs using a **codegen-driven pipeline**. A cod
 
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">text</span><button class="code-copy">Copy</button></div>
-  <pre><code>OpenAPI spec (.json)
+  <pre><code>OpenAPI spec (.json or .yaml)
     &darr;
 Codegen script (pnpm generate)
     &darr;

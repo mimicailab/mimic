@@ -31,8 +31,8 @@ This document describes Mimic's internal architecture. It's aimed at contributor
 |              | |          | |          |
 | PostgreSQL   | | Stripe   | | Built-in |
 | MongoDB      | | Plaid    | | per      |
-| MySQL        | | Slack    | | adapter  |
-| SQLite       | |          | |          |
+| MySQL        | | Paddle   | | adapter  |
+| SQLite       | | + 6 more | |          |
 +--------------+ +----------+ +----------+
 ```
 
@@ -52,7 +52,7 @@ Adapters are Mimic's plugin system. There are two types:
 
 **Database adapters** connect to real databases and seed them with persona data. They implement `DatabaseAdapter` with `seed()` and `clean()` methods. Available: PostgreSQL, MySQL, MongoDB, SQLite.
 
-**API mock adapters** register Fastify routes that simulate real API endpoints. They extend `BaseApiMockAdapter` with `registerRoutes()` and `getEndpoints()` methods. Each adapter includes seeded data in an in-memory state store. Available: Stripe, Plaid, Slack.
+**API mock adapters** register Fastify routes that simulate real API endpoints. They extend `OpenApiMockAdapter` with `registerRoutes()` and `getEndpoints()` methods. Each adapter includes seeded data in an in-memory state store. Available: Stripe, Plaid, Paddle, Chargebee, GoCardless, Lemon Squeezy, Recurly, RevenueCat, Zuora.
 
 ### State Store
 
@@ -137,7 +137,6 @@ The core differentiator is **cross-surface consistency**. When data is generated
 - PostgreSQL `users` table has Alex with matching IDs
 - Plaid API returns bank accounts owned by Alex
 - Stripe API returns payment history for Alex's card
-- Slack API shows messages from Alex
 
 This is achieved through the `apiEntities` system in `@mimicai/core`, which maintains shared identifiers and correlated values across all configured adapters.
 
@@ -153,12 +152,13 @@ This is achieved through the `apiEntities` system in `@mimicai/core`, which main
   +-- @mimicai/adapter-sqlite
   +-- @mimicai/adapter-stripe (optional)
   +-- @mimicai/adapter-plaid (optional)
-  +-- @mimicai/adapter-slack (optional)
+  +-- @mimicai/adapter-paddle (optional)
+  +-- ... (6 more API mock adapters)
 
 @mimicai/adapter-sdk
   +-- @mimicai/core
 
-@mimicai/adapter-{stripe,plaid,slack}
+@mimicai/adapter-{stripe,plaid,paddle,...}
   +-- @mimicai/adapter-sdk
   +-- @mimicai/core
 ```

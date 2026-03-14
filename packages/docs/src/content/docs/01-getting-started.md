@@ -92,7 +92,6 @@ Populates your PostgreSQL (or MongoDB, MySQL, SQLite) with persona-consistent da
 &#8203;
 <span class="ok">&#10003;</span> <span class="out">Stripe API    &rarr; http://localhost:4100/stripe/v1</span>
 <span class="ok">&#10003;</span> <span class="out">Plaid API     &rarr; http://localhost:4100/plaid</span>
-<span class="ok">&#10003;</span> <span class="out">Slack MCP     &rarr; stdio ready</span>
 <span class="ok">&#10003;</span> <span class="out">Ready in 1.2s</span></code></pre>
 </div>
 

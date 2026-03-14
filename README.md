@@ -25,7 +25,7 @@
 
 ---
 
-Your AI agent talks to Plaid for bank data, Stripe for payments, Slack for messages, and PostgreSQL for everything else. In production, that works. In testing, you're stitching together different sandboxes with inconsistent data, rate limits, and surprise breaking changes.
+Your AI agent talks to Plaid for bank data, Stripe for payments, and PostgreSQL for everything else. In production, that works. In testing, you're stitching together different sandboxes with inconsistent data, rate limits, and surprise breaking changes.
 
 Mimic replaces all of that with a single, consistent synthetic environment. One persona generates coherent data across every surface — the same user has the same bank accounts in Plaid, the same payment history in Stripe, and the same rows in PostgreSQL.
 
@@ -135,17 +135,17 @@ Mimic is a **synthetic environment engine** for AI agent development. It solves 
                     +------------------+-------------------+
                                        |
                                        v
-              +------------+-------+--------+------------+
-              v            v       v        v            v
-        +----------+ +----------+ +----------+ +----------+
-        |PostgreSQL| | Plaid    | | Stripe   | | Slack    |
-        | Adapter  | | Adapter  | | Adapter  | | Adapter  |
-        | (seed)   | | (mock)   | | (mock)   | | (mock)   |
-        +----------+ +----------+ +----------+ +----------+
-              |            |           |            |
-              v            v           v            v
-          Real DB     Mock API    Mock API     Mock API
-          seeded    :4100/plaid :4100/stripe :4100/slack
+              +------------+-------+--------+
+              v            v       v        v
+        +----------+ +----------+ +----------+
+        |PostgreSQL| | Plaid    | | Stripe   |
+        | Adapter  | | Adapter  | | Adapter  |
+        | (seed)   | | (mock)   | | (mock)   |
+        +----------+ +----------+ +----------+
+              |            |           |
+              v            v           v
+          Real DB     Mock API    Mock API
+          seeded    :4100/plaid :4100/stripe
                            |
                            v
                     Unified MCP Server
@@ -171,7 +171,13 @@ Pre-built personas ship with the package — no LLM calls needed for basic use. 
 |---------|---------|-------------|
 | Stripe | `@mimicai/adapter-stripe` | Payments, customers, subscriptions, invoices, products, prices |
 | Plaid | `@mimicai/adapter-plaid` | Link flow, accounts, transactions, identity, balance |
-| Slack | `@mimicai/adapter-slack` | Channels, messages, users, reactions, threads |
+| Paddle | `@mimicai/adapter-paddle` | Subscriptions, products, prices, transactions, customers, discounts |
+| Chargebee | `@mimicai/adapter-chargebee` | Subscriptions, customers, invoices, plans, addons, credit notes |
+| GoCardless | `@mimicai/adapter-gocardless` | Mandates, payments, customers, subscriptions, bank accounts |
+| Lemon Squeezy | `@mimicai/adapter-lemonsqueezy` | Products, variants, orders, subscriptions, customers, discounts |
+| Recurly | `@mimicai/adapter-recurly` | Accounts, subscriptions, invoices, transactions, plans, coupons |
+| RevenueCat | `@mimicai/adapter-revenuecat` | Subscribers, entitlements, offerings, products, purchases |
+| Zuora | `@mimicai/adapter-zuora` | Accounts, subscriptions, invoices, payments, products, rate plans |
 
 > **Building an adapter?** See the [Adapter Development Guide](docs/ADAPTER_GUIDE.md) and the [@mimicai/adapter-sdk](packages/adapter-sdk/).
 
@@ -238,7 +244,13 @@ mimic/
 │   │   ├── adapter-sqlite/
 │   │   ├── adapter-stripe/       # API mock adapters
 │   │   ├── adapter-plaid/
-│   │   └── adapter-slack/
+│   │   ├── adapter-paddle/
+│   │   ├── adapter-chargebee/
+│   │   ├── adapter-gocardless/
+│   │   ├── adapter-lemonsqueezy/
+│   │   ├── adapter-recurly/
+│   │   ├── adapter-revenuecat/
+│   │   └── adapter-zuora/
 │   └── docs/                     # Documentation site
 ├── examples/
 │   ├── billing-agent/            # Billing agent (PG + Stripe + chat UI)
@@ -310,7 +322,6 @@ mimic info                    Print environment info for bug reports
 | [`@mimicai/adapter-sqlite`](packages/adapters/adapter-sqlite/) | SQLite database seeder |
 | [`@mimicai/adapter-stripe`](packages/adapters/adapter-stripe/) | Stripe API mock + MCP server |
 | [`@mimicai/adapter-plaid`](packages/adapters/adapter-plaid/) | Plaid API mock + MCP server |
-| [`@mimicai/adapter-slack`](packages/adapters/adapter-slack/) | Slack API mock + MCP server |
 | [`@mimicai/adapter-paddle`](packages/adapters/adapter-paddle/) | Paddle API mock + MCP server |
 | [`@mimicai/adapter-chargebee`](packages/adapters/adapter-chargebee/) | Chargebee API mock + MCP server |
 | [`@mimicai/adapter-gocardless`](packages/adapters/adapter-gocardless/) | GoCardless API mock + MCP server |

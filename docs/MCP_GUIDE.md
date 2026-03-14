@@ -46,13 +46,6 @@ Add to your MCP configuration file:
         "MIMIC_BASE_URL": "http://localhost:4000"
       }
     },
-    "mimic-slack": {
-      "command": "npx",
-      "args": ["-y", "@mimicai/adapter-slack", "mcp"],
-      "env": {
-        "MIMIC_BASE_URL": "http://localhost:4000"
-      }
-    }
   }
 }
 ```
@@ -65,8 +58,7 @@ The simplest way — `mimic host` starts both mock API endpoints and MCP servers
 {
   "apis": [
     { "adapter": "stripe" },
-    { "adapter": "plaid" },
-    { "adapter": "slack" }
+    { "adapter": "plaid" }
   ]
 }
 ```
@@ -75,7 +67,6 @@ The simplest way — `mimic host` starts both mock API endpoints and MCP servers
 mimic host
 # Stripe API  -> http://localhost:4000/stripe/v1
 # Plaid API   -> http://localhost:4000/plaid
-# Slack API   -> http://localhost:4000/slack
 # MCP Server  -> stdio
 ```
 
@@ -87,7 +78,13 @@ Each API mock adapter includes a built-in MCP server:
 |---------|---------|-------------|
 | Stripe | `@mimicai/adapter-stripe` | `npx @mimicai/adapter-stripe mcp` |
 | Plaid | `@mimicai/adapter-plaid` | `npx @mimicai/adapter-plaid mcp` |
-| Slack | `@mimicai/adapter-slack` | `npx @mimicai/adapter-slack mcp` |
+| Paddle | `@mimicai/adapter-paddle` | `npx @mimicai/adapter-paddle mcp` |
+| Chargebee | `@mimicai/adapter-chargebee` | `npx @mimicai/adapter-chargebee mcp` |
+| GoCardless | `@mimicai/adapter-gocardless` | `npx @mimicai/adapter-gocardless mcp` |
+| Lemon Squeezy | `@mimicai/adapter-lemonsqueezy` | `npx @mimicai/adapter-lemonsqueezy mcp` |
+| Recurly | `@mimicai/adapter-recurly` | `npx @mimicai/adapter-recurly mcp` |
+| RevenueCat | `@mimicai/adapter-revenuecat` | `npx @mimicai/adapter-revenuecat mcp` |
+| Zuora | `@mimicai/adapter-zuora` | `npx @mimicai/adapter-zuora mcp` |
 
 ### Stripe MCP Tools
 
@@ -96,10 +93,6 @@ Tools derived from the adapter's `getEndpoints()`: list customers, create custom
 ### Plaid MCP Tools
 
 Create link token, exchange public token, get accounts, get transactions, get balance, get identity, get institutions, get auth, and more.
-
-### Slack MCP Tools
-
-List channels, post message, list messages, list users, get user info, add reaction, list reactions, upload file, get channel info, search messages, and more.
 
 ## Building an MCP Server for a New Adapter
 
