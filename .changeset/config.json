@@ -24,7 +24,8 @@
       "@mimicai/adapter-revenuecat",
       "@mimicai/adapter-lemonsqueezy",
       "@mimicai/adapter-zuora",
-      "@mimicai/adapter-recurly"
+      "@mimicai/adapter-recurly",
+      "@mimicai/explorer"
     ]
   ],
   "linked": [],
