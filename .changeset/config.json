@@ -31,5 +31,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "minor",
-  "ignore": []
+  "ignore": ["stripe-explorer-example", "cfo-agent-example"]
 }
