@@ -68,7 +68,7 @@ next: { slug: "testing", title: "Testing & Auto-Scenarios" }
 &#8203;
 Mock Server (Fastify, port 4101)
   ├─ Route matched: /stripe/* &rarr; StripeAdapter (OpenApiMockAdapter)
-  ├─ Generated CRUD scaffolding (616 routes from OpenAPI spec)
+  ├─ Generated CRUD scaffolding (617 routes from OpenAPI spec)
   │   ├─ Seed ExpandedData into StateStore on first request
   │   ├─ Check override map &mdash; use custom handler if registered
   │   ├─ Otherwise auto-handle: list (cursor pagination), create,
@@ -101,7 +101,6 @@ The Blueprint Engine's core differentiator. When it generates data for persona "
 - Plaid API returns bank accounts owned by `user_001`
 - Stripe API returns payment history for `user_001`'s card
 - Chargebee API shows Alex's subscription and invoices
-- Slack API shows messages from Alex
 
 Achieved through a two-phase process:
 
@@ -132,7 +131,6 @@ Achieved through a two-phase process:
   └── API mock adapters (shipped, each includes MCP server)
         ├── @mimicai/adapter-stripe
         ├── @mimicai/adapter-plaid
-        ├── @mimicai/adapter-slack
         ├── @mimicai/adapter-paddle
         ├── @mimicai/adapter-chargebee
         ├── @mimicai/adapter-gocardless

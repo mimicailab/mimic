@@ -78,7 +78,7 @@ The simplest way &mdash; configure adapters in `mimic.json` with `mcp: true` and
 
 <h2 id="mcp-catalog">Available MCP Servers</h2>
 
-All 10 shipped adapters include a full MCP server. Each can be run standalone via `npx` or started together via `mimic host`.
+All 9 shipped adapters include a full MCP server. Each can be run standalone via `npx` or started together via `mimic host`.
 
 <div class="doc-table-wrap">
   <table class="doc-table">
@@ -86,7 +86,6 @@ All 10 shipped adapters include a full MCP server. Each can be run standalone vi
     <tbody>
       <tr><td><strong>Stripe</strong></td><td><code>@mimicai/adapter-stripe</code></td><td><code>npx @mimicai/adapter-stripe mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
       <tr><td><strong>Plaid</strong></td><td><code>@mimicai/adapter-plaid</code></td><td><code>npx @mimicai/adapter-plaid mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
-      <tr><td><strong>Slack</strong></td><td><code>@mimicai/adapter-slack</code></td><td><code>npx @mimicai/adapter-slack mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
       <tr><td><strong>Paddle</strong></td><td><code>@mimicai/adapter-paddle</code></td><td><code>npx @mimicai/adapter-paddle mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
       <tr><td><strong>Chargebee</strong></td><td><code>@mimicai/adapter-chargebee</code></td><td><code>npx @mimicai/adapter-chargebee mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
       <tr><td><strong>GoCardless</strong></td><td><code>@mimicai/adapter-gocardless</code></td><td><code>npx @mimicai/adapter-gocardless mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
@@ -108,7 +107,6 @@ Mimic MCP tools are designed to match the official MCP servers published by each
     <tbody>
       <tr><td><strong>Stripe</strong></td><td><a href="https://mcp.stripe.com" target="_blank">mcp.stripe.com</a> official server</td><td>All 26 official tools + 4 Mimic extras for payment lifecycle testing</td></tr>
       <tr><td><strong>Plaid</strong></td><td>Plaid API surface</td><td>Link flow, accounts, transactions, balances, identity, auth, holdings, liabilities</td></tr>
-      <tr><td><strong>Slack</strong></td><td>Slack Web API</td><td>Channels, messages, threads, reactions, users, search, team info</td></tr>
       <tr><td><strong>Paddle</strong></td><td>Paddle Billing API</td><td>Products, prices, subscriptions, customers, transactions, discounts</td></tr>
       <tr><td><strong>Chargebee</strong></td><td>Chargebee API</td><td>Subscriptions, customers, invoices, plans, addons, events</td></tr>
       <tr><td><strong>GoCardless</strong></td><td>GoCardless API</td><td>Mandates, payments, customers, bank accounts, payouts, events</td></tr>
