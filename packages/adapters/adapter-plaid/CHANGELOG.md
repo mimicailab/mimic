@@ -1,5 +1,13 @@
 # @mimicai/adapter-plaid
 
+## 0.10.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @mimicai/core@0.10.0
+  - @mimicai/adapter-sdk@0.10.0
+
 ## 0.9.0
 
 ### Patch Changes

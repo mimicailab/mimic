@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/explorer",
-  "version": "0.7.1",
+  "version": "0.10.0",
   "description": "Interactive web UI for exploring Mimic mock data and endpoints",
   "type": "module",
   "exports": {
