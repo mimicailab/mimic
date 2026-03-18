@@ -2,6 +2,7 @@ import { join, dirname } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { createServer as createNetServer } from 'node:net';
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
@@ -39,11 +40,30 @@ interface AdapterInfo {
 // Explorer Server
 // ---------------------------------------------------------------------------
 
+/** Check if a TCP port is available on localhost. */
+async function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const srv = createNetServer();
+    srv.once('error', () => resolve(false));
+    srv.once('listening', () => srv.close(() => resolve(true)));
+    srv.listen(port, '127.0.0.1');
+  });
+}
+
+/** Find the first available port starting from `startPort`. */
+async function findAvailablePort(startPort: number): Promise<number> {
+  for (let p = startPort; p < startPort + 20; p++) {
+    if (await isPortAvailable(p)) return p;
+  }
+  throw new Error(`No available port found in range ${startPort}–${startPort + 19}`);
+}
+
 export async function startExplorer(options: ExplorerOptions = {}): Promise<{
   url: string;
+  port: number;
   stop: () => Promise<void>;
 }> {
-  const port = options.port ?? 7879;
+  const port = await findAvailablePort(options.port ?? 7879);
   const cwd = options.cwd ?? process.cwd();
 
   const config = await loadConfig(cwd);
@@ -106,6 +126,7 @@ export async function startExplorer(options: ExplorerOptions = {}): Promise<{
 
   return {
     url: `http://localhost:${port}`,
+    port,
     stop: () => server.close(),
   };
 }

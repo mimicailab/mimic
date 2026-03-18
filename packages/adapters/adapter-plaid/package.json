@@ -48,15 +48,15 @@
   "dependencies": {
     "@mimicai/adapter-sdk": "workspace:*",
     "@mimicai/core": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.11.0",
-    "fastify": "^5.7.4",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "fastify": "^5.8.2",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "tsup": "^8.5.1",
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.2",
-    "vitest": "^3.2.4",
-    "yaml": "^2.7.1"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0",
+    "yaml": "^2.8.2"
   }
 }

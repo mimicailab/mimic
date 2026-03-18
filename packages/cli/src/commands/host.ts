@@ -26,7 +26,7 @@ export function registerHostCommand(program: Command): void {
   program
     .command('host')
     .description('Start mock API server and MCP server to expose seeded data to AI agents')
-    .option('--mcp-base-port <number>', 'starting port for MCP SSE servers (default: 4201)', parseInt)
+    .option('--mcp-base-port <number>', 'starting port for MCP servers (default: 4201)', parseInt)
     .option('--api-base-port <number>', 'starting port for mock API servers (default: 4101)', parseInt)
     .option('--no-api', 'skip starting mock API servers')
     .option('--verbose', 'enable verbose logging')
@@ -85,8 +85,8 @@ async function runHost(opts: HostOptions): Promise<void> {
     );
   }
 
-  // Auto-detect transport: stdio for single server, SSE for multiple
-  const transport: 'stdio' | 'sse' = totalServers > 1 ? 'sse' : 'stdio';
+  // Auto-detect transport: stdio for single server, Streamable HTTP for multiple
+  const transport: 'stdio' | 'http' = totalServers > 1 ? 'http' : 'stdio';
 
   const mcpBasePort = opts.mcpBasePort ?? 4201;
   const apiBasePort = opts.apiBasePort ?? 4101;
@@ -170,8 +170,8 @@ async function runHost(opts: HostOptions): Promise<void> {
       try {
         const mcpServer = new MimicMcpServer(schema, pool, config);
 
-        if (transport === 'sse') {
-          await mcpServer.start('sse', mcpPort);
+        if (transport === 'http') {
+          await mcpServer.start('http', mcpPort);
         } else {
           await mcpServer.start('stdio');
         }
@@ -247,8 +247,8 @@ async function runHost(opts: HostOptions): Promise<void> {
         mcpServer.registerExternalTools((srv) => adapter.registerMcpTools!(srv, mockBaseUrl));
       }
 
-      if (transport === 'sse') {
-        await mcpServer.start('sse', mcpPort);
+      if (transport === 'http') {
+        await mcpServer.start('http', mcpPort);
       } else {
         await mcpServer.start('stdio');
       }
@@ -266,8 +266,8 @@ async function runHost(opts: HostOptions): Promise<void> {
   const mcpServersConfig: Record<string, { url: string; type: string }> = {};
 
   for (const inst of instances) {
-    const url = transport === 'sse'
-      ? `http://localhost:${inst.mcpPort}/sse`
+    const url = transport === 'http'
+      ? `http://localhost:${inst.mcpPort}/mcp`
       : 'stdio';
     const typeLabel = inst.type === 'database' ? 'database' : 'adapter';
     const portInfo = inst.apiPort
@@ -339,7 +339,7 @@ async function loadPersonaDataMap(
 }
 
 function cleanupHostPorts(input: {
-  transport: 'stdio' | 'sse';
+  transport: 'stdio' | 'http';
   totalServers: number;
   hasApis: boolean;
   apiCount: number;
@@ -348,8 +348,8 @@ function cleanupHostPorts(input: {
 }): void {
   const ports = new Set<number>();
 
-  // In SSE mode each server gets a dedicated MCP HTTP port.
-  if (input.transport === 'sse') {
+  // In HTTP mode each server gets a dedicated MCP HTTP port.
+  if (input.transport === 'http') {
     for (let i = 0; i < input.totalServers; i++) {
       ports.add(input.mcpBasePort + i);
     }

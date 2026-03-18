@@ -36,7 +36,7 @@ next: { slug: "testing", title: "Testing & Auto-Scenarios" }
              │ OpenAPI    │ │per-    │
              │ spec &rarr;     │ │adapter │
              │ codegen &rarr;  │ │(stdio/ │
-             │ CRUD +     │ │ SSE)   │
+             │ CRUD +     │ │ HTTP)  │
              │ overrides  │ │        │
              └────────────┘ └────────┘</code></pre>
 </div>
@@ -84,7 +84,7 @@ Mock Server (Fastify, port 4101)
   <div class="code-bar"><span class="code-bar-lang">text</span><button class="code-copy">Copy</button></div>
   <pre><code>Agent calls MCP tool: list_customers({ email: "alex@example.com" })
 &#8203;
-MCP Server (@mimicai/adapter-stripe, port 4201/sse)
+MCP Server (@mimicai/adapter-stripe, port 4201/mcp)
   ├─ Validate params with Zod schema
   ├─ Translate to HTTP:
   │   GET http://localhost:4101/stripe/v1/customers?email=alex@example.com

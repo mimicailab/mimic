@@ -238,8 +238,8 @@ async function createSubAgent(
 ): Promise<{ agent: SubAgent; client: MultiServerMCPClient }> {
   const client = new MultiServerMCPClient({
     [platform.name]: {
-      transport: 'sse',
-      url: `http://localhost:${mcpPort}/sse`,
+      transport: 'http',
+      url: `http://localhost:${mcpPort}/mcp`,
     },
   });
 

@@ -4,19 +4,22 @@
  * Exposes the generated database as a set of MCP tools that an AI agent can
  * call to query data. Supports two transports:
  *
- *  - **stdio** — for local development / CLI piping
- *  - **sse**   — HTTP Server-Sent Events for networked agents
+ *  - **stdio**            — for local development / CLI piping
+ *  - **streamable-http**  — HTTP Streamable HTTP transport (MCP spec 2025-03-26+)
+ *                           Used by Stripe, GitHub, and all current official MCP servers.
+ *                           Replaces the deprecated SSE transport.
  *
  * The server auto-generates tools from the schema, validates every query
  * against the schema whitelist, and returns JSON results.
  */
 
 import { createServer, type Server as HttpServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { SchemaModel, TableInfo, MimicConfig } from '../types/index.js';
 import { McpServerError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
@@ -129,7 +132,7 @@ export class MimicMcpServer {
   private readonly queryBuilder: QueryBuilder | null;
   private readonly tableMap: Map<string, TableInfo>;
   private httpServer: HttpServer | null = null;
-  private sseTransports: Map<string, SSEServerTransport> = new Map();
+  private sessions: Map<string, StreamableHTTPServerTransport> = new Map();
 
   constructor(
     private readonly schema?: SchemaModel,
@@ -236,17 +239,17 @@ export class MimicMcpServer {
   /**
    * Start the MCP server on the specified transport.
    *
-   * @param transport - `'stdio'` for stdin/stdout or `'sse'` for HTTP SSE.
-   * @param port      - HTTP port when using SSE transport (defaults to 3100).
+   * @param transport - `'stdio'` for stdin/stdout or `'http'` for Streamable HTTP.
+   * @param port      - HTTP port when using Streamable HTTP (defaults to 3100).
    */
   async start(
-    transport: 'stdio' | 'sse',
+    transport: 'stdio' | 'http',
     port?: number,
   ): Promise<void> {
     if (transport === 'stdio') {
       await this.startStdio();
     } else {
-      await this.startSse(port ?? 3100);
+      await this.startStreamableHttp(port ?? 3100);
     }
   }
 
@@ -258,14 +261,24 @@ export class MimicMcpServer {
   }
 
   /**
-   * Start the SSE transport on an HTTP server.
+   * Start the Streamable HTTP transport on an HTTP server.
+   *
+   * Implements the MCP Streamable HTTP transport (spec 2025-03-26+), which is
+   * the standard used by Stripe's remote MCP server and all current official
+   * MCP servers. Replaces the deprecated SSE transport.
    *
    * Endpoints:
-   *  - `GET /sse`      — SSE stream (client connects here)
-   *  - `POST /message` — message endpoint (client posts tool calls here)
-   *  - `GET /health`   — simple health check
+   *  - `POST /mcp`   — send tool calls, receive responses (optionally SSE-streamed)
+   *  - `GET  /mcp`   — SSE stream for server-initiated notifications (optional)
+   *  - `DELETE /mcp` — explicit session termination
+   *  - `GET /health` — simple health check
+   *
+   * Agent configuration example (Claude Desktop, Cursor, etc.):
+   * ```json
+   * { "url": "http://localhost:3100/mcp" }
+   * ```
    */
-  private async startSse(port: number): Promise<void> {
+  private async startStreamableHttp(port: number): Promise<void> {
     this.httpServer = createServer(async (req, res) => {
       const url = new URL(req.url ?? '/', `http://localhost:${port}`);
 
@@ -276,37 +289,53 @@ export class MimicMcpServer {
         return;
       }
 
-      // ── SSE connection ────────────────────────────────────────────────
-      if (req.method === 'GET' && url.pathname === '/sse') {
-        const sseTransport = new SSEServerTransport('/message', res);
-        this.sseTransports.set(sseTransport.sessionId, sseTransport);
+      // ── Streamable HTTP MCP endpoint ──────────────────────────────────
+      if (url.pathname === '/mcp') {
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
-        res.on('close', () => {
-          this.sseTransports.delete(sseTransport.sessionId);
-        });
-
-        await this.mcpServer.connect(sseTransport);
-        return;
-      }
-
-      // ── Message endpoint ──────────────────────────────────────────────
-      if (req.method === 'POST' && url.pathname === '/message') {
-        const sessionId = url.searchParams.get('sessionId');
-        if (!sessionId) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Missing sessionId query parameter' }));
+        // DELETE — explicit session termination
+        if (req.method === 'DELETE') {
+          if (sessionId) this.sessions.delete(sessionId);
+          res.writeHead(204);
+          res.end();
           return;
         }
 
-        const sseTransport = this.sseTransports.get(sessionId);
-        if (!sseTransport) {
-          res.writeHead(404, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Session not found' }));
+        // GET — SSE stream for server-initiated notifications
+        if (req.method === 'GET') {
+          if (!sessionId || !this.sessions.has(sessionId)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'invalid or missing mcp-session-id' }));
+            return;
+          }
+          await this.sessions.get(sessionId)!.handleRequest(req, res);
           return;
         }
 
-        await sseTransport.handlePostMessage(req, res);
-        return;
+        // POST — tool calls / session initialisation
+        if (req.method === 'POST') {
+          if (sessionId && this.sessions.has(sessionId)) {
+            // Resume existing session
+            await this.sessions.get(sessionId)!.handleRequest(req, res);
+            return;
+          }
+
+          // New session
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            onsessioninitialized: (id) => {
+              this.sessions.set(id, transport);
+            },
+          });
+
+          transport.onclose = () => {
+            if (transport.sessionId) this.sessions.delete(transport.sessionId);
+          };
+
+          await this.mcpServer.connect(transport);
+          await transport.handleRequest(req, res);
+          return;
+        }
       }
 
       // ── 404 ───────────────────────────────────────────────────────────
@@ -317,7 +346,7 @@ export class MimicMcpServer {
     await new Promise<void>((resolve, reject) => {
       this.httpServer!.on('error', reject);
       this.httpServer!.listen(port, () => {
-        logger.step(`MCP server listening on http://localhost:${port}/sse`);
+        logger.step(`MCP server listening on http://localhost:${port}/mcp`);
         resolve();
       });
     });
@@ -327,15 +356,15 @@ export class MimicMcpServer {
    * Gracefully shut down the MCP server and release resources.
    */
   async stop(): Promise<void> {
-    // Close all SSE transports
-    for (const transport of this.sseTransports.values()) {
+    // Close all active Streamable HTTP sessions
+    for (const transport of this.sessions.values()) {
       try {
-        await transport.close?.();
+        await transport.close();
       } catch {
         // Best-effort cleanup
       }
     }
-    this.sseTransports.clear();
+    this.sessions.clear();
 
     // Close the HTTP server if running
     if (this.httpServer) {
