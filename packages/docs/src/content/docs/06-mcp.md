@@ -70,9 +70,9 @@ The simplest way &mdash; configure adapters in `mimic.json` with `mcp: true` and
   <pre><code><span class="prompt">$</span> mimic host
 &#8203;
 <span class="ok">&#10003;</span> <span class="out">Stripe API    &rarr; http://localhost:4101/stripe/v1</span>
-<span class="ok">&#10003;</span> <span class="out">Stripe MCP    &rarr; http://localhost:4201/sse</span>
+<span class="ok">&#10003;</span> <span class="out">Stripe MCP    &rarr; http://localhost:4201/mcp</span>
 <span class="ok">&#10003;</span> <span class="out">Plaid API     &rarr; http://localhost:4102/plaid</span>
-<span class="ok">&#10003;</span> <span class="out">Plaid MCP     &rarr; http://localhost:4202/sse</span>
+<span class="ok">&#10003;</span> <span class="out">Plaid MCP     &rarr; http://localhost:4202/mcp</span>
 <span class="ok">&#10003;</span> <span class="out">Ready in 1.4s</span></code></pre>
 </div>
 

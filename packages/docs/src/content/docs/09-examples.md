@@ -932,7 +932,7 @@ mimic host (separate terminal)
 
 <h4>Agent tools</h4>
 
-<p>The LangGraph supervisor routes each question to the right sub-agent. Each sub-agent connects to its MCP server over SSE (since <code>mimic host</code> starts multiple servers).</p>
+<p>The LangGraph supervisor routes each question to the right sub-agent. Each sub-agent connects to its MCP server over Streamable HTTP (since <code>mimic host</code> starts multiple servers).</p>
 
 <div class="doc-table-wrap">
   <table class="doc-table">

@@ -63,7 +63,7 @@ Start mock API servers and MCP servers to expose seeded data to AI agents.
   <pre><code><span class="prompt">$</span> mimic host [options]
 &#8203;
 <span class="cm">Options:</span>
-  <span class="flag">--mcp-base-port</span> &lt;number&gt;     Starting port for MCP SSE servers (default: 4201)
+  <span class="flag">--mcp-base-port</span> &lt;number&gt;     Starting port for MCP servers (default: 4201)
   <span class="flag">--api-base-port</span> &lt;number&gt;     Starting port for mock API servers (default: 4101)
   <span class="flag">--no-api</span>                     Skip starting mock API servers
   <span class="flag">--verbose</span>                    Enable verbose logging</code></pre>
@@ -102,7 +102,7 @@ Use `--mcp-base-port` and `--api-base-port` to shift the port ranges if they con
 The MCP transport protocol is chosen automatically based on server count:
 
 - **One server** &rarr; `stdio` (reads/writes stdin&sol;stdout directly)
-- **Multiple servers** &rarr; `sse` (each MCP server listens at `http://localhost:&lt;port&gt;/sse`)
+- **Multiple servers** &rarr; `http` (each MCP server listens at `http://localhost:&lt;port&gt;/mcp`, Streamable HTTP per MCP spec 2025-03-26)
 
 You cannot override this &mdash; use `--no-api` to reduce server count if you need `stdio` with a single adapter.
 
@@ -113,9 +113,9 @@ After all servers start, `mimic host` prints a JSON block of MCP endpoints ready
 <div class="code-block">
   <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
   <pre><code>{
-  <span class="yk">"main-db"</span>: { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4201/sse"</span>, <span class="yk">"type"</span>: <span class="ys">"database"</span> },
-  <span class="yk">"plaid"</span>:   { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4202/sse"</span>, <span class="yk">"type"</span>: <span class="ys">"adapter"</span> },
-  <span class="yk">"stripe"</span>:  { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4203/sse"</span>, <span class="yk">"type"</span>: <span class="ys">"adapter"</span> }
+  <span class="yk">"main-db"</span>: { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4201/mcp"</span>, <span class="yk">"type"</span>: <span class="ys">"database"</span> },
+  <span class="yk">"plaid"</span>:   { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4202/mcp"</span>, <span class="yk">"type"</span>: <span class="ys">"adapter"</span> },
+  <span class="yk">"stripe"</span>:  { <span class="yk">"url"</span>: <span class="ys">"http://localhost:4203/mcp"</span>, <span class="yk">"type"</span>: <span class="ys">"adapter"</span> }
 }</code></pre>
 </div>
 
