@@ -50,9 +50,9 @@
     }
   },
   "devDependencies": {
-    "tsup": "^8.3.6",
-    "vitest": "^3.0.5",
-    "typescript": "^5.7.3",
-    "@types/better-sqlite3": "^7.6.12"
+    "@types/better-sqlite3": "^7.6.13",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }

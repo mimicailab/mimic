@@ -8,14 +8,14 @@
     "dev": "tsx --watch index.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.50",
-    "@ai-sdk/mcp": "^1.0.23",
-    "@modelcontextprotocol/sdk": "^1.12.1",
-    "ai": "^6.0.105",
+    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/mcp": "^1.0.25",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "ai": "^6.0.116",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "tsx": "^4.21.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   }
 }

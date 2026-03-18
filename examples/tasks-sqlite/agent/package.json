@@ -8,14 +8,14 @@
     "dev": "tsx --watch index.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.50",
-    "ai": "^6.0.105",
-    "better-sqlite3": "^12.6.0",
+    "@ai-sdk/anthropic": "^3.0.58",
+    "ai": "^6.0.116",
+    "better-sqlite3": "^12.8.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.12",
+    "@types/better-sqlite3": "^7.6.13",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   }
 }

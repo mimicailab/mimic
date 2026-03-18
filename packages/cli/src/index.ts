@@ -58,8 +58,7 @@ program.exitOverride();
 export async function run(): Promise<void> {
   try {
     await program.parseAsync(process.argv);
-  } catch (err: unknown) {
-    // Commander throws a special error on --help / --version; let it through.
+  } catch (err) {
     if (
       err instanceof Error &&
       'code' in err &&

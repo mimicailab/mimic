@@ -40,14 +40,14 @@
   },
   "dependencies": {
     "@mimicai/core": "workspace:*",
-    "pg": "^8.13.3",
-    "pg-copy-streams": "^6.0.6"
+    "pg": "^8.20.0",
+    "pg-copy-streams": "^7.0.0"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.11",
+    "@types/pg": "^8.18.0",
     "@types/pg-copy-streams": "^1.2.5",
-    "tsup": "^8.3.6",
-    "vitest": "^3.0.5",
-    "typescript": "^5.7.3"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }

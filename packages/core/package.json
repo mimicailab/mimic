@@ -40,24 +40,24 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.53",
-    "@ai-sdk/openai": "^3.0.39",
+    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/openai": "^3.0.41",
     "@faker-js/faker": "^10.3.0",
-    "@modelcontextprotocol/sdk": "^1.11.0",
-    "@mrleebo/prisma-ast": "^0.12.0",
-    "ai": "^6.0.107",
-    "chalk": "^5.4.1",
-    "fastify": "^5.7.4",
-    "ora": "^8.2.0",
-    "pgsql-parser": "^17.9.11",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@mrleebo/prisma-ast": "^0.15.0",
+    "ai": "^6.0.116",
+    "chalk": "^5.6.2",
+    "fastify": "^5.8.2",
+    "ora": "^9.3.0",
+    "pgsql-parser": "^17.9.14",
     "seedrandom": "^3.0.5",
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.11",
+    "@types/pg": "^8.18.0",
     "@types/seedrandom": "^3.0.8",
-    "tsup": "^8.3.6",
-    "typescript": "^5.7.3",
-    "vitest": "^3.0.5"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   }
 }

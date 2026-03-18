@@ -8,15 +8,15 @@
     "dev": "tsx --watch index.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.50",
-    "@openai/agents": "^0.5.3",
-    "@openai/agents-extensions": "^0.5.3",
-    "ai": "^6.0.105",
+    "@ai-sdk/anthropic": "^3.0.58",
+    "@openai/agents": "^0.7.2",
+    "@openai/agents-extensions": "^0.7.2",
+    "ai": "^6.0.116",
     "mongodb": "^7.1.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "tsx": "^4.21.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   }
 }

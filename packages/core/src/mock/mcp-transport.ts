@@ -1,7 +1,7 @@
 import type { MimicMcpServer } from '../mcp/server.js';
 
 export interface McpTransportConfig {
-  type: 'stdio' | 'sse';
+  type: 'stdio' | 'http';
   port?: number;
 }
 
