@@ -1,5 +1,13 @@
 # @mimicai/adapter-zuora
 
+## 0.10.1
+
+### Patch Changes
+
+- Updated dependencies [[`6f2d991`](https://github.com/mimicailab/mimic/commit/6f2d991d4def19db6b6b238620a081a7a694fd75)]:
+  - @mimicai/core@0.10.1
+  - @mimicai/adapter-sdk@0.10.1
+
 ## 0.10.0
 
 ### Patch Changes

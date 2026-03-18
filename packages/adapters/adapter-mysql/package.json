@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/adapter-mysql",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "MySQL database adapter for Mimic — batch INSERT, upsert, INFORMATION_SCHEMA introspection",
   "type": "module",
   "license": "Apache-2.0",
