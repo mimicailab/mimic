@@ -49,17 +49,15 @@ const mockClose = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('mongodb', () => ({
   default: {
-    MongoClient: vi.fn().mockImplementation(() => ({
-      connect: mockConnect,
-      db: mockDb,
-      close: mockClose,
-    })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    MongoClient: vi.fn(function (this: any) {
+      return { connect: mockConnect, db: mockDb, close: mockClose };
+    }),
   },
-  MongoClient: vi.fn().mockImplementation(() => ({
-    connect: mockConnect,
-    db: mockDb,
-    close: mockClose,
-  })),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  MongoClient: vi.fn(function (this: any) {
+    return { connect: mockConnect, db: mockDb, close: mockClose };
+  }),
 }));
 
 // ---------------------------------------------------------------------------
