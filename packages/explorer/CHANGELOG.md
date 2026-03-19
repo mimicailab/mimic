@@ -1,5 +1,14 @@
 # @mimicai/explorer
 
+## 0.10.2
+
+### Patch Changes
+
+- [#142](https://github.com/mimicailab/mimic/pull/142) [`0ee3a87`](https://github.com/mimicailab/mimic/commit/0ee3a870ed6a824fdb786b8dbdfdc0f4438058e8) Thanks [@ajollie](https://github.com/ajollie)! - fix(explorer): check port availability on 0.0.0.0 to match Fastify listen interface
+
+- Updated dependencies []:
+  - @mimicai/core@0.10.2
+
 ## 0.10.1
 
 ### Patch Changes

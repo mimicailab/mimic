@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/blueprints",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Pre-built persona blueprints for Mimic — finance, calendar, and support domains",
   "type": "module",
   "license": "Apache-2.0",
