@@ -3,15 +3,15 @@
   "version": "0.0.4",
   "private": true,
   "dependencies": {
-    "@mimicai/cli": "^0.10.1",
-    "@mimicai/adapter-stripe": "^0.10.1",
-    "@mimicai/adapter-paddle": "^0.10.1",
-    "@mimicai/adapter-chargebee": "^0.10.1",
-    "@mimicai/adapter-gocardless": "^0.10.1",
-    "@mimicai/adapter-revenuecat": "^0.10.1",
-    "@mimicai/adapter-lemonsqueezy": "^0.10.1",
-    "@mimicai/adapter-zuora": "^0.10.1",
-    "@mimicai/adapter-recurly": "^0.10.1",
-    "@mimicai/adapter-postgres": "^0.10.1"
+    "@mimicai/cli": "^0.10.2",
+    "@mimicai/adapter-stripe": "^0.10.2",
+    "@mimicai/adapter-paddle": "^0.10.2",
+    "@mimicai/adapter-chargebee": "^0.10.2",
+    "@mimicai/adapter-gocardless": "^0.10.2",
+    "@mimicai/adapter-revenuecat": "^0.10.2",
+    "@mimicai/adapter-lemonsqueezy": "^0.10.2",
+    "@mimicai/adapter-zuora": "^0.10.2",
+    "@mimicai/adapter-recurly": "^0.10.2",
+    "@mimicai/adapter-postgres": "^0.10.2"
   }
 }
