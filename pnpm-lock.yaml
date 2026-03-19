@@ -41,12 +41,36 @@ importers:
 
   examples/cfo-agent:
     dependencies:
+      '@mimicai/adapter-chargebee':
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@mimicai/adapter-gocardless':
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@mimicai/adapter-lemonsqueezy':
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@mimicai/adapter-paddle':
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@mimicai/adapter-postgres':
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@mimicai/adapter-recurly':
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@mimicai/adapter-revenuecat':
+        specifier: ^0.10.1
+        version: 0.10.1
       '@mimicai/adapter-stripe':
-        specifier: workspace:*
-        version: link:../../packages/adapters/adapter-stripe
+        specifier: ^0.10.1
+        version: 0.10.1
+      '@mimicai/adapter-zuora':
+        specifier: ^0.10.1
+        version: 0.10.1
       '@mimicai/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
+        specifier: ^0.10.1
+        version: 0.10.1(@types/node@25.5.0)(better-sqlite3@11.10.0)(mongodb@6.21.0)(mysql2@3.20.0(@types/node@25.5.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
   examples/stripe-explorer:
     dependencies:
@@ -1547,16 +1571,37 @@ packages:
     resolution: {integrity: sha512-w2zK8FXC26/O7QK0C7GLU6IRO//e3gbBrY2OZQum7nkC1Z/3m0H+t9pHEQ05rsMGM1zkUwJG+kRGQDHXYdL3kw==}
     hasBin: true
 
+  '@mimicai/adapter-chargebee@0.10.1':
+    resolution: {integrity: sha512-QElzeEtL5lPSpSHvnqFRx1pJZyyB0OeDt2YnJjBoTJ2IPxmyBrf8szffMvnXaqJ0+QNf0z4HSkKbuKNfSLB1Ow==}
+    hasBin: true
+
   '@mimicai/adapter-gocardless@0.10.0':
     resolution: {integrity: sha512-Pz3V1+Q48wNXyGCC/zRbKPmuMTQ/gPb9ze0A9C6NPo1YS4fYLlWt2cQv0VEPTYhsOcHoK33iTjHvAlTwkSy0cg==}
+    hasBin: true
+
+  '@mimicai/adapter-gocardless@0.10.1':
+    resolution: {integrity: sha512-9DhcK23eOQFa6E6A4ye1i11EnEvqzbyRNrDc+lOjr/Migf8knWzmQOiaEfLSjiXpICFyb4LLQAQo3stpyFns0Q==}
     hasBin: true
 
   '@mimicai/adapter-lemonsqueezy@0.10.0':
     resolution: {integrity: sha512-tsziIqvpQ071Q9C+u+PPh5sLPjV7X/Z2qFIUv55nTc+660uoTWf/CRSFCS5ZJ4EfCQrbDrR9XqN3Kio7eFr/6g==}
     hasBin: true
 
+  '@mimicai/adapter-lemonsqueezy@0.10.1':
+    resolution: {integrity: sha512-2jxYaJc3llinDF6CpIxSCGTOk8v3DEYLCctBBxdLWcBxd86XNmk29aLNvokQ9yKU9ESPmDXplR0FxO4Wequflg==}
+    hasBin: true
+
   '@mimicai/adapter-mongodb@0.10.0':
     resolution: {integrity: sha512-NdWJchjvATyewsFclu1m33NdzihmRbJpaYVOvXWByMadA6cRdFp+4wCqFPCfcwI4DruRsio1dycoiDnLhjSVow==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      mongodb: ^6.0.0
+    peerDependenciesMeta:
+      mongodb:
+        optional: true
+
+  '@mimicai/adapter-mongodb@0.10.1':
+    resolution: {integrity: sha512-7MLbtlTBFj787TwpgbsvNiEOmJehCMe04nUzo7SDdH1Ji/s2kvQqPezSZJ98kPqtiY2SQdh14liiKlQPG8S10w==}
     engines: {node: '>=22'}
     peerDependencies:
       mongodb: ^6.0.0
@@ -1573,8 +1618,21 @@ packages:
       mysql2:
         optional: true
 
+  '@mimicai/adapter-mysql@0.10.1':
+    resolution: {integrity: sha512-4PDkwkUTrJNv4DGsQDTNhcaj09MPtvHGjXsXQWGVnoDdROFmhjGX+9r19O6RUoALoUSdGj7RDcEE/dV3DlZW2A==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      mysql2: ^3.0.0
+    peerDependenciesMeta:
+      mysql2:
+        optional: true
+
   '@mimicai/adapter-paddle@0.10.0':
     resolution: {integrity: sha512-HRkgjf/h2Kvv85VObxzDOugsLbvtuuDToY5yWBY0/NRmG8/ZZppioJGmCOZCYBZkRt2uuY2Obrc0C9zRg5Z4Iw==}
+    hasBin: true
+
+  '@mimicai/adapter-paddle@0.10.1':
+    resolution: {integrity: sha512-W19kEcDdi9eo0xJWzdVBwNJbf1qqBS44/uViLxCAscBSl+/dbFwORKrh6IzviX6XNaTWEyISPTxkTvJwCNFmRQ==}
     hasBin: true
 
   '@mimicai/adapter-plaid@0.10.0':
@@ -1582,8 +1640,17 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
+  '@mimicai/adapter-plaid@0.10.1':
+    resolution: {integrity: sha512-yEBPsteBkfH4mwBE8NBT+Yd49ygWrZneBAi4TrrJLGNkdql4KBYx4Iejq5ofaKv2/wuRM9sUNDi+L6EYMVN46A==}
+    engines: {node: '>=22'}
+    hasBin: true
+
   '@mimicai/adapter-postgres@0.10.0':
     resolution: {integrity: sha512-dagQ+XuJQDGgQpEgMkYuoiVNj0IaAaMowLWlTnnhA2HWxWjfGkF4NfuBHAiV6SNQTOpCTZ66Gh/AQWWHVOZb/g==}
+    engines: {node: '>=22'}
+
+  '@mimicai/adapter-postgres@0.10.1':
+    resolution: {integrity: sha512-Y5Se3Bc3AYp676FnWsnJA+w2ozymrkD8hVtHClufODAfxlGw1q0dEV0WnDkLkR9xTy3K4Y6ixdrvbYd4aiX+Hw==}
     engines: {node: '>=22'}
 
   '@mimicai/adapter-recurly@0.10.0':
@@ -1591,16 +1658,38 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
+  '@mimicai/adapter-recurly@0.10.1':
+    resolution: {integrity: sha512-gKb40xI8lWe2IpkesjSeemLEX3cair8P4mn9Uq6SMh5c7iwyVxmWBfbI865EMTQdP+Z/0iIv8qy7Y+AJ3tG+/Q==}
+    engines: {node: '>=22'}
+    hasBin: true
+
   '@mimicai/adapter-revenuecat@0.10.0':
     resolution: {integrity: sha512-+744iEgApHllee1rBBmfBQrsvO2XH1zVifpyQXHLUm4ggbeKlHKrSERr8sZeD9IVERNr8ohL9BB9FCgWVlSfjg==}
+    hasBin: true
+
+  '@mimicai/adapter-revenuecat@0.10.1':
+    resolution: {integrity: sha512-Gpe15/9MS7MWU9U3PP44mM8Tcjn6y3V3q3iTJxStnoJ8bfFQ9+N3Fz9auAPiOWxvi5D6PAihGhVHhsImyRIZUg==}
     hasBin: true
 
   '@mimicai/adapter-sdk@0.10.0':
     resolution: {integrity: sha512-AcD5LRvEHSgJVPF6kPb8jbLuZo/MItuqDJ2MIr6B9oKqB5rwuSI5OcXtJtnb/vAeo47FF4TN7MjoIyfqkvgXeA==}
     engines: {node: '>=22'}
 
+  '@mimicai/adapter-sdk@0.10.1':
+    resolution: {integrity: sha512-CffrB4ZCaPPbi72sBY3SL6XFR6LNs8L3meqBcbRDoZgEHDxHyNfKnjs8Oy3UiRGWG4m29cgqPcgoQCgeD2hl4Q==}
+    engines: {node: '>=22'}
+
   '@mimicai/adapter-sqlite@0.10.0':
     resolution: {integrity: sha512-DnYyE2lhFV90SHBRTmqccSanPRnq4hWixdcAFdR+q+VDO4UNVF6Hf4SuYidkK4sRpKkmRVTO5fclfdrkcL35GA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      better-sqlite3: ^11.0.0
+    peerDependenciesMeta:
+      better-sqlite3:
+        optional: true
+
+  '@mimicai/adapter-sqlite@0.10.1':
+    resolution: {integrity: sha512-oufZselQXZ6yE8i5sACcNKQcQQED5GHVGDorlOPgLSbAlGMIBaXCZq95yTqhOFkBjTeJmZIcMX7aY5N5mQZWvw==}
     engines: {node: '>=22'}
     peerDependencies:
       better-sqlite3: ^11.0.0
@@ -1613,12 +1702,25 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
+  '@mimicai/adapter-stripe@0.10.1':
+    resolution: {integrity: sha512-F7oI1Lf2FT9hWdMIV5KdAKK3dd9CZeqTTbJ12yilY/hk+pWiycJTe0P4kPRERlgg2qm6SEcsyiEy9DA814fpGA==}
+    engines: {node: '>=22'}
+    hasBin: true
+
   '@mimicai/adapter-zuora@0.10.0':
     resolution: {integrity: sha512-DOHynHeP6Un66xI6sGH9xDqzVHK/YbRa6smJNfGXd7oFBOCsYW/aEiFAc8V17ZCxbU6qzbQcbIdePRnem6DXxA==}
     hasBin: true
 
+  '@mimicai/adapter-zuora@0.10.1':
+    resolution: {integrity: sha512-Wgn+RUNfIrBmZBSNujOIuW0F5HLnyMp40H8TZg9SH1h4oaW25o6gjaX00oFXH+mdq/1+6OPblrA3a6u6lTLvdw==}
+    hasBin: true
+
   '@mimicai/blueprints@0.10.0':
     resolution: {integrity: sha512-8U/Z0bYRksYn1AC4Yzml7IsEzrzC1PaE6O9WdYE0KJmfrWhBaHUbEWOWyxL0xEcfvKMBMsXlF0A8kbRTaE85ww==}
+    engines: {node: '>=22'}
+
+  '@mimicai/blueprints@0.10.1':
+    resolution: {integrity: sha512-IbBa+G0qxsnHmvLhFKVDfs6TyE8feIjwnABRW6k6NB8UZ4V47izb4HJ7NqlI56py6soCOO5GAxpgnJocfpRjUw==}
     engines: {node: '>=22'}
 
   '@mimicai/cli@0.10.0':
@@ -1626,12 +1728,27 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
+  '@mimicai/cli@0.10.1':
+    resolution: {integrity: sha512-NGO4yB84sA2NLFKJSqxRtn0wXByYr+vBn++Ai+9zV4W28kjXI3WsD2Yg8cNLD/doynqwtFuD4nsKFjcupki1QQ==}
+    engines: {node: '>=22'}
+    hasBin: true
+
   '@mimicai/core@0.10.0':
     resolution: {integrity: sha512-oOoYl9tFS0D4oCg1bcgbmOyKhRYoeTN/sgN3TrDdyBccqpfigtVXsECLBi0zH7/XJAmdad8U54pFF1u0lqMbwg==}
     engines: {node: '>=22'}
 
+  '@mimicai/core@0.10.1':
+    resolution: {integrity: sha512-ucrwMm3txdl8Dbgswu6H1+uyTZOxTdSPlIw78ns9UkqobXNsGg1LBsOc+NfdPsrtb0DoLsk6W8cDzVnD3bKEIA==}
+    engines: {node: '>=22'}
+
   '@mimicai/explorer@0.10.0':
     resolution: {integrity: sha512-CGdD/g/mCLtt0ZUUsmox/suLWJHhIYTT3h3PixDs7kkV1lJqSIlYN+KlBOqb6FERgtYV8loS2scJQXh/I2qTqA==}
+    peerDependencies:
+      react: ^19.0.0
+      react-dom: ^19.0.0
+
+  '@mimicai/explorer@0.10.1':
+    resolution: {integrity: sha512-qipvc0eYd9GbTzaflZjEd74/MBVy90SgmsBT4a6AvFTDYXQ1SxNfqEAqJPc5T9Jr9bzRuPK8fSmZSwR/4P9Czg==}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -5928,6 +6045,17 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mimicai/adapter-chargebee@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/adapter-gocardless@0.10.0':
     dependencies:
       '@mimicai/adapter-sdk': 0.10.0
@@ -5939,6 +6067,17 @@ snapshots:
       - '@cfworker/json-schema'
       - supports-color
     optional: true
+
+  '@mimicai/adapter-gocardless@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
 
   '@mimicai/adapter-lemonsqueezy@0.10.0':
     dependencies:
@@ -5952,6 +6091,17 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mimicai/adapter-lemonsqueezy@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/adapter-mongodb@0.10.0(mongodb@6.21.0)':
     dependencies:
       '@mimicai/core': 0.10.0
@@ -5961,9 +6111,27 @@ snapshots:
       - '@cfworker/json-schema'
       - supports-color
 
+  '@mimicai/adapter-mongodb@0.10.1(mongodb@6.21.0)':
+    dependencies:
+      '@mimicai/core': 0.10.1
+    optionalDependencies:
+      mongodb: 6.21.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/adapter-mysql@0.10.0(mysql2@3.20.0(@types/node@25.5.0))':
     dependencies:
       '@mimicai/core': 0.10.0
+    optionalDependencies:
+      mysql2: 3.20.0(@types/node@25.5.0)
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
+  '@mimicai/adapter-mysql@0.10.1(mysql2@3.20.0(@types/node@25.5.0))':
+    dependencies:
+      '@mimicai/core': 0.10.1
     optionalDependencies:
       mysql2: 3.20.0(@types/node@25.5.0)
     transitivePeerDependencies:
@@ -5982,10 +6150,33 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mimicai/adapter-paddle@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/adapter-plaid@0.10.0':
     dependencies:
       '@mimicai/adapter-sdk': 0.10.0
       '@mimicai/core': 0.10.0
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+    optional: true
+
+  '@mimicai/adapter-plaid@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
       '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
       fastify: 5.8.2
       zod: 3.25.76
@@ -6004,6 +6195,16 @@ snapshots:
       - pg-native
       - supports-color
 
+  '@mimicai/adapter-postgres@0.10.1':
+    dependencies:
+      '@mimicai/core': 0.10.1
+      pg: 8.20.0
+      pg-copy-streams: 7.0.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - pg-native
+      - supports-color
+
   '@mimicai/adapter-recurly@0.10.0':
     dependencies:
       '@mimicai/adapter-sdk': 0.10.0
@@ -6015,6 +6216,17 @@ snapshots:
       - '@cfworker/json-schema'
       - supports-color
     optional: true
+
+  '@mimicai/adapter-recurly@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
 
   '@mimicai/adapter-revenuecat@0.10.0':
     dependencies:
@@ -6028,6 +6240,17 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mimicai/adapter-revenuecat@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/adapter-sdk@0.10.0':
     dependencies:
       '@fastify/formbody': 8.0.2
@@ -6038,11 +6261,29 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mimicai/adapter-sdk@0.10.1':
+    dependencies:
+      '@fastify/formbody': 8.0.2
+      '@mimicai/core': 0.10.1
+      fastify: 5.8.2
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/adapter-sqlite@0.10.0(better-sqlite3@12.8.0)':
     dependencies:
       '@mimicai/core': 0.10.0
     optionalDependencies:
       better-sqlite3: 12.8.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
+  '@mimicai/adapter-sqlite@0.10.1(better-sqlite3@11.10.0)':
+    dependencies:
+      '@mimicai/core': 0.10.1
+    optionalDependencies:
+      better-sqlite3: 11.10.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
@@ -6059,6 +6300,17 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mimicai/adapter-stripe@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/adapter-zuora@0.10.0':
     dependencies:
       '@mimicai/adapter-sdk': 0.10.0
@@ -6071,9 +6323,27 @@ snapshots:
       - supports-color
     optional: true
 
+  '@mimicai/adapter-zuora@0.10.1':
+    dependencies:
+      '@mimicai/adapter-sdk': 0.10.1
+      '@mimicai/core': 0.10.1
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      fastify: 5.8.2
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/blueprints@0.10.0':
     dependencies:
       '@mimicai/core': 0.10.0
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
+  '@mimicai/blueprints@0.10.1':
+    dependencies:
+      '@mimicai/core': 0.10.1
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - supports-color
@@ -6114,6 +6384,42 @@ snapshots:
       - react-dom
       - supports-color
 
+  '@mimicai/cli@0.10.1(@types/node@25.5.0)(better-sqlite3@11.10.0)(mongodb@6.21.0)(mysql2@3.20.0(@types/node@25.5.0))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@inquirer/prompts': 8.3.2(@types/node@25.5.0)
+      '@mimicai/adapter-mongodb': 0.10.1(mongodb@6.21.0)
+      '@mimicai/adapter-mysql': 0.10.1(mysql2@3.20.0(@types/node@25.5.0))
+      '@mimicai/adapter-postgres': 0.10.1
+      '@mimicai/adapter-sqlite': 0.10.1(better-sqlite3@11.10.0)
+      '@mimicai/blueprints': 0.10.1
+      '@mimicai/core': 0.10.1
+      chalk: 5.6.2
+      cli-table3: 0.6.5
+      commander: 14.0.3
+      ora: 9.3.0
+      pg: 8.20.0
+    optionalDependencies:
+      '@mimicai/adapter-chargebee': 0.10.1
+      '@mimicai/adapter-gocardless': 0.10.1
+      '@mimicai/adapter-lemonsqueezy': 0.10.1
+      '@mimicai/adapter-paddle': 0.10.1
+      '@mimicai/adapter-plaid': 0.10.1
+      '@mimicai/adapter-recurly': 0.10.1
+      '@mimicai/adapter-revenuecat': 0.10.1
+      '@mimicai/adapter-stripe': 0.10.1
+      '@mimicai/adapter-zuora': 0.10.1
+      '@mimicai/explorer': 0.10.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - '@types/node'
+      - better-sqlite3
+      - mongodb
+      - mysql2
+      - pg-native
+      - react
+      - react-dom
+      - supports-color
+
   '@mimicai/core@0.10.0':
     dependencies:
       '@ai-sdk/anthropic': 3.0.58(zod@3.25.76)
@@ -6132,11 +6438,42 @@ snapshots:
       - '@cfworker/json-schema'
       - supports-color
 
+  '@mimicai/core@0.10.1':
+    dependencies:
+      '@ai-sdk/anthropic': 3.0.58(zod@3.25.76)
+      '@ai-sdk/openai': 3.0.41(zod@3.25.76)
+      '@faker-js/faker': 10.3.0
+      '@modelcontextprotocol/sdk': 1.27.1(zod@3.25.76)
+      '@mrleebo/prisma-ast': 0.15.0
+      ai: 6.0.116(zod@3.25.76)
+      chalk: 5.6.2
+      fastify: 5.8.2
+      ora: 9.3.0
+      pgsql-parser: 17.9.14
+      seedrandom: 3.0.5
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
   '@mimicai/explorer@0.10.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@fastify/cors': 10.1.0
       '@fastify/static': 8.3.0
       '@mimicai/core': 0.10.0
+      fastify: 5.8.2
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+    optional: true
+
+  '@mimicai/explorer@0.10.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@fastify/cors': 11.2.0
+      '@fastify/static': 9.0.0
+      '@mimicai/core': 0.10.1
       fastify: 5.8.2
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
