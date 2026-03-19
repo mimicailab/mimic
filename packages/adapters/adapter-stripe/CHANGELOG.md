@@ -1,5 +1,13 @@
 # @mimicailab/adapter-stripe
 
+## 0.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @mimicai/core@0.10.2
+  - @mimicai/adapter-sdk@0.10.2
+
 ## 0.10.1
 
 ### Patch Changes

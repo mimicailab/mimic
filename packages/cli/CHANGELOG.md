@@ -1,5 +1,17 @@
 # @mimicailab/cli
 
+## 0.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @mimicai/core@0.10.2
+  - @mimicai/blueprints@0.10.2
+  - @mimicai/adapter-postgres@0.10.2
+  - @mimicai/adapter-mysql@0.10.2
+  - @mimicai/adapter-mongodb@0.10.2
+  - @mimicai/adapter-sqlite@0.10.2
+
 ## 0.10.1
 
 ### Patch Changes

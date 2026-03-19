@@ -1,5 +1,12 @@
 # @mimicailab/blueprints
 
+## 0.10.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @mimicai/core@0.10.2
+
 ## 0.10.1
 
 ### Patch Changes
