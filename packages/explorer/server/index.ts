@@ -46,7 +46,7 @@ async function isPortAvailable(port: number): Promise<boolean> {
     const srv = createNetServer();
     srv.once('error', () => resolve(false));
     srv.once('listening', () => srv.close(() => resolve(true)));
-    srv.listen(port, '127.0.0.1');
+    srv.listen(port, '0.0.0.0');
   });
 }
 
