@@ -1898,20 +1898,24 @@
           <span class="terminal-dot r"></span>
           <span class="terminal-dot y"></span>
           <span class="terminal-dot g"></span>
-          <span class="terminal-title">mimic &mdash; finance-alex</span>
+          <span class="terminal-title">mimic &mdash; cfo-agent</span>
         </div>
         <div class="terminal-body">
-          <div><span class="t-prompt">$</span> <span class="t-cmd">mimic init</span></div>
-          <div><span class="t-prompt">$</span> <span class="t-cmd">mimic run</span> <span class="t-flag">--persona finance-alex</span></div>
-          <div><span class="t-prompt">$</span> <span class="t-cmd">mimic seed</span> <span class="t-flag">--persona finance-alex</span></div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">mimic run</span></div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">mimic seed</span></div>
           <div><span class="t-prompt">$</span> <span class="t-cmd">mimic host</span></div>
           <span class="t-blank"></span>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">PostgreSQL</span>  <span class="t-out">&rarr;</span> <span class="t-url">seeded 4 tables, 1,247 rows</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Plaid API</span>   <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4101/plaid</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Stripe API</span>  <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4102/stripe/v1</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Jira API</span>    <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4103/jira/rest/api/3</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-out">Slack MCP</span>   <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4205/sse</span></div>
-          <div><span class="t-ok">&#10003;</span> <span class="t-url">Ready in 1.2s</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">PostgreSQL</span>    <span class="t-out">&rarr;</span> <span class="t-url">seeded 12 tables, 4,832 rows</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Stripe API</span>    <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4101/stripe/v1</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Paddle API</span>    <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4102/paddle</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Chargebee API</span> <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4103/chargebee</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">GoCardless API</span><span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4104/gocardless</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Recurly API</span>   <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4105/recurly</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">RevenueCat API</span><span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4106/revenuecat</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">LemonSqueezy</span> <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4107/lemonsqueezy</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">Zuora API</span>     <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4108/zuora</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-out">9 MCP servers</span> <span class="t-out">&rarr;</span> <span class="t-url">http://localhost:4201-4209/mcp</span></div>
+          <div><span class="t-ok">&#10003;</span> <span class="t-url">Ready in 2.1s</span></div>
         </div>
       </div>
     </div>
@@ -1935,7 +1939,7 @@
           </li>
           <li>
             <span class="oss-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
-            65+ MCP servers included
+            13 adapters shipped, 100+ on the roadmap
           </li>
           <li>
             <span class="oss-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
@@ -1955,7 +1959,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
             View on GitHub
           </a>
-          <a href="https://discord.gg/xbwG2KPr" class="oss-link discord">
+          <a href="https://discord.gg/AjCpk7n2" class="oss-link discord">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z"/></svg>
             Join Discord
           </a>
@@ -2274,9 +2278,9 @@
             <div class="arch-adapter-target">:4103/chargebee</div>
           </div>
           <div class="arch-adapter">
-            <div class="arch-adapter-name">Slack</div>
-            <div class="arch-adapter-type mcp">MCP</div>
-            <div class="arch-adapter-target">:4201/sse</div>
+            <div class="arch-adapter-name">Paddle</div>
+            <div class="arch-adapter-type api">API MOCK</div>
+            <div class="arch-adapter-target">:4104/paddle</div>
           </div>
         </div>
       </div>
@@ -2290,23 +2294,43 @@
       <p class="section-eyebrow">Adapters</p>
       <h2 class="section-title">Every API your agent needs</h2>
       <div class="adapter-stat">
-        <span class="adapter-stat-num">65+</span>
-        <span class="adapter-stat-label">adapters across 8 categories</span>
+        <span class="adapter-stat-num">13</span>
+        <span class="adapter-stat-label">adapters shipped &mdash; 100+ on the roadmap</span>
       </div>
-      <!-- Fintech -->
+      <!-- Fintech — Shipped -->
       <div class="adapter-category">
         <div class="adapter-category-head">
           <span class="adapter-category-icon" style="background: rgba(99,91,255,0.12); color: #635bff;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           </span>
           <span class="adapter-category-title">Fintech &amp; Payments</span>
-          <span class="adapter-category-count">24</span>
+          <span class="adapter-category-count">9 shipped</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#635bff;color:#fff;">S</span><span class="al-name">Stripe</span></div>
           <div class="al-item"><span class="al-icon" style="background:#111;color:#fff;border:1px solid #333;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="7" cy="12" r="4" fill="#111"/><circle cx="12" cy="7" r="4" fill="#333"/><circle cx="17" cy="12" r="4" fill="#555"/></svg>
           </span><span class="al-name">Plaid</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#2e2e3a;color:#fff;border:1px solid #444;">Pd</span><span class="al-name">Paddle</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#ff6600;color:#fff;">Cb</span><span class="al-name">Chargebee</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#1e856d;color:#fff;">GC</span><span class="al-name">GoCardless</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#7c5cfc;color:#fff;">Rc</span><span class="al-name">Recurly</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#f25a5a;color:#fff;">RC</span><span class="al-name">RevenueCat</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#7047eb;color:#fff;">LS</span><span class="al-name">Lemon Squeezy</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#2e5aac;color:#fff;">Zu</span><span class="al-name">Zuora</span></div>
+        </div>
+      </div>
+
+      <!-- Fintech — Planned -->
+      <div class="adapter-category" style="opacity: 0.6;">
+        <div class="adapter-category-head">
+          <span class="adapter-category-icon" style="background: rgba(99,91,255,0.08); color: #635bff;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          </span>
+          <span class="adapter-category-title">Fintech &amp; Payments &mdash; Roadmap</span>
+          <span class="adapter-category-count">15 planned</span>
+        </div>
+        <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#006aff;color:#fff;">Sq</span><span class="al-name">Square</span></div>
           <div class="al-item"><span class="al-icon" style="background:#003087;color:#fff;">PP</span><span class="al-name">PayPal</span></div>
           <div class="al-item"><span class="al-icon" style="background:#0abf53;color:#fff;">A</span><span class="al-name">Adyen</span></div>
@@ -2316,30 +2340,23 @@
           <div class="al-item"><span class="al-icon" style="background:#1c1c1c;color:#fff;border:1px solid #333;">R</span><span class="al-name">Ramp</span></div>
           <div class="al-item"><span class="al-icon" style="background:#4c3bcf;color:#fff;">M</span><span class="al-name">Mercury</span></div>
           <div class="al-item"><span class="al-icon" style="background:#2d9cdb;color:#fff;">Mv</span><span class="al-name">Moov</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#1e856d;color:#fff;">GC</span><span class="al-name">GoCardless</span></div>
           <div class="al-item"><span class="al-icon" style="background:#e87427;color:#fff;">Dw</span><span class="al-name">Dwolla</span></div>
           <div class="al-item"><span class="al-icon" style="background:#0ba4db;color:#fff;">Ps</span><span class="al-name">Paystack</span></div>
           <div class="al-item"><span class="al-icon" style="background:#f5a623;color:#fff;">Fw</span><span class="al-name">Flutterwave</span></div>
           <div class="al-item"><span class="al-icon" style="background:#003545;color:#22d3a7;">Mq</span><span class="al-name">Marqeta</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#1a1a2e;color:#fff;border:1px solid #333;">Li</span><span class="al-name">Lithic</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#f97316;color:#fff;">In</span><span class="al-name">Increase</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#2563eb;color:#fff;">Co</span><span class="al-name">Column</span></div>
           <div class="al-item"><span class="al-icon" style="background:#0666eb;color:#fff;">Rv</span><span class="al-name">Revolut</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#113d6b;color:#48e5c2;">Aw</span><span class="al-name">Airwallex</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#0e1f3b;color:#00d67e;">Ck</span><span class="al-name">Checkout</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#2e2e3a;color:#fff;border:1px solid #444;">Pd</span><span class="al-name">Paddle</span></div>
           <div class="al-item"><span class="al-icon" style="background:#0d3b66;color:#6ec1e4;">Rp</span><span class="al-name">Rapyd</span></div>
         </div>
       </div>
 
-      <!-- Communication -->
-      <div class="adapter-category">
+      <!-- Communication — Roadmap -->
+      <div class="adapter-category" style="opacity: 0.6;">
         <div class="adapter-category-head">
-          <span class="adapter-category-icon" style="background: rgba(45,212,191,0.12); color: var(--cyan);">
+          <span class="adapter-category-icon" style="background: rgba(45,212,191,0.08); color: var(--cyan);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </span>
-          <span class="adapter-category-title">Communication</span>
-          <span class="adapter-category-count">11</span>
+          <span class="adapter-category-title">Communication &mdash; Roadmap</span>
+          <span class="adapter-category-count">11 planned</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#4a154b;color:#e01e5a;font-size:1rem;font-weight:900;">#</span><span class="al-name">Slack</span></div>
@@ -2364,14 +2381,14 @@
         </div>
       </div>
 
-      <!-- CRM -->
-      <div class="adapter-category">
+      <!-- CRM — Roadmap -->
+      <div class="adapter-category" style="opacity: 0.6;">
         <div class="adapter-category-head">
-          <span class="adapter-category-icon" style="background: rgba(245,183,49,0.12); color: var(--amber);">
+          <span class="adapter-category-icon" style="background: rgba(245,183,49,0.08); color: var(--amber);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           </span>
-          <span class="adapter-category-title">CRM</span>
-          <span class="adapter-category-count">7</span>
+          <span class="adapter-category-title">CRM &mdash; Roadmap</span>
+          <span class="adapter-category-count">7 planned</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#00a1e0;color:#fff;">SF</span><span class="al-name">Salesforce</span></div>
@@ -2384,14 +2401,14 @@
         </div>
       </div>
 
-      <!-- Ticketing -->
-      <div class="adapter-category">
+      <!-- Ticketing — Roadmap -->
+      <div class="adapter-category" style="opacity: 0.6;">
         <div class="adapter-category-head">
-          <span class="adapter-category-icon" style="background: rgba(240,101,149,0.12); color: var(--pink);">
+          <span class="adapter-category-icon" style="background: rgba(240,101,149,0.08); color: var(--pink);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14,2 14,8 20,8"/></svg>
           </span>
-          <span class="adapter-category-title">Ticketing</span>
-          <span class="adapter-category-count">8</span>
+          <span class="adapter-category-title">Ticketing &mdash; Roadmap</span>
+          <span class="adapter-category-count">8 planned</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#03363d;color:#78a300;">Zd</span><span class="al-name">Zendesk</span></div>
@@ -2409,14 +2426,14 @@
         </div>
       </div>
 
-      <!-- Project Management -->
-      <div class="adapter-category">
+      <!-- Project Management — Roadmap -->
+      <div class="adapter-category" style="opacity: 0.6;">
         <div class="adapter-category-head">
           <span class="adapter-category-icon" style="background: var(--accent-glow); color: var(--accent-bright);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           </span>
-          <span class="adapter-category-title">Project Management</span>
-          <span class="adapter-category-count">8</span>
+          <span class="adapter-category-title">Project Management &mdash; Roadmap</span>
+          <span class="adapter-category-count">8 planned</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#191919;color:#fff;border:1px solid #333;">N</span><span class="al-name">Notion</span></div>
@@ -2430,14 +2447,14 @@
         </div>
       </div>
 
-      <!-- Calendar -->
-      <div class="adapter-category">
+      <!-- Calendar — Roadmap -->
+      <div class="adapter-category" style="opacity: 0.6;">
         <div class="adapter-category-head">
-          <span class="adapter-category-icon" style="background: rgba(245,183,49,0.12); color: var(--amber);">
+          <span class="adapter-category-icon" style="background: rgba(245,183,49,0.08); color: var(--amber);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </span>
-          <span class="adapter-category-title">Calendar &amp; Scheduling</span>
-          <span class="adapter-category-count">6</span>
+          <span class="adapter-category-title">Calendar &amp; Scheduling &mdash; Roadmap</span>
+          <span class="adapter-category-count">6 planned</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#4285f4;color:#fff;">G</span><span class="al-name">Google Cal</span></div>
@@ -2451,34 +2468,31 @@
         </div>
       </div>
 
-      <!-- Databases -->
+      <!-- Databases — Shipped -->
       <div class="adapter-category">
         <div class="adapter-category-head">
           <span class="adapter-category-icon" style="background: var(--green-dim); color: var(--green);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
           </span>
           <span class="adapter-category-title">Databases</span>
-          <span class="adapter-category-count">5</span>
+          <span class="adapter-category-count">4 shipped</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#336791;color:#fff;">Pg</span><span class="al-name">PostgreSQL</span></div>
           <div class="al-item"><span class="al-icon" style="background:#00684a;color:#00ed64;">M</span><span class="al-name">MongoDB</span></div>
           <div class="al-item"><span class="al-icon" style="background:#00618a;color:#f29111;">My</span><span class="al-name">MySQL</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#111;color:#fff;border:1px solid #333;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8 22 16 12 22 2 16 2 8"/></svg>
-          </span><span class="al-name">Pinecone</span></div>
-          <div class="al-item"><span class="al-icon" style="background:#dc382d;color:#fff;">Re</span><span class="al-name">Redis</span></div>
+          <div class="al-item"><span class="al-icon" style="background:#003b57;color:#0f80cc;">Sq</span><span class="al-name">SQLite</span></div>
         </div>
       </div>
 
-      <!-- Developer -->
-      <div class="adapter-category">
+      <!-- Developer — Roadmap -->
+      <div class="adapter-category" style="opacity: 0.6;">
         <div class="adapter-category-head">
-          <span class="adapter-category-icon" style="background: rgba(240,101,149,0.12); color: var(--pink);">
+          <span class="adapter-category-icon" style="background: rgba(240,101,149,0.08); color: var(--pink);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           </span>
-          <span class="adapter-category-title">Developer &amp; Other</span>
-          <span class="adapter-category-count">8+</span>
+          <span class="adapter-category-title">Developer &amp; Other &mdash; Roadmap</span>
+          <span class="adapter-category-count">8+ planned</span>
         </div>
         <div class="adapter-logo-grid">
           <div class="al-item"><span class="al-icon" style="background:#24292e;color:#fff;border:1px solid #444;">
@@ -2516,7 +2530,7 @@
               </span>
               <div>
                 <h4>Drop-in compatible</h4>
-                <p>Our MCP servers mirror real tools &mdash; Jira, Slack, GitHub, GitLab, Asana, HubSpot. Same tool names. Same schemas.</p>
+                <p>Our MCP servers mirror real tools &mdash; Stripe, Plaid, Paddle, Chargebee, and more. Same tool names. Same schemas.</p>
               </div>
             </li>
             <li class="mcp-point">
@@ -2671,7 +2685,8 @@
           <div class="cicd-code-bar">.github/workflows/agent-tests.yml</div>
           <pre><span class="yk">- name:</span> <span class="ys">Start Mimic</span>
   <span class="yk">run:</span> |
-    npx @mimicai/cli seed --persona finance-alex
+    npx @mimicai/cli run
+    npx @mimicai/cli seed
     npx @mimicai/cli host --background
 
 <span class="yk">- name:</span> <span class="ys">Run agent tests</span>
@@ -2771,7 +2786,7 @@
       <ul class="footer-links">
         <li><a href="/docs/getting-started">Docs</a></li>
         <li><a href="https://github.com/mimicailab/mimic">GitHub</a></li>
-        <li><a href="https://discord.gg/xbwG2KPr">Discord</a></li>
+        <li><a href="https://discord.gg/AjCpk7n2">Discord</a></li>
         <li><a href="https://twitter.com/mimic_data">Twitter</a></li>
         <li><a href="https://www.npmjs.com/org/mimicai">npm</a></li>
       </ul>
