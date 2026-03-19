@@ -52,4 +52,21 @@ export class StateStore {
   clear(): void {
     this.state.clear();
   }
+
+  /** Serialize state to a plain JSON-safe object (for R2/disk persistence). */
+  serialize(): Record<string, Record<string, unknown>> {
+    const result: Record<string, Record<string, unknown>> = {};
+    for (const [ns, map] of this.state) {
+      result[ns] = Object.fromEntries(map);
+    }
+    return result;
+  }
+
+  /** Restore state from a previously serialized snapshot. */
+  hydrate(data: Record<string, Record<string, unknown>>): void {
+    this.state.clear();
+    for (const [ns, entries] of Object.entries(data)) {
+      this.state.set(ns, new Map(Object.entries(entries)));
+    }
+  }
 }
