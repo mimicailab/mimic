@@ -1,6 +1,6 @@
 {
   "name": "tasks-sqlite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A streaming AI agent for project and task management, powered by [Mimic](https://github.com/mimicailab/mimic) synthetic data and the [Vercel AI SDK](https://sdk.vercel.ai). No Docker or external database required — SQLite is file-based.",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mimicai/cli": "^0.10.0",
+    "@mimicai/cli": "^0.11.0",
     "better-sqlite3": "^12.8.0"
   }
 }
