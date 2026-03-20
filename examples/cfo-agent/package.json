@@ -3,14 +3,14 @@
   "version": "0.0.4",
   "private": true,
   "dependencies": {
-    "@mimicai/cli": "^0.11.0",
-    "@mimicai/adapter-stripe": "^0.11.0",
-    "@mimicai/adapter-paddle": "^0.11.0",
-    "@mimicai/adapter-chargebee": "^0.11.0",
-    "@mimicai/adapter-gocardless": "^0.11.0",
-    "@mimicai/adapter-revenuecat": "^0.11.0",
-    "@mimicai/adapter-zuora": "^0.11.0",
-    "@mimicai/adapter-recurly": "^0.11.0",
-    "@mimicai/adapter-postgres": "^0.11.0"
+    "@mimicai/cli": "workspace:*",
+    "@mimicai/adapter-stripe": "workspace:*",
+    "@mimicai/adapter-paddle": "workspace:*",
+    "@mimicai/adapter-chargebee": "workspace:*",
+    "@mimicai/adapter-gocardless": "workspace:*",
+    "@mimicai/adapter-revenuecat": "workspace:*",
+    "@mimicai/adapter-zuora": "workspace:*",
+    "@mimicai/adapter-recurly": "workspace:*",
+    "@mimicai/adapter-postgres": "workspace:*"
   }
 }
