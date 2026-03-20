@@ -1,5 +1,12 @@
 # @mimicailab/adapter-sqlite
 
+## 0.11.0
+
+### Patch Changes
+
+- Updated dependencies [[`0615532`](https://github.com/mimicailab/mimic/commit/061553211702722945c9f52034736e6d9fd16247)]:
+  - @mimicai/core@0.11.0
+
 ## 0.10.2
 
 ### Patch Changes
