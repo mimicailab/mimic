@@ -1,5 +1,22 @@
 # @mimicailab/cli
 
+## 0.11.1
+
+### Patch Changes
+
+- [`0fce250`](https://github.com/mimicailab/mimic/commit/0fce250050d38bcfeaa975eee265c139d071e4a6) - fix(cli): always use HTTP transport for `mimic host` so it can run in the background
+  - `mimic host` now uses Streamable HTTP transport for all server counts instead of falling back to stdio for single-server setups, which blocked on stdin
+  - Use `workspace:*` protocol for example dependencies to avoid referencing unpublished versions
+  - Document `mimic explore` command in CLI reference
+
+- Updated dependencies []:
+  - @mimicai/core@0.11.1
+  - @mimicai/blueprints@0.11.1
+  - @mimicai/adapter-postgres@0.11.1
+  - @mimicai/adapter-mysql@0.11.1
+  - @mimicai/adapter-mongodb@0.11.1
+  - @mimicai/adapter-sqlite@0.11.1
+
 ## 0.11.0
 
 ### Patch Changes
