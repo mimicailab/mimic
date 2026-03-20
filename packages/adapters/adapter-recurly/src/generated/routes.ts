@@ -18,7 +18,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "GET",
-    fastifyPath: "/recurly/sites",
+    fastifyPath: "/sites",
     stripePath: "/sites",
     resource: "sites",
     operation: "list",
@@ -28,7 +28,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/sites/:site_id",
+    fastifyPath: "/sites/:site_id",
     stripePath: "/sites/{site_id}",
     resource: "sites",
     operation: "retrieve",
@@ -39,7 +39,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts",
+    fastifyPath: "/accounts",
     stripePath: "/accounts",
     resource: "accounts",
     operation: "list",
@@ -49,7 +49,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts",
+    fastifyPath: "/accounts",
     stripePath: "/accounts",
     resource: "accounts",
     operation: "create",
@@ -59,7 +59,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id",
+    fastifyPath: "/accounts/:account_id",
     stripePath: "/accounts/{account_id}",
     resource: "accounts",
     operation: "retrieve",
@@ -70,7 +70,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/accounts/:account_id",
+    fastifyPath: "/accounts/:account_id",
     stripePath: "/accounts/{account_id}",
     resource: "accounts",
     operation: "update",
@@ -81,7 +81,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id",
+    fastifyPath: "/accounts/:account_id",
     stripePath: "/accounts/{account_id}",
     resource: "accounts",
     operation: "action",
@@ -92,7 +92,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/acquisition",
+    fastifyPath: "/accounts/:account_id/acquisition",
     stripePath: "/accounts/{account_id}/acquisition",
     resource: "accounts",
     operation: "list",
@@ -103,7 +103,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/accounts/:account_id/acquisition",
+    fastifyPath: "/accounts/:account_id/acquisition",
     stripePath: "/accounts/{account_id}/acquisition",
     resource: "accounts",
     operation: "action",
@@ -114,7 +114,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/acquisition",
+    fastifyPath: "/accounts/:account_id/acquisition",
     stripePath: "/accounts/{account_id}/acquisition",
     resource: "accounts",
     operation: "delete",
@@ -125,7 +125,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/accounts/:account_id/reactivate",
+    fastifyPath: "/accounts/:account_id/reactivate",
     stripePath: "/accounts/{account_id}/reactivate",
     resource: "accounts",
     operation: "action",
@@ -136,7 +136,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/balance",
+    fastifyPath: "/accounts/:account_id/balance",
     stripePath: "/accounts/{account_id}/balance",
     resource: "accounts",
     operation: "list",
@@ -147,7 +147,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/billing_info",
+    fastifyPath: "/accounts/:account_id/billing_info",
     stripePath: "/accounts/{account_id}/billing_info",
     resource: "accounts",
     operation: "list",
@@ -158,7 +158,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/accounts/:account_id/billing_info",
+    fastifyPath: "/accounts/:account_id/billing_info",
     stripePath: "/accounts/{account_id}/billing_info",
     resource: "accounts",
     operation: "action",
@@ -169,7 +169,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/billing_info",
+    fastifyPath: "/accounts/:account_id/billing_info",
     stripePath: "/accounts/{account_id}/billing_info",
     resource: "accounts",
     operation: "delete",
@@ -180,7 +180,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/billing_info/verify",
+    fastifyPath: "/accounts/:account_id/billing_info/verify",
     stripePath: "/accounts/{account_id}/billing_info/verify",
     resource: "accounts",
     operation: "action",
@@ -191,7 +191,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/billing_info/verify_cvv",
+    fastifyPath: "/accounts/:account_id/billing_info/verify_cvv",
     stripePath: "/accounts/{account_id}/billing_info/verify_cvv",
     resource: "accounts",
     operation: "action",
@@ -202,7 +202,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/billing_infos",
+    fastifyPath: "/accounts/:account_id/billing_infos",
     stripePath: "/accounts/{account_id}/billing_infos",
     resource: "billing_infos",
     operation: "list",
@@ -213,7 +213,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/billing_infos",
+    fastifyPath: "/accounts/:account_id/billing_infos",
     stripePath: "/accounts/{account_id}/billing_infos",
     resource: "billing_infos",
     operation: "create",
@@ -224,7 +224,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/billing_infos/:billing_info_id",
+    fastifyPath: "/accounts/:account_id/billing_infos/:billing_info_id",
     stripePath: "/accounts/{account_id}/billing_infos/{billing_info_id}",
     resource: "billing_infos",
     operation: "retrieve",
@@ -235,7 +235,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/accounts/:account_id/billing_infos/:billing_info_id",
+    fastifyPath: "/accounts/:account_id/billing_infos/:billing_info_id",
     stripePath: "/accounts/{account_id}/billing_infos/{billing_info_id}",
     resource: "billing_infos",
     operation: "update",
@@ -246,7 +246,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/billing_infos/:billing_info_id",
+    fastifyPath: "/accounts/:account_id/billing_infos/:billing_info_id",
     stripePath: "/accounts/{account_id}/billing_infos/{billing_info_id}",
     resource: "billing_infos",
     operation: "delete",
@@ -257,7 +257,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/billing_infos/:billing_info_id/verify",
+    fastifyPath: "/accounts/:account_id/billing_infos/:billing_info_id/verify",
     stripePath: "/accounts/{account_id}/billing_infos/{billing_info_id}/verify",
     resource: "billing_infos",
     operation: "action",
@@ -268,7 +268,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/billing_infos/:billing_info_id/verify_cvv",
+    fastifyPath: "/accounts/:account_id/billing_infos/:billing_info_id/verify_cvv",
     stripePath: "/accounts/{account_id}/billing_infos/{billing_info_id}/verify_cvv",
     resource: "billing_infos",
     operation: "action",
@@ -279,7 +279,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/coupon_redemptions",
+    fastifyPath: "/accounts/:account_id/coupon_redemptions",
     stripePath: "/accounts/{account_id}/coupon_redemptions",
     resource: "coupon_redemptions",
     operation: "list",
@@ -290,7 +290,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/coupon_redemptions/active",
+    fastifyPath: "/accounts/:account_id/coupon_redemptions/active",
     stripePath: "/accounts/{account_id}/coupon_redemptions/active",
     resource: "coupon_redemptions",
     operation: "action",
@@ -301,7 +301,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/coupon_redemptions/active",
+    fastifyPath: "/accounts/:account_id/coupon_redemptions/active",
     stripePath: "/accounts/{account_id}/coupon_redemptions/active",
     resource: "coupon_redemptions",
     operation: "action",
@@ -312,7 +312,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/coupon_redemptions/active",
+    fastifyPath: "/accounts/:account_id/coupon_redemptions/active",
     stripePath: "/accounts/{account_id}/coupon_redemptions/active",
     resource: "coupon_redemptions",
     operation: "action",
@@ -323,7 +323,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/coupon_redemptions/:coupon_redemption_id",
+    fastifyPath: "/accounts/:account_id/coupon_redemptions/:coupon_redemption_id",
     stripePath: "/accounts/{account_id}/coupon_redemptions/{coupon_redemption_id}",
     resource: "coupon_redemptions",
     operation: "retrieve",
@@ -334,7 +334,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/coupon_redemptions/:coupon_redemption_id",
+    fastifyPath: "/accounts/:account_id/coupon_redemptions/:coupon_redemption_id",
     stripePath: "/accounts/{account_id}/coupon_redemptions/{coupon_redemption_id}",
     resource: "coupon_redemptions",
     operation: "delete",
@@ -345,7 +345,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/credit_payments",
+    fastifyPath: "/accounts/:account_id/credit_payments",
     stripePath: "/accounts/{account_id}/credit_payments",
     resource: "credit_payments",
     operation: "list",
@@ -356,7 +356,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/external_accounts",
+    fastifyPath: "/accounts/:account_id/external_accounts",
     stripePath: "/accounts/{account_id}/external_accounts",
     resource: "external_accounts",
     operation: "list",
@@ -367,7 +367,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/external_accounts",
+    fastifyPath: "/accounts/:account_id/external_accounts",
     stripePath: "/accounts/{account_id}/external_accounts",
     resource: "external_accounts",
     operation: "create",
@@ -378,7 +378,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/external_accounts/:external_account_id",
+    fastifyPath: "/accounts/:account_id/external_accounts/:external_account_id",
     stripePath: "/accounts/{account_id}/external_accounts/{external_account_id}",
     resource: "external_accounts",
     operation: "retrieve",
@@ -389,7 +389,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/accounts/:account_id/external_accounts/:external_account_id",
+    fastifyPath: "/accounts/:account_id/external_accounts/:external_account_id",
     stripePath: "/accounts/{account_id}/external_accounts/{external_account_id}",
     resource: "external_accounts",
     operation: "update",
@@ -400,7 +400,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/external_accounts/:external_account_id",
+    fastifyPath: "/accounts/:account_id/external_accounts/:external_account_id",
     stripePath: "/accounts/{account_id}/external_accounts/{external_account_id}",
     resource: "external_accounts",
     operation: "delete",
@@ -411,7 +411,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/external_invoices",
+    fastifyPath: "/accounts/:account_id/external_invoices",
     stripePath: "/accounts/{account_id}/external_invoices",
     resource: "external_invoices",
     operation: "list",
@@ -422,7 +422,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/invoices",
+    fastifyPath: "/accounts/:account_id/invoices",
     stripePath: "/accounts/{account_id}/invoices",
     resource: "invoices",
     operation: "list",
@@ -433,7 +433,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/invoices",
+    fastifyPath: "/accounts/:account_id/invoices",
     stripePath: "/accounts/{account_id}/invoices",
     resource: "invoices",
     operation: "create",
@@ -444,7 +444,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/invoices/preview",
+    fastifyPath: "/accounts/:account_id/invoices/preview",
     stripePath: "/accounts/{account_id}/invoices/preview",
     resource: "invoices",
     operation: "action",
@@ -455,7 +455,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/line_items",
+    fastifyPath: "/accounts/:account_id/line_items",
     stripePath: "/accounts/{account_id}/line_items",
     resource: "line_items",
     operation: "list",
@@ -466,7 +466,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/line_items",
+    fastifyPath: "/accounts/:account_id/line_items",
     stripePath: "/accounts/{account_id}/line_items",
     resource: "line_items",
     operation: "create",
@@ -477,7 +477,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/notes",
+    fastifyPath: "/accounts/:account_id/notes",
     stripePath: "/accounts/{account_id}/notes",
     resource: "notes",
     operation: "list",
@@ -488,7 +488,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/notes",
+    fastifyPath: "/accounts/:account_id/notes",
     stripePath: "/accounts/{account_id}/notes",
     resource: "notes",
     operation: "create",
@@ -499,7 +499,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/notes/:account_note_id",
+    fastifyPath: "/accounts/:account_id/notes/:account_note_id",
     stripePath: "/accounts/{account_id}/notes/{account_note_id}",
     resource: "notes",
     operation: "retrieve",
@@ -510,7 +510,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/notes/:account_note_id",
+    fastifyPath: "/accounts/:account_id/notes/:account_note_id",
     stripePath: "/accounts/{account_id}/notes/{account_note_id}",
     resource: "notes",
     operation: "delete",
@@ -521,7 +521,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/shipping_addresses",
+    fastifyPath: "/accounts/:account_id/shipping_addresses",
     stripePath: "/accounts/{account_id}/shipping_addresses",
     resource: "shipping_addresses",
     operation: "list",
@@ -532,7 +532,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/accounts/:account_id/shipping_addresses",
+    fastifyPath: "/accounts/:account_id/shipping_addresses",
     stripePath: "/accounts/{account_id}/shipping_addresses",
     resource: "shipping_addresses",
     operation: "create",
@@ -543,7 +543,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/shipping_addresses/:shipping_address_id",
+    fastifyPath: "/accounts/:account_id/shipping_addresses/:shipping_address_id",
     stripePath: "/accounts/{account_id}/shipping_addresses/{shipping_address_id}",
     resource: "shipping_addresses",
     operation: "retrieve",
@@ -554,7 +554,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/accounts/:account_id/shipping_addresses/:shipping_address_id",
+    fastifyPath: "/accounts/:account_id/shipping_addresses/:shipping_address_id",
     stripePath: "/accounts/{account_id}/shipping_addresses/{shipping_address_id}",
     resource: "shipping_addresses",
     operation: "update",
@@ -565,7 +565,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/accounts/:account_id/shipping_addresses/:shipping_address_id",
+    fastifyPath: "/accounts/:account_id/shipping_addresses/:shipping_address_id",
     stripePath: "/accounts/{account_id}/shipping_addresses/{shipping_address_id}",
     resource: "shipping_addresses",
     operation: "delete",
@@ -576,7 +576,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/subscriptions",
+    fastifyPath: "/accounts/:account_id/subscriptions",
     stripePath: "/accounts/{account_id}/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -587,7 +587,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/transactions",
+    fastifyPath: "/accounts/:account_id/transactions",
     stripePath: "/accounts/{account_id}/transactions",
     resource: "transactions",
     operation: "list",
@@ -598,7 +598,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/accounts",
+    fastifyPath: "/accounts/:account_id/accounts",
     stripePath: "/accounts/{account_id}/accounts",
     resource: "accounts",
     operation: "list",
@@ -609,7 +609,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/acquisitions",
+    fastifyPath: "/acquisitions",
     stripePath: "/acquisitions",
     resource: "acquisitions",
     operation: "list",
@@ -618,7 +618,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/coupons",
+    fastifyPath: "/coupons",
     stripePath: "/coupons",
     resource: "coupons",
     operation: "list",
@@ -628,7 +628,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/coupons",
+    fastifyPath: "/coupons",
     stripePath: "/coupons",
     resource: "coupons",
     operation: "create",
@@ -638,7 +638,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/coupons/:coupon_id",
+    fastifyPath: "/coupons/:coupon_id",
     stripePath: "/coupons/{coupon_id}",
     resource: "coupons",
     operation: "retrieve",
@@ -649,7 +649,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/coupons/:coupon_id",
+    fastifyPath: "/coupons/:coupon_id",
     stripePath: "/coupons/{coupon_id}",
     resource: "coupons",
     operation: "update",
@@ -660,7 +660,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/coupons/:coupon_id",
+    fastifyPath: "/coupons/:coupon_id",
     stripePath: "/coupons/{coupon_id}",
     resource: "coupons",
     operation: "action",
@@ -671,7 +671,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/coupons/:coupon_id/generate",
+    fastifyPath: "/coupons/:coupon_id/generate",
     stripePath: "/coupons/{coupon_id}/generate",
     resource: "coupons",
     operation: "action",
@@ -682,7 +682,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/coupons/:coupon_id/restore",
+    fastifyPath: "/coupons/:coupon_id/restore",
     stripePath: "/coupons/{coupon_id}/restore",
     resource: "coupons",
     operation: "action",
@@ -693,7 +693,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/coupons/:coupon_id/unique_coupon_codes",
+    fastifyPath: "/coupons/:coupon_id/unique_coupon_codes",
     stripePath: "/coupons/{coupon_id}/unique_coupon_codes",
     resource: "unique_coupon_codes",
     operation: "list",
@@ -704,7 +704,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/credit_payments",
+    fastifyPath: "/credit_payments",
     stripePath: "/credit_payments",
     resource: "credit_payments",
     operation: "list",
@@ -714,7 +714,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/credit_payments/:credit_payment_id",
+    fastifyPath: "/credit_payments/:credit_payment_id",
     stripePath: "/credit_payments/{credit_payment_id}",
     resource: "credit_payments",
     operation: "retrieve",
@@ -725,7 +725,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/custom_field_definitions",
+    fastifyPath: "/custom_field_definitions",
     stripePath: "/custom_field_definitions",
     resource: "custom_field_definitions",
     operation: "list",
@@ -735,7 +735,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/custom_field_definitions/:custom_field_definition_id",
+    fastifyPath: "/custom_field_definitions/:custom_field_definition_id",
     stripePath: "/custom_field_definitions/{custom_field_definition_id}",
     resource: "custom_field_definitions",
     operation: "retrieve",
@@ -746,7 +746,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/general_ledger_accounts",
+    fastifyPath: "/general_ledger_accounts",
     stripePath: "/general_ledger_accounts",
     resource: "general_ledger_accounts",
     operation: "list",
@@ -756,7 +756,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/general_ledger_accounts",
+    fastifyPath: "/general_ledger_accounts",
     stripePath: "/general_ledger_accounts",
     resource: "general_ledger_accounts",
     operation: "create",
@@ -766,7 +766,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/general_ledger_accounts/:general_ledger_account_id",
+    fastifyPath: "/general_ledger_accounts/:general_ledger_account_id",
     stripePath: "/general_ledger_accounts/{general_ledger_account_id}",
     resource: "general_ledger_accounts",
     operation: "retrieve",
@@ -777,7 +777,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/general_ledger_accounts/:general_ledger_account_id",
+    fastifyPath: "/general_ledger_accounts/:general_ledger_account_id",
     stripePath: "/general_ledger_accounts/{general_ledger_account_id}",
     resource: "general_ledger_accounts",
     operation: "update",
@@ -788,7 +788,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/performance_obligations/:performance_obligation_id",
+    fastifyPath: "/performance_obligations/:performance_obligation_id",
     stripePath: "/performance_obligations/{performance_obligation_id}",
     resource: "performance_obligations",
     operation: "retrieve",
@@ -799,7 +799,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/performance_obligations",
+    fastifyPath: "/performance_obligations",
     stripePath: "/performance_obligations",
     resource: "performance_obligations",
     operation: "list",
@@ -809,7 +809,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoice_templates/:invoice_template_id/accounts",
+    fastifyPath: "/invoice_templates/:invoice_template_id/accounts",
     stripePath: "/invoice_templates/{invoice_template_id}/accounts",
     resource: "accounts",
     operation: "list",
@@ -820,7 +820,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/items",
+    fastifyPath: "/items",
     stripePath: "/items",
     resource: "items",
     operation: "list",
@@ -830,7 +830,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/items",
+    fastifyPath: "/items",
     stripePath: "/items",
     resource: "items",
     operation: "create",
@@ -840,7 +840,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/items/:item_id",
+    fastifyPath: "/items/:item_id",
     stripePath: "/items/{item_id}",
     resource: "items",
     operation: "retrieve",
@@ -851,7 +851,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/items/:item_id",
+    fastifyPath: "/items/:item_id",
     stripePath: "/items/{item_id}",
     resource: "items",
     operation: "update",
@@ -862,7 +862,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/items/:item_id",
+    fastifyPath: "/items/:item_id",
     stripePath: "/items/{item_id}",
     resource: "items",
     operation: "action",
@@ -873,7 +873,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/items/:item_id/reactivate",
+    fastifyPath: "/items/:item_id/reactivate",
     stripePath: "/items/{item_id}/reactivate",
     resource: "items",
     operation: "action",
@@ -884,7 +884,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/measured_units",
+    fastifyPath: "/measured_units",
     stripePath: "/measured_units",
     resource: "measured_units",
     operation: "list",
@@ -894,7 +894,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/measured_units",
+    fastifyPath: "/measured_units",
     stripePath: "/measured_units",
     resource: "measured_units",
     operation: "create",
@@ -904,7 +904,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/measured_units/:measured_unit_id",
+    fastifyPath: "/measured_units/:measured_unit_id",
     stripePath: "/measured_units/{measured_unit_id}",
     resource: "measured_units",
     operation: "retrieve",
@@ -915,7 +915,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/measured_units/:measured_unit_id",
+    fastifyPath: "/measured_units/:measured_unit_id",
     stripePath: "/measured_units/{measured_unit_id}",
     resource: "measured_units",
     operation: "update",
@@ -926,7 +926,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/measured_units/:measured_unit_id",
+    fastifyPath: "/measured_units/:measured_unit_id",
     stripePath: "/measured_units/{measured_unit_id}",
     resource: "measured_units",
     operation: "delete",
@@ -937,7 +937,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_products",
+    fastifyPath: "/external_products",
     stripePath: "/external_products",
     resource: "external_products",
     operation: "list",
@@ -947,7 +947,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/external_products",
+    fastifyPath: "/external_products",
     stripePath: "/external_products",
     resource: "external_products",
     operation: "create",
@@ -957,7 +957,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_products/:external_product_id",
+    fastifyPath: "/external_products/:external_product_id",
     stripePath: "/external_products/{external_product_id}",
     resource: "external_products",
     operation: "retrieve",
@@ -968,7 +968,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/external_products/:external_product_id",
+    fastifyPath: "/external_products/:external_product_id",
     stripePath: "/external_products/{external_product_id}",
     resource: "external_products",
     operation: "update",
@@ -979,7 +979,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/external_products/:external_product_id",
+    fastifyPath: "/external_products/:external_product_id",
     stripePath: "/external_products/{external_product_id}",
     resource: "external_products",
     operation: "action",
@@ -990,7 +990,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_products/:external_product_id/external_product_references",
+    fastifyPath: "/external_products/:external_product_id/external_product_references",
     stripePath: "/external_products/{external_product_id}/external_product_references",
     resource: "external_products",
     operation: "list",
@@ -1001,7 +1001,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/external_products/:external_product_id/external_product_references",
+    fastifyPath: "/external_products/:external_product_id/external_product_references",
     stripePath: "/external_products/{external_product_id}/external_product_references",
     resource: "external_products",
     operation: "create",
@@ -1012,7 +1012,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_products/:external_product_id/external_product_references/:external_product_reference_id",
+    fastifyPath: "/external_products/:external_product_id/external_product_references/:external_product_reference_id",
     stripePath: "/external_products/{external_product_id}/external_product_references/{external_product_reference_id}",
     resource: "external_products",
     operation: "retrieve",
@@ -1023,7 +1023,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/external_products/:external_product_id/external_product_references/:external_product_reference_id",
+    fastifyPath: "/external_products/:external_product_id/external_product_references/:external_product_reference_id",
     stripePath: "/external_products/{external_product_id}/external_product_references/{external_product_reference_id}",
     resource: "external_products",
     operation: "action",
@@ -1034,7 +1034,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_subscriptions",
+    fastifyPath: "/external_subscriptions",
     stripePath: "/external_subscriptions",
     resource: "external_subscriptions",
     operation: "list",
@@ -1044,7 +1044,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/external_subscriptions",
+    fastifyPath: "/external_subscriptions",
     stripePath: "/external_subscriptions",
     resource: "external_subscriptions",
     operation: "create",
@@ -1054,7 +1054,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_subscriptions/:external_subscription_id",
+    fastifyPath: "/external_subscriptions/:external_subscription_id",
     stripePath: "/external_subscriptions/{external_subscription_id}",
     resource: "external_subscriptions",
     operation: "retrieve",
@@ -1065,7 +1065,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/external_subscriptions/:external_subscription_id",
+    fastifyPath: "/external_subscriptions/:external_subscription_id",
     stripePath: "/external_subscriptions/{external_subscription_id}",
     resource: "external_subscriptions",
     operation: "update",
@@ -1076,7 +1076,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_subscriptions/:external_subscription_id/external_invoices",
+    fastifyPath: "/external_subscriptions/:external_subscription_id/external_invoices",
     stripePath: "/external_subscriptions/{external_subscription_id}/external_invoices",
     resource: "external_invoices",
     operation: "list",
@@ -1087,7 +1087,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/external_subscriptions/:external_subscription_id/external_invoices",
+    fastifyPath: "/external_subscriptions/:external_subscription_id/external_invoices",
     stripePath: "/external_subscriptions/{external_subscription_id}/external_invoices",
     resource: "external_invoices",
     operation: "create",
@@ -1098,7 +1098,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoices",
+    fastifyPath: "/invoices",
     stripePath: "/invoices",
     resource: "invoices",
     operation: "list",
@@ -1108,7 +1108,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoices/:invoice_id",
+    fastifyPath: "/invoices/:invoice_id",
     stripePath: "/invoices/{invoice_id}",
     resource: "invoices",
     operation: "retrieve",
@@ -1119,7 +1119,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/invoices/:invoice_id",
+    fastifyPath: "/invoices/:invoice_id",
     stripePath: "/invoices/{invoice_id}",
     resource: "invoices",
     operation: "update",
@@ -1130,7 +1130,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/invoices/:invoice_id/apply_credit_balance",
+    fastifyPath: "/invoices/:invoice_id/apply_credit_balance",
     stripePath: "/invoices/{invoice_id}/apply_credit_balance",
     resource: "invoices",
     operation: "action",
@@ -1141,7 +1141,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/invoices/:invoice_id/collect",
+    fastifyPath: "/invoices/:invoice_id/collect",
     stripePath: "/invoices/{invoice_id}/collect",
     resource: "invoices",
     operation: "action",
@@ -1152,7 +1152,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/invoices/:invoice_id/mark_failed",
+    fastifyPath: "/invoices/:invoice_id/mark_failed",
     stripePath: "/invoices/{invoice_id}/mark_failed",
     resource: "invoices",
     operation: "action",
@@ -1163,7 +1163,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/invoices/:invoice_id/mark_successful",
+    fastifyPath: "/invoices/:invoice_id/mark_successful",
     stripePath: "/invoices/{invoice_id}/mark_successful",
     resource: "invoices",
     operation: "action",
@@ -1174,7 +1174,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/invoices/:invoice_id/reopen",
+    fastifyPath: "/invoices/:invoice_id/reopen",
     stripePath: "/invoices/{invoice_id}/reopen",
     resource: "invoices",
     operation: "action",
@@ -1185,7 +1185,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/invoices/:invoice_id/void",
+    fastifyPath: "/invoices/:invoice_id/void",
     stripePath: "/invoices/{invoice_id}/void",
     resource: "invoices",
     operation: "action",
@@ -1196,7 +1196,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/invoices/:invoice_id/transactions",
+    fastifyPath: "/invoices/:invoice_id/transactions",
     stripePath: "/invoices/{invoice_id}/transactions",
     resource: "transactions",
     operation: "action",
@@ -1207,7 +1207,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoices/:invoice_id/line_items",
+    fastifyPath: "/invoices/:invoice_id/line_items",
     stripePath: "/invoices/{invoice_id}/line_items",
     resource: "line_items",
     operation: "list",
@@ -1218,7 +1218,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoices/:invoice_id/coupon_redemptions",
+    fastifyPath: "/invoices/:invoice_id/coupon_redemptions",
     stripePath: "/invoices/{invoice_id}/coupon_redemptions",
     resource: "coupon_redemptions",
     operation: "list",
@@ -1229,7 +1229,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoices/:invoice_id/related_invoices",
+    fastifyPath: "/invoices/:invoice_id/related_invoices",
     stripePath: "/invoices/{invoice_id}/related_invoices",
     resource: "invoices",
     operation: "list",
@@ -1240,7 +1240,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/invoices/:invoice_id/refund",
+    fastifyPath: "/invoices/:invoice_id/refund",
     stripePath: "/invoices/{invoice_id}/refund",
     resource: "invoices",
     operation: "action",
@@ -1251,7 +1251,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/line_items",
+    fastifyPath: "/line_items",
     stripePath: "/line_items",
     resource: "line_items",
     operation: "list",
@@ -1261,7 +1261,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/line_items/:line_item_id",
+    fastifyPath: "/line_items/:line_item_id",
     stripePath: "/line_items/{line_item_id}",
     resource: "line_items",
     operation: "retrieve",
@@ -1272,7 +1272,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/line_items/:line_item_id",
+    fastifyPath: "/line_items/:line_item_id",
     stripePath: "/line_items/{line_item_id}",
     resource: "line_items",
     operation: "delete",
@@ -1283,7 +1283,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/plans",
+    fastifyPath: "/plans",
     stripePath: "/plans",
     resource: "plans",
     operation: "list",
@@ -1293,7 +1293,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/plans",
+    fastifyPath: "/plans",
     stripePath: "/plans",
     resource: "plans",
     operation: "create",
@@ -1303,7 +1303,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/plans/:plan_id",
+    fastifyPath: "/plans/:plan_id",
     stripePath: "/plans/{plan_id}",
     resource: "plans",
     operation: "retrieve",
@@ -1314,7 +1314,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/plans/:plan_id",
+    fastifyPath: "/plans/:plan_id",
     stripePath: "/plans/{plan_id}",
     resource: "plans",
     operation: "update",
@@ -1325,7 +1325,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/plans/:plan_id",
+    fastifyPath: "/plans/:plan_id",
     stripePath: "/plans/{plan_id}",
     resource: "plans",
     operation: "delete",
@@ -1336,7 +1336,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/plans/:plan_id/add_ons",
+    fastifyPath: "/plans/:plan_id/add_ons",
     stripePath: "/plans/{plan_id}/add_ons",
     resource: "add_ons",
     operation: "list",
@@ -1347,7 +1347,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/plans/:plan_id/add_ons",
+    fastifyPath: "/plans/:plan_id/add_ons",
     stripePath: "/plans/{plan_id}/add_ons",
     resource: "add_ons",
     operation: "create",
@@ -1358,7 +1358,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/plans/:plan_id/add_ons/:add_on_id",
+    fastifyPath: "/plans/:plan_id/add_ons/:add_on_id",
     stripePath: "/plans/{plan_id}/add_ons/{add_on_id}",
     resource: "add_ons",
     operation: "retrieve",
@@ -1369,7 +1369,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/plans/:plan_id/add_ons/:add_on_id",
+    fastifyPath: "/plans/:plan_id/add_ons/:add_on_id",
     stripePath: "/plans/{plan_id}/add_ons/{add_on_id}",
     resource: "add_ons",
     operation: "update",
@@ -1380,7 +1380,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/plans/:plan_id/add_ons/:add_on_id",
+    fastifyPath: "/plans/:plan_id/add_ons/:add_on_id",
     stripePath: "/plans/{plan_id}/add_ons/{add_on_id}",
     resource: "add_ons",
     operation: "delete",
@@ -1391,7 +1391,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/price_segments",
+    fastifyPath: "/price_segments",
     stripePath: "/price_segments",
     resource: "price_segments",
     operation: "list",
@@ -1401,7 +1401,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/price_segments/:price_segment_id",
+    fastifyPath: "/price_segments/:price_segment_id",
     stripePath: "/price_segments/{price_segment_id}",
     resource: "price_segments",
     operation: "retrieve",
@@ -1412,7 +1412,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/add_ons",
+    fastifyPath: "/add_ons",
     stripePath: "/add_ons",
     resource: "add_ons",
     operation: "list",
@@ -1422,7 +1422,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/add_ons/:add_on_id",
+    fastifyPath: "/add_ons/:add_on_id",
     stripePath: "/add_ons/{add_on_id}",
     resource: "add_ons",
     operation: "retrieve",
@@ -1433,7 +1433,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/shipping_methods",
+    fastifyPath: "/shipping_methods",
     stripePath: "/shipping_methods",
     resource: "shipping_methods",
     operation: "list",
@@ -1443,7 +1443,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/shipping_methods",
+    fastifyPath: "/shipping_methods",
     stripePath: "/shipping_methods",
     resource: "shipping_methods",
     operation: "create",
@@ -1453,7 +1453,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/shipping_methods/:shipping_method_id",
+    fastifyPath: "/shipping_methods/:shipping_method_id",
     stripePath: "/shipping_methods/{shipping_method_id}",
     resource: "shipping_methods",
     operation: "retrieve",
@@ -1464,7 +1464,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/shipping_methods/:shipping_method_id",
+    fastifyPath: "/shipping_methods/:shipping_method_id",
     stripePath: "/shipping_methods/{shipping_method_id}",
     resource: "shipping_methods",
     operation: "update",
@@ -1475,7 +1475,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/shipping_methods/:shipping_method_id",
+    fastifyPath: "/shipping_methods/:shipping_method_id",
     stripePath: "/shipping_methods/{shipping_method_id}",
     resource: "shipping_methods",
     operation: "action",
@@ -1486,7 +1486,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions",
+    fastifyPath: "/subscriptions",
     stripePath: "/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -1496,7 +1496,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/subscriptions",
+    fastifyPath: "/subscriptions",
     stripePath: "/subscriptions",
     resource: "subscriptions",
     operation: "create",
@@ -1506,7 +1506,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id",
+    fastifyPath: "/subscriptions/:subscription_id",
     stripePath: "/subscriptions/{subscription_id}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -1517,7 +1517,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/subscriptions/:subscription_id",
+    fastifyPath: "/subscriptions/:subscription_id",
     stripePath: "/subscriptions/{subscription_id}",
     resource: "subscriptions",
     operation: "update",
@@ -1528,7 +1528,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/subscriptions/:subscription_id",
+    fastifyPath: "/subscriptions/:subscription_id",
     stripePath: "/subscriptions/{subscription_id}",
     resource: "subscriptions",
     operation: "delete",
@@ -1539,7 +1539,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/cancel",
+    fastifyPath: "/subscriptions/:subscription_id/cancel",
     stripePath: "/subscriptions/{subscription_id}/cancel",
     resource: "subscriptions",
     operation: "action",
@@ -1550,7 +1550,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/reactivate",
+    fastifyPath: "/subscriptions/:subscription_id/reactivate",
     stripePath: "/subscriptions/{subscription_id}/reactivate",
     resource: "subscriptions",
     operation: "action",
@@ -1561,7 +1561,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/pause",
+    fastifyPath: "/subscriptions/:subscription_id/pause",
     stripePath: "/subscriptions/{subscription_id}/pause",
     resource: "subscriptions",
     operation: "action",
@@ -1572,7 +1572,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/resume",
+    fastifyPath: "/subscriptions/:subscription_id/resume",
     stripePath: "/subscriptions/{subscription_id}/resume",
     resource: "subscriptions",
     operation: "action",
@@ -1583,7 +1583,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/convert_trial",
+    fastifyPath: "/subscriptions/:subscription_id/convert_trial",
     stripePath: "/subscriptions/{subscription_id}/convert_trial",
     resource: "subscriptions",
     operation: "action",
@@ -1594,7 +1594,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/preview_renewal",
+    fastifyPath: "/subscriptions/:subscription_id/preview_renewal",
     stripePath: "/subscriptions/{subscription_id}/preview_renewal",
     resource: "subscriptions",
     operation: "list",
@@ -1605,7 +1605,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/change",
+    fastifyPath: "/subscriptions/:subscription_id/change",
     stripePath: "/subscriptions/{subscription_id}/change",
     resource: "subscriptions",
     operation: "list",
@@ -1616,7 +1616,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/change",
+    fastifyPath: "/subscriptions/:subscription_id/change",
     stripePath: "/subscriptions/{subscription_id}/change",
     resource: "subscriptions",
     operation: "create",
@@ -1627,7 +1627,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/change",
+    fastifyPath: "/subscriptions/:subscription_id/change",
     stripePath: "/subscriptions/{subscription_id}/change",
     resource: "subscriptions",
     operation: "delete",
@@ -1638,7 +1638,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/change/preview",
+    fastifyPath: "/subscriptions/:subscription_id/change/preview",
     stripePath: "/subscriptions/{subscription_id}/change/preview",
     resource: "subscriptions",
     operation: "action",
@@ -1649,7 +1649,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/invoices",
+    fastifyPath: "/subscriptions/:subscription_id/invoices",
     stripePath: "/subscriptions/{subscription_id}/invoices",
     resource: "invoices",
     operation: "list",
@@ -1660,7 +1660,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/line_items",
+    fastifyPath: "/subscriptions/:subscription_id/line_items",
     stripePath: "/subscriptions/{subscription_id}/line_items",
     resource: "line_items",
     operation: "list",
@@ -1671,7 +1671,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/coupon_redemptions",
+    fastifyPath: "/subscriptions/:subscription_id/coupon_redemptions",
     stripePath: "/subscriptions/{subscription_id}/coupon_redemptions",
     resource: "coupon_redemptions",
     operation: "list",
@@ -1682,7 +1682,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/coupon_redemptions/:coupon_redemption_id",
+    fastifyPath: "/subscriptions/:subscription_id/coupon_redemptions/:coupon_redemption_id",
     stripePath: "/subscriptions/{subscription_id}/coupon_redemptions/{coupon_redemption_id}",
     resource: "coupon_redemptions",
     operation: "retrieve",
@@ -1693,7 +1693,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/coupon_redemptions/:coupon_redemption_id",
+    fastifyPath: "/subscriptions/:subscription_id/coupon_redemptions/:coupon_redemption_id",
     stripePath: "/subscriptions/{subscription_id}/coupon_redemptions/{coupon_redemption_id}",
     resource: "coupon_redemptions",
     operation: "delete",
@@ -1704,7 +1704,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/add_ons/:add_on_id/usage",
+    fastifyPath: "/subscriptions/:subscription_id/add_ons/:add_on_id/usage",
     stripePath: "/subscriptions/{subscription_id}/add_ons/{add_on_id}/usage",
     resource: "usage",
     operation: "list",
@@ -1715,7 +1715,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/subscriptions/:subscription_id/add_ons/:add_on_id/usage",
+    fastifyPath: "/subscriptions/:subscription_id/add_ons/:add_on_id/usage",
     stripePath: "/subscriptions/{subscription_id}/add_ons/{add_on_id}/usage",
     resource: "usage",
     operation: "create",
@@ -1726,7 +1726,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/usage/:usage_id",
+    fastifyPath: "/usage/:usage_id",
     stripePath: "/usage/{usage_id}",
     resource: "usage",
     operation: "retrieve",
@@ -1737,7 +1737,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/usage/:usage_id",
+    fastifyPath: "/usage/:usage_id",
     stripePath: "/usage/{usage_id}",
     resource: "usage",
     operation: "update",
@@ -1748,7 +1748,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/usage/:usage_id",
+    fastifyPath: "/usage/:usage_id",
     stripePath: "/usage/{usage_id}",
     resource: "usage",
     operation: "delete",
@@ -1759,7 +1759,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/transactions",
+    fastifyPath: "/transactions",
     stripePath: "/transactions",
     resource: "transactions",
     operation: "list",
@@ -1769,7 +1769,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/transactions/:transaction_id",
+    fastifyPath: "/transactions/:transaction_id",
     stripePath: "/transactions/{transaction_id}",
     resource: "transactions",
     operation: "retrieve",
@@ -1780,7 +1780,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/unique_coupon_codes/:unique_coupon_code_id",
+    fastifyPath: "/unique_coupon_codes/:unique_coupon_code_id",
     stripePath: "/unique_coupon_codes/{unique_coupon_code_id}",
     resource: "unique_coupon_codes",
     operation: "retrieve",
@@ -1791,7 +1791,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/recurly/unique_coupon_codes/:unique_coupon_code_id",
+    fastifyPath: "/unique_coupon_codes/:unique_coupon_code_id",
     stripePath: "/unique_coupon_codes/{unique_coupon_code_id}",
     resource: "unique_coupon_codes",
     operation: "action",
@@ -1802,7 +1802,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/unique_coupon_codes/:unique_coupon_code_id/restore",
+    fastifyPath: "/unique_coupon_codes/:unique_coupon_code_id/restore",
     stripePath: "/unique_coupon_codes/{unique_coupon_code_id}/restore",
     resource: "unique_coupon_codes",
     operation: "action",
@@ -1813,7 +1813,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/purchases",
+    fastifyPath: "/purchases",
     stripePath: "/purchases",
     resource: "purchases",
     operation: "create",
@@ -1822,7 +1822,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/purchases/preview",
+    fastifyPath: "/purchases/preview",
     stripePath: "/purchases/preview",
     resource: "purchases",
     operation: "action",
@@ -1831,7 +1831,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/purchases/pending",
+    fastifyPath: "/purchases/pending",
     stripePath: "/purchases/pending",
     resource: "purchases",
     operation: "action",
@@ -1840,7 +1840,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/purchases/authorize",
+    fastifyPath: "/purchases/authorize",
     stripePath: "/purchases/authorize",
     resource: "purchases",
     operation: "action",
@@ -1849,7 +1849,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/purchases/:transaction_id/capture",
+    fastifyPath: "/purchases/:transaction_id/capture",
     stripePath: "/purchases/{transaction_id}/capture",
     resource: "purchases",
     operation: "action",
@@ -1859,7 +1859,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/purchases/:transaction_id/cancel/",
+    fastifyPath: "/purchases/:transaction_id/cancel/",
     stripePath: "/purchases/{transaction_id}/cancel/",
     resource: "purchases",
     operation: "action",
@@ -1869,7 +1869,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/export_dates",
+    fastifyPath: "/export_dates",
     stripePath: "/export_dates",
     resource: "export_dates",
     operation: "list",
@@ -1878,7 +1878,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/export_dates/:export_date/export_files",
+    fastifyPath: "/export_dates/:export_date/export_files",
     stripePath: "/export_dates/{export_date}/export_files",
     resource: "export_dates",
     operation: "list",
@@ -1888,7 +1888,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/dunning_campaigns",
+    fastifyPath: "/dunning_campaigns",
     stripePath: "/dunning_campaigns",
     resource: "dunning_campaigns",
     operation: "list",
@@ -1898,7 +1898,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/dunning_campaigns/:dunning_campaign_id",
+    fastifyPath: "/dunning_campaigns/:dunning_campaign_id",
     stripePath: "/dunning_campaigns/{dunning_campaign_id}",
     resource: "dunning_campaigns",
     operation: "retrieve",
@@ -1909,7 +1909,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/recurly/dunning_campaigns/:dunning_campaign_id/bulk_update",
+    fastifyPath: "/dunning_campaigns/:dunning_campaign_id/bulk_update",
     stripePath: "/dunning_campaigns/{dunning_campaign_id}/bulk_update",
     resource: "dunning_campaigns",
     operation: "action",
@@ -1920,7 +1920,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoice_templates",
+    fastifyPath: "/invoice_templates",
     stripePath: "/invoice_templates",
     resource: "invoice_templates",
     operation: "list",
@@ -1930,7 +1930,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/invoice_templates/:invoice_template_id",
+    fastifyPath: "/invoice_templates/:invoice_template_id",
     stripePath: "/invoice_templates/{invoice_template_id}",
     resource: "invoice_templates",
     operation: "retrieve",
@@ -1941,7 +1941,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_invoices",
+    fastifyPath: "/external_invoices",
     stripePath: "/external_invoices",
     resource: "external_invoices",
     operation: "list",
@@ -1951,7 +1951,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_invoices/:external_invoice_id",
+    fastifyPath: "/external_invoices/:external_invoice_id",
     stripePath: "/external_invoices/{external_invoice_id}",
     resource: "external_invoices",
     operation: "retrieve",
@@ -1962,7 +1962,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_subscriptions/:external_subscription_id/external_payment_phases",
+    fastifyPath: "/external_subscriptions/:external_subscription_id/external_payment_phases",
     stripePath: "/external_subscriptions/{external_subscription_id}/external_payment_phases",
     resource: "external_subscriptions",
     operation: "list",
@@ -1973,7 +1973,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/external_subscriptions/:external_subscription_id/external_payment_phases/:external_payment_phase_id",
+    fastifyPath: "/external_subscriptions/:external_subscription_id/external_payment_phases/:external_payment_phase_id",
     stripePath: "/external_subscriptions/{external_subscription_id}/external_payment_phases/{external_payment_phase_id}",
     resource: "external_subscriptions",
     operation: "retrieve",
@@ -1984,7 +1984,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/entitlements",
+    fastifyPath: "/accounts/:account_id/entitlements",
     stripePath: "/accounts/{account_id}/entitlements",
     resource: "accounts",
     operation: "list",
@@ -1995,7 +1995,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/accounts/:account_id/external_subscriptions",
+    fastifyPath: "/accounts/:account_id/external_subscriptions",
     stripePath: "/accounts/{account_id}/external_subscriptions",
     resource: "external_subscriptions",
     operation: "list",
@@ -2006,7 +2006,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/business_entities/:business_entity_id",
+    fastifyPath: "/business_entities/:business_entity_id",
     stripePath: "/business_entities/{business_entity_id}",
     resource: "business_entities",
     operation: "retrieve",
@@ -2017,7 +2017,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/business_entities",
+    fastifyPath: "/business_entities",
     stripePath: "/business_entities",
     resource: "business_entities",
     operation: "list",
@@ -2027,7 +2027,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/gift_cards",
+    fastifyPath: "/gift_cards",
     stripePath: "/gift_cards",
     resource: "gift_cards",
     operation: "list",
@@ -2037,7 +2037,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/gift_cards",
+    fastifyPath: "/gift_cards",
     stripePath: "/gift_cards",
     resource: "gift_cards",
     operation: "create",
@@ -2047,7 +2047,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/gift_cards/:gift_card_id",
+    fastifyPath: "/gift_cards/:gift_card_id",
     stripePath: "/gift_cards/{gift_card_id}",
     resource: "gift_cards",
     operation: "retrieve",
@@ -2058,7 +2058,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/gift_cards/preview",
+    fastifyPath: "/gift_cards/preview",
     stripePath: "/gift_cards/preview",
     resource: "gift_cards",
     operation: "action",
@@ -2068,7 +2068,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/recurly/gift_cards/:redemption_code/redeem",
+    fastifyPath: "/gift_cards/:redemption_code/redeem",
     stripePath: "/gift_cards/{redemption_code}/redeem",
     resource: "gift_cards",
     operation: "action",
@@ -2079,7 +2079,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/recurly/business_entities/:business_entity_id/invoices",
+    fastifyPath: "/business_entities/:business_entity_id/invoices",
     stripePath: "/business_entities/{business_entity_id}/invoices",
     resource: "invoices",
     operation: "list",

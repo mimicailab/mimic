@@ -41,7 +41,7 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     limit: z.number().optional().describe('Max results (1-100)'),
     offset: z.string().optional().describe('Pagination offset'),
   }, async ({ limit, offset }) => {
-    const data = await call('GET', `/chargebee/customers${qs({ limit, offset })}`);
+    const data = await call('GET', `/customers${qs({ limit, offset })}`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -52,14 +52,14 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     email: z.string().optional().describe('Email'),
     company: z.string().optional().describe('Company name'),
   }, async (params) => {
-    const data = await call('POST', '/chargebee/customers', params);
+    const data = await call('POST', '/customers', params);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('retrieve_customer', 'Retrieve a Chargebee customer', {
     id: z.string().describe('Customer ID'),
   }, async ({ id }) => {
-    const data = await call('GET', `/chargebee/customers/${id}`);
+    const data = await call('GET', `/customers/${id}`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -70,14 +70,14 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     email: z.string().optional(),
     company: z.string().optional(),
   }, async ({ id, ...params }) => {
-    const data = await call('POST', `/chargebee/customers/${id}`, params);
+    const data = await call('POST', `/customers/${id}`, params);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('delete_customer', 'Delete a Chargebee customer', {
     id: z.string().describe('Customer ID'),
   }, async ({ id }) => {
-    const data = await call('POST', `/chargebee/customers/${id}/delete`);
+    const data = await call('POST', `/customers/${id}/delete`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -86,14 +86,14 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     limit: z.number().optional(),
     offset: z.string().optional(),
   }, async ({ limit, offset }) => {
-    const data = await call('GET', `/chargebee/subscriptions${qs({ limit, offset })}`);
+    const data = await call('GET', `/subscriptions${qs({ limit, offset })}`);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('retrieve_subscription', 'Retrieve a Chargebee subscription', {
     id: z.string().describe('Subscription ID'),
   }, async ({ id }) => {
-    const data = await call('GET', `/chargebee/subscriptions/${id}`);
+    const data = await call('GET', `/subscriptions/${id}`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -101,14 +101,14 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     id: z.string().describe('Subscription ID'),
     end_of_term: z.boolean().optional().describe('Cancel at end of term'),
   }, async ({ id, end_of_term }) => {
-    const data = await call('POST', `/chargebee/subscriptions/${id}/cancel`, { end_of_term: String(end_of_term ?? false) });
+    const data = await call('POST', `/subscriptions/${id}/cancel`, { end_of_term: String(end_of_term ?? false) });
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('reactivate_subscription', 'Reactivate a cancelled subscription', {
     id: z.string().describe('Subscription ID'),
   }, async ({ id }) => {
-    const data = await call('POST', `/chargebee/subscriptions/${id}/reactivate`);
+    const data = await call('POST', `/subscriptions/${id}/reactivate`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -117,21 +117,21 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     limit: z.number().optional(),
     offset: z.string().optional(),
   }, async ({ limit, offset }) => {
-    const data = await call('GET', `/chargebee/invoices${qs({ limit, offset })}`);
+    const data = await call('GET', `/invoices${qs({ limit, offset })}`);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('retrieve_invoice', 'Retrieve a Chargebee invoice', {
     id: z.string().describe('Invoice ID'),
   }, async ({ id }) => {
-    const data = await call('GET', `/chargebee/invoices/${id}`);
+    const data = await call('GET', `/invoices/${id}`);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('void_invoice', 'Void a Chargebee invoice', {
     id: z.string().describe('Invoice ID'),
   }, async ({ id }) => {
-    const data = await call('POST', `/chargebee/invoices/${id}/void`);
+    const data = await call('POST', `/invoices/${id}/void`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -139,7 +139,7 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     id: z.string().describe('Invoice ID'),
     amount: z.number().optional().describe('Payment amount in cents'),
   }, async ({ id, amount }) => {
-    const data = await call('POST', `/chargebee/invoices/${id}/record_payment`, amount ? { amount: String(amount) } : undefined);
+    const data = await call('POST', `/invoices/${id}/record_payment`, amount ? { amount: String(amount) } : undefined);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -147,7 +147,7 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
   server.tool('list_items', 'List Chargebee items (products)', {
     limit: z.number().optional(),
   }, async ({ limit }) => {
-    const data = await call('GET', `/chargebee/items${qs({ limit })}`);
+    const data = await call('GET', `/items${qs({ limit })}`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -156,7 +156,7 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     name: z.string().describe('Item name'),
     type: z.enum(['plan', 'addon', 'charge']).describe('Item type'),
   }, async (params) => {
-    const data = await call('POST', '/chargebee/items', params);
+    const data = await call('POST', '/items', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -164,7 +164,7 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
   server.tool('list_item_prices', 'List Chargebee item prices', {
     limit: z.number().optional(),
   }, async ({ limit }) => {
-    const data = await call('GET', `/chargebee/item_prices${qs({ limit })}`);
+    const data = await call('GET', `/item_prices${qs({ limit })}`);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -177,7 +177,7 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
     period: z.number().optional().describe('Billing period'),
     period_unit: z.enum(['day', 'week', 'month', 'year']).optional(),
   }, async (params) => {
-    const data = await call('POST', '/chargebee/item_prices', params);
+    const data = await call('POST', '/item_prices', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -185,13 +185,13 @@ export function registerChargebeeTools(server: McpServer, baseUrl: string): void
   server.tool('list_coupons', 'List Chargebee coupons', {
     limit: z.number().optional(),
   }, async ({ limit }) => {
-    const data = await call('GET', `/chargebee/coupons${qs({ limit })}`);
+    const data = await call('GET', `/coupons${qs({ limit })}`);
     return text(JSON.stringify(data, null, 2));
   });
 
   // ── Mimic-specific tools ──
   server.tool('mimic_list_endpoints', 'List all available Chargebee mock endpoints', {}, async () => {
-    const data = await call('GET', '/chargebee/endpoints');
+    const data = await call('GET', '/endpoints');
     return text(JSON.stringify(data, null, 2));
   });
 }

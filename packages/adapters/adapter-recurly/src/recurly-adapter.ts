@@ -108,60 +108,60 @@ export class RecurlyAdapter extends OpenApiMockAdapter<RecurlyConfig> {
   private mountOverrides(store: StateStore): void {
     // ── Accounts ──────────────────────────────────────────────────────────
     this.registerOverride(
-      'DELETE', '/recurly/accounts/:account_id',
+      'DELETE', '/accounts/:account_id',
       acctOverrides.buildDeactivateHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/accounts/:account_id/reactivate',
+      'PUT', '/accounts/:account_id/reactivate',
       acctOverrides.buildReactivateHandler(store),
     );
 
     // ── Subscriptions ─────────────────────────────────────────────────────
     this.registerOverride(
-      'PUT', '/recurly/subscriptions/:subscription_id/cancel',
+      'PUT', '/subscriptions/:subscription_id/cancel',
       subOverrides.buildCancelHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/subscriptions/:subscription_id/pause',
+      'PUT', '/subscriptions/:subscription_id/pause',
       subOverrides.buildPauseHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/subscriptions/:subscription_id/resume',
+      'PUT', '/subscriptions/:subscription_id/resume',
       subOverrides.buildResumeHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/subscriptions/:subscription_id/reactivate',
+      'PUT', '/subscriptions/:subscription_id/reactivate',
       subOverrides.buildReactivateHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/subscriptions/:subscription_id/convert_trial',
+      'PUT', '/subscriptions/:subscription_id/convert_trial',
       subOverrides.buildConvertTrialHandler(store),
     );
     // DELETE /subscriptions/:id is "terminate" in Recurly
     this.registerOverride(
-      'DELETE', '/recurly/subscriptions/:subscription_id',
+      'DELETE', '/subscriptions/:subscription_id',
       subOverrides.buildTerminateHandler(store),
     );
 
     // ── Invoices ──────────────────────────────────────────────────────────
     this.registerOverride(
-      'PUT', '/recurly/invoices/:invoice_id/collect',
+      'PUT', '/invoices/:invoice_id/collect',
       invOverrides.buildCollectHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/invoices/:invoice_id/void',
+      'PUT', '/invoices/:invoice_id/void',
       invOverrides.buildVoidHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/invoices/:invoice_id/mark_failed',
+      'PUT', '/invoices/:invoice_id/mark_failed',
       invOverrides.buildMarkFailedHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/invoices/:invoice_id/mark_successful',
+      'PUT', '/invoices/:invoice_id/mark_successful',
       invOverrides.buildMarkSuccessfulHandler(store),
     );
     this.registerOverride(
-      'PUT', '/recurly/invoices/:invoice_id/reopen',
+      'PUT', '/invoices/:invoice_id/reopen',
       invOverrides.buildReopenHandler(store),
     );
   }

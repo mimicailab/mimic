@@ -23,7 +23,7 @@ describe('StripeAdapter', () => {
       expect(adapter.id).toBe('stripe');
       expect(adapter.name).toBe('Stripe API');
       expect(adapter.type).toBe('api-mock');
-      expect(adapter.basePath).toBe('/stripe');
+      expect(adapter.basePath).toBe('');
     });
   });
 
@@ -50,7 +50,7 @@ describe('StripeAdapter', () => {
     it('should create a customer', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/customers',
+        url: '/v1/customers',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ email: 'test@example.com', name: 'Test User' }),
       });
@@ -66,7 +66,7 @@ describe('StripeAdapter', () => {
     it('should get a customer by id', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `/stripe/v1/customers/${customerId}`,
+        url: `/v1/customers/${customerId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -77,7 +77,7 @@ describe('StripeAdapter', () => {
     it('should list customers', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/customers',
+        url: '/v1/customers',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -90,7 +90,7 @@ describe('StripeAdapter', () => {
     it('should update a customer', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/customers/${customerId}`,
+        url: `/v1/customers/${customerId}`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ name: 'Updated User' }),
       });
@@ -104,7 +104,7 @@ describe('StripeAdapter', () => {
     it('should delete a customer', async () => {
       const res = await ts.server.inject({
         method: 'DELETE',
-        url: `/stripe/v1/customers/${customerId}`,
+        url: `/v1/customers/${customerId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -122,7 +122,7 @@ describe('StripeAdapter', () => {
     it('should create a payment intent', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_intents',
+        url: '/v1/payment_intents',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 5000, currency: 'usd' }),
       });
@@ -138,7 +138,7 @@ describe('StripeAdapter', () => {
     it('should list payment intents', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/payment_intents',
+        url: '/v1/payment_intents',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -149,7 +149,7 @@ describe('StripeAdapter', () => {
     it('should confirm a payment intent and create a charge', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        url: `/v1/payment_intents/${piId}/confirm`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -162,13 +162,13 @@ describe('StripeAdapter', () => {
     it('should retrieve the charge created by confirm', async () => {
       const piRes = await ts.server.inject({
         method: 'GET',
-        url: `/stripe/v1/payment_intents/${piId}`,
+        url: `/v1/payment_intents/${piId}`,
       });
       const chargeId = piRes.json().latest_charge;
 
       const res = await ts.server.inject({
         method: 'GET',
-        url: `/stripe/v1/charges/${chargeId}`,
+        url: `/v1/charges/${chargeId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -186,7 +186,7 @@ describe('StripeAdapter', () => {
     it('should create a PI with manual capture', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_intents',
+        url: '/v1/payment_intents',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 10000, currency: 'usd' }),
       });
@@ -197,7 +197,7 @@ describe('StripeAdapter', () => {
     it('should confirm with capture_method=manual and get requires_capture', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        url: `/v1/payment_intents/${piId}/confirm`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ capture_method: 'manual' }),
       });
@@ -210,7 +210,7 @@ describe('StripeAdapter', () => {
     it('should capture and transition to succeeded', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_intents/${piId}/capture`,
+        url: `/v1/payment_intents/${piId}/capture`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -227,7 +227,7 @@ describe('StripeAdapter', () => {
     it('should cancel a payment intent', async () => {
       const createRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_intents',
+        url: '/v1/payment_intents',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 3000, currency: 'usd' }),
       });
@@ -235,7 +235,7 @@ describe('StripeAdapter', () => {
 
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_intents/${piId}/cancel`,
+        url: `/v1/payment_intents/${piId}/cancel`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -253,7 +253,7 @@ describe('StripeAdapter', () => {
     it('should create a subscription', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/subscriptions',
+        url: '/v1/subscriptions',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           customer: customerId,
@@ -274,7 +274,7 @@ describe('StripeAdapter', () => {
     it('should list subscriptions filtered by customer', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `/stripe/v1/subscriptions?customer=${customerId}`,
+        url: `/v1/subscriptions?customer=${customerId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -286,7 +286,7 @@ describe('StripeAdapter', () => {
     it('should update a subscription', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/subscriptions/${subId}`,
+        url: `/v1/subscriptions/${subId}`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ cancel_at_period_end: true }),
       });
@@ -299,7 +299,7 @@ describe('StripeAdapter', () => {
     it('should cancel (DELETE) a subscription', async () => {
       const res = await ts.server.inject({
         method: 'DELETE',
-        url: `/stripe/v1/subscriptions/${subId}`,
+        url: `/v1/subscriptions/${subId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -316,7 +316,7 @@ describe('StripeAdapter', () => {
     it('should create an invoice', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/invoices',
+        url: '/v1/invoices',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ customer: 'cus_inv1', amount_due: 2500 }),
       });
@@ -331,7 +331,7 @@ describe('StripeAdapter', () => {
     it('should finalize an invoice', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/invoices/${invoiceId}/finalize`,
+        url: `/v1/invoices/${invoiceId}/finalize`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -344,7 +344,7 @@ describe('StripeAdapter', () => {
     it('should pay an invoice', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/invoices/${invoiceId}/pay`,
+        url: `/v1/invoices/${invoiceId}/pay`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -361,7 +361,7 @@ describe('StripeAdapter', () => {
     it('should create an invoice item', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/invoiceitems',
+        url: '/v1/invoiceitems',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ customer: 'cus_test1', amount: 1500, description: 'Setup fee' }),
       });
@@ -380,7 +380,7 @@ describe('StripeAdapter', () => {
     it('should create a refund (no linked charge)', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/refunds',
+        url: '/v1/refunds',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 1000, charge: 'ch_test123' }),
       });
@@ -396,7 +396,7 @@ describe('StripeAdapter', () => {
       // Create a charge via PI confirm
       const piRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_intents',
+        url: '/v1/payment_intents',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 5000, currency: 'usd' }),
       });
@@ -404,18 +404,18 @@ describe('StripeAdapter', () => {
 
       await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        url: `/v1/payment_intents/${piId}/confirm`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
 
-      const chargeId = (await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_intents/${piId}` }))
+      const chargeId = (await ts.server.inject({ method: 'GET', url: `/v1/payment_intents/${piId}` }))
         .json().latest_charge;
 
       // Create a partial refund
       const refundRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/refunds',
+        url: '/v1/refunds',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 2000, charge: chargeId }),
       });
@@ -423,7 +423,7 @@ describe('StripeAdapter', () => {
       expect(refundRes.json().charge).toBe(chargeId);
 
       // Charge should reflect the refund
-      const chargeRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/charges/${chargeId}` });
+      const chargeRes = await ts.server.inject({ method: 'GET', url: `/v1/charges/${chargeId}` });
       const charge = chargeRes.json();
       expect(charge.amount_refunded).toBe(2000);
       expect(charge.refunded).toBe(false); // partial refund, not fully refunded
@@ -432,65 +432,65 @@ describe('StripeAdapter', () => {
     it('should set charge.refunded=true on full refund', async () => {
       const piRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_intents',
+        url: '/v1/payment_intents',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 3000, currency: 'usd' }),
       });
       const piId = piRes.json().id;
       await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        url: `/v1/payment_intents/${piId}/confirm`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
-      const chargeId = (await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_intents/${piId}` }))
+      const chargeId = (await ts.server.inject({ method: 'GET', url: `/v1/payment_intents/${piId}` }))
         .json().latest_charge;
 
       await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/refunds',
+        url: '/v1/refunds',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 3000, charge: chargeId }),
       });
 
-      const chargeRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/charges/${chargeId}` });
+      const chargeRes = await ts.server.inject({ method: 'GET', url: `/v1/charges/${chargeId}` });
       const charge = chargeRes.json();
       expect(charge.amount_refunded).toBe(3000);
       expect(charge.refunded).toBe(true);
     });
 
     it('should reflect refunds in GET /balance', async () => {
-      const balanceBefore = (await ts.server.inject({ method: 'GET', url: '/stripe/v1/balance' }))
+      const balanceBefore = (await ts.server.inject({ method: 'GET', url: '/v1/balance' }))
         .json().available[0].amount;
 
       const piRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_intents',
+        url: '/v1/payment_intents',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 4000, currency: 'usd' }),
       });
       const piId = piRes.json().id;
       await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_intents/${piId}/confirm`,
+        url: `/v1/payment_intents/${piId}/confirm`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
-      const chargeId = (await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_intents/${piId}` }))
+      const chargeId = (await ts.server.inject({ method: 'GET', url: `/v1/payment_intents/${piId}` }))
         .json().latest_charge;
 
-      const balanceAfterCharge = (await ts.server.inject({ method: 'GET', url: '/stripe/v1/balance' }))
+      const balanceAfterCharge = (await ts.server.inject({ method: 'GET', url: '/v1/balance' }))
         .json().available[0].amount;
       expect(balanceAfterCharge).toBe(balanceBefore + 4000);
 
       await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/refunds',
+        url: '/v1/refunds',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount: 4000, charge: chargeId }),
       });
 
-      const balanceAfterRefund = (await ts.server.inject({ method: 'GET', url: '/stripe/v1/balance' }))
+      const balanceAfterRefund = (await ts.server.inject({ method: 'GET', url: '/v1/balance' }))
         .json().available[0].amount;
       expect(balanceAfterRefund).toBe(balanceBefore);
     });
@@ -502,7 +502,7 @@ describe('StripeAdapter', () => {
     it('should create a product', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/products',
+        url: '/v1/products',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ name: 'Premium Plan' }),
       });
@@ -516,7 +516,7 @@ describe('StripeAdapter', () => {
     it('should create a price', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/prices',
+        url: '/v1/prices',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ unit_amount: 2999, currency: 'usd', product: 'prod_abc' }),
       });
@@ -536,7 +536,7 @@ describe('StripeAdapter', () => {
     it('should create a percentage coupon', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/coupons',
+        url: '/v1/coupons',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ percent_off: 25, duration: 'once' }),
       });
@@ -552,7 +552,7 @@ describe('StripeAdapter', () => {
     it('should create a fixed-amount coupon', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/coupons',
+        url: '/v1/coupons',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ amount_off: 500, currency: 'usd', duration: 'forever' }),
       });
@@ -565,7 +565,7 @@ describe('StripeAdapter', () => {
     it('should list coupons', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/coupons',
+        url: '/v1/coupons',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -576,7 +576,7 @@ describe('StripeAdapter', () => {
     it('should get a coupon by id', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: `/stripe/v1/coupons/${couponId}`,
+        url: `/v1/coupons/${couponId}`,
       });
       expect(res.statusCode).toBe(200);
       expect(res.json().id).toBe(couponId);
@@ -585,7 +585,7 @@ describe('StripeAdapter', () => {
     it('should delete a coupon', async () => {
       const res = await ts.server.inject({
         method: 'DELETE',
-        url: `/stripe/v1/coupons/${couponId}`,
+        url: `/v1/coupons/${couponId}`,
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -599,7 +599,7 @@ describe('StripeAdapter', () => {
     it('should list disputes (empty initially)', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/disputes',
+        url: '/v1/disputes',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -610,7 +610,7 @@ describe('StripeAdapter', () => {
     it('should return 404 for non-existent dispute', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/disputes/dp_nonexistent',
+        url: '/v1/disputes/dp_nonexistent',
       });
       expect(res.statusCode).toBe(404);
       expect(res.json().error.code).toBe('resource_missing');
@@ -623,7 +623,7 @@ describe('StripeAdapter', () => {
     it('should create a payment link', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_links',
+        url: '/v1/payment_links',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           line_items: [{ price: 'price_abc', quantity: 1 }],
@@ -640,7 +640,7 @@ describe('StripeAdapter', () => {
     it('should list payment links', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/payment_links',
+        url: '/v1/payment_links',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -655,7 +655,7 @@ describe('StripeAdapter', () => {
     it('should create a billing portal session', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/billing_portal/sessions',
+        url: '/v1/billing_portal/sessions',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ customer: 'cus_test1', return_url: 'https://example.com' }),
       });
@@ -675,7 +675,7 @@ describe('StripeAdapter', () => {
     it('should return account info', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/account',
+        url: '/v1/account',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -692,7 +692,7 @@ describe('StripeAdapter', () => {
     it('should return a balance object', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/balance',
+        url: '/v1/balance',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -708,7 +708,7 @@ describe('StripeAdapter', () => {
     it('should return Stripe error format for non-existent customer', async () => {
       const res = await ts.server.inject({
         method: 'GET',
-        url: '/stripe/v1/customers/cus_doesnotexist',
+        url: '/v1/customers/cus_doesnotexist',
       });
       expect(res.statusCode).toBe(404);
       const body = res.json();
@@ -756,7 +756,7 @@ describe('StripeAdapter', () => {
     it('should create a payment method', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/payment_methods',
+        url: '/v1/payment_methods',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ type: 'card' }),
       });
@@ -770,7 +770,7 @@ describe('StripeAdapter', () => {
     it('should attach a payment method to a customer', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_methods/${pmId}/attach`,
+        url: `/v1/payment_methods/${pmId}/attach`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ customer: 'cus_attach_test' }),
       });
@@ -781,7 +781,7 @@ describe('StripeAdapter', () => {
     });
 
     it('should retrieve the same PM with updated customer field', async () => {
-      const res = await ts.server.inject({ method: 'GET', url: `/stripe/v1/payment_methods/${pmId}` });
+      const res = await ts.server.inject({ method: 'GET', url: `/v1/payment_methods/${pmId}` });
       expect(res.statusCode).toBe(200);
       expect(res.json().customer).toBe('cus_attach_test');
     });
@@ -789,7 +789,7 @@ describe('StripeAdapter', () => {
     it('should detach a payment method from a customer', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_methods/${pmId}/detach`,
+        url: `/v1/payment_methods/${pmId}/detach`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -802,7 +802,7 @@ describe('StripeAdapter', () => {
     it('should return 400 when detaching an already-detached payment method', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/payment_methods/${pmId}/detach`,
+        url: `/v1/payment_methods/${pmId}/detach`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -818,7 +818,7 @@ describe('StripeAdapter', () => {
       // Create a customer
       const cusRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/customers',
+        url: '/v1/customers',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ email: 'cascade@test.com' }),
       });
@@ -827,7 +827,7 @@ describe('StripeAdapter', () => {
       // Create a subscription for that customer
       const subRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/subscriptions',
+        url: '/v1/subscriptions',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ customer: cusId, items: [{ price: 'price_cascade' }] }),
       });
@@ -837,17 +837,17 @@ describe('StripeAdapter', () => {
       // Delete the customer
       const delRes = await ts.server.inject({
         method: 'DELETE',
-        url: `/stripe/v1/customers/${cusId}`,
+        url: `/v1/customers/${cusId}`,
       });
       expect(delRes.statusCode).toBe(200);
       expect(delRes.json().deleted).toBe(true);
 
       // Customer should be gone
-      const cusCheck = await ts.server.inject({ method: 'GET', url: `/stripe/v1/customers/${cusId}` });
+      const cusCheck = await ts.server.inject({ method: 'GET', url: `/v1/customers/${cusId}` });
       expect(cusCheck.statusCode).toBe(404);
 
       // Subscription should be canceled
-      const subCheck = await ts.server.inject({ method: 'GET', url: `/stripe/v1/subscriptions/${subId}` });
+      const subCheck = await ts.server.inject({ method: 'GET', url: `/v1/subscriptions/${subId}` });
       expect(subCheck.statusCode).toBe(200);
       expect(subCheck.json().status).toBe('canceled');
     });
@@ -859,7 +859,7 @@ describe('StripeAdapter', () => {
     it('should delete a draft invoice', async () => {
       const createRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/invoices',
+        url: '/v1/invoices',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ customer: 'cus_del_test', amount_due: 500 }),
       });
@@ -868,19 +868,19 @@ describe('StripeAdapter', () => {
 
       const delRes = await ts.server.inject({
         method: 'DELETE',
-        url: `/stripe/v1/invoices/${invId}`,
+        url: `/v1/invoices/${invId}`,
       });
       expect(delRes.statusCode).toBe(200);
       expect(delRes.json().deleted).toBe(true);
 
-      const check = await ts.server.inject({ method: 'GET', url: `/stripe/v1/invoices/${invId}` });
+      const check = await ts.server.inject({ method: 'GET', url: `/v1/invoices/${invId}` });
       expect(check.statusCode).toBe(404);
     });
 
     it('should reject deleting an open invoice', async () => {
       const createRes = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/invoices',
+        url: '/v1/invoices',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ customer: 'cus_del_test2', amount_due: 800 }),
       });
@@ -888,14 +888,14 @@ describe('StripeAdapter', () => {
 
       await ts.server.inject({
         method: 'POST',
-        url: `/stripe/v1/invoices/${invId}/finalize`,
+        url: `/v1/invoices/${invId}/finalize`,
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
 
       const delRes = await ts.server.inject({
         method: 'DELETE',
-        url: `/stripe/v1/invoices/${invId}`,
+        url: `/v1/invoices/${invId}`,
       });
       expect(delRes.statusCode).toBe(400);
       expect(delRes.json().error.code).toBe('invoice_not_editable');
@@ -911,7 +911,7 @@ describe('StripeAdapter', () => {
     it('should create a subscription with one item', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/subscriptions',
+        url: '/v1/subscriptions',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           customer: 'cus_si_test',
@@ -926,7 +926,7 @@ describe('StripeAdapter', () => {
     it('should add a subscription item and update parent subscription', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/stripe/v1/subscription_items',
+        url: '/v1/subscription_items',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ subscription: subId, price: 'price_addon', quantity: 2 }),
       });
@@ -938,20 +938,20 @@ describe('StripeAdapter', () => {
       itemId = body.id;
 
       // Parent subscription should now have 2 items
-      const subRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/subscriptions/${subId}` });
+      const subRes = await ts.server.inject({ method: 'GET', url: `/v1/subscriptions/${subId}` });
       expect(subRes.json().items.data.length).toBe(2);
     });
 
     it('should delete a subscription item and update parent subscription', async () => {
       const delRes = await ts.server.inject({
         method: 'DELETE',
-        url: `/stripe/v1/subscription_items/${itemId}`,
+        url: `/v1/subscription_items/${itemId}`,
       });
       expect(delRes.statusCode).toBe(200);
       expect(delRes.json().deleted).toBe(true);
 
       // Parent subscription should be back to 1 item
-      const subRes = await ts.server.inject({ method: 'GET', url: `/stripe/v1/subscriptions/${subId}` });
+      const subRes = await ts.server.inject({ method: 'GET', url: `/v1/subscriptions/${subId}` });
       expect(subRes.json().items.data.length).toBe(1);
       expect(subRes.json().items.data.some((i: Record<string, unknown>) => i.id === itemId)).toBe(false);
     });
@@ -1015,7 +1015,7 @@ describe('StripeAdapter', () => {
     });
 
     it('should list pre-seeded customers', async () => {
-      const res = await seededTs.server.inject({ method: 'GET', url: '/stripe/v1/customers' });
+      const res = await seededTs.server.inject({ method: 'GET', url: '/v1/customers' });
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.data.length).toBe(2);
@@ -1024,7 +1024,7 @@ describe('StripeAdapter', () => {
     });
 
     it('should retrieve a pre-seeded customer by ID', async () => {
-      const res = await seededTs.server.inject({ method: 'GET', url: '/stripe/v1/customers/cus_seeded1' });
+      const res = await seededTs.server.inject({ method: 'GET', url: '/v1/customers/cus_seeded1' });
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.id).toBe('cus_seeded1');
@@ -1037,7 +1037,7 @@ describe('StripeAdapter', () => {
     it('should list pre-seeded subscriptions filtered by customer', async () => {
       const res = await seededTs.server.inject({
         method: 'GET',
-        url: '/stripe/v1/subscriptions?customer=cus_seeded1',
+        url: '/v1/subscriptions?customer=cus_seeded1',
       });
       expect(res.statusCode).toBe(200);
       const body = res.json();
@@ -1049,13 +1049,13 @@ describe('StripeAdapter', () => {
     it('should allow creating new resources alongside pre-seeded ones', async () => {
       const createRes = await seededTs.server.inject({
         method: 'POST',
-        url: '/stripe/v1/customers',
+        url: '/v1/customers',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ email: 'new@example.com', name: 'New User' }),
       });
       expect(createRes.statusCode).toBe(200);
 
-      const listRes = await seededTs.server.inject({ method: 'GET', url: '/stripe/v1/customers' });
+      const listRes = await seededTs.server.inject({ method: 'GET', url: '/v1/customers' });
       expect(listRes.json().data.length).toBe(3);
     });
   });

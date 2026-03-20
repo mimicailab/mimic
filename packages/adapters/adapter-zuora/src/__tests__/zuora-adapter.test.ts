@@ -3,7 +3,7 @@ import { buildTestServer, type TestServer } from '@mimicai/adapter-sdk';
 import type { ExpandedData, Blueprint } from '@mimicai/core';
 import { ZuoraAdapter } from '../zuora-adapter.js';
 
-const BP = '/zuora/v1';
+const BP = '/v1';
 
 describe('ZuoraAdapter', () => {
   let ts: TestServer;
@@ -25,7 +25,7 @@ describe('ZuoraAdapter', () => {
       expect(adapter.id).toBe('zuora');
       expect(adapter.name).toBe('Zuora API');
       expect(adapter.type).toBe('api-mock');
-      expect(adapter.basePath).toBe('/zuora/v1');
+      expect(adapter.basePath).toBe('');
     });
   });
 

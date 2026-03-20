@@ -45,7 +45,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
   server.tool('list_products', 'List Paddle products', {
     per_page: z.number().optional().describe('Results per page (1-200)'),
   }, async ({ per_page }) => {
-    const data = await call('GET', `/paddle/products${qs({ per_page: per_page ?? 50 })}`) as any;
+    const data = await call('GET', `/products${qs({ per_page: per_page ?? 50 })}`) as any;
     if (!data.data?.length) return text('No products found.');
     const lines = data.data.map((p: any) => `- ${p.id} — ${p.name} [${p.status}]`);
     return text(`Products (${data.data.length}):\n${lines.join('\n')}`);
@@ -57,7 +57,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     tax_category: z.string().optional().describe('Tax category (default: standard)'),
     custom_data: z.record(z.string()).optional().describe('Custom metadata'),
   }, async (params) => {
-    const data = await call('POST', '/paddle/products', params) as any;
+    const data = await call('POST', '/products', params) as any;
     return text(`Created product ${data.data.id}: ${data.data.name}`);
   });
 
@@ -65,7 +65,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
   server.tool('list_prices', 'List Paddle prices', {
     product_id: z.string().optional().describe('Filter by product ID'),
   }, async ({ product_id }) => {
-    const data = await call('GET', `/paddle/prices${qs({ product_id })}`) as any;
+    const data = await call('GET', `/prices${qs({ product_id })}`) as any;
     if (!data.data?.length) return text('No prices found.');
     const lines = data.data.map((p: any) => `- ${p.id} — ${p.description ?? p.name ?? 'unnamed'} [${p.status}]`);
     return text(`Prices (${data.data.length}):\n${lines.join('\n')}`);
@@ -83,7 +83,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
       frequency: z.number().int().positive(),
     }).optional().describe('Billing cycle (omit for one-time prices)'),
   }, async (params) => {
-    const data = await call('POST', '/paddle/prices', params) as any;
+    const data = await call('POST', '/prices', params) as any;
     return text(`Created price ${data.data.id}`);
   });
 
@@ -92,7 +92,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     email: z.string().optional().describe('Filter by email'),
     per_page: z.number().optional().describe('Results per page'),
   }, async ({ email, per_page }) => {
-    const data = await call('GET', `/paddle/customers${qs({ email, per_page })}`) as any;
+    const data = await call('GET', `/customers${qs({ email, per_page })}`) as any;
     if (!data.data?.length) return text('No customers found.');
     const lines = data.data.map((c: any) => `- ${c.id} — ${c.name ?? '(no name)'} (${c.email})`);
     return text(`Customers (${data.data.length}):\n${lines.join('\n')}`);
@@ -104,7 +104,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     locale: z.string().optional().describe('Locale (e.g., en)'),
     custom_data: z.record(z.string()).optional().describe('Custom metadata'),
   }, async (params) => {
-    const data = await call('POST', '/paddle/customers', params) as any;
+    const data = await call('POST', '/customers', params) as any;
     return text(`Created customer ${data.data.id}: ${data.data.name ?? data.data.email}`);
   });
 
@@ -113,7 +113,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     customer_id: z.string().optional().describe('Filter by customer ID'),
     status: z.enum(['active', 'canceled', 'past_due', 'paused', 'trialing']).optional(),
   }, async ({ customer_id, status }) => {
-    const data = await call('GET', `/paddle/subscriptions${qs({ customer_id, status })}`) as any;
+    const data = await call('GET', `/subscriptions${qs({ customer_id, status })}`) as any;
     if (!data.data?.length) return text('No subscriptions found.');
     const lines = data.data.map((s: any) => `- ${s.id} — customer ${s.customer_id} [${s.status}]`);
     return text(`Subscriptions (${data.data.length}):\n${lines.join('\n')}`);
@@ -123,7 +123,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     subscription_id: z.string().describe('Subscription ID'),
     effective_from: z.enum(['immediately', 'next_billing_period']).optional().describe('When cancellation takes effect'),
   }, async ({ subscription_id, effective_from }) => {
-    const data = await call('POST', `/paddle/subscriptions/${subscription_id}/cancel`, { effective_from }) as any;
+    const data = await call('POST', `/subscriptions/${subscription_id}/cancel`, { effective_from }) as any;
     return text(`Cancelled subscription ${data.data.id} [${data.data.status}]`);
   });
 
@@ -131,7 +131,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     subscription_id: z.string().describe('Subscription ID'),
     effective_from: z.enum(['immediately', 'next_billing_period']).optional(),
   }, async ({ subscription_id, effective_from }) => {
-    const data = await call('POST', `/paddle/subscriptions/${subscription_id}/pause`, { effective_from }) as any;
+    const data = await call('POST', `/subscriptions/${subscription_id}/pause`, { effective_from }) as any;
     return text(`Paused subscription ${data.data.id} [${data.data.status}]`);
   });
 
@@ -139,7 +139,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     subscription_id: z.string().describe('Subscription ID'),
     effective_from: z.enum(['immediately']).optional(),
   }, async ({ subscription_id, effective_from }) => {
-    const data = await call('POST', `/paddle/subscriptions/${subscription_id}/resume`, { effective_from }) as any;
+    const data = await call('POST', `/subscriptions/${subscription_id}/resume`, { effective_from }) as any;
     return text(`Resumed subscription ${data.data.id} [${data.data.status}]`);
   });
 
@@ -149,7 +149,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     subscription_id: z.string().optional().describe('Filter by subscription ID'),
     status: z.enum(['draft', 'ready', 'billed', 'paid', 'completed', 'canceled', 'past_due']).optional(),
   }, async ({ customer_id, subscription_id, status }) => {
-    const data = await call('GET', `/paddle/transactions${qs({ customer_id, subscription_id, status })}`) as any;
+    const data = await call('GET', `/transactions${qs({ customer_id, subscription_id, status })}`) as any;
     if (!data.data?.length) return text('No transactions found.');
     const lines = data.data.map((t: any) => `- ${t.id} — ${t.currency_code} [${t.status}]`);
     return text(`Transactions (${data.data.length}):\n${lines.join('\n')}`);
@@ -162,7 +162,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     })).describe('Line items'),
     customer_id: z.string().optional().describe('Customer ID'),
   }, async (params) => {
-    const data = await call('POST', '/paddle/transactions', params) as any;
+    const data = await call('POST', '/transactions', params) as any;
     return text(`Created transaction ${data.data.id} [${data.data.status}]`);
   });
 
@@ -175,7 +175,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
     code: z.string().optional().describe('Discount code'),
     recur: z.boolean().optional().describe('Apply to recurring payments'),
   }, async (params) => {
-    const data = await call('POST', '/paddle/discounts', params) as any;
+    const data = await call('POST', '/discounts', params) as any;
     return text(`Created discount ${data.data.id}: ${data.data.description}`);
   });
 
@@ -190,7 +190,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
       amount: z.string().optional().describe('Amount (for partial adjustments)'),
     })).describe('Items to adjust'),
   }, async (params) => {
-    const data = await call('POST', '/paddle/adjustments', params) as any;
+    const data = await call('POST', '/adjustments', params) as any;
     return text(`Created adjustment ${data.data.id} [${data.data.status}]`);
   });
 
@@ -204,7 +204,7 @@ export function registerPaddleTools(server: McpServer, baseUrl: string = 'http:/
 
     for (const type of types) {
       try {
-        const data = await call('GET', `/paddle/${type}`) as any;
+        const data = await call('GET', `/${type}`) as any;
         if (!data.data?.length) continue;
         const matches = data.data.filter((item: any) => {
           const str = JSON.stringify(item).toLowerCase();

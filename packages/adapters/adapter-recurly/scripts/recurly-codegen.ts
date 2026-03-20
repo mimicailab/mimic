@@ -598,8 +598,8 @@ function extractRoutes(spec: OaSpec, resources: Map<string, ResourceInfo>): Extr
       const httpMethod = method.toUpperCase() as ExtractedRoute['method'];
       const description = operation.summary ?? operation.description ?? '';
 
-      // Convert {param} → :param, add /recurly prefix
-      const fastifyPath = '/recurly' + specPath.replace(/\{([^}]+)\}/g, ':$1');
+      // Convert {param} → :param, 
+      const fastifyPath = specPath.replace(/\{([^}]+)\}/g, ':$1');
 
       // Determine resource
       const resource = detectRouteResource(specPath, knownKeys);

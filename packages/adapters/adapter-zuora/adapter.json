@@ -3,7 +3,7 @@
   "name": "Zuora API",
   "description": "Zuora API mock adapter for enterprise subscription management, orders, billing, invoicing, revenue recognition",
   "type": "api-mock",
-  "basePath": "/zuora/v1",
+  "basePath": "",
   "versions": ["v1"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://developer.zuora.com/api-references/api/overview",

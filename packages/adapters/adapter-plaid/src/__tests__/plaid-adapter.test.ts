@@ -23,7 +23,7 @@ describe('PlaidAdapter', () => {
       expect(adapter.id).toBe('plaid');
       expect(adapter.name).toBe('Plaid API');
       expect(adapter.type).toBe('api-mock');
-      expect(adapter.basePath).toBe('/plaid');
+      expect(adapter.basePath).toBe('');
     });
 
     it('should have versions', () => {
@@ -54,7 +54,7 @@ describe('PlaidAdapter', () => {
     it('should create a sandbox public token', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/sandbox/public_token/create',
+        url: '/sandbox/public_token/create',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           institution_id: 'ins_109508',
@@ -71,7 +71,7 @@ describe('PlaidAdapter', () => {
     it('should exchange public token for access token', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/item/public_token/exchange',
+        url: '/item/public_token/exchange',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ public_token: publicToken }),
       });
@@ -87,7 +87,7 @@ describe('PlaidAdapter', () => {
     it('should get item details', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/item/get',
+        url: '/item/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -102,7 +102,7 @@ describe('PlaidAdapter', () => {
     it('should get accounts', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/accounts/get',
+        url: '/accounts/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -125,7 +125,7 @@ describe('PlaidAdapter', () => {
     it('should get account balances', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/accounts/balance/get',
+        url: '/accounts/balance/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -138,7 +138,7 @@ describe('PlaidAdapter', () => {
       // First get all accounts to get an ID
       const allRes = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/accounts/get',
+        url: '/accounts/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -146,7 +146,7 @@ describe('PlaidAdapter', () => {
 
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/accounts/get',
+        url: '/accounts/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           access_token: accessToken,
@@ -161,7 +161,7 @@ describe('PlaidAdapter', () => {
     it('should get auth data with routing numbers', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/auth/get',
+        url: '/auth/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -176,7 +176,7 @@ describe('PlaidAdapter', () => {
     it('should get transactions', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/transactions/get',
+        url: '/transactions/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           access_token: accessToken,
@@ -202,7 +202,7 @@ describe('PlaidAdapter', () => {
     it('should paginate transactions', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/transactions/get',
+        url: '/transactions/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           access_token: accessToken,
@@ -221,7 +221,7 @@ describe('PlaidAdapter', () => {
       // Initial sync (no cursor) — returns all transactions
       const res1 = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/transactions/sync',
+        url: '/transactions/sync',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -234,7 +234,7 @@ describe('PlaidAdapter', () => {
       // Subsequent sync (with cursor) — returns empty (caught up)
       const res2 = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/transactions/sync',
+        url: '/transactions/sync',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           access_token: accessToken,
@@ -248,7 +248,7 @@ describe('PlaidAdapter', () => {
     it('should refresh transactions', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/transactions/refresh',
+        url: '/transactions/refresh',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -259,7 +259,7 @@ describe('PlaidAdapter', () => {
     it('should get identity data', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/identity/get',
+        url: '/identity/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -274,7 +274,7 @@ describe('PlaidAdapter', () => {
     it('should remove an item', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/item/remove',
+        url: '/item/remove',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -284,7 +284,7 @@ describe('PlaidAdapter', () => {
       // Subsequent calls should fail
       const res2 = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/item/get',
+        url: '/item/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: accessToken }),
       });
@@ -299,7 +299,7 @@ describe('PlaidAdapter', () => {
     it('should list institutions', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/institutions/get',
+        url: '/institutions/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ count: 10, offset: 0, country_codes: ['US'] }),
       });
@@ -312,7 +312,7 @@ describe('PlaidAdapter', () => {
     it('should get institution by ID', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/institutions/get_by_id',
+        url: '/institutions/get_by_id',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ institution_id: 'ins_109508', country_codes: ['US'] }),
       });
@@ -325,7 +325,7 @@ describe('PlaidAdapter', () => {
     it('should search institutions', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/institutions/search',
+        url: '/institutions/search',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ query: 'platypus', products: ['transactions'], country_codes: ['US'] }),
       });
@@ -342,7 +342,7 @@ describe('PlaidAdapter', () => {
     it('should get categories', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/categories/get',
+        url: '/categories/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -360,7 +360,7 @@ describe('PlaidAdapter', () => {
     it('should return error for missing access_token', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/accounts/get',
+        url: '/accounts/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -373,7 +373,7 @@ describe('PlaidAdapter', () => {
     it('should return error for invalid access_token', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/accounts/get',
+        url: '/accounts/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: 'invalid-token-12345' }),
       });
@@ -386,7 +386,7 @@ describe('PlaidAdapter', () => {
     it('should return error for missing public_token on exchange', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/item/public_token/exchange',
+        url: '/item/public_token/exchange',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({}),
       });
@@ -397,7 +397,7 @@ describe('PlaidAdapter', () => {
     it('should return error for invalid institution_id', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/institutions/get_by_id',
+        url: '/institutions/get_by_id',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ institution_id: 'ins_nonexistent' }),
       });
@@ -413,7 +413,7 @@ describe('PlaidAdapter', () => {
       // Create a new item first
       const createRes = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/sandbox/public_token/create',
+        url: '/sandbox/public_token/create',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ institution_id: 'ins_109509', initial_products: ['transactions'] }),
       });
@@ -421,7 +421,7 @@ describe('PlaidAdapter', () => {
 
       const exchangeRes = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/item/public_token/exchange',
+        url: '/item/public_token/exchange',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ public_token: pt }),
       });
@@ -430,7 +430,7 @@ describe('PlaidAdapter', () => {
       // Reset login
       const resetRes = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/sandbox/item/reset_login',
+        url: '/sandbox/item/reset_login',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: at }),
       });
@@ -440,7 +440,7 @@ describe('PlaidAdapter', () => {
       // Verify item now has error
       const itemRes = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/item/get',
+        url: '/item/get',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ access_token: at }),
       });
@@ -455,7 +455,7 @@ describe('PlaidAdapter', () => {
     it('should create a link token', async () => {
       const res = await ts.server.inject({
         method: 'POST',
-        url: '/plaid/link/token/create',
+        url: '/link/token/create',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({
           user: { client_user_id: 'user-123' },

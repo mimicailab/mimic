@@ -749,7 +749,7 @@ type RouteOperation = 'list' | 'create' | 'retrieve' | 'update' | 'delete' | 'ac
 interface ExtractedRoute {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   stripePath: string;        // original Stripe path, e.g. /v1/customers/{customer}
-  fastifyPath: string;       // Fastify path with colon params + basePath prefix
+  fastifyPath: string;       // Fastify route path with colon params
   resource: string;          // resource type, e.g. 'customers'
   operation: RouteOperation;
   description: string;
@@ -787,7 +787,7 @@ function extractRoutes(spec: OaSpec, resources: Map<string, ResourceInfo>): Extr
       const description = operation.summary ?? operation.description ?? '';
 
       // Convert Stripe path params {param} → Fastify :param
-      const fastifyPath = '/stripe' + stripePath.replace(/\{([^}]+)\}/g, ':$1');
+      const fastifyPath = stripePath.replace(/\{([^}]+)\}/g, ':$1');
 
       // Determine what resource this route belongs to
       const resource = detectRouteResource(stripePath, operation, resources, spec);
@@ -1104,7 +1104,7 @@ function generateRoutesTs(routes: ExtractedRoute[]): string {
     `export interface GeneratedRoute {`,
     `  /** HTTP method */`,
     `  method: RouteMethod;`,
-    `  /** Fastify route path with colon params and /stripe prefix */`,
+    `  /** Fastify route path with colon params */`,
     `  fastifyPath: string;`,
     `  /** Original Stripe path for documentation */`,
     `  stripePath: string;`,

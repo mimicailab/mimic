@@ -18,7 +18,7 @@ describe('PaddleAdapter', () => {
   // ── Metadata ────────────────────────────────────────────────────────────────
   it('should have correct metadata', () => {
     expect(adapter.id).toBe('paddle');
-    expect(adapter.basePath).toBe('/paddle');
+    expect(adapter.basePath).toBe('');
   });
 
   it('should return endpoint definitions', () => {
@@ -34,7 +34,7 @@ describe('PaddleAdapter', () => {
   it('should create a customer', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ email: 'test@example.com', name: 'Test User' }),
     });
@@ -51,7 +51,7 @@ describe('PaddleAdapter', () => {
   it('should list customers', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/paddle/customers',
+      url: '/customers',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -66,7 +66,7 @@ describe('PaddleAdapter', () => {
     // Create first
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ email: 'retrieve@example.com', name: 'Retrieve Test' }),
     });
@@ -75,7 +75,7 @@ describe('PaddleAdapter', () => {
     // Retrieve
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/paddle/customers/${customerId}`,
+      url: `/customers/${customerId}`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -86,7 +86,7 @@ describe('PaddleAdapter', () => {
   it('should update a customer', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ email: 'update@example.com', name: 'Before Update' }),
     });
@@ -94,7 +94,7 @@ describe('PaddleAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'PATCH',
-      url: `/paddle/customers/${customerId}`,
+      url: `/customers/${customerId}`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ name: 'After Update' }),
     });
@@ -107,7 +107,7 @@ describe('PaddleAdapter', () => {
   it('should return 404 for non-existent customer', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/paddle/customers/ctm_nonexistent',
+      url: '/customers/ctm_nonexistent',
     });
     expect(res.statusCode).toBe(404);
     const body = res.json();
@@ -118,7 +118,7 @@ describe('PaddleAdapter', () => {
   it('should create and list products', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/products',
+      url: '/products',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ name: 'Test Product', description: 'A test product', tax_category: 'standard' }),
     });
@@ -129,7 +129,7 @@ describe('PaddleAdapter', () => {
 
     const listRes = await ts.server.inject({
       method: 'GET',
-      url: '/paddle/products',
+      url: '/products',
     });
     expect(listRes.json().data.length).toBeGreaterThan(0);
   });
@@ -138,7 +138,7 @@ describe('PaddleAdapter', () => {
   it('should create a price', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/prices',
+      url: '/prices',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         product_id: 'pro_test',
@@ -158,7 +158,7 @@ describe('PaddleAdapter', () => {
     // Create a subscription
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ customer_id: 'ctm_test', address_id: 'add_test', items: [] }),
     });
@@ -172,7 +172,7 @@ describe('PaddleAdapter', () => {
     // Cancel
     const cancelRes = await ts.server.inject({
       method: 'POST',
-      url: `/paddle/subscriptions/${subId}/cancel`,
+      url: `/subscriptions/${subId}/cancel`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ effective_from: 'immediately' }),
     });
@@ -184,7 +184,7 @@ describe('PaddleAdapter', () => {
   it('should pause and resume a subscription', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ customer_id: 'ctm_test', address_id: 'add_test', items: [], status: 'active' }),
     });
@@ -194,7 +194,7 @@ describe('PaddleAdapter', () => {
     // Pause
     const pauseRes = await ts.server.inject({
       method: 'POST',
-      url: `/paddle/subscriptions/${subId}/pause`,
+      url: `/subscriptions/${subId}/pause`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ effective_from: 'immediately' }),
     });
@@ -204,7 +204,7 @@ describe('PaddleAdapter', () => {
     // Resume
     const resumeRes = await ts.server.inject({
       method: 'POST',
-      url: `/paddle/subscriptions/${subId}/resume`,
+      url: `/subscriptions/${subId}/resume`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ effective_from: 'immediately' }),
     });
@@ -216,7 +216,7 @@ describe('PaddleAdapter', () => {
   it('should create and retrieve a discount', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/discounts',
+      url: '/discounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         description: '20% off',
@@ -233,7 +233,7 @@ describe('PaddleAdapter', () => {
     // Retrieve
     const getRes = await ts.server.inject({
       method: 'GET',
-      url: `/paddle/discounts/${discount.id}`,
+      url: `/discounts/${discount.id}`,
     });
     expect(getRes.statusCode).toBe(200);
     expect(getRes.json().data.id).toBe(discount.id);
@@ -243,7 +243,7 @@ describe('PaddleAdapter', () => {
   it('should create a transaction', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/paddle/transactions',
+      url: '/transactions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         items: [{ price_id: 'pri_test', quantity: 1 }],
@@ -271,7 +271,7 @@ describe('PaddleAdapter', () => {
     }]]) as any;
 
     const seededTs = await buildTestServer(adapter, seedData);
-    const res = await seededTs.server.inject({ method: 'GET', url: '/paddle/customers' });
+    const res = await seededTs.server.inject({ method: 'GET', url: '/customers' });
     const customers = res.json().data;
     expect(customers).toContainEqual(expect.objectContaining({ id: 'ctm_seed1' }));
     await seededTs.close();

@@ -633,6 +633,15 @@ function normalizePattern(pattern: Record<string, unknown>): void {
           } else {
             s.type = 'pick';
           }
+
+          // Coerce ISO date strings in min/max to epoch ms and fix type
+          const minIsDateStr = typeof s.min === 'string' && !Number.isNaN(Date.parse(s.min as string));
+          const maxIsDateStr = typeof s.max === 'string' && !Number.isNaN(Date.parse(s.max as string));
+          if (minIsDateStr || maxIsDateStr) {
+            if (minIsDateStr) s.min = Date.parse(s.min as string);
+            if (maxIsDateStr) s.max = Date.parse(s.max as string);
+            s.type = 'date_in_period';
+          }
         } else {
           // Bare value — wrap into a pick spec
           (v.randomFields as Record<string, unknown>)[field] = { type: 'pick', values: [spec] };

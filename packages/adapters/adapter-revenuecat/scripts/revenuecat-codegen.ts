@@ -656,16 +656,8 @@ function extractRoutes(spec: OaSpec): ExtractedRoute[] {
       const httpMethod = method.toUpperCase() as ExtractedRoute['method'];
       const description = operation.summary ?? operation.description ?? '';
 
-      // Convert {param} to :param and prepend /revenuecat
-      // For paths starting with /projects/{project_id}, keep that prefix for routing
-      let fastifyPath: string;
-      if (specPath.startsWith('/projects/{project_id}')) {
-        const withoutProjectPrefix = specPath.replace(/^\/projects\/\{project_id\}/, '');
-        fastifyPath = '/revenuecat/projects/:project_id' + withoutProjectPrefix.replace(/\{([^}]+)\}/g, ':$1');
-      } else {
-        // Top-level paths like /projects
-        fastifyPath = '/revenuecat' + specPath.replace(/\{([^}]+)\}/g, ':$1');
-      }
+      // Convert {param} to :param
+      const fastifyPath = specPath.replace(/\{([^}]+)\}/g, ':$1');
 
       const resource = detectRCResource(specPath);
       const op = detectRCOperation(specPath, method);

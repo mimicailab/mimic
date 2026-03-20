@@ -160,17 +160,17 @@ export class PaddleAdapter extends OpenApiMockAdapter<PaddleConfig> {
 
   private mountOverrides(store: StateStore): void {
     // Subscription lifecycle
-    this.registerOverride('POST', '/paddle/subscriptions/:subscription_id/cancel',
+    this.registerOverride('POST', '/subscriptions/:subscription_id/cancel',
       subscriptionOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/paddle/subscriptions/:subscription_id/pause',
+    this.registerOverride('POST', '/subscriptions/:subscription_id/pause',
       subscriptionOverrides.buildPauseHandler(store));
-    this.registerOverride('POST', '/paddle/subscriptions/:subscription_id/resume',
+    this.registerOverride('POST', '/subscriptions/:subscription_id/resume',
       subscriptionOverrides.buildResumeHandler(store));
-    this.registerOverride('POST', '/paddle/subscriptions/:subscription_id/activate',
+    this.registerOverride('POST', '/subscriptions/:subscription_id/activate',
       subscriptionOverrides.buildActivateHandler(store));
 
     // Transaction lifecycle
-    this.registerOverride('POST', '/paddle/transactions/:transaction_id/revise',
+    this.registerOverride('POST', '/transactions/:transaction_id/revise',
       transactionOverrides.buildReviseHandler(store));
   }
 }

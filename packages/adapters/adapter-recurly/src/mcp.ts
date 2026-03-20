@@ -42,14 +42,14 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     last_name: z.string().optional().describe('Last name'),
     company: z.string().optional().describe('Company name'),
   }, async (params) => {
-    const data = await call('POST', '/recurly/accounts', params) as any;
+    const data = await call('POST', '/accounts', params) as any;
     return text(`Created account ${data.id}: ${data.first_name ?? ''} ${data.last_name ?? ''} (${data.email ?? 'no email'})`);
   });
 
   server.tool('list_accounts', 'List Recurly accounts', {
     limit: z.number().int().min(1).max(200).optional().describe('Max results'),
   }, async ({ limit }) => {
-    const data = await call('GET', `/recurly/accounts${qs({ limit: limit ?? 20 })}`) as any;
+    const data = await call('GET', `/accounts${qs({ limit: limit ?? 20 })}`) as any;
     if (!data.data?.length) return text('No accounts found.');
     const lines = data.data.map((a: any) => `• ${a.id} — ${a.first_name ?? ''} ${a.last_name ?? ''} [${a.state}]`);
     return text(`Accounts (${data.data.length}):\n${lines.join('\n')}`);
@@ -58,7 +58,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
   server.tool('get_account', 'Get a specific account', {
     account_id: z.string().describe('Account ID'),
   }, async ({ account_id }) => {
-    const data = await call('GET', `/recurly/accounts/${account_id}`) as any;
+    const data = await call('GET', `/accounts/${account_id}`) as any;
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -70,12 +70,12 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     interval_unit: z.enum(['days', 'months']).optional().describe('Billing interval unit'),
     interval_length: z.number().int().positive().optional().describe('Billing interval length'),
   }, async (params) => {
-    const data = await call('POST', '/recurly/plans', params) as any;
+    const data = await call('POST', '/plans', params) as any;
     return text(`Created plan ${data.id}: ${data.name} (${data.code})`);
   });
 
   server.tool('list_plans', 'List subscription plans', {}, async () => {
-    const data = await call('GET', '/recurly/plans') as any;
+    const data = await call('GET', '/plans') as any;
     if (!data.data?.length) return text('No plans found.');
     const lines = data.data.map((p: any) => `• ${p.id} — ${p.name} (${p.code}) [${p.state}]`);
     return text(`Plans (${data.data.length}):\n${lines.join('\n')}`);
@@ -88,7 +88,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     account_code: z.string().describe('Account code'),
     currency: z.string().length(3).optional().describe('Currency (default USD)'),
   }, async ({ plan_code, account_code, currency }) => {
-    const data = await call('POST', '/recurly/subscriptions', {
+    const data = await call('POST', '/subscriptions', {
       plan_code,
       account: { code: account_code },
       currency: currency ?? 'USD',
@@ -100,7 +100,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     state: z.enum(['active', 'canceled', 'expired', 'future', 'paused']).optional().describe('Filter by state'),
     limit: z.number().int().min(1).max(200).optional().describe('Max results'),
   }, async ({ state, limit }) => {
-    const data = await call('GET', `/recurly/subscriptions${qs({ state, limit: limit ?? 20 })}`) as any;
+    const data = await call('GET', `/subscriptions${qs({ state, limit: limit ?? 20 })}`) as any;
     if (!data.data?.length) return text('No subscriptions found.');
     const lines = data.data.map((s: any) => `• ${s.id} — [${s.state}]`);
     return text(`Subscriptions (${data.data.length}):\n${lines.join('\n')}`);
@@ -109,14 +109,14 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
   server.tool('cancel_subscription', 'Cancel a subscription', {
     subscription_id: z.string().describe('Subscription ID'),
   }, async ({ subscription_id }) => {
-    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/cancel`) as any;
+    const data = await call('PUT', `/subscriptions/${subscription_id}/cancel`) as any;
     return text(`Cancelled subscription ${data.id} [${data.state}]`);
   });
 
   server.tool('reactivate_subscription', 'Reactivate a canceled subscription', {
     subscription_id: z.string().describe('Subscription ID'),
   }, async ({ subscription_id }) => {
-    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/reactivate`) as any;
+    const data = await call('PUT', `/subscriptions/${subscription_id}/reactivate`) as any;
     return text(`Reactivated subscription ${data.id} [${data.state}]`);
   });
 
@@ -124,7 +124,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     subscription_id: z.string().describe('Subscription ID'),
     remaining_pause_cycles: z.number().int().positive().optional().describe('Number of pause cycles'),
   }, async ({ subscription_id, remaining_pause_cycles }) => {
-    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/pause`, {
+    const data = await call('PUT', `/subscriptions/${subscription_id}/pause`, {
       remaining_pause_cycles: remaining_pause_cycles ?? 1,
     }) as any;
     return text(`Paused subscription ${data.id} [${data.state}]`);
@@ -133,7 +133,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
   server.tool('resume_subscription', 'Resume a paused subscription', {
     subscription_id: z.string().describe('Subscription ID'),
   }, async ({ subscription_id }) => {
-    const data = await call('PUT', `/recurly/subscriptions/${subscription_id}/resume`) as any;
+    const data = await call('PUT', `/subscriptions/${subscription_id}/resume`) as any;
     return text(`Resumed subscription ${data.id} [${data.state}]`);
   });
 
@@ -143,7 +143,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     state: z.enum(['pending', 'processing', 'past_due', 'paid', 'failed', 'voided']).optional().describe('Filter by state'),
     limit: z.number().int().min(1).max(200).optional().describe('Max results'),
   }, async ({ state, limit }) => {
-    const data = await call('GET', `/recurly/invoices${qs({ state, limit: limit ?? 20 })}`) as any;
+    const data = await call('GET', `/invoices${qs({ state, limit: limit ?? 20 })}`) as any;
     if (!data.data?.length) return text('No invoices found.');
     const lines = data.data.map((inv: any) => `• ${inv.id} — ${inv.total ?? 0} ${inv.currency ?? 'USD'} [${inv.state}]`);
     return text(`Invoices (${data.data.length}):\n${lines.join('\n')}`);
@@ -152,21 +152,21 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
   server.tool('get_invoice', 'Get a specific invoice', {
     invoice_id: z.string().describe('Invoice ID'),
   }, async ({ invoice_id }) => {
-    const data = await call('GET', `/recurly/invoices/${invoice_id}`) as any;
+    const data = await call('GET', `/invoices/${invoice_id}`) as any;
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('collect_invoice', 'Collect payment on an invoice', {
     invoice_id: z.string().describe('Invoice ID'),
   }, async ({ invoice_id }) => {
-    const data = await call('PUT', `/recurly/invoices/${invoice_id}/collect`) as any;
+    const data = await call('PUT', `/invoices/${invoice_id}/collect`) as any;
     return text(`Collected invoice ${data.id} [${data.state}]`);
   });
 
   server.tool('void_invoice', 'Void an invoice', {
     invoice_id: z.string().describe('Invoice ID'),
   }, async ({ invoice_id }) => {
-    const data = await call('PUT', `/recurly/invoices/${invoice_id}/void`) as any;
+    const data = await call('PUT', `/invoices/${invoice_id}/void`) as any;
     return text(`Voided invoice ${data.id} [${data.state}]`);
   });
 
@@ -178,12 +178,12 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     discount_type: z.enum(['percent', 'fixed', 'free_trial']).optional().describe('Discount type'),
     discount_percent: z.number().min(0).max(100).optional().describe('Percent discount (for percent type)'),
   }, async (params) => {
-    const data = await call('POST', '/recurly/coupons', params) as any;
+    const data = await call('POST', '/coupons', params) as any;
     return text(`Created coupon ${data.id}: ${data.name} (${data.code})`);
   });
 
   server.tool('list_coupons', 'List coupons', {}, async () => {
-    const data = await call('GET', '/recurly/coupons') as any;
+    const data = await call('GET', '/coupons') as any;
     if (!data.data?.length) return text('No coupons found.');
     const lines = data.data.map((c: any) => `• ${c.id} — ${c.name} (${c.code}) [${c.state}]`);
     return text(`Coupons (${data.data.length}):\n${lines.join('\n')}`);
@@ -196,12 +196,12 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     name: z.string().describe('Display name'),
     description: z.string().optional().describe('Item description'),
   }, async (params) => {
-    const data = await call('POST', '/recurly/items', params) as any;
+    const data = await call('POST', '/items', params) as any;
     return text(`Created item ${data.id}: ${data.name} (${data.code})`);
   });
 
   server.tool('list_items', 'List catalog items', {}, async () => {
-    const data = await call('GET', '/recurly/items') as any;
+    const data = await call('GET', '/items') as any;
     if (!data.data?.length) return text('No items found.');
     const lines = data.data.map((i: any) => `• ${i.id} — ${i.name} (${i.code}) [${i.state}]`);
     return text(`Items (${data.data.length}):\n${lines.join('\n')}`);
@@ -212,7 +212,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
   server.tool('list_transactions', 'List transactions', {
     limit: z.number().int().min(1).max(200).optional().describe('Max results'),
   }, async ({ limit }) => {
-    const data = await call('GET', `/recurly/transactions${qs({ limit: limit ?? 20 })}`) as any;
+    const data = await call('GET', `/transactions${qs({ limit: limit ?? 20 })}`) as any;
     if (!data.data?.length) return text('No transactions found.');
     const lines = data.data.map((t: any) => `• ${t.id} — ${t.amount ?? 0} ${t.currency ?? 'USD'} [${t.status ?? t.type}]`);
     return text(`Transactions (${data.data.length}):\n${lines.join('\n')}`);
@@ -229,7 +229,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
 
     for (const type of types) {
       try {
-        const data = await call('GET', `/recurly/${type}`) as any;
+        const data = await call('GET', `/${type}`) as any;
         if (!data.data?.length) continue;
         const matches = data.data.filter((item: any) => {
           const str = JSON.stringify(item).toLowerCase();
@@ -252,7 +252,7 @@ export function registerRecurlyTools(server: McpServer, baseUrl: string = 'http:
     ]).describe('Resource type'),
     resource_id: z.string().describe('Resource ID'),
   }, async ({ resource_type, resource_id }) => {
-    const data = await call('GET', `/recurly/${resource_type}/${resource_id}`) as any;
+    const data = await call('GET', `/${resource_type}/${resource_id}`) as any;
     return text(JSON.stringify(data, null, 2));
   });
 

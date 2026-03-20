@@ -504,8 +504,8 @@ function extractRoutes(spec: OaSpec): ExtractedRoute[] {
       const httpMethod = method.toUpperCase() as ExtractedRoute['method'];
       const description = operation.summary ?? operation.description ?? '';
 
-      // Plaid has no path params, so fastifyPath is just /plaid + specPath
-      const fastifyPath = '/plaid' + specPath;
+      // Plaid has no path params, so fastifyPath is just specPath
+      const fastifyPath = specPath;
 
       const resource = detectPlaidResource(specPath);
       const op = detectPlaidOperation(specPath, httpMethod);
@@ -673,7 +673,7 @@ function generateRoutesTs(routes: ExtractedRoute[]): string {
     `export interface GeneratedRoute {`,
     `  /** HTTP method */`,
     `  method: RouteMethod;`,
-    `  /** Fastify route path with /plaid prefix */`,
+    `  /** Fastify route path */`,
     `  fastifyPath: string;`,
     `  /** Original Plaid spec path (field name is historical) */`,
     `  stripePath: string;`,

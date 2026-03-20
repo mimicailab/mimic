@@ -155,7 +155,7 @@ export class ZuoraAdapter extends OpenApiMockAdapter<ZuoraConfig> {
   // ---------------------------------------------------------------------------
 
   private mountOverrides(server: FastifyInstance, store: StateStore): void {
-    const BP = '/zuora/v1';
+    const BP = '/v1';
 
     // ── Accounts ──────────────────────────────────────────────────────
     this.registerOverride('POST', `${BP}/accounts`, async (req, reply) => {

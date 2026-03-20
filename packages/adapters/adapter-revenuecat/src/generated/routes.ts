@@ -19,7 +19,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/paywalls",
+    fastifyPath: "/projects/:project_id/paywalls",
     stripePath: "/projects/{project_id}/paywalls",
     resource: "paywalls",
     operation: "list",
@@ -29,7 +29,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/paywalls",
+    fastifyPath: "/projects/:project_id/paywalls",
     stripePath: "/projects/{project_id}/paywalls",
     resource: "paywalls",
     operation: "create",
@@ -39,7 +39,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/paywalls/:paywall_id",
+    fastifyPath: "/projects/:project_id/paywalls/:paywall_id",
     stripePath: "/projects/{project_id}/paywalls/{paywall_id}",
     resource: "paywalls",
     operation: "retrieve",
@@ -50,7 +50,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/paywalls/:paywall_id",
+    fastifyPath: "/projects/:project_id/paywalls/:paywall_id",
     stripePath: "/projects/{project_id}/paywalls/{paywall_id}",
     resource: "paywalls",
     operation: "delete",
@@ -61,7 +61,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/apps/:app_id/public_api_keys",
+    fastifyPath: "/projects/:project_id/apps/:app_id/public_api_keys",
     stripePath: "/projects/{project_id}/apps/{app_id}/public_api_keys",
     resource: "public_api_keys",
     operation: "list",
@@ -71,7 +71,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects",
+    fastifyPath: "/projects",
     stripePath: "/projects",
     resource: "projects",
     operation: "list",
@@ -81,7 +81,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects",
+    fastifyPath: "/projects",
     stripePath: "/projects",
     resource: "projects",
     operation: "create",
@@ -91,7 +91,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/apps",
+    fastifyPath: "/projects/:project_id/apps",
     stripePath: "/projects/{project_id}/apps",
     resource: "apps",
     operation: "list",
@@ -101,7 +101,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/apps",
+    fastifyPath: "/projects/:project_id/apps",
     stripePath: "/projects/{project_id}/apps",
     resource: "apps",
     operation: "create",
@@ -111,7 +111,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/apps/:app_id",
+    fastifyPath: "/projects/:project_id/apps/:app_id",
     stripePath: "/projects/{project_id}/apps/{app_id}",
     resource: "apps",
     operation: "retrieve",
@@ -122,7 +122,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/apps/:app_id",
+    fastifyPath: "/projects/:project_id/apps/:app_id",
     stripePath: "/projects/{project_id}/apps/{app_id}",
     resource: "apps",
     operation: "update",
@@ -133,7 +133,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/apps/:app_id",
+    fastifyPath: "/projects/:project_id/apps/:app_id",
     stripePath: "/projects/{project_id}/apps/{app_id}",
     resource: "apps",
     operation: "delete",
@@ -144,7 +144,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/apps/:app_id/store_kit_config",
+    fastifyPath: "/projects/:project_id/apps/:app_id/store_kit_config",
     stripePath: "/projects/{project_id}/apps/{app_id}/store_kit_config",
     resource: "apps",
     operation: "action",
@@ -155,7 +155,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/audit_logs",
+    fastifyPath: "/projects/:project_id/audit_logs",
     stripePath: "/projects/{project_id}/audit_logs",
     resource: "audit_logs",
     operation: "list",
@@ -164,7 +164,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/collaborators",
+    fastifyPath: "/projects/:project_id/collaborators",
     stripePath: "/projects/{project_id}/collaborators",
     resource: "collaborators",
     operation: "list",
@@ -174,7 +174,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers",
+    fastifyPath: "/projects/:project_id/customers",
     stripePath: "/projects/{project_id}/customers",
     resource: "customers",
     operation: "list",
@@ -184,7 +184,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers",
+    fastifyPath: "/projects/:project_id/customers",
     stripePath: "/projects/{project_id}/customers",
     resource: "customers",
     operation: "create",
@@ -194,7 +194,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id",
+    fastifyPath: "/projects/:project_id/customers/:customer_id",
     stripePath: "/projects/{project_id}/customers/{customer_id}",
     resource: "customers",
     operation: "retrieve",
@@ -205,7 +205,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id",
+    fastifyPath: "/projects/:project_id/customers/:customer_id",
     stripePath: "/projects/{project_id}/customers/{customer_id}",
     resource: "customers",
     operation: "delete",
@@ -216,7 +216,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/actions/transfer",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/actions/transfer",
     stripePath: "/projects/{project_id}/customers/{customer_id}/actions/transfer",
     resource: "customers",
     operation: "action",
@@ -227,7 +227,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/actions/grant_entitlement",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/actions/grant_entitlement",
     stripePath: "/projects/{project_id}/customers/{customer_id}/actions/grant_entitlement",
     resource: "customers",
     operation: "action",
@@ -238,7 +238,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/actions/revoke_granted_entitlement",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/actions/revoke_granted_entitlement",
     stripePath: "/projects/{project_id}/customers/{customer_id}/actions/revoke_granted_entitlement",
     resource: "customers",
     operation: "action",
@@ -249,7 +249,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/actions/assign_offering",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/actions/assign_offering",
     stripePath: "/projects/{project_id}/customers/{customer_id}/actions/assign_offering",
     resource: "customers",
     operation: "action",
@@ -260,7 +260,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/integrations/webhooks",
+    fastifyPath: "/projects/:project_id/integrations/webhooks",
     stripePath: "/projects/{project_id}/integrations/webhooks",
     resource: "webhooks",
     operation: "list",
@@ -270,7 +270,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/integrations/webhooks",
+    fastifyPath: "/projects/:project_id/integrations/webhooks",
     stripePath: "/projects/{project_id}/integrations/webhooks",
     resource: "webhooks",
     operation: "create",
@@ -280,7 +280,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/integrations/webhooks/:webhook_integration_id",
+    fastifyPath: "/projects/:project_id/integrations/webhooks/:webhook_integration_id",
     stripePath: "/projects/{project_id}/integrations/webhooks/{webhook_integration_id}",
     resource: "webhooks",
     operation: "retrieve",
@@ -291,7 +291,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/integrations/webhooks/:webhook_integration_id",
+    fastifyPath: "/projects/:project_id/integrations/webhooks/:webhook_integration_id",
     stripePath: "/projects/{project_id}/integrations/webhooks/{webhook_integration_id}",
     resource: "webhooks",
     operation: "update",
@@ -302,7 +302,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/integrations/webhooks/:webhook_integration_id",
+    fastifyPath: "/projects/:project_id/integrations/webhooks/:webhook_integration_id",
     stripePath: "/projects/{project_id}/integrations/webhooks/{webhook_integration_id}",
     resource: "webhooks",
     operation: "delete",
@@ -313,7 +313,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/products/:product_id",
+    fastifyPath: "/projects/:project_id/products/:product_id",
     stripePath: "/projects/{project_id}/products/{product_id}",
     resource: "products",
     operation: "retrieve",
@@ -324,7 +324,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/products/:product_id",
+    fastifyPath: "/projects/:project_id/products/:product_id",
     stripePath: "/projects/{project_id}/products/{product_id}",
     resource: "products",
     operation: "update",
@@ -335,7 +335,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/products/:product_id",
+    fastifyPath: "/projects/:project_id/products/:product_id",
     stripePath: "/projects/{project_id}/products/{product_id}",
     resource: "products",
     operation: "delete",
@@ -346,7 +346,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/products/:product_id/actions/archive",
+    fastifyPath: "/projects/:project_id/products/:product_id/actions/archive",
     stripePath: "/projects/{project_id}/products/{product_id}/actions/archive",
     resource: "products",
     operation: "action",
@@ -357,7 +357,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/products/:product_id/actions/unarchive",
+    fastifyPath: "/projects/:project_id/products/:product_id/actions/unarchive",
     stripePath: "/projects/{project_id}/products/{product_id}/actions/unarchive",
     resource: "products",
     operation: "action",
@@ -368,7 +368,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/products/:product_id/create_in_store",
+    fastifyPath: "/projects/:project_id/products/:product_id/create_in_store",
     stripePath: "/projects/{project_id}/products/{product_id}/create_in_store",
     resource: "products",
     operation: "action",
@@ -379,7 +379,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/products",
+    fastifyPath: "/projects/:project_id/products",
     stripePath: "/projects/{project_id}/products",
     resource: "products",
     operation: "list",
@@ -389,7 +389,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/products",
+    fastifyPath: "/projects/:project_id/products",
     stripePath: "/projects/{project_id}/products",
     resource: "products",
     operation: "create",
@@ -399,7 +399,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/virtual_currencies",
+    fastifyPath: "/projects/:project_id/virtual_currencies",
     stripePath: "/projects/{project_id}/virtual_currencies",
     resource: "virtual_currencies",
     operation: "list",
@@ -409,7 +409,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/virtual_currencies",
+    fastifyPath: "/projects/:project_id/virtual_currencies",
     stripePath: "/projects/{project_id}/virtual_currencies",
     resource: "virtual_currencies",
     operation: "create",
@@ -419,7 +419,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/virtual_currencies/:virtual_currency_code",
+    fastifyPath: "/projects/:project_id/virtual_currencies/:virtual_currency_code",
     stripePath: "/projects/{project_id}/virtual_currencies/{virtual_currency_code}",
     resource: "virtual_currencies",
     operation: "retrieve",
@@ -430,7 +430,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/virtual_currencies/:virtual_currency_code",
+    fastifyPath: "/projects/:project_id/virtual_currencies/:virtual_currency_code",
     stripePath: "/projects/{project_id}/virtual_currencies/{virtual_currency_code}",
     resource: "virtual_currencies",
     operation: "update",
@@ -441,7 +441,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/virtual_currencies/:virtual_currency_code",
+    fastifyPath: "/projects/:project_id/virtual_currencies/:virtual_currency_code",
     stripePath: "/projects/{project_id}/virtual_currencies/{virtual_currency_code}",
     resource: "virtual_currencies",
     operation: "delete",
@@ -452,7 +452,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/virtual_currencies/:virtual_currency_code/actions/archive",
+    fastifyPath: "/projects/:project_id/virtual_currencies/:virtual_currency_code/actions/archive",
     stripePath: "/projects/{project_id}/virtual_currencies/{virtual_currency_code}/actions/archive",
     resource: "virtual_currencies",
     operation: "action",
@@ -463,7 +463,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/virtual_currencies/:virtual_currency_code/actions/unarchive",
+    fastifyPath: "/projects/:project_id/virtual_currencies/:virtual_currency_code/actions/unarchive",
     stripePath: "/projects/{project_id}/virtual_currencies/{virtual_currency_code}/actions/unarchive",
     resource: "virtual_currencies",
     operation: "action",
@@ -474,7 +474,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}",
     resource: "entitlements",
     operation: "retrieve",
@@ -485,7 +485,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}",
     resource: "entitlements",
     operation: "update",
@@ -496,7 +496,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}",
     resource: "entitlements",
     operation: "delete",
@@ -507,7 +507,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements",
+    fastifyPath: "/projects/:project_id/entitlements",
     stripePath: "/projects/{project_id}/entitlements",
     resource: "entitlements",
     operation: "list",
@@ -517,7 +517,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements",
+    fastifyPath: "/projects/:project_id/entitlements",
     stripePath: "/projects/{project_id}/entitlements",
     resource: "entitlements",
     operation: "create",
@@ -527,7 +527,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id/products",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id/products",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}/products",
     resource: "entitlement_products",
     operation: "list",
@@ -537,7 +537,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id/actions/archive",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id/actions/archive",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}/actions/archive",
     resource: "entitlements",
     operation: "action",
@@ -548,7 +548,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id/actions/unarchive",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id/actions/unarchive",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}/actions/unarchive",
     resource: "entitlements",
     operation: "action",
@@ -559,7 +559,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id/actions/attach_products",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id/actions/attach_products",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}/actions/attach_products",
     resource: "entitlements",
     operation: "action",
@@ -570,7 +570,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/entitlements/:entitlement_id/actions/detach_products",
+    fastifyPath: "/projects/:project_id/entitlements/:entitlement_id/actions/detach_products",
     stripePath: "/projects/{project_id}/entitlements/{entitlement_id}/actions/detach_products",
     resource: "entitlements",
     operation: "action",
@@ -581,7 +581,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings/:offering_id",
+    fastifyPath: "/projects/:project_id/offerings/:offering_id",
     stripePath: "/projects/{project_id}/offerings/{offering_id}",
     resource: "offerings",
     operation: "retrieve",
@@ -592,7 +592,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings/:offering_id",
+    fastifyPath: "/projects/:project_id/offerings/:offering_id",
     stripePath: "/projects/{project_id}/offerings/{offering_id}",
     resource: "offerings",
     operation: "update",
@@ -603,7 +603,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings/:offering_id",
+    fastifyPath: "/projects/:project_id/offerings/:offering_id",
     stripePath: "/projects/{project_id}/offerings/{offering_id}",
     resource: "offerings",
     operation: "delete",
@@ -614,7 +614,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings/:offering_id/actions/archive",
+    fastifyPath: "/projects/:project_id/offerings/:offering_id/actions/archive",
     stripePath: "/projects/{project_id}/offerings/{offering_id}/actions/archive",
     resource: "offerings",
     operation: "action",
@@ -625,7 +625,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings/:offering_id/actions/unarchive",
+    fastifyPath: "/projects/:project_id/offerings/:offering_id/actions/unarchive",
     stripePath: "/projects/{project_id}/offerings/{offering_id}/actions/unarchive",
     resource: "offerings",
     operation: "action",
@@ -636,7 +636,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings",
+    fastifyPath: "/projects/:project_id/offerings",
     stripePath: "/projects/{project_id}/offerings",
     resource: "offerings",
     operation: "list",
@@ -646,7 +646,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings",
+    fastifyPath: "/projects/:project_id/offerings",
     stripePath: "/projects/{project_id}/offerings",
     resource: "offerings",
     operation: "create",
@@ -656,7 +656,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/packages/:package_id",
+    fastifyPath: "/projects/:project_id/packages/:package_id",
     stripePath: "/projects/{project_id}/packages/{package_id}",
     resource: "packages",
     operation: "retrieve",
@@ -667,7 +667,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/packages/:package_id",
+    fastifyPath: "/projects/:project_id/packages/:package_id",
     stripePath: "/projects/{project_id}/packages/{package_id}",
     resource: "packages",
     operation: "update",
@@ -678,7 +678,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/revenuecat/projects/:project_id/packages/:package_id",
+    fastifyPath: "/projects/:project_id/packages/:package_id",
     stripePath: "/projects/{project_id}/packages/{package_id}",
     resource: "packages",
     operation: "delete",
@@ -689,7 +689,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings/:offering_id/packages",
+    fastifyPath: "/projects/:project_id/offerings/:offering_id/packages",
     stripePath: "/projects/{project_id}/offerings/{offering_id}/packages",
     resource: "packages",
     operation: "list",
@@ -700,7 +700,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/offerings/:offering_id/packages",
+    fastifyPath: "/projects/:project_id/offerings/:offering_id/packages",
     stripePath: "/projects/{project_id}/offerings/{offering_id}/packages",
     resource: "packages",
     operation: "create",
@@ -711,7 +711,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/packages/:package_id/products",
+    fastifyPath: "/projects/:project_id/packages/:package_id/products",
     stripePath: "/projects/{project_id}/packages/{package_id}/products",
     resource: "package_products",
     operation: "list",
@@ -721,7 +721,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/packages/:package_id/actions/attach_products",
+    fastifyPath: "/projects/:project_id/packages/:package_id/actions/attach_products",
     stripePath: "/projects/{project_id}/packages/{package_id}/actions/attach_products",
     resource: "packages",
     operation: "action",
@@ -732,7 +732,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/packages/:package_id/actions/detach_products",
+    fastifyPath: "/projects/:project_id/packages/:package_id/actions/detach_products",
     stripePath: "/projects/{project_id}/packages/{package_id}/actions/detach_products",
     resource: "packages",
     operation: "action",
@@ -743,7 +743,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions/:subscription_id",
+    fastifyPath: "/projects/:project_id/subscriptions/:subscription_id",
     stripePath: "/projects/{project_id}/subscriptions/{subscription_id}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -754,7 +754,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions/:subscription_id/transactions",
+    fastifyPath: "/projects/:project_id/subscriptions/:subscription_id/transactions",
     stripePath: "/projects/{project_id}/subscriptions/{subscription_id}/transactions",
     resource: "subscription_transactions",
     operation: "list",
@@ -764,7 +764,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions/:subscription_id/transactions/:transaction_id/actions/refund",
+    fastifyPath: "/projects/:project_id/subscriptions/:subscription_id/transactions/:transaction_id/actions/refund",
     stripePath: "/projects/{project_id}/subscriptions/{subscription_id}/transactions/{transaction_id}/actions/refund",
     resource: "subscription_transactions",
     operation: "action",
@@ -774,7 +774,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions/:subscription_id/entitlements",
+    fastifyPath: "/projects/:project_id/subscriptions/:subscription_id/entitlements",
     stripePath: "/projects/{project_id}/subscriptions/{subscription_id}/entitlements",
     resource: "subscription_entitlements",
     operation: "list",
@@ -784,7 +784,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions/:subscription_id/actions/cancel",
+    fastifyPath: "/projects/:project_id/subscriptions/:subscription_id/actions/cancel",
     stripePath: "/projects/{project_id}/subscriptions/{subscription_id}/actions/cancel",
     resource: "subscriptions",
     operation: "action",
@@ -795,7 +795,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions/:subscription_id/actions/refund",
+    fastifyPath: "/projects/:project_id/subscriptions/:subscription_id/actions/refund",
     stripePath: "/projects/{project_id}/subscriptions/{subscription_id}/actions/refund",
     resource: "subscriptions",
     operation: "action",
@@ -806,7 +806,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions/:subscription_id/authenticated_management_url",
+    fastifyPath: "/projects/:project_id/subscriptions/:subscription_id/authenticated_management_url",
     stripePath: "/projects/{project_id}/subscriptions/{subscription_id}/authenticated_management_url",
     resource: "subscriptions",
     operation: "action",
@@ -817,7 +817,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/subscriptions",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/subscriptions",
     stripePath: "/projects/{project_id}/customers/{customer_id}/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -828,7 +828,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/purchases/:purchase_id",
+    fastifyPath: "/projects/:project_id/purchases/:purchase_id",
     stripePath: "/projects/{project_id}/purchases/{purchase_id}",
     resource: "purchases",
     operation: "retrieve",
@@ -839,7 +839,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/purchases/:purchase_id/entitlements",
+    fastifyPath: "/projects/:project_id/purchases/:purchase_id/entitlements",
     stripePath: "/projects/{project_id}/purchases/{purchase_id}/entitlements",
     resource: "purchase_entitlements",
     operation: "list",
@@ -849,7 +849,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/purchases/:purchase_id/actions/refund",
+    fastifyPath: "/projects/:project_id/purchases/:purchase_id/actions/refund",
     stripePath: "/projects/{project_id}/purchases/{purchase_id}/actions/refund",
     resource: "purchases",
     operation: "action",
@@ -860,7 +860,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/purchases",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/purchases",
     stripePath: "/projects/{project_id}/customers/{customer_id}/purchases",
     resource: "purchases",
     operation: "list",
@@ -871,7 +871,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/active_entitlements",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/active_entitlements",
     stripePath: "/projects/{project_id}/customers/{customer_id}/active_entitlements",
     resource: "active_entitlements",
     operation: "list",
@@ -881,7 +881,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/aliases",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/aliases",
     stripePath: "/projects/{project_id}/customers/{customer_id}/aliases",
     resource: "aliases",
     operation: "list",
@@ -891,7 +891,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/virtual_currencies",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/virtual_currencies",
     stripePath: "/projects/{project_id}/customers/{customer_id}/virtual_currencies",
     resource: "virtual_currencies",
     operation: "list",
@@ -902,7 +902,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/virtual_currencies/transactions",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/virtual_currencies/transactions",
     stripePath: "/projects/{project_id}/customers/{customer_id}/virtual_currencies/transactions",
     resource: "virtual_currency_transactions",
     operation: "create",
@@ -912,7 +912,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/virtual_currencies/update_balance",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/virtual_currencies/update_balance",
     stripePath: "/projects/{project_id}/customers/{customer_id}/virtual_currencies/update_balance",
     resource: "virtual_currency_transactions",
     operation: "action",
@@ -922,7 +922,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/attributes",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/attributes",
     stripePath: "/projects/{project_id}/customers/{customer_id}/attributes",
     resource: "attributes",
     operation: "list",
@@ -932,7 +932,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/attributes",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/attributes",
     stripePath: "/projects/{project_id}/customers/{customer_id}/attributes",
     resource: "attributes",
     operation: "create",
@@ -942,7 +942,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/invoices",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/invoices",
     stripePath: "/projects/{project_id}/customers/{customer_id}/invoices",
     resource: "invoices",
     operation: "list",
@@ -953,7 +953,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/customers/:customer_id/invoices/:invoice_id/file",
+    fastifyPath: "/projects/:project_id/customers/:customer_id/invoices/:invoice_id/file",
     stripePath: "/projects/{project_id}/customers/{customer_id}/invoices/{invoice_id}/file",
     resource: "invoices",
     operation: "action",
@@ -964,7 +964,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/metrics/overview",
+    fastifyPath: "/projects/:project_id/metrics/overview",
     stripePath: "/projects/{project_id}/metrics/overview",
     resource: "metrics",
     operation: "list",
@@ -973,7 +973,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/charts/:chart_name",
+    fastifyPath: "/projects/:project_id/charts/:chart_name",
     stripePath: "/projects/{project_id}/charts/{chart_name}",
     resource: "charts",
     operation: "retrieve",
@@ -983,7 +983,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/charts/:chart_name/options",
+    fastifyPath: "/projects/:project_id/charts/:chart_name/options",
     stripePath: "/projects/{project_id}/charts/{chart_name}/options",
     resource: "charts",
     operation: "list",
@@ -993,7 +993,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/subscriptions",
+    fastifyPath: "/projects/:project_id/subscriptions",
     stripePath: "/projects/{project_id}/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -1003,7 +1003,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/revenuecat/projects/:project_id/purchases",
+    fastifyPath: "/projects/:project_id/purchases",
     stripePath: "/projects/{project_id}/purchases",
     resource: "purchases",
     operation: "list",

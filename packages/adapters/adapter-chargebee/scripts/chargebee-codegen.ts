@@ -557,7 +557,7 @@ type RouteOperation = 'list' | 'create' | 'retrieve' | 'update' | 'delete' | 'ac
 interface ExtractedRoute {
   method: 'GET' | 'POST';
   stripePath: string;        // original spec path (field name is historical)
-  fastifyPath: string;       // Fastify path with /chargebee prefix
+  fastifyPath: string;       // Fastify route path with colon params
   resource: string;          // e.g. 'customers'
   operation: RouteOperation;
   description: string;
@@ -580,7 +580,7 @@ function extractRoutes(spec: OaSpec): ExtractedRoute[] {
       const description = operation.summary ?? operation.operationId ?? '';
 
       // Convert path params: {param-name} → :param_name (kebab→snake for Fastify compat)
-      const fastifyPath = '/chargebee' + specPath.replace(/\{([^}]+)\}/g, (_m, p) => ':' + p.replace(/-/g, '_'));
+      const fastifyPath = specPath.replace(/\{([^}]+)\}/g, (_m, p) => ':' + p.replace(/-/g, '_'));
 
       // Detect resource from path
       const resource = detectResource(specPath, knownResourceKeys);
@@ -860,7 +860,7 @@ function generateRoutesTs(routes: ExtractedRoute[]): string {
     `export interface GeneratedRoute {`,
     `  /** HTTP method */`,
     `  method: RouteMethod;`,
-    `  /** Fastify route path with colon params and /chargebee prefix */`,
+    `  /** Fastify route path with colon params */`,
     `  fastifyPath: string;`,
     `  /** Original spec path for documentation (field name is historical) */`,
     `  stripePath: string;`,

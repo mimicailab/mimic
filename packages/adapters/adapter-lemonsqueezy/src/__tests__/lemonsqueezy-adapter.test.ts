@@ -19,7 +19,7 @@ describe('LemonSqueezyAdapter', () => {
 
   it('should have correct metadata', () => {
     expect(adapter.id).toBe('lemonsqueezy');
-    expect(adapter.basePath).toBe('/lemonsqueezy');
+    expect(adapter.basePath).toBe('');
     expect(adapter.name).toBe('Lemon Squeezy');
   });
 
@@ -37,7 +37,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should create a customer (JSON:API format)', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/customers',
+      url: '/v1/customers',
       headers: { 'content-type': 'application/vnd.api+json' },
       payload: JSON.stringify({
         data: {
@@ -59,7 +59,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should create a customer (plain body)', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/customers',
+      url: '/v1/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ name: 'John Smith', email: 'john@example.com' }),
     });
@@ -71,7 +71,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should list customers', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/customers',
+      url: '/v1/customers',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -85,7 +85,7 @@ describe('LemonSqueezyAdapter', () => {
     // Create first
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/customers',
+      url: '/v1/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ name: 'Retrieve Test', email: 'retrieve@test.com' }),
     });
@@ -93,7 +93,7 @@ describe('LemonSqueezyAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/lemonsqueezy/v1/customers/${customerId}`,
+      url: `/v1/customers/${customerId}`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -105,7 +105,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should update a customer', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/customers',
+      url: '/v1/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ name: 'Update Test', email: 'update@test.com' }),
     });
@@ -113,7 +113,7 @@ describe('LemonSqueezyAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'PATCH',
-      url: `/lemonsqueezy/v1/customers/${customerId}`,
+      url: `/v1/customers/${customerId}`,
       headers: { 'content-type': 'application/vnd.api+json' },
       payload: JSON.stringify({
         data: { type: 'customers', id: customerId, attributes: { city: 'San Francisco' } },
@@ -126,7 +126,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should return 404 for non-existent customer', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/customers/nonexistent',
+      url: '/v1/customers/nonexistent',
     });
     expect(res.statusCode).toBe(404);
     const body = res.json();
@@ -138,7 +138,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should list products (empty initially)', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/products',
+      url: '/v1/products',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().data).toBeInstanceOf(Array);
@@ -150,7 +150,7 @@ describe('LemonSqueezyAdapter', () => {
     // Create
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/subscriptions',
+      url: '/v1/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ product_name: 'Pro Plan', status: 'active' }),
     });
@@ -160,7 +160,7 @@ describe('LemonSqueezyAdapter', () => {
     // Cancel (DELETE)
     const cancelRes = await ts.server.inject({
       method: 'DELETE',
-      url: `/lemonsqueezy/v1/subscriptions/${subId}`,
+      url: `/v1/subscriptions/${subId}`,
     });
     expect(cancelRes.statusCode).toBe(200);
     expect(cancelRes.json().data.attributes.status).toBe('cancelled');
@@ -171,7 +171,7 @@ describe('LemonSqueezyAdapter', () => {
     // Create
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/subscriptions',
+      url: '/v1/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ product_name: 'Pause Test', status: 'active' }),
     });
@@ -180,7 +180,7 @@ describe('LemonSqueezyAdapter', () => {
     // Pause via PATCH
     const pauseRes = await ts.server.inject({
       method: 'PATCH',
-      url: `/lemonsqueezy/v1/subscriptions/${subId}`,
+      url: `/v1/subscriptions/${subId}`,
       headers: { 'content-type': 'application/vnd.api+json' },
       payload: JSON.stringify({
         data: { type: 'subscriptions', id: subId, attributes: { pause: { mode: 'void' } } },
@@ -192,7 +192,7 @@ describe('LemonSqueezyAdapter', () => {
     // Resume via PATCH (set pause to null)
     const resumeRes = await ts.server.inject({
       method: 'PATCH',
-      url: `/lemonsqueezy/v1/subscriptions/${subId}`,
+      url: `/v1/subscriptions/${subId}`,
       headers: { 'content-type': 'application/vnd.api+json' },
       payload: JSON.stringify({
         data: { type: 'subscriptions', id: subId, attributes: { pause: null } },
@@ -205,7 +205,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should list subscriptions', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/subscriptions',
+      url: '/v1/subscriptions',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().data.length).toBeGreaterThan(0);
@@ -217,7 +217,7 @@ describe('LemonSqueezyAdapter', () => {
     // Create
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/discounts',
+      url: '/v1/discounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ name: 'Summer Sale', code: 'SUMMER20', amount: 20, amount_type: 'percent' }),
     });
@@ -227,7 +227,7 @@ describe('LemonSqueezyAdapter', () => {
     // List
     const listRes = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/discounts',
+      url: '/v1/discounts',
     });
     expect(listRes.statusCode).toBe(200);
     expect(listRes.json().data.length).toBeGreaterThan(0);
@@ -235,7 +235,7 @@ describe('LemonSqueezyAdapter', () => {
     // Delete (204 No Content)
     const deleteRes = await ts.server.inject({
       method: 'DELETE',
-      url: `/lemonsqueezy/v1/discounts/${discountId}`,
+      url: `/v1/discounts/${discountId}`,
     });
     expect(deleteRes.statusCode).toBe(204);
   });
@@ -246,7 +246,7 @@ describe('LemonSqueezyAdapter', () => {
     // Create
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/webhooks',
+      url: '/v1/webhooks',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ url: 'https://example.com/webhook', events: ['order_created'] }),
     });
@@ -256,7 +256,7 @@ describe('LemonSqueezyAdapter', () => {
     // Update
     const updateRes = await ts.server.inject({
       method: 'PATCH',
-      url: `/lemonsqueezy/v1/webhooks/${webhookId}`,
+      url: `/v1/webhooks/${webhookId}`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ events: ['order_created', 'subscription_created'] }),
     });
@@ -265,7 +265,7 @@ describe('LemonSqueezyAdapter', () => {
     // Delete
     const deleteRes = await ts.server.inject({
       method: 'DELETE',
-      url: `/lemonsqueezy/v1/webhooks/${webhookId}`,
+      url: `/v1/webhooks/${webhookId}`,
     });
     expect(deleteRes.statusCode).toBe(204);
   });
@@ -275,7 +275,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should create a checkout', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/lemonsqueezy/v1/checkouts',
+      url: '/v1/checkouts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ store_id: 1, variant_id: 1 }),
     });
@@ -288,7 +288,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should retrieve the authenticated user', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/users/me',
+      url: '/v1/users/me',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -303,7 +303,7 @@ describe('LemonSqueezyAdapter', () => {
     for (let i = 0; i < 3; i++) {
       await ts.server.inject({
         method: 'POST',
-        url: '/lemonsqueezy/v1/customers',
+        url: '/v1/customers',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ name: `Page Test ${i}`, email: `page${i}@test.com` }),
       });
@@ -312,7 +312,7 @@ describe('LemonSqueezyAdapter', () => {
     // Request page 1 with size 2
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/customers?page[size]=2&page[number]=1',
+      url: '/v1/customers?page[size]=2&page[number]=1',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -326,7 +326,7 @@ describe('LemonSqueezyAdapter', () => {
   it('should list license keys (empty initially)', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/lemonsqueezy/v1/license-keys',
+      url: '/v1/license-keys',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().data).toBeInstanceOf(Array);
@@ -363,7 +363,7 @@ describe('LemonSqueezyAdapter', () => {
 
     const seededAdapter = new LemonSqueezyAdapter();
     const seededTs = await buildTestServer(seededAdapter, seedData);
-    const res = await seededTs.server.inject({ method: 'GET', url: '/lemonsqueezy/v1/customers' });
+    const res = await seededTs.server.inject({ method: 'GET', url: '/v1/customers' });
     const items = res.json().data;
     expect(items).toContainEqual(
       expect.objectContaining({

@@ -849,7 +849,7 @@ function generateRoutesTs(): string {
 
   for (const res of RESOURCES) {
     for (const ep of res.endpoints) {
-      const fastifyPath = '/lemonsqueezy' + ep.path;
+      const fastifyPath = ep.path;
       lines.push(`  {`);
       lines.push(`    method: ${JSON.stringify(ep.method)},`);
       lines.push(`    fastifyPath: ${JSON.stringify(fastifyPath)},`);

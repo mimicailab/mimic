@@ -6,7 +6,7 @@ export type RouteOperation = 'list' | 'create' | 'retrieve' | 'update' | 'delete
 export interface GeneratedRoute {
   /** HTTP method */
   method: RouteMethod;
-  /** Fastify route path with /plaid prefix */
+  /** Fastify route path */
   fastifyPath: string;
   /** Original Plaid spec path (field name is historical) */
   stripePath: string;
@@ -27,7 +27,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/create",
+    fastifyPath: "/asset_report/create",
     stripePath: "/asset_report/create",
     resource: "asset_report",
     operation: "create",
@@ -36,7 +36,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/get",
+    fastifyPath: "/asset_report/get",
     stripePath: "/asset_report/get",
     resource: "asset_report",
     operation: "retrieve",
@@ -45,7 +45,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/pdf/get",
+    fastifyPath: "/asset_report/pdf/get",
     stripePath: "/asset_report/pdf/get",
     resource: "asset_report",
     operation: "retrieve",
@@ -54,7 +54,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/refresh",
+    fastifyPath: "/asset_report/refresh",
     stripePath: "/asset_report/refresh",
     resource: "asset_report",
     operation: "action",
@@ -63,7 +63,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/filter",
+    fastifyPath: "/asset_report/filter",
     stripePath: "/asset_report/filter",
     resource: "asset_report",
     operation: "action",
@@ -72,7 +72,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/remove",
+    fastifyPath: "/asset_report/remove",
     stripePath: "/asset_report/remove",
     resource: "asset_report",
     operation: "delete",
@@ -81,7 +81,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/audit_copy/create",
+    fastifyPath: "/asset_report/audit_copy/create",
     stripePath: "/asset_report/audit_copy/create",
     resource: "asset_report",
     operation: "create",
@@ -90,7 +90,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/audit_copy/get",
+    fastifyPath: "/asset_report/audit_copy/get",
     stripePath: "/asset_report/audit_copy/get",
     resource: "asset_report",
     operation: "retrieve",
@@ -99,7 +99,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/audit_copy/pdf/get",
+    fastifyPath: "/asset_report/audit_copy/pdf/get",
     stripePath: "/asset_report/audit_copy/pdf/get",
     resource: "asset_report",
     operation: "retrieve",
@@ -108,7 +108,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/asset_report/audit_copy/remove",
+    fastifyPath: "/asset_report/audit_copy/remove",
     stripePath: "/asset_report/audit_copy/remove",
     resource: "asset_report",
     operation: "delete",
@@ -117,7 +117,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/monitoring_insights/subscribe",
+    fastifyPath: "/cra/monitoring_insights/subscribe",
     stripePath: "/cra/monitoring_insights/subscribe",
     resource: "cra",
     operation: "action",
@@ -126,7 +126,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/monitoring_insights/unsubscribe",
+    fastifyPath: "/cra/monitoring_insights/unsubscribe",
     stripePath: "/cra/monitoring_insights/unsubscribe",
     resource: "cra",
     operation: "action",
@@ -135,7 +135,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/monitoring_insights/get",
+    fastifyPath: "/cra/monitoring_insights/get",
     stripePath: "/cra/monitoring_insights/get",
     resource: "cra",
     operation: "retrieve",
@@ -144,7 +144,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/audit_copy_token/update",
+    fastifyPath: "/credit/audit_copy_token/update",
     stripePath: "/credit/audit_copy_token/update",
     resource: "credit",
     operation: "update",
@@ -153,7 +153,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/partner_insights/get",
+    fastifyPath: "/cra/partner_insights/get",
     stripePath: "/cra/partner_insights/get",
     resource: "cra",
     operation: "retrieve",
@@ -162,7 +162,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/income_insights/get",
+    fastifyPath: "/cra/check_report/income_insights/get",
     stripePath: "/cra/check_report/income_insights/get",
     resource: "cra",
     operation: "retrieve",
@@ -171,7 +171,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/base_report/get",
+    fastifyPath: "/cra/check_report/base_report/get",
     stripePath: "/cra/check_report/base_report/get",
     resource: "cra",
     operation: "retrieve",
@@ -180,7 +180,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/pdf/get",
+    fastifyPath: "/cra/check_report/pdf/get",
     stripePath: "/cra/check_report/pdf/get",
     resource: "cra",
     operation: "retrieve",
@@ -189,7 +189,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/create",
+    fastifyPath: "/cra/check_report/create",
     stripePath: "/cra/check_report/create",
     resource: "cra",
     operation: "create",
@@ -198,7 +198,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/partner_insights/get",
+    fastifyPath: "/cra/check_report/partner_insights/get",
     stripePath: "/cra/check_report/partner_insights/get",
     resource: "cra",
     operation: "retrieve",
@@ -207,7 +207,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/cashflow_insights/get",
+    fastifyPath: "/cra/check_report/cashflow_insights/get",
     stripePath: "/cra/check_report/cashflow_insights/get",
     resource: "cra",
     operation: "retrieve",
@@ -216,7 +216,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/lend_score/get",
+    fastifyPath: "/cra/check_report/lend_score/get",
     stripePath: "/cra/check_report/lend_score/get",
     resource: "cra",
     operation: "retrieve",
@@ -225,7 +225,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/network_insights/get",
+    fastifyPath: "/cra/check_report/network_insights/get",
     stripePath: "/cra/check_report/network_insights/get",
     resource: "cra",
     operation: "retrieve",
@@ -234,7 +234,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/verification/get",
+    fastifyPath: "/cra/check_report/verification/get",
     stripePath: "/cra/check_report/verification/get",
     resource: "cra",
     operation: "retrieve",
@@ -243,7 +243,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/check_report/verification/pdf/get",
+    fastifyPath: "/cra/check_report/verification/pdf/get",
     stripePath: "/cra/check_report/verification/pdf/get",
     resource: "cra",
     operation: "retrieve",
@@ -252,7 +252,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/loans/applications/register",
+    fastifyPath: "/cra/loans/applications/register",
     stripePath: "/cra/loans/applications/register",
     resource: "cra",
     operation: "action",
@@ -261,7 +261,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/loans/register",
+    fastifyPath: "/cra/loans/register",
     stripePath: "/cra/loans/register",
     resource: "cra",
     operation: "action",
@@ -270,7 +270,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/loans/update",
+    fastifyPath: "/cra/loans/update",
     stripePath: "/cra/loans/update",
     resource: "cra",
     operation: "update",
@@ -279,7 +279,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cra/loans/unregister",
+    fastifyPath: "/cra/loans/unregister",
     stripePath: "/cra/loans/unregister",
     resource: "cra",
     operation: "action",
@@ -288,7 +288,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/consumer_report/pdf/get",
+    fastifyPath: "/consumer_report/pdf/get",
     stripePath: "/consumer_report/pdf/get",
     resource: "consumer_report",
     operation: "retrieve",
@@ -297,7 +297,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/oauth/token",
+    fastifyPath: "/oauth/token",
     stripePath: "/oauth/token",
     resource: "oauth",
     operation: "action",
@@ -306,7 +306,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/oauth/introspect",
+    fastifyPath: "/oauth/introspect",
     stripePath: "/oauth/introspect",
     resource: "oauth",
     operation: "action",
@@ -315,7 +315,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/oauth/revoke",
+    fastifyPath: "/oauth/revoke",
     stripePath: "/oauth/revoke",
     resource: "oauth",
     operation: "action",
@@ -324,7 +324,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/statements/list",
+    fastifyPath: "/statements/list",
     stripePath: "/statements/list",
     resource: "statements",
     operation: "list",
@@ -333,7 +333,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/statements/download",
+    fastifyPath: "/statements/download",
     stripePath: "/statements/download",
     resource: "statements",
     operation: "action",
@@ -342,7 +342,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/statements/refresh",
+    fastifyPath: "/statements/refresh",
     stripePath: "/statements/refresh",
     resource: "statements",
     operation: "action",
@@ -351,7 +351,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/consent/events/get",
+    fastifyPath: "/consent/events/get",
     stripePath: "/consent/events/get",
     resource: "consent",
     operation: "retrieve",
@@ -360,7 +360,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/activity/list",
+    fastifyPath: "/item/activity/list",
     stripePath: "/item/activity/list",
     resource: "item",
     operation: "list",
@@ -369,7 +369,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/application/list",
+    fastifyPath: "/item/application/list",
     stripePath: "/item/application/list",
     resource: "item",
     operation: "list",
@@ -378,7 +378,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/application/unlink",
+    fastifyPath: "/item/application/unlink",
     stripePath: "/item/application/unlink",
     resource: "item",
     operation: "action",
@@ -387,7 +387,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/application/scopes/update",
+    fastifyPath: "/item/application/scopes/update",
     stripePath: "/item/application/scopes/update",
     resource: "item",
     operation: "update",
@@ -396,7 +396,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/application/get",
+    fastifyPath: "/application/get",
     stripePath: "/application/get",
     resource: "application",
     operation: "retrieve",
@@ -405,7 +405,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/get",
+    fastifyPath: "/item/get",
     stripePath: "/item/get",
     resource: "item",
     operation: "retrieve",
@@ -414,7 +414,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user_account/session/get",
+    fastifyPath: "/user_account/session/get",
     stripePath: "/user_account/session/get",
     resource: "user_account",
     operation: "retrieve",
@@ -423,7 +423,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user_account/session/event/send",
+    fastifyPath: "/user_account/session/event/send",
     stripePath: "/user_account/session/event/send",
     resource: "user_account",
     operation: "action",
@@ -432,7 +432,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/profile/network_status/get",
+    fastifyPath: "/profile/network_status/get",
     stripePath: "/profile/network_status/get",
     resource: "profile",
     operation: "retrieve",
@@ -441,7 +441,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/network/status/get",
+    fastifyPath: "/network/status/get",
     stripePath: "/network/status/get",
     resource: "network",
     operation: "retrieve",
@@ -450,7 +450,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/auth/get",
+    fastifyPath: "/auth/get",
     stripePath: "/auth/get",
     resource: "auth",
     operation: "retrieve",
@@ -459,7 +459,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/auth/verify",
+    fastifyPath: "/auth/verify",
     stripePath: "/auth/verify",
     resource: "auth",
     operation: "action",
@@ -468,7 +468,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transactions/get",
+    fastifyPath: "/transactions/get",
     stripePath: "/transactions/get",
     resource: "transactions",
     operation: "retrieve",
@@ -477,7 +477,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transactions/refresh",
+    fastifyPath: "/transactions/refresh",
     stripePath: "/transactions/refresh",
     resource: "transactions",
     operation: "action",
@@ -486,7 +486,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transactions/create",
+    fastifyPath: "/sandbox/transactions/create",
     stripePath: "/sandbox/transactions/create",
     resource: "sandbox",
     operation: "create",
@@ -495,7 +495,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cashflow_report/refresh",
+    fastifyPath: "/cashflow_report/refresh",
     stripePath: "/cashflow_report/refresh",
     resource: "cashflow_report",
     operation: "action",
@@ -504,7 +504,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cashflow_report/get",
+    fastifyPath: "/cashflow_report/get",
     stripePath: "/cashflow_report/get",
     resource: "cashflow_report",
     operation: "retrieve",
@@ -513,7 +513,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cashflow_report/transactions/get",
+    fastifyPath: "/cashflow_report/transactions/get",
     stripePath: "/cashflow_report/transactions/get",
     resource: "cashflow_report",
     operation: "retrieve",
@@ -522,7 +522,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/cashflow_report/insights/get",
+    fastifyPath: "/cashflow_report/insights/get",
     stripePath: "/cashflow_report/insights/get",
     resource: "cashflow_report",
     operation: "retrieve",
@@ -531,7 +531,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transactions/recurring/get",
+    fastifyPath: "/transactions/recurring/get",
     stripePath: "/transactions/recurring/get",
     resource: "transactions",
     operation: "retrieve",
@@ -540,7 +540,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transactions/sync",
+    fastifyPath: "/transactions/sync",
     stripePath: "/transactions/sync",
     resource: "transactions",
     operation: "action",
@@ -549,7 +549,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transactions/enrich",
+    fastifyPath: "/transactions/enrich",
     stripePath: "/transactions/enrich",
     resource: "transactions",
     operation: "action",
@@ -558,7 +558,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/transactions/refresh",
+    fastifyPath: "/user/transactions/refresh",
     stripePath: "/user/transactions/refresh",
     resource: "user",
     operation: "action",
@@ -567,7 +567,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/financial_data/refresh",
+    fastifyPath: "/user/financial_data/refresh",
     stripePath: "/user/financial_data/refresh",
     resource: "user",
     operation: "action",
@@ -576,7 +576,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/institutions/get",
+    fastifyPath: "/institutions/get",
     stripePath: "/institutions/get",
     resource: "institutions",
     operation: "retrieve",
@@ -585,7 +585,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/institutions/search",
+    fastifyPath: "/institutions/search",
     stripePath: "/institutions/search",
     resource: "institutions",
     operation: "action",
@@ -594,7 +594,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/institutions/get_by_id",
+    fastifyPath: "/institutions/get_by_id",
     stripePath: "/institutions/get_by_id",
     resource: "institutions",
     operation: "action",
@@ -603,7 +603,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/remove",
+    fastifyPath: "/item/remove",
     stripePath: "/item/remove",
     resource: "item",
     operation: "delete",
@@ -612,7 +612,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/accounts/get",
+    fastifyPath: "/accounts/get",
     stripePath: "/accounts/get",
     resource: "accounts",
     operation: "retrieve",
@@ -621,7 +621,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/categories/get",
+    fastifyPath: "/categories/get",
     stripePath: "/categories/get",
     resource: "categories",
     operation: "retrieve",
@@ -630,7 +630,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/processor_token/create",
+    fastifyPath: "/sandbox/processor_token/create",
     stripePath: "/sandbox/processor_token/create",
     resource: "sandbox",
     operation: "create",
@@ -639,7 +639,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/public_token/create",
+    fastifyPath: "/sandbox/public_token/create",
     stripePath: "/sandbox/public_token/create",
     resource: "sandbox",
     operation: "create",
@@ -648,7 +648,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/item/fire_webhook",
+    fastifyPath: "/sandbox/item/fire_webhook",
     stripePath: "/sandbox/item/fire_webhook",
     resource: "sandbox",
     operation: "action",
@@ -657,7 +657,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/accounts/balance/get",
+    fastifyPath: "/accounts/balance/get",
     stripePath: "/accounts/balance/get",
     resource: "accounts",
     operation: "retrieve",
@@ -666,7 +666,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity/get",
+    fastifyPath: "/identity/get",
     stripePath: "/identity/get",
     resource: "identity",
     operation: "retrieve",
@@ -675,7 +675,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity/documents/uploads/get",
+    fastifyPath: "/identity/documents/uploads/get",
     stripePath: "/identity/documents/uploads/get",
     resource: "identity",
     operation: "retrieve",
@@ -684,7 +684,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity/match",
+    fastifyPath: "/identity/match",
     stripePath: "/identity/match",
     resource: "identity",
     operation: "action",
@@ -693,7 +693,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity/refresh",
+    fastifyPath: "/identity/refresh",
     stripePath: "/identity/refresh",
     resource: "identity",
     operation: "action",
@@ -702,7 +702,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/dashboard_user/get",
+    fastifyPath: "/dashboard_user/get",
     stripePath: "/dashboard_user/get",
     resource: "dashboard_user",
     operation: "retrieve",
@@ -711,7 +711,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/dashboard_user/list",
+    fastifyPath: "/dashboard_user/list",
     stripePath: "/dashboard_user/list",
     resource: "dashboard_user",
     operation: "list",
@@ -720,7 +720,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity_verification/create",
+    fastifyPath: "/identity_verification/create",
     stripePath: "/identity_verification/create",
     resource: "identity_verification",
     operation: "create",
@@ -729,7 +729,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity_verification/get",
+    fastifyPath: "/identity_verification/get",
     stripePath: "/identity_verification/get",
     resource: "identity_verification",
     operation: "retrieve",
@@ -738,7 +738,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity_verification/list",
+    fastifyPath: "/identity_verification/list",
     stripePath: "/identity_verification/list",
     resource: "identity_verification",
     operation: "list",
@@ -747,7 +747,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity_verification/retry",
+    fastifyPath: "/identity_verification/retry",
     stripePath: "/identity_verification/retry",
     resource: "identity_verification",
     operation: "action",
@@ -756,7 +756,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/create",
+    fastifyPath: "/watchlist_screening/entity/create",
     stripePath: "/watchlist_screening/entity/create",
     resource: "watchlist_screening",
     operation: "create",
@@ -765,7 +765,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/get",
+    fastifyPath: "/watchlist_screening/entity/get",
     stripePath: "/watchlist_screening/entity/get",
     resource: "watchlist_screening",
     operation: "retrieve",
@@ -774,7 +774,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/history/list",
+    fastifyPath: "/watchlist_screening/entity/history/list",
     stripePath: "/watchlist_screening/entity/history/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -783,7 +783,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/hit/list",
+    fastifyPath: "/watchlist_screening/entity/hit/list",
     stripePath: "/watchlist_screening/entity/hit/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -792,7 +792,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/list",
+    fastifyPath: "/watchlist_screening/entity/list",
     stripePath: "/watchlist_screening/entity/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -801,7 +801,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/program/get",
+    fastifyPath: "/watchlist_screening/entity/program/get",
     stripePath: "/watchlist_screening/entity/program/get",
     resource: "watchlist_screening",
     operation: "retrieve",
@@ -810,7 +810,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/program/list",
+    fastifyPath: "/watchlist_screening/entity/program/list",
     stripePath: "/watchlist_screening/entity/program/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -819,7 +819,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/review/create",
+    fastifyPath: "/watchlist_screening/entity/review/create",
     stripePath: "/watchlist_screening/entity/review/create",
     resource: "watchlist_screening",
     operation: "create",
@@ -828,7 +828,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/review/list",
+    fastifyPath: "/watchlist_screening/entity/review/list",
     stripePath: "/watchlist_screening/entity/review/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -837,7 +837,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/entity/update",
+    fastifyPath: "/watchlist_screening/entity/update",
     stripePath: "/watchlist_screening/entity/update",
     resource: "watchlist_screening",
     operation: "update",
@@ -846,7 +846,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/create",
+    fastifyPath: "/watchlist_screening/individual/create",
     stripePath: "/watchlist_screening/individual/create",
     resource: "watchlist_screening",
     operation: "create",
@@ -855,7 +855,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/get",
+    fastifyPath: "/watchlist_screening/individual/get",
     stripePath: "/watchlist_screening/individual/get",
     resource: "watchlist_screening",
     operation: "retrieve",
@@ -864,7 +864,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/history/list",
+    fastifyPath: "/watchlist_screening/individual/history/list",
     stripePath: "/watchlist_screening/individual/history/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -873,7 +873,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/hit/list",
+    fastifyPath: "/watchlist_screening/individual/hit/list",
     stripePath: "/watchlist_screening/individual/hit/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -882,7 +882,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/list",
+    fastifyPath: "/watchlist_screening/individual/list",
     stripePath: "/watchlist_screening/individual/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -891,7 +891,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/program/get",
+    fastifyPath: "/watchlist_screening/individual/program/get",
     stripePath: "/watchlist_screening/individual/program/get",
     resource: "watchlist_screening",
     operation: "retrieve",
@@ -900,7 +900,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/program/list",
+    fastifyPath: "/watchlist_screening/individual/program/list",
     stripePath: "/watchlist_screening/individual/program/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -909,7 +909,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/review/create",
+    fastifyPath: "/watchlist_screening/individual/review/create",
     stripePath: "/watchlist_screening/individual/review/create",
     resource: "watchlist_screening",
     operation: "create",
@@ -918,7 +918,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/review/list",
+    fastifyPath: "/watchlist_screening/individual/review/list",
     stripePath: "/watchlist_screening/individual/review/list",
     resource: "watchlist_screening",
     operation: "list",
@@ -927,7 +927,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/watchlist_screening/individual/update",
+    fastifyPath: "/watchlist_screening/individual/update",
     stripePath: "/watchlist_screening/individual/update",
     resource: "watchlist_screening",
     operation: "update",
@@ -936,7 +936,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/account_risk/v1/evaluate",
+    fastifyPath: "/beacon/account_risk/v1/evaluate",
     stripePath: "/beacon/account_risk/v1/evaluate",
     resource: "beacon",
     operation: "action",
@@ -945,7 +945,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/user/create",
+    fastifyPath: "/beacon/user/create",
     stripePath: "/beacon/user/create",
     resource: "beacon",
     operation: "create",
@@ -954,7 +954,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/user/get",
+    fastifyPath: "/beacon/user/get",
     stripePath: "/beacon/user/get",
     resource: "beacon",
     operation: "retrieve",
@@ -963,7 +963,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/user/review",
+    fastifyPath: "/beacon/user/review",
     stripePath: "/beacon/user/review",
     resource: "beacon",
     operation: "action",
@@ -972,7 +972,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/report/create",
+    fastifyPath: "/beacon/report/create",
     stripePath: "/beacon/report/create",
     resource: "beacon",
     operation: "create",
@@ -981,7 +981,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/report/list",
+    fastifyPath: "/beacon/report/list",
     stripePath: "/beacon/report/list",
     resource: "beacon",
     operation: "list",
@@ -990,7 +990,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/report_syndication/list",
+    fastifyPath: "/beacon/report_syndication/list",
     stripePath: "/beacon/report_syndication/list",
     resource: "beacon",
     operation: "list",
@@ -999,7 +999,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/report/get",
+    fastifyPath: "/beacon/report/get",
     stripePath: "/beacon/report/get",
     resource: "beacon",
     operation: "retrieve",
@@ -1008,7 +1008,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/report_syndication/get",
+    fastifyPath: "/beacon/report_syndication/get",
     stripePath: "/beacon/report_syndication/get",
     resource: "beacon",
     operation: "retrieve",
@@ -1017,7 +1017,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/user/update",
+    fastifyPath: "/beacon/user/update",
     stripePath: "/beacon/user/update",
     resource: "beacon",
     operation: "update",
@@ -1026,7 +1026,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/duplicate/get",
+    fastifyPath: "/beacon/duplicate/get",
     stripePath: "/beacon/duplicate/get",
     resource: "beacon",
     operation: "retrieve",
@@ -1035,7 +1035,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/identity_verification/autofill/create",
+    fastifyPath: "/identity_verification/autofill/create",
     stripePath: "/identity_verification/autofill/create",
     resource: "identity_verification",
     operation: "create",
@@ -1044,7 +1044,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/user/history/list",
+    fastifyPath: "/beacon/user/history/list",
     stripePath: "/beacon/user/history/list",
     resource: "beacon",
     operation: "list",
@@ -1053,7 +1053,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beacon/user/account_insights/get",
+    fastifyPath: "/beacon/user/account_insights/get",
     stripePath: "/beacon/user/account_insights/get",
     resource: "beacon",
     operation: "retrieve",
@@ -1062,7 +1062,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/protect/user/insights/get",
+    fastifyPath: "/protect/user/insights/get",
     stripePath: "/protect/user/insights/get",
     resource: "protect",
     operation: "retrieve",
@@ -1071,7 +1071,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/protect/report/create",
+    fastifyPath: "/protect/report/create",
     stripePath: "/protect/report/create",
     resource: "protect",
     operation: "create",
@@ -1080,7 +1080,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/protect/compute",
+    fastifyPath: "/protect/compute",
     stripePath: "/protect/compute",
     resource: "protect",
     operation: "action",
@@ -1089,7 +1089,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/protect/event/send",
+    fastifyPath: "/protect/event/send",
     stripePath: "/protect/event/send",
     resource: "protect",
     operation: "action",
@@ -1098,7 +1098,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/protect/event/get",
+    fastifyPath: "/protect/event/get",
     stripePath: "/protect/event/get",
     resource: "protect",
     operation: "retrieve",
@@ -1107,7 +1107,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/business_verification/get",
+    fastifyPath: "/business_verification/get",
     stripePath: "/business_verification/get",
     resource: "business_verification",
     operation: "retrieve",
@@ -1116,7 +1116,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/business_verification/create",
+    fastifyPath: "/business_verification/create",
     stripePath: "/business_verification/create",
     resource: "business_verification",
     operation: "create",
@@ -1125,7 +1125,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/auth/get",
+    fastifyPath: "/processor/auth/get",
     stripePath: "/processor/auth/get",
     resource: "processor",
     operation: "retrieve",
@@ -1134,7 +1134,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/account/get",
+    fastifyPath: "/processor/account/get",
     stripePath: "/processor/account/get",
     resource: "processor",
     operation: "retrieve",
@@ -1143,7 +1143,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/investments/holdings/get",
+    fastifyPath: "/processor/investments/holdings/get",
     stripePath: "/processor/investments/holdings/get",
     resource: "processor",
     operation: "retrieve",
@@ -1152,7 +1152,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/investments/transactions/get",
+    fastifyPath: "/processor/investments/transactions/get",
     stripePath: "/processor/investments/transactions/get",
     resource: "processor",
     operation: "retrieve",
@@ -1161,7 +1161,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/transactions/get",
+    fastifyPath: "/processor/transactions/get",
     stripePath: "/processor/transactions/get",
     resource: "processor",
     operation: "retrieve",
@@ -1170,7 +1170,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/transactions/sync",
+    fastifyPath: "/processor/transactions/sync",
     stripePath: "/processor/transactions/sync",
     resource: "processor",
     operation: "action",
@@ -1179,7 +1179,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/transactions/refresh",
+    fastifyPath: "/processor/transactions/refresh",
     stripePath: "/processor/transactions/refresh",
     resource: "processor",
     operation: "action",
@@ -1188,7 +1188,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/transactions/recurring/get",
+    fastifyPath: "/processor/transactions/recurring/get",
     stripePath: "/processor/transactions/recurring/get",
     resource: "processor",
     operation: "retrieve",
@@ -1197,7 +1197,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/signal/evaluate",
+    fastifyPath: "/processor/signal/evaluate",
     stripePath: "/processor/signal/evaluate",
     resource: "processor",
     operation: "action",
@@ -1206,7 +1206,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/signal/decision/report",
+    fastifyPath: "/processor/signal/decision/report",
     stripePath: "/processor/signal/decision/report",
     resource: "processor",
     operation: "action",
@@ -1215,7 +1215,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/signal/return/report",
+    fastifyPath: "/processor/signal/return/report",
     stripePath: "/processor/signal/return/report",
     resource: "processor",
     operation: "action",
@@ -1224,7 +1224,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/signal/prepare",
+    fastifyPath: "/processor/signal/prepare",
     stripePath: "/processor/signal/prepare",
     resource: "processor",
     operation: "action",
@@ -1233,7 +1233,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/bank_transfer/create",
+    fastifyPath: "/processor/bank_transfer/create",
     stripePath: "/processor/bank_transfer/create",
     resource: "processor",
     operation: "create",
@@ -1242,7 +1242,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/liabilities/get",
+    fastifyPath: "/processor/liabilities/get",
     stripePath: "/processor/liabilities/get",
     resource: "processor",
     operation: "retrieve",
@@ -1251,7 +1251,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/identity/get",
+    fastifyPath: "/processor/identity/get",
     stripePath: "/processor/identity/get",
     resource: "processor",
     operation: "retrieve",
@@ -1260,7 +1260,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/identity/match",
+    fastifyPath: "/processor/identity/match",
     stripePath: "/processor/identity/match",
     resource: "processor",
     operation: "action",
@@ -1269,7 +1269,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/balance/get",
+    fastifyPath: "/processor/balance/get",
     stripePath: "/processor/balance/get",
     resource: "processor",
     operation: "retrieve",
@@ -1278,7 +1278,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/webhook/update",
+    fastifyPath: "/item/webhook/update",
     stripePath: "/item/webhook/update",
     resource: "item",
     operation: "update",
@@ -1287,7 +1287,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/access_token/invalidate",
+    fastifyPath: "/item/access_token/invalidate",
     stripePath: "/item/access_token/invalidate",
     resource: "item",
     operation: "action",
@@ -1296,7 +1296,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/webhook_verification_key/get",
+    fastifyPath: "/webhook_verification_key/get",
     stripePath: "/webhook_verification_key/get",
     resource: "webhook_verification_key",
     operation: "retrieve",
@@ -1305,7 +1305,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/liabilities/get",
+    fastifyPath: "/liabilities/get",
     stripePath: "/liabilities/get",
     resource: "liabilities",
     operation: "retrieve",
@@ -1314,7 +1314,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/recipient/create",
+    fastifyPath: "/payment_initiation/recipient/create",
     stripePath: "/payment_initiation/recipient/create",
     resource: "payment_initiation",
     operation: "create",
@@ -1323,7 +1323,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/payment/reverse",
+    fastifyPath: "/payment_initiation/payment/reverse",
     stripePath: "/payment_initiation/payment/reverse",
     resource: "payment_initiation",
     operation: "action",
@@ -1332,7 +1332,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/recipient/get",
+    fastifyPath: "/payment_initiation/recipient/get",
     stripePath: "/payment_initiation/recipient/get",
     resource: "payment_initiation",
     operation: "retrieve",
@@ -1341,7 +1341,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/recipient/list",
+    fastifyPath: "/payment_initiation/recipient/list",
     stripePath: "/payment_initiation/recipient/list",
     resource: "payment_initiation",
     operation: "list",
@@ -1350,7 +1350,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/payment/create",
+    fastifyPath: "/payment_initiation/payment/create",
     stripePath: "/payment_initiation/payment/create",
     resource: "payment_initiation",
     operation: "create",
@@ -1359,7 +1359,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/payment/token/create",
+    fastifyPath: "/payment_initiation/payment/token/create",
     stripePath: "/payment_initiation/payment/token/create",
     resource: "payment_initiation",
     operation: "create",
@@ -1368,7 +1368,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/consent/create",
+    fastifyPath: "/payment_initiation/consent/create",
     stripePath: "/payment_initiation/consent/create",
     resource: "payment_initiation",
     operation: "create",
@@ -1377,7 +1377,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/consent/get",
+    fastifyPath: "/payment_initiation/consent/get",
     stripePath: "/payment_initiation/consent/get",
     resource: "payment_initiation",
     operation: "retrieve",
@@ -1386,7 +1386,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/consent/revoke",
+    fastifyPath: "/payment_initiation/consent/revoke",
     stripePath: "/payment_initiation/consent/revoke",
     resource: "payment_initiation",
     operation: "action",
@@ -1395,7 +1395,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/consent/payment/execute",
+    fastifyPath: "/payment_initiation/consent/payment/execute",
     stripePath: "/payment_initiation/consent/payment/execute",
     resource: "payment_initiation",
     operation: "action",
@@ -1404,7 +1404,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/item/reset_login",
+    fastifyPath: "/sandbox/item/reset_login",
     stripePath: "/sandbox/item/reset_login",
     resource: "sandbox",
     operation: "action",
@@ -1413,7 +1413,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/item/set_verification_status",
+    fastifyPath: "/sandbox/item/set_verification_status",
     stripePath: "/sandbox/item/set_verification_status",
     resource: "sandbox",
     operation: "action",
@@ -1422,7 +1422,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/user/reset_login",
+    fastifyPath: "/sandbox/user/reset_login",
     stripePath: "/sandbox/user/reset_login",
     resource: "sandbox",
     operation: "action",
@@ -1431,7 +1431,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/public_token/exchange",
+    fastifyPath: "/item/public_token/exchange",
     stripePath: "/item/public_token/exchange",
     resource: "item",
     operation: "action",
@@ -1440,7 +1440,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/public_token/create",
+    fastifyPath: "/item/public_token/create",
     stripePath: "/item/public_token/create",
     resource: "item",
     operation: "create",
@@ -1449,7 +1449,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/create",
+    fastifyPath: "/user/create",
     stripePath: "/user/create",
     resource: "user",
     operation: "create",
@@ -1458,7 +1458,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/get",
+    fastifyPath: "/user/get",
     stripePath: "/user/get",
     resource: "user",
     operation: "retrieve",
@@ -1467,7 +1467,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/identity/remove",
+    fastifyPath: "/user/identity/remove",
     stripePath: "/user/identity/remove",
     resource: "user",
     operation: "delete",
@@ -1476,7 +1476,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/update",
+    fastifyPath: "/user/update",
     stripePath: "/user/update",
     resource: "user",
     operation: "update",
@@ -1485,7 +1485,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/remove",
+    fastifyPath: "/user/remove",
     stripePath: "/user/remove",
     resource: "user",
     operation: "delete",
@@ -1494,7 +1494,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/products/terminate",
+    fastifyPath: "/user/products/terminate",
     stripePath: "/user/products/terminate",
     resource: "user",
     operation: "action",
@@ -1503,7 +1503,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/items/get",
+    fastifyPath: "/user/items/get",
     stripePath: "/user/items/get",
     resource: "user",
     operation: "retrieve",
@@ -1512,7 +1512,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/items/associate",
+    fastifyPath: "/user/items/associate",
     stripePath: "/user/items/associate",
     resource: "user",
     operation: "action",
@@ -1521,7 +1521,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/items/remove",
+    fastifyPath: "/user/items/remove",
     stripePath: "/user/items/remove",
     resource: "user",
     operation: "delete",
@@ -1530,7 +1530,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/third_party_token/create",
+    fastifyPath: "/user/third_party_token/create",
     stripePath: "/user/third_party_token/create",
     resource: "user",
     operation: "create",
@@ -1539,7 +1539,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/user/third_party_token/remove",
+    fastifyPath: "/user/third_party_token/remove",
     stripePath: "/user/third_party_token/remove",
     resource: "user",
     operation: "delete",
@@ -1548,7 +1548,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/sessions/get",
+    fastifyPath: "/credit/sessions/get",
     stripePath: "/credit/sessions/get",
     resource: "credit",
     operation: "retrieve",
@@ -1557,7 +1557,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/payment/get",
+    fastifyPath: "/payment_initiation/payment/get",
     stripePath: "/payment_initiation/payment/get",
     resource: "payment_initiation",
     operation: "retrieve",
@@ -1566,7 +1566,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_initiation/payment/list",
+    fastifyPath: "/payment_initiation/payment/list",
     stripePath: "/payment_initiation/payment/list",
     resource: "payment_initiation",
     operation: "list",
@@ -1575,7 +1575,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/investments/holdings/get",
+    fastifyPath: "/investments/holdings/get",
     stripePath: "/investments/holdings/get",
     resource: "investments",
     operation: "retrieve",
@@ -1584,7 +1584,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/investments/transactions/get",
+    fastifyPath: "/investments/transactions/get",
     stripePath: "/investments/transactions/get",
     resource: "investments",
     operation: "retrieve",
@@ -1593,7 +1593,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/investments/refresh",
+    fastifyPath: "/investments/refresh",
     stripePath: "/investments/refresh",
     resource: "investments",
     operation: "action",
@@ -1602,7 +1602,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/investments/auth/get",
+    fastifyPath: "/investments/auth/get",
     stripePath: "/investments/auth/get",
     resource: "investments",
     operation: "retrieve",
@@ -1611,7 +1611,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/token/create",
+    fastifyPath: "/processor/token/create",
     stripePath: "/processor/token/create",
     resource: "processor",
     operation: "create",
@@ -1620,7 +1620,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/token/permissions/set",
+    fastifyPath: "/processor/token/permissions/set",
     stripePath: "/processor/token/permissions/set",
     resource: "processor",
     operation: "action",
@@ -1629,7 +1629,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/token/permissions/get",
+    fastifyPath: "/processor/token/permissions/get",
     stripePath: "/processor/token/permissions/get",
     resource: "processor",
     operation: "retrieve",
@@ -1638,7 +1638,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/token/webhook/update",
+    fastifyPath: "/processor/token/webhook/update",
     stripePath: "/processor/token/webhook/update",
     resource: "processor",
     operation: "update",
@@ -1647,7 +1647,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/stripe/bank_account_token/create",
+    fastifyPath: "/processor/stripe/bank_account_token/create",
     stripePath: "/processor/stripe/bank_account_token/create",
     resource: "processor",
     operation: "create",
@@ -1656,7 +1656,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/processor/apex/processor_token/create",
+    fastifyPath: "/processor/apex/processor_token/create",
     stripePath: "/processor/apex/processor_token/create",
     resource: "processor",
     operation: "create",
@@ -1665,7 +1665,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/item/import",
+    fastifyPath: "/item/import",
     stripePath: "/item/import",
     resource: "item",
     operation: "action",
@@ -1674,7 +1674,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/link/token/create",
+    fastifyPath: "/link/token/create",
     stripePath: "/link/token/create",
     resource: "link_token",
     operation: "create",
@@ -1683,7 +1683,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/link/token/get",
+    fastifyPath: "/link/token/get",
     stripePath: "/link/token/get",
     resource: "link_token",
     operation: "retrieve",
@@ -1692,7 +1692,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/link/oauth/correlation_id/exchange",
+    fastifyPath: "/link/oauth/correlation_id/exchange",
     stripePath: "/link/oauth/correlation_id/exchange",
     resource: "link",
     operation: "action",
@@ -1701,7 +1701,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/session/token/create",
+    fastifyPath: "/session/token/create",
     stripePath: "/session/token/create",
     resource: "session",
     operation: "create",
@@ -1710,7 +1710,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/get",
+    fastifyPath: "/transfer/get",
     stripePath: "/transfer/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1719,7 +1719,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/recurring/get",
+    fastifyPath: "/transfer/recurring/get",
     stripePath: "/transfer/recurring/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1728,7 +1728,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/get",
+    fastifyPath: "/bank_transfer/get",
     stripePath: "/bank_transfer/get",
     resource: "bank_transfer",
     operation: "retrieve",
@@ -1737,7 +1737,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/authorization/create",
+    fastifyPath: "/transfer/authorization/create",
     stripePath: "/transfer/authorization/create",
     resource: "transfer",
     operation: "create",
@@ -1746,7 +1746,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/authorization/cancel",
+    fastifyPath: "/transfer/authorization/cancel",
     stripePath: "/transfer/authorization/cancel",
     resource: "transfer",
     operation: "action",
@@ -1755,7 +1755,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/balance/get",
+    fastifyPath: "/transfer/balance/get",
     stripePath: "/transfer/balance/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1764,7 +1764,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/capabilities/get",
+    fastifyPath: "/transfer/capabilities/get",
     stripePath: "/transfer/capabilities/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1773,7 +1773,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/configuration/get",
+    fastifyPath: "/transfer/configuration/get",
     stripePath: "/transfer/configuration/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1782,7 +1782,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/ledger/get",
+    fastifyPath: "/transfer/ledger/get",
     stripePath: "/transfer/ledger/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1791,7 +1791,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/ledger/distribute",
+    fastifyPath: "/transfer/ledger/distribute",
     stripePath: "/transfer/ledger/distribute",
     resource: "transfer",
     operation: "action",
@@ -1800,7 +1800,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/ledger/deposit",
+    fastifyPath: "/transfer/ledger/deposit",
     stripePath: "/transfer/ledger/deposit",
     resource: "transfer",
     operation: "action",
@@ -1809,7 +1809,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/ledger/withdraw",
+    fastifyPath: "/transfer/ledger/withdraw",
     stripePath: "/transfer/ledger/withdraw",
     resource: "transfer",
     operation: "action",
@@ -1818,7 +1818,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/originator/funding_account/update",
+    fastifyPath: "/transfer/originator/funding_account/update",
     stripePath: "/transfer/originator/funding_account/update",
     resource: "transfer",
     operation: "update",
@@ -1827,7 +1827,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/originator/funding_account/create",
+    fastifyPath: "/transfer/originator/funding_account/create",
     stripePath: "/transfer/originator/funding_account/create",
     resource: "transfer",
     operation: "create",
@@ -1836,7 +1836,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/metrics/get",
+    fastifyPath: "/transfer/metrics/get",
     stripePath: "/transfer/metrics/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1845,7 +1845,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/create",
+    fastifyPath: "/transfer/create",
     stripePath: "/transfer/create",
     resource: "transfer",
     operation: "create",
@@ -1854,7 +1854,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/recurring/create",
+    fastifyPath: "/transfer/recurring/create",
     stripePath: "/transfer/recurring/create",
     resource: "transfer",
     operation: "create",
@@ -1863,7 +1863,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/create",
+    fastifyPath: "/bank_transfer/create",
     stripePath: "/bank_transfer/create",
     resource: "bank_transfer",
     operation: "create",
@@ -1872,7 +1872,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/list",
+    fastifyPath: "/transfer/list",
     stripePath: "/transfer/list",
     resource: "transfer",
     operation: "list",
@@ -1881,7 +1881,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/recurring/list",
+    fastifyPath: "/transfer/recurring/list",
     stripePath: "/transfer/recurring/list",
     resource: "transfer",
     operation: "list",
@@ -1890,7 +1890,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/list",
+    fastifyPath: "/bank_transfer/list",
     stripePath: "/bank_transfer/list",
     resource: "bank_transfer",
     operation: "list",
@@ -1899,7 +1899,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/cancel",
+    fastifyPath: "/transfer/cancel",
     stripePath: "/transfer/cancel",
     resource: "transfer",
     operation: "action",
@@ -1908,7 +1908,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/recurring/cancel",
+    fastifyPath: "/transfer/recurring/cancel",
     stripePath: "/transfer/recurring/cancel",
     resource: "transfer",
     operation: "action",
@@ -1917,7 +1917,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/cancel",
+    fastifyPath: "/bank_transfer/cancel",
     stripePath: "/bank_transfer/cancel",
     resource: "bank_transfer",
     operation: "action",
@@ -1926,7 +1926,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/event/list",
+    fastifyPath: "/transfer/event/list",
     stripePath: "/transfer/event/list",
     resource: "transfer",
     operation: "list",
@@ -1935,7 +1935,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/ledger/event/list",
+    fastifyPath: "/transfer/ledger/event/list",
     stripePath: "/transfer/ledger/event/list",
     resource: "transfer",
     operation: "list",
@@ -1944,7 +1944,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/event/list",
+    fastifyPath: "/bank_transfer/event/list",
     stripePath: "/bank_transfer/event/list",
     resource: "bank_transfer",
     operation: "list",
@@ -1953,7 +1953,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/event/sync",
+    fastifyPath: "/transfer/event/sync",
     stripePath: "/transfer/event/sync",
     resource: "transfer",
     operation: "action",
@@ -1962,7 +1962,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/event/sync",
+    fastifyPath: "/bank_transfer/event/sync",
     stripePath: "/bank_transfer/event/sync",
     resource: "bank_transfer",
     operation: "action",
@@ -1971,7 +1971,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/sweep/get",
+    fastifyPath: "/transfer/sweep/get",
     stripePath: "/transfer/sweep/get",
     resource: "transfer",
     operation: "retrieve",
@@ -1980,7 +1980,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/sweep/get",
+    fastifyPath: "/bank_transfer/sweep/get",
     stripePath: "/bank_transfer/sweep/get",
     resource: "bank_transfer",
     operation: "retrieve",
@@ -1989,7 +1989,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/sweep/list",
+    fastifyPath: "/transfer/sweep/list",
     stripePath: "/transfer/sweep/list",
     resource: "transfer",
     operation: "list",
@@ -1998,7 +1998,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/sweep/list",
+    fastifyPath: "/bank_transfer/sweep/list",
     stripePath: "/bank_transfer/sweep/list",
     resource: "bank_transfer",
     operation: "list",
@@ -2007,7 +2007,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/balance/get",
+    fastifyPath: "/bank_transfer/balance/get",
     stripePath: "/bank_transfer/balance/get",
     resource: "bank_transfer",
     operation: "retrieve",
@@ -2016,7 +2016,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/bank_transfer/migrate_account",
+    fastifyPath: "/bank_transfer/migrate_account",
     stripePath: "/bank_transfer/migrate_account",
     resource: "bank_transfer",
     operation: "action",
@@ -2025,7 +2025,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/migrate_account",
+    fastifyPath: "/transfer/migrate_account",
     stripePath: "/transfer/migrate_account",
     resource: "transfer",
     operation: "action",
@@ -2034,7 +2034,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/intent/create",
+    fastifyPath: "/transfer/intent/create",
     stripePath: "/transfer/intent/create",
     resource: "transfer",
     operation: "create",
@@ -2043,7 +2043,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/intent/get",
+    fastifyPath: "/transfer/intent/get",
     stripePath: "/transfer/intent/get",
     resource: "transfer",
     operation: "retrieve",
@@ -2052,7 +2052,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/repayment/list",
+    fastifyPath: "/transfer/repayment/list",
     stripePath: "/transfer/repayment/list",
     resource: "transfer",
     operation: "list",
@@ -2061,7 +2061,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/repayment/return/list",
+    fastifyPath: "/transfer/repayment/return/list",
     stripePath: "/transfer/repayment/return/list",
     resource: "transfer",
     operation: "list",
@@ -2070,7 +2070,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/platform/requirement/submit",
+    fastifyPath: "/transfer/platform/requirement/submit",
     stripePath: "/transfer/platform/requirement/submit",
     resource: "transfer",
     operation: "action",
@@ -2079,7 +2079,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/originator/create",
+    fastifyPath: "/transfer/originator/create",
     stripePath: "/transfer/originator/create",
     resource: "transfer",
     operation: "create",
@@ -2088,7 +2088,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/questionnaire/create",
+    fastifyPath: "/transfer/questionnaire/create",
     stripePath: "/transfer/questionnaire/create",
     resource: "transfer",
     operation: "create",
@@ -2097,7 +2097,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/diligence/submit",
+    fastifyPath: "/transfer/diligence/submit",
     stripePath: "/transfer/diligence/submit",
     resource: "transfer",
     operation: "action",
@@ -2106,7 +2106,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/diligence/document/upload",
+    fastifyPath: "/transfer/diligence/document/upload",
     stripePath: "/transfer/diligence/document/upload",
     resource: "transfer",
     operation: "action",
@@ -2115,7 +2115,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/originator/get",
+    fastifyPath: "/transfer/originator/get",
     stripePath: "/transfer/originator/get",
     resource: "transfer",
     operation: "retrieve",
@@ -2124,7 +2124,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/originator/list",
+    fastifyPath: "/transfer/originator/list",
     stripePath: "/transfer/originator/list",
     resource: "transfer",
     operation: "list",
@@ -2133,7 +2133,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/refund/create",
+    fastifyPath: "/transfer/refund/create",
     stripePath: "/transfer/refund/create",
     resource: "transfer",
     operation: "create",
@@ -2142,7 +2142,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/refund/get",
+    fastifyPath: "/transfer/refund/get",
     stripePath: "/transfer/refund/get",
     resource: "transfer",
     operation: "retrieve",
@@ -2151,7 +2151,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/refund/cancel",
+    fastifyPath: "/transfer/refund/cancel",
     stripePath: "/transfer/refund/cancel",
     resource: "transfer",
     operation: "action",
@@ -2160,7 +2160,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/platform/originator/create",
+    fastifyPath: "/transfer/platform/originator/create",
     stripePath: "/transfer/platform/originator/create",
     resource: "transfer",
     operation: "create",
@@ -2169,7 +2169,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/transfer/platform/person/create",
+    fastifyPath: "/transfer/platform/person/create",
     stripePath: "/transfer/platform/person/create",
     resource: "transfer",
     operation: "create",
@@ -2178,7 +2178,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/bank_transfer/simulate",
+    fastifyPath: "/sandbox/bank_transfer/simulate",
     stripePath: "/sandbox/bank_transfer/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2187,7 +2187,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/sweep/simulate",
+    fastifyPath: "/sandbox/transfer/sweep/simulate",
     stripePath: "/sandbox/transfer/sweep/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2196,7 +2196,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/simulate",
+    fastifyPath: "/sandbox/transfer/simulate",
     stripePath: "/sandbox/transfer/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2205,7 +2205,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/refund/simulate",
+    fastifyPath: "/sandbox/transfer/refund/simulate",
     stripePath: "/sandbox/transfer/refund/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2214,7 +2214,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/ledger/simulate_available",
+    fastifyPath: "/sandbox/transfer/ledger/simulate_available",
     stripePath: "/sandbox/transfer/ledger/simulate_available",
     resource: "sandbox",
     operation: "action",
@@ -2223,7 +2223,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/ledger/deposit/simulate",
+    fastifyPath: "/sandbox/transfer/ledger/deposit/simulate",
     stripePath: "/sandbox/transfer/ledger/deposit/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2232,7 +2232,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/ledger/withdraw/simulate",
+    fastifyPath: "/sandbox/transfer/ledger/withdraw/simulate",
     stripePath: "/sandbox/transfer/ledger/withdraw/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2241,7 +2241,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/repayment/simulate",
+    fastifyPath: "/sandbox/transfer/repayment/simulate",
     stripePath: "/sandbox/transfer/repayment/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2250,7 +2250,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/fire_webhook",
+    fastifyPath: "/sandbox/transfer/fire_webhook",
     stripePath: "/sandbox/transfer/fire_webhook",
     resource: "sandbox",
     operation: "action",
@@ -2259,7 +2259,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/test_clock/create",
+    fastifyPath: "/sandbox/transfer/test_clock/create",
     stripePath: "/sandbox/transfer/test_clock/create",
     resource: "sandbox",
     operation: "create",
@@ -2268,7 +2268,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/test_clock/advance",
+    fastifyPath: "/sandbox/transfer/test_clock/advance",
     stripePath: "/sandbox/transfer/test_clock/advance",
     resource: "sandbox",
     operation: "action",
@@ -2277,7 +2277,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/test_clock/get",
+    fastifyPath: "/sandbox/transfer/test_clock/get",
     stripePath: "/sandbox/transfer/test_clock/get",
     resource: "sandbox",
     operation: "retrieve",
@@ -2286,7 +2286,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/transfer/test_clock/list",
+    fastifyPath: "/sandbox/transfer/test_clock/list",
     stripePath: "/sandbox/transfer/test_clock/list",
     resource: "sandbox",
     operation: "list",
@@ -2295,7 +2295,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/payment_profile/reset_login",
+    fastifyPath: "/sandbox/payment_profile/reset_login",
     stripePath: "/sandbox/payment_profile/reset_login",
     resource: "sandbox",
     operation: "action",
@@ -2304,7 +2304,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/payment/simulate",
+    fastifyPath: "/sandbox/payment/simulate",
     stripePath: "/sandbox/payment/simulate",
     resource: "sandbox",
     operation: "action",
@@ -2313,7 +2313,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/employers/search",
+    fastifyPath: "/employers/search",
     stripePath: "/employers/search",
     resource: "employers",
     operation: "action",
@@ -2322,7 +2322,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/income/verification/create",
+    fastifyPath: "/income/verification/create",
     stripePath: "/income/verification/create",
     resource: "income",
     operation: "create",
@@ -2331,7 +2331,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/income/verification/paystubs/get",
+    fastifyPath: "/income/verification/paystubs/get",
     stripePath: "/income/verification/paystubs/get",
     resource: "income",
     operation: "retrieve",
@@ -2340,7 +2340,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/income/verification/documents/download",
+    fastifyPath: "/income/verification/documents/download",
     stripePath: "/income/verification/documents/download",
     resource: "income",
     operation: "action",
@@ -2349,7 +2349,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/income/verification/taxforms/get",
+    fastifyPath: "/income/verification/taxforms/get",
     stripePath: "/income/verification/taxforms/get",
     resource: "income",
     operation: "retrieve",
@@ -2358,7 +2358,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/income/verification/precheck",
+    fastifyPath: "/income/verification/precheck",
     stripePath: "/income/verification/precheck",
     resource: "income",
     operation: "action",
@@ -2367,7 +2367,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/employment/verification/get",
+    fastifyPath: "/employment/verification/get",
     stripePath: "/employment/verification/get",
     resource: "employment",
     operation: "retrieve",
@@ -2376,7 +2376,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/audit_copy_token/create",
+    fastifyPath: "/credit/audit_copy_token/create",
     stripePath: "/credit/audit_copy_token/create",
     resource: "credit",
     operation: "create",
@@ -2385,7 +2385,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/audit_copy_token/remove",
+    fastifyPath: "/credit/audit_copy_token/remove",
     stripePath: "/credit/audit_copy_token/remove",
     resource: "credit",
     operation: "delete",
@@ -2394,7 +2394,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/asset_report/freddie_mac/get",
+    fastifyPath: "/credit/asset_report/freddie_mac/get",
     stripePath: "/credit/asset_report/freddie_mac/get",
     resource: "credit",
     operation: "retrieve",
@@ -2403,7 +2403,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/freddie_mac/reports/get",
+    fastifyPath: "/credit/freddie_mac/reports/get",
     stripePath: "/credit/freddie_mac/reports/get",
     resource: "credit",
     operation: "retrieve",
@@ -2412,7 +2412,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/credit/v1/bank_employment/get",
+    fastifyPath: "/beta/credit/v1/bank_employment/get",
     stripePath: "/beta/credit/v1/bank_employment/get",
     resource: "beta",
     operation: "retrieve",
@@ -2421,7 +2421,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/bank_income/get",
+    fastifyPath: "/credit/bank_income/get",
     stripePath: "/credit/bank_income/get",
     resource: "credit",
     operation: "retrieve",
@@ -2430,7 +2430,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/bank_income/pdf/get",
+    fastifyPath: "/credit/bank_income/pdf/get",
     stripePath: "/credit/bank_income/pdf/get",
     resource: "credit",
     operation: "retrieve",
@@ -2439,7 +2439,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/bank_income/refresh",
+    fastifyPath: "/credit/bank_income/refresh",
     stripePath: "/credit/bank_income/refresh",
     resource: "credit",
     operation: "action",
@@ -2448,7 +2448,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/bank_income/webhook/update",
+    fastifyPath: "/credit/bank_income/webhook/update",
     stripePath: "/credit/bank_income/webhook/update",
     resource: "credit",
     operation: "update",
@@ -2457,7 +2457,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/payroll_income/parsing_config/update",
+    fastifyPath: "/credit/payroll_income/parsing_config/update",
     stripePath: "/credit/payroll_income/parsing_config/update",
     resource: "credit",
     operation: "update",
@@ -2466,7 +2466,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/bank_statements/uploads/get",
+    fastifyPath: "/credit/bank_statements/uploads/get",
     stripePath: "/credit/bank_statements/uploads/get",
     resource: "credit",
     operation: "retrieve",
@@ -2475,7 +2475,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/payroll_income/get",
+    fastifyPath: "/credit/payroll_income/get",
     stripePath: "/credit/payroll_income/get",
     resource: "credit",
     operation: "retrieve",
@@ -2484,7 +2484,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/payroll_income/risk_signals/get",
+    fastifyPath: "/credit/payroll_income/risk_signals/get",
     stripePath: "/credit/payroll_income/risk_signals/get",
     resource: "credit",
     operation: "retrieve",
@@ -2493,7 +2493,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/payroll_income/precheck",
+    fastifyPath: "/credit/payroll_income/precheck",
     stripePath: "/credit/payroll_income/precheck",
     resource: "credit",
     operation: "action",
@@ -2502,7 +2502,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/employment/get",
+    fastifyPath: "/credit/employment/get",
     stripePath: "/credit/employment/get",
     resource: "credit",
     operation: "retrieve",
@@ -2511,7 +2511,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/payroll_income/refresh",
+    fastifyPath: "/credit/payroll_income/refresh",
     stripePath: "/credit/payroll_income/refresh",
     resource: "credit",
     operation: "action",
@@ -2520,7 +2520,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/relay/create",
+    fastifyPath: "/credit/relay/create",
     stripePath: "/credit/relay/create",
     resource: "credit",
     operation: "create",
@@ -2529,7 +2529,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/relay/get",
+    fastifyPath: "/credit/relay/get",
     stripePath: "/credit/relay/get",
     resource: "credit",
     operation: "retrieve",
@@ -2538,7 +2538,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/relay/pdf/get",
+    fastifyPath: "/credit/relay/pdf/get",
     stripePath: "/credit/relay/pdf/get",
     resource: "credit",
     operation: "retrieve",
@@ -2547,7 +2547,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/relay/refresh",
+    fastifyPath: "/credit/relay/refresh",
     stripePath: "/credit/relay/refresh",
     resource: "credit",
     operation: "action",
@@ -2556,7 +2556,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/credit/relay/remove",
+    fastifyPath: "/credit/relay/remove",
     stripePath: "/credit/relay/remove",
     resource: "credit",
     operation: "delete",
@@ -2565,7 +2565,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/bank_transfer/fire_webhook",
+    fastifyPath: "/sandbox/bank_transfer/fire_webhook",
     stripePath: "/sandbox/bank_transfer/fire_webhook",
     resource: "sandbox",
     operation: "action",
@@ -2574,7 +2574,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/income/fire_webhook",
+    fastifyPath: "/sandbox/income/fire_webhook",
     stripePath: "/sandbox/income/fire_webhook",
     resource: "sandbox",
     operation: "action",
@@ -2583,7 +2583,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/bank_income/fire_webhook",
+    fastifyPath: "/sandbox/bank_income/fire_webhook",
     stripePath: "/sandbox/bank_income/fire_webhook",
     resource: "sandbox",
     operation: "action",
@@ -2592,7 +2592,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/cra/cashflow_updates/update",
+    fastifyPath: "/sandbox/cra/cashflow_updates/update",
     stripePath: "/sandbox/cra/cashflow_updates/update",
     resource: "sandbox",
     operation: "update",
@@ -2601,7 +2601,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/sandbox/oauth/select_accounts",
+    fastifyPath: "/sandbox/oauth/select_accounts",
     stripePath: "/sandbox/oauth/select_accounts",
     resource: "sandbox",
     operation: "action",
@@ -2610,7 +2610,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/signal/evaluate",
+    fastifyPath: "/signal/evaluate",
     stripePath: "/signal/evaluate",
     resource: "signal",
     operation: "action",
@@ -2619,7 +2619,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/signal/schedule",
+    fastifyPath: "/signal/schedule",
     stripePath: "/signal/schedule",
     resource: "signal",
     operation: "action",
@@ -2628,7 +2628,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/signal/decision/report",
+    fastifyPath: "/signal/decision/report",
     stripePath: "/signal/decision/report",
     resource: "signal",
     operation: "action",
@@ -2637,7 +2637,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/signal/return/report",
+    fastifyPath: "/signal/return/report",
     stripePath: "/signal/return/report",
     resource: "signal",
     operation: "action",
@@ -2646,7 +2646,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/signal/prepare",
+    fastifyPath: "/signal/prepare",
     stripePath: "/signal/prepare",
     resource: "signal",
     operation: "action",
@@ -2655,7 +2655,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/wallet/create",
+    fastifyPath: "/wallet/create",
     stripePath: "/wallet/create",
     resource: "wallet",
     operation: "create",
@@ -2664,7 +2664,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/wallet/get",
+    fastifyPath: "/wallet/get",
     stripePath: "/wallet/get",
     resource: "wallet",
     operation: "retrieve",
@@ -2673,7 +2673,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/wallet/list",
+    fastifyPath: "/wallet/list",
     stripePath: "/wallet/list",
     resource: "wallet",
     operation: "list",
@@ -2682,7 +2682,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/wallet/transaction/execute",
+    fastifyPath: "/wallet/transaction/execute",
     stripePath: "/wallet/transaction/execute",
     resource: "wallet",
     operation: "action",
@@ -2691,7 +2691,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/wallet/transaction/get",
+    fastifyPath: "/wallet/transaction/get",
     stripePath: "/wallet/transaction/get",
     resource: "wallet",
     operation: "retrieve",
@@ -2700,7 +2700,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/wallet/transaction/list",
+    fastifyPath: "/wallet/transaction/list",
     stripePath: "/wallet/transaction/list",
     resource: "wallet",
     operation: "list",
@@ -2709,7 +2709,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/transactions/v1/enhance",
+    fastifyPath: "/beta/transactions/v1/enhance",
     stripePath: "/beta/transactions/v1/enhance",
     resource: "beta",
     operation: "action",
@@ -2718,7 +2718,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/transactions/rules/v1/create",
+    fastifyPath: "/beta/transactions/rules/v1/create",
     stripePath: "/beta/transactions/rules/v1/create",
     resource: "beta",
     operation: "create",
@@ -2727,7 +2727,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/transactions/rules/v1/list",
+    fastifyPath: "/beta/transactions/rules/v1/list",
     stripePath: "/beta/transactions/rules/v1/list",
     resource: "beta",
     operation: "list",
@@ -2736,7 +2736,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/transactions/rules/v1/remove",
+    fastifyPath: "/beta/transactions/rules/v1/remove",
     stripePath: "/beta/transactions/rules/v1/remove",
     resource: "beta",
     operation: "delete",
@@ -2745,7 +2745,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/transactions/user_insights/v1/get",
+    fastifyPath: "/beta/transactions/user_insights/v1/get",
     stripePath: "/beta/transactions/user_insights/v1/get",
     resource: "beta",
     operation: "retrieve",
@@ -2754,7 +2754,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/ewa_report/v1/get",
+    fastifyPath: "/beta/ewa_report/v1/get",
     stripePath: "/beta/ewa_report/v1/get",
     resource: "beta",
     operation: "retrieve",
@@ -2763,7 +2763,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/issues/search",
+    fastifyPath: "/issues/search",
     stripePath: "/issues/search",
     resource: "issues",
     operation: "action",
@@ -2772,7 +2772,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/issues/get",
+    fastifyPath: "/issues/get",
     stripePath: "/issues/get",
     resource: "issues",
     operation: "retrieve",
@@ -2781,7 +2781,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/issues/subscribe",
+    fastifyPath: "/issues/subscribe",
     stripePath: "/issues/subscribe",
     resource: "issues",
     operation: "action",
@@ -2790,7 +2790,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_profile/create",
+    fastifyPath: "/payment_profile/create",
     stripePath: "/payment_profile/create",
     resource: "payment_profile",
     operation: "create",
@@ -2799,7 +2799,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_profile/get",
+    fastifyPath: "/payment_profile/get",
     stripePath: "/payment_profile/get",
     resource: "payment_profile",
     operation: "retrieve",
@@ -2808,7 +2808,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/payment_profile/remove",
+    fastifyPath: "/payment_profile/remove",
     stripePath: "/payment_profile/remove",
     resource: "payment_profile",
     operation: "delete",
@@ -2817,7 +2817,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/partner/customer/create",
+    fastifyPath: "/partner/customer/create",
     stripePath: "/partner/customer/create",
     resource: "partner",
     operation: "create",
@@ -2826,7 +2826,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/partner/customer/get",
+    fastifyPath: "/partner/customer/get",
     stripePath: "/partner/customer/get",
     resource: "partner",
     operation: "retrieve",
@@ -2835,7 +2835,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/partner/customer/enable",
+    fastifyPath: "/partner/customer/enable",
     stripePath: "/partner/customer/enable",
     resource: "partner",
     operation: "action",
@@ -2844,7 +2844,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/partner/customer/remove",
+    fastifyPath: "/partner/customer/remove",
     stripePath: "/partner/customer/remove",
     resource: "partner",
     operation: "delete",
@@ -2853,7 +2853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/partner/customer/oauth_institutions/get",
+    fastifyPath: "/partner/customer/oauth_institutions/get",
     stripePath: "/partner/customer/oauth_institutions/get",
     resource: "partner",
     operation: "retrieve",
@@ -2862,7 +2862,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/partner/customer/v1/create",
+    fastifyPath: "/beta/partner/customer/v1/create",
     stripePath: "/beta/partner/customer/v1/create",
     resource: "beta",
     operation: "create",
@@ -2871,7 +2871,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/partner/customer/v1/get",
+    fastifyPath: "/beta/partner/customer/v1/get",
     stripePath: "/beta/partner/customer/v1/get",
     resource: "beta",
     operation: "retrieve",
@@ -2880,7 +2880,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/partner/customer/v1/update",
+    fastifyPath: "/beta/partner/customer/v1/update",
     stripePath: "/beta/partner/customer/v1/update",
     resource: "beta",
     operation: "update",
@@ -2889,7 +2889,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/beta/partner/customer/v1/enable",
+    fastifyPath: "/beta/partner/customer/v1/enable",
     stripePath: "/beta/partner/customer/v1/enable",
     resource: "beta",
     operation: "action",
@@ -2898,7 +2898,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/link_delivery/create",
+    fastifyPath: "/link_delivery/create",
     stripePath: "/link_delivery/create",
     resource: "link_delivery",
     operation: "create",
@@ -2907,7 +2907,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/link_delivery/get",
+    fastifyPath: "/link_delivery/get",
     stripePath: "/link_delivery/get",
     resource: "link_delivery",
     operation: "retrieve",
@@ -2916,7 +2916,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/fdx/notifications",
+    fastifyPath: "/fdx/notifications",
     stripePath: "/fdx/notifications",
     resource: "fdx",
     operation: "action",
@@ -2925,7 +2925,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/plaid/fdx/recipients",
+    fastifyPath: "/fdx/recipients",
     stripePath: "/fdx/recipients",
     resource: "fdx",
     operation: "action",
@@ -2934,7 +2934,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/plaid/fdx/recipient/{recipientId}",
+    fastifyPath: "/fdx/recipient/{recipientId}",
     stripePath: "/fdx/recipient/{recipientId}",
     resource: "fdx",
     operation: "action",
@@ -2943,7 +2943,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/plaid/network_insights/report/get",
+    fastifyPath: "/network_insights/report/get",
     stripePath: "/network_insights/report/get",
     resource: "network_insights",
     operation: "retrieve",

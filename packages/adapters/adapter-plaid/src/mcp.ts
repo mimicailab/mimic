@@ -27,14 +27,14 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
     institution_id: z.string().optional().describe('Institution ID (default: ins_109508)'),
     initial_products: z.array(z.string()).optional().describe('Products to enable (default: [transactions])'),
   }, async (params) => {
-    const data = await call('/plaid/sandbox/public_token/create', params);
+    const data = await call('/sandbox/public_token/create', params);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('exchange_public_token', 'Exchange a public token for an access token', {
     public_token: z.string().describe('The public token to exchange'),
   }, async (params) => {
-    const data = await call('/plaid/item/public_token/exchange', params);
+    const data = await call('/item/public_token/exchange', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -42,14 +42,14 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
   server.tool('get_item', 'Retrieve an Item', {
     access_token: z.string().describe('The access token for the Item'),
   }, async (params) => {
-    const data = await call('/plaid/item/get', params);
+    const data = await call('/item/get', params);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('remove_item', 'Remove an Item', {
     access_token: z.string().describe('The access token for the Item'),
   }, async (params) => {
-    const data = await call('/plaid/item/remove', params);
+    const data = await call('/item/remove', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -57,14 +57,14 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
   server.tool('get_accounts', 'Retrieve accounts for an Item', {
     access_token: z.string().describe('The access token for the Item'),
   }, async (params) => {
-    const data = await call('/plaid/accounts/get', params);
+    const data = await call('/accounts/get', params);
     return text(JSON.stringify(data, null, 2));
   });
 
   server.tool('get_balance', 'Get real-time account balances', {
     access_token: z.string().describe('The access token for the Item'),
   }, async (params) => {
-    const data = await call('/plaid/accounts/balance/get', params);
+    const data = await call('/accounts/balance/get', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -72,7 +72,7 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
   server.tool('get_auth', 'Retrieve auth data (account + routing numbers)', {
     access_token: z.string().describe('The access token for the Item'),
   }, async (params) => {
-    const data = await call('/plaid/auth/get', params);
+    const data = await call('/auth/get', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -85,7 +85,7 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
     offset: z.number().optional().describe('Pagination offset (default 0)'),
   }, async ({ count, offset, ...params }) => {
     const body = { ...params, options: { count, offset } };
-    const data = await call('/plaid/transactions/get', body);
+    const data = await call('/transactions/get', body);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -93,7 +93,7 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
     access_token: z.string().describe('The access token for the Item'),
     cursor: z.string().optional().describe('Sync cursor from previous call'),
   }, async (params) => {
-    const data = await call('/plaid/transactions/sync', params);
+    const data = await call('/transactions/sync', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -101,7 +101,7 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
   server.tool('get_identity', 'Get identity data for accounts', {
     access_token: z.string().describe('The access token for the Item'),
   }, async (params) => {
-    const data = await call('/plaid/identity/get', params);
+    const data = await call('/identity/get', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -111,7 +111,7 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
     products: z.array(z.string()).optional().describe('Filter by supported products'),
     country_codes: z.array(z.string()).optional().describe('Filter by country codes'),
   }, async (params) => {
-    const data = await call('/plaid/institutions/search', params);
+    const data = await call('/institutions/search', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -119,7 +119,7 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
     institution_id: z.string().describe('The institution ID'),
     country_codes: z.array(z.string()).optional().describe('Country codes'),
   }, async (params) => {
-    const data = await call('/plaid/institutions/get_by_id', params);
+    const data = await call('/institutions/get_by_id', params);
     return text(JSON.stringify(data, null, 2));
   });
 
@@ -127,13 +127,13 @@ export function registerPlaidTools(server: McpServer, baseUrl: string): void {
   server.tool('get_holdings', 'Get investment holdings', {
     access_token: z.string().describe('The access token for the Item'),
   }, async (params) => {
-    const data = await call('/plaid/investments/holdings/get', params);
+    const data = await call('/investments/holdings/get', params);
     return text(JSON.stringify(data, null, 2));
   });
 
   // ── Mimic admin tools ──────────────────────────────────────────────────
   server.tool('plaid_list_endpoints', 'List all available Plaid mock API endpoints', {}, async () => {
-    const endpoints = await call('/plaid/endpoints', {}).catch(() => ({ endpoints: 'Use GET /plaid/endpoints' }));
+    const endpoints = await call('/endpoints', {}).catch(() => ({ endpoints: 'Use GET /endpoints' }));
     return text(JSON.stringify(endpoints, null, 2));
   });
 }

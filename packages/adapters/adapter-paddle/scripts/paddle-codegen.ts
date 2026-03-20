@@ -584,7 +584,7 @@ function extractRoutes(spec: OaSpec): ExtractedRoute[] {
       const description = operation.summary ?? operation.description ?? '';
 
       // Convert {param} to :param for Fastify
-      const fastifyPath = '/paddle' + specPath.replace(/\{([^}]+)\}/g, ':$1');
+      const fastifyPath = specPath.replace(/\{([^}]+)\}/g, ':$1');
 
       const resource = detectPaddleResource(specPath);
       const op = detectPaddleOperation(specPath, method);

@@ -50,13 +50,13 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
 
   // 1. get_stripe_account_info
   server.tool('get_stripe_account_info', 'Get information about the connected Stripe account', {}, async () => {
-    const data = await call('GET', '/stripe/v1/account') as any;
+    const data = await call('GET', '/v1/account') as any;
     return text(`Account ${data.id}: ${data.business_type}, ${data.country}, charges_enabled=${data.charges_enabled}`);
   });
 
   // 2. retrieve_balance
   server.tool('retrieve_balance', 'Retrieve the current Stripe account balance', {}, async () => {
-    const data = await call('GET', '/stripe/v1/balance') as any;
+    const data = await call('GET', '/v1/balance') as any;
     const fmtLine = (entry: any) => `${(entry.amount / 100).toFixed(2)} ${entry.currency}`;
     const avail = data.available?.map(fmtLine).join(', ') || 'none';
     const pending = data.pending?.map(fmtLine).join(', ') || 'none';
@@ -73,14 +73,14 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     max_redemptions: z.number().int().positive().optional().describe('Max number of times coupon can be redeemed'),
     metadata: z.record(z.string()).optional().describe('Arbitrary key-value metadata'),
   }, async (params) => {
-    const data = await call('POST', '/stripe/v1/coupons', params) as any;
+    const data = await call('POST', '/v1/coupons', params) as any;
     const desc = data.percent_off ? `${data.percent_off}% off` : `${(data.amount_off / 100).toFixed(2)} ${data.currency} off`;
     return text(`Created coupon ${data.id}: ${desc} (${data.duration})`);
   });
 
   // 4. list_coupons
   server.tool('list_coupons', 'List all coupons', {}, async () => {
-    const data = await call('GET', '/stripe/v1/coupons') as any;
+    const data = await call('GET', '/v1/coupons') as any;
     if (!data.data?.length) return text('No coupons found.');
     const lines = data.data.map((c: any) => {
       const desc = c.percent_off ? `${c.percent_off}% off` : `${(c.amount_off / 100).toFixed(2)} ${c.currency} off`;
@@ -97,7 +97,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     description: z.string().optional().describe('Internal description'),
     metadata: z.record(z.string()).optional().describe('Arbitrary key-value metadata'),
   }, async (params) => {
-    const data = await call('POST', '/stripe/v1/customers', params) as any;
+    const data = await call('POST', '/v1/customers', params) as any;
     return text(`Created customer ${data.id}: ${data.name ?? data.email ?? '(no name)'}`);
   });
 
@@ -106,7 +106,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     email: z.string().optional().describe('Filter by email address'),
     limit: z.number().int().min(1).max(100).optional().describe('Max results (default 10)'),
   }, async ({ email, limit }) => {
-    const data = await call('GET', `/stripe/v1/customers${qs({ email, limit: limit ?? 10 })}`) as any;
+    const data = await call('GET', `/v1/customers${qs({ email, limit: limit ?? 10 })}`) as any;
     if (!data.data?.length) return text('No customers found.');
     const lines = data.data.map((c: any) => `• ${c.id} — ${c.name ?? '(no name)'} (${c.email ?? 'no email'})`);
     return text(`Customers (${data.data.length}):\n${lines.join('\n')}`);
@@ -114,7 +114,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
 
   // 7. list_disputes
   server.tool('list_disputes', 'List all disputes', {}, async () => {
-    const data = await call('GET', '/stripe/v1/disputes') as any;
+    const data = await call('GET', '/v1/disputes') as any;
     if (!data.data?.length) return text('No disputes found.');
     const lines = data.data.map((d: any) => `• ${d.id} — ${(d.amount / 100).toFixed(2)} ${d.currency} [${d.status}]`);
     return text(`Disputes (${data.data.length}):\n${lines.join('\n')}`);
@@ -126,7 +126,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     evidence: z.record(z.string()).optional().describe('Evidence to submit'),
     metadata: z.record(z.string()).optional().describe('Metadata to update'),
   }, async ({ dispute_id, evidence, metadata }) => {
-    const data = await call('POST', `/stripe/v1/disputes/${dispute_id}`, { evidence, metadata }) as any;
+    const data = await call('POST', `/v1/disputes/${dispute_id}`, { evidence, metadata }) as any;
     return text(`Updated dispute ${data.id} [${data.status}]`);
   });
 
@@ -136,7 +136,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     description: z.string().optional().describe('Description'),
     metadata: z.record(z.string()).optional().describe('Arbitrary key-value metadata'),
   }, async (params) => {
-    const data = await call('POST', '/stripe/v1/invoices', params) as any;
+    const data = await call('POST', '/v1/invoices', params) as any;
     return text(`Created invoice ${data.id} [${data.status}]`);
   });
 
@@ -150,7 +150,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     price: z.string().optional().describe('Price ID to use'),
     quantity: z.number().int().positive().optional().describe('Quantity'),
   }, async (params) => {
-    const data = await call('POST', '/stripe/v1/invoiceitems', params) as any;
+    const data = await call('POST', '/v1/invoiceitems', params) as any;
     return text(`Created invoice item ${data.id} for customer ${data.customer}`);
   });
 
@@ -158,7 +158,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   server.tool('finalize_invoice', 'Finalize a draft invoice so it can be paid', {
     invoice_id: z.string().describe('Invoice ID to finalize'),
   }, async ({ invoice_id }) => {
-    const data = await call('POST', `/stripe/v1/invoices/${invoice_id}/finalize`) as any;
+    const data = await call('POST', `/v1/invoices/${invoice_id}/finalize`) as any;
     return text(`Finalized invoice ${data.id} [${data.status}]`);
   });
 
@@ -167,7 +167,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     customer: z.string().optional().describe('Filter by customer ID'),
     status: z.enum(['draft', 'open', 'paid', 'uncollectible', 'void']).optional().describe('Filter by status'),
   }, async ({ customer, status }) => {
-    const data = await call('GET', `/stripe/v1/invoices${qs({ customer, status })}`) as any;
+    const data = await call('GET', `/v1/invoices${qs({ customer, status })}`) as any;
     if (!data.data?.length) return text('No invoices found.');
     const lines = data.data.map((inv: any) => `• ${inv.id} — customer ${inv.customer} [${inv.status}]`);
     return text(`Invoices (${data.data.length}):\n${lines.join('\n')}`);
@@ -181,7 +181,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     })).describe('Line items for the payment link'),
     metadata: z.record(z.string()).optional().describe('Arbitrary key-value metadata'),
   }, async (params) => {
-    const data = await call('POST', '/stripe/v1/payment_links', params) as any;
+    const data = await call('POST', '/v1/payment_links', params) as any;
     return text(`Created payment link ${data.id}: ${data.url}`);
   });
 
@@ -190,7 +190,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     customer: z.string().optional().describe('Filter by customer ID'),
     limit: z.number().int().min(1).max(100).optional().describe('Max results'),
   }, async ({ customer, limit }) => {
-    const data = await call('GET', `/stripe/v1/payment_intents${qs({ customer, limit })}`) as any;
+    const data = await call('GET', `/v1/payment_intents${qs({ customer, limit })}`) as any;
     if (!data.data?.length) return text('No payment intents found.');
     const lines = data.data.map((pi: any) => `• ${pi.id} — ${(pi.amount / 100).toFixed(2)} ${pi.currency} [${pi.status}]`);
     return text(`Payment intents (${data.data.length}):\n${lines.join('\n')}`);
@@ -206,7 +206,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
       interval_count: z.number().int().positive().optional(),
     }).optional().describe('Recurring billing config (omit for one-time prices)'),
   }, async ({ unit_amount, currency, product, recurring }) => {
-    const data = await call('POST', '/stripe/v1/prices', { unit_amount, currency, product, recurring }) as any;
+    const data = await call('POST', '/v1/prices', { unit_amount, currency, product, recurring }) as any;
     return text(`Created price ${data.id}`);
   });
 
@@ -214,7 +214,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   server.tool('list_prices', 'List prices', {
     product: z.string().optional().describe('Filter by product ID'),
   }, async ({ product }) => {
-    const data = await call('GET', `/stripe/v1/prices${qs({ product })}`) as any;
+    const data = await call('GET', `/v1/prices${qs({ product })}`) as any;
     if (!data.data?.length) return text('No prices found.');
     const lines = data.data.map((p: any) => `• ${p.id} — ${(p.unit_amount / 100).toFixed(2)} ${p.currency}`);
     return text(`Prices (${data.data.length}):\n${lines.join('\n')}`);
@@ -226,13 +226,13 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     description: z.string().optional().describe('Product description'),
     metadata: z.record(z.string()).optional().describe('Arbitrary key-value metadata'),
   }, async (params) => {
-    const data = await call('POST', '/stripe/v1/products', params) as any;
+    const data = await call('POST', '/v1/products', params) as any;
     return text(`Created product ${data.id}: ${data.name}`);
   });
 
   // 18. list_products
   server.tool('list_products', 'List products', {}, async () => {
-    const data = await call('GET', '/stripe/v1/products') as any;
+    const data = await call('GET', '/v1/products') as any;
     if (!data.data?.length) return text('No products found.');
     const lines = data.data.map((p: any) => `• ${p.id} — ${p.name} (${p.active ? 'active' : 'inactive'})`);
     return text(`Products (${data.data.length}):\n${lines.join('\n')}`);
@@ -245,7 +245,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     amount: z.number().int().positive().optional().describe('Amount to refund (full refund if omitted)'),
     reason: z.enum(['duplicate', 'fraudulent', 'requested_by_customer']).optional().describe('Reason for the refund'),
   }, async ({ payment_intent, charge, amount, reason }) => {
-    const data = await call('POST', '/stripe/v1/refunds', { payment_intent, charge, amount, reason }) as any;
+    const data = await call('POST', '/v1/refunds', { payment_intent, charge, amount, reason }) as any;
     return text(`Created refund ${data.id}`);
   });
 
@@ -253,7 +253,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   server.tool('cancel_subscription', 'Cancel a subscription', {
     subscription_id: z.string().describe('Subscription ID to cancel'),
   }, async ({ subscription_id }) => {
-    const data = await call('DELETE', `/stripe/v1/subscriptions/${subscription_id}`) as any;
+    const data = await call('DELETE', `/v1/subscriptions/${subscription_id}`) as any;
     return text(`Cancelled subscription ${data.id}`);
   });
 
@@ -262,7 +262,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     customer: z.string().optional().describe('Filter by customer ID'),
     status: z.enum(['active', 'past_due', 'canceled', 'unpaid', 'trialing']).optional().describe('Filter by status'),
   }, async ({ customer, status }) => {
-    const data = await call('GET', `/stripe/v1/subscriptions${qs({ customer, status })}`) as any;
+    const data = await call('GET', `/v1/subscriptions${qs({ customer, status })}`) as any;
     if (!data.data?.length) return text('No subscriptions found.');
     const lines = data.data.map((s: any) => `• ${s.id} — customer ${s.customer} [${s.status}]`);
     return text(`Subscriptions (${data.data.length}):\n${lines.join('\n')}`);
@@ -274,7 +274,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     cancel_at_period_end: z.boolean().optional().describe('Cancel at end of billing period'),
     metadata: z.record(z.string()).optional().describe('Metadata to update'),
   }, async ({ subscription_id, ...rest }) => {
-    const data = await call('POST', `/stripe/v1/subscriptions/${subscription_id}`, rest) as any;
+    const data = await call('POST', `/v1/subscriptions/${subscription_id}`, rest) as any;
     return text(`Updated subscription ${data.id} [${data.status}]`);
   });
 
@@ -283,7 +283,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     customer: z.string().describe('Customer ID'),
     return_url: z.string().optional().describe('URL to redirect to after portal session'),
   }, async (params) => {
-    const data = await call('POST', '/stripe/v1/billing_portal/sessions', params) as any;
+    const data = await call('POST', '/v1/billing_portal/sessions', params) as any;
     return text(`Created billing portal session ${data.id}: ${data.url}`);
   });
 
@@ -297,8 +297,8 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
 
     for (const type of types) {
       const path = type === 'payment_intents'
-        ? '/stripe/v1/payment_intents'
-        : `/stripe/v1/${type}`;
+        ? '/v1/payment_intents'
+        : `/v1/${type}`;
       try {
         const data = await call('GET', path) as any;
         if (!data.data?.length) continue;
@@ -324,7 +324,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     ]).describe('The type of resource to fetch'),
     resource_id: z.string().describe('The ID of the resource'),
   }, async ({ resource_type, resource_id }) => {
-    const path = `/stripe/v1/${resource_type}/${resource_id}`;
+    const path = `/v1/${resource_type}/${resource_id}`;
     const data = await call('GET', path) as any;
     return text(JSON.stringify(data, null, 2));
   });
@@ -357,7 +357,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     metadata: z.record(z.string()).optional().describe('Arbitrary key-value metadata'),
   }, async ({ amount, currency, customer, description, metadata }) => {
     const cur = currency ?? 'usd';
-    const data = await call('POST', '/stripe/v1/payment_intents', { amount, currency: cur, customer, description, metadata }) as any;
+    const data = await call('POST', '/v1/payment_intents', { amount, currency: cur, customer, description, metadata }) as any;
     return text(`Created payment intent ${data.id} for ${(data.amount / 100).toFixed(2)} ${data.currency}`);
   });
 
@@ -365,7 +365,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   server.tool('confirm_payment_intent', 'Confirm a payment intent', {
     payment_intent_id: z.string().describe('Payment intent ID to confirm'),
   }, async ({ payment_intent_id }) => {
-    const data = await call('POST', `/stripe/v1/payment_intents/${payment_intent_id}/confirm`) as any;
+    const data = await call('POST', `/v1/payment_intents/${payment_intent_id}/confirm`) as any;
     return text(`Confirmed ${data.id}, status: ${data.status}`);
   });
 
@@ -375,7 +375,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     amount_to_capture: z.number().int().positive().optional().describe('Amount to capture (captures full amount if omitted)'),
   }, async ({ payment_intent_id, amount_to_capture }) => {
     const body = amount_to_capture !== undefined ? { amount_to_capture } : undefined;
-    const data = await call('POST', `/stripe/v1/payment_intents/${payment_intent_id}/capture`, body) as any;
+    const data = await call('POST', `/v1/payment_intents/${payment_intent_id}/capture`, body) as any;
     return text(`Captured ${data.id}`);
   });
 
@@ -383,7 +383,7 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   server.tool('cancel_payment_intent', 'Cancel a payment intent', {
     payment_intent_id: z.string().describe('Payment intent ID to cancel'),
   }, async ({ payment_intent_id }) => {
-    const data = await call('POST', `/stripe/v1/payment_intents/${payment_intent_id}/cancel`) as any;
+    const data = await call('POST', `/v1/payment_intents/${payment_intent_id}/cancel`) as any;
     return text(`Cancelled ${data.id}`);
   });
 }
