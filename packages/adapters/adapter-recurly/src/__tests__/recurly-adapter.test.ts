@@ -19,7 +19,7 @@ describe('RecurlyAdapter', () => {
 
   it('should have correct metadata', () => {
     expect(adapter.id).toBe('recurly');
-    expect(adapter.basePath).toBe('/recurly');
+    expect(adapter.basePath).toBe('');
     expect(adapter.name).toBe('Recurly API');
   });
 
@@ -37,7 +37,7 @@ describe('RecurlyAdapter', () => {
   it('should create an account', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/accounts',
+      url: '/accounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'acct-001', email: 'test@example.com', first_name: 'Test', last_name: 'User' }),
     });
@@ -52,7 +52,7 @@ describe('RecurlyAdapter', () => {
   it('should list accounts', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/accounts',
+      url: '/accounts',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -64,7 +64,7 @@ describe('RecurlyAdapter', () => {
     // Create first
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/accounts',
+      url: '/accounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'acct-retrieve', email: 'retrieve@test.com' }),
     });
@@ -72,7 +72,7 @@ describe('RecurlyAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/recurly/accounts/${accountId}`,
+      url: `/accounts/${accountId}`,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().id).toBe(accountId);
@@ -81,7 +81,7 @@ describe('RecurlyAdapter', () => {
   it('should update an account', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/accounts',
+      url: '/accounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'acct-update' }),
     });
@@ -89,7 +89,7 @@ describe('RecurlyAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/accounts/${accountId}`,
+      url: `/accounts/${accountId}`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ company: 'Updated Corp' }),
     });
@@ -100,7 +100,7 @@ describe('RecurlyAdapter', () => {
   it('should return 404 for non-existent account', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/accounts/acct_nonexistent',
+      url: '/accounts/acct_nonexistent',
     });
     expect(res.statusCode).toBe(404);
     const body = res.json();
@@ -112,7 +112,7 @@ describe('RecurlyAdapter', () => {
   it('should deactivate an account', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/accounts',
+      url: '/accounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'acct-deactivate' }),
     });
@@ -120,7 +120,7 @@ describe('RecurlyAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'DELETE',
-      url: `/recurly/accounts/${accountId}`,
+      url: `/accounts/${accountId}`,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().state).toBe('closed');
@@ -129,7 +129,7 @@ describe('RecurlyAdapter', () => {
   it('should reactivate a closed account', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/accounts',
+      url: '/accounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'acct-reactivate' }),
     });
@@ -138,13 +138,13 @@ describe('RecurlyAdapter', () => {
     // Deactivate
     await ts.server.inject({
       method: 'DELETE',
-      url: `/recurly/accounts/${accountId}`,
+      url: `/accounts/${accountId}`,
     });
 
     // Reactivate
     const res = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/accounts/${accountId}/reactivate`,
+      url: `/accounts/${accountId}/reactivate`,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().state).toBe('active');
@@ -155,7 +155,7 @@ describe('RecurlyAdapter', () => {
   it('should create a plan', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/plans',
+      url: '/plans',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'basic-monthly', name: 'Basic Monthly', interval_unit: 'months', interval_length: 1 }),
     });
@@ -168,7 +168,7 @@ describe('RecurlyAdapter', () => {
   it('should list plans', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/plans',
+      url: '/plans',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().data.length).toBeGreaterThan(0);
@@ -179,7 +179,7 @@ describe('RecurlyAdapter', () => {
   it('should create a subscription', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ plan_code: 'basic-monthly', currency: 'USD' }),
     });
@@ -192,7 +192,7 @@ describe('RecurlyAdapter', () => {
   it('should list subscriptions', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/subscriptions',
+      url: '/subscriptions',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().data.length).toBeGreaterThan(0);
@@ -201,7 +201,7 @@ describe('RecurlyAdapter', () => {
   it('should cancel a subscription', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ plan_code: 'cancel-test' }),
     });
@@ -209,7 +209,7 @@ describe('RecurlyAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/subscriptions/${subId}/cancel`,
+      url: `/subscriptions/${subId}/cancel`,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().state).toBe('canceled');
@@ -218,7 +218,7 @@ describe('RecurlyAdapter', () => {
   it('should reactivate a canceled subscription', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ plan_code: 'reactivate-test' }),
     });
@@ -227,13 +227,13 @@ describe('RecurlyAdapter', () => {
     // Cancel
     await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/subscriptions/${subId}/cancel`,
+      url: `/subscriptions/${subId}/cancel`,
     });
 
     // Reactivate
     const res = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/subscriptions/${subId}/reactivate`,
+      url: `/subscriptions/${subId}/reactivate`,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().state).toBe('active');
@@ -242,7 +242,7 @@ describe('RecurlyAdapter', () => {
   it('should pause and resume a subscription', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ plan_code: 'pause-test' }),
     });
@@ -251,7 +251,7 @@ describe('RecurlyAdapter', () => {
     // Pause
     const pauseRes = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/subscriptions/${subId}/pause`,
+      url: `/subscriptions/${subId}/pause`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ remaining_pause_cycles: 2 }),
     });
@@ -261,7 +261,7 @@ describe('RecurlyAdapter', () => {
     // Resume
     const resumeRes = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/subscriptions/${subId}/resume`,
+      url: `/subscriptions/${subId}/resume`,
     });
     expect(resumeRes.statusCode).toBe(200);
     expect(resumeRes.json().state).toBe('active');
@@ -270,7 +270,7 @@ describe('RecurlyAdapter', () => {
   it('should terminate a subscription', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ plan_code: 'terminate-test' }),
     });
@@ -278,7 +278,7 @@ describe('RecurlyAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'DELETE',
-      url: `/recurly/subscriptions/${subId}`,
+      url: `/subscriptions/${subId}`,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().state).toBe('expired');
@@ -289,7 +289,7 @@ describe('RecurlyAdapter', () => {
   it('should list invoices', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/invoices',
+      url: '/invoices',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().object).toBe('list');
@@ -299,7 +299,7 @@ describe('RecurlyAdapter', () => {
     // Create an invoice via the account sub-resource
     const acctRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/accounts',
+      url: '/accounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'inv-test-acct' }),
     });
@@ -307,7 +307,7 @@ describe('RecurlyAdapter', () => {
 
     const invRes = await ts.server.inject({
       method: 'POST',
-      url: `/recurly/accounts/${accountId}/invoices`,
+      url: `/accounts/${accountId}/invoices`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ currency: 'USD' }),
     });
@@ -317,7 +317,7 @@ describe('RecurlyAdapter', () => {
     // Collect it
     const collectRes = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/invoices/${invoiceId}/collect`,
+      url: `/invoices/${invoiceId}/collect`,
     });
     expect(collectRes.statusCode).toBe(200);
     expect(collectRes.json().state).toBe('paid');
@@ -326,7 +326,7 @@ describe('RecurlyAdapter', () => {
   it('should void an invoice', async () => {
     const acctRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/accounts',
+      url: '/accounts',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'void-inv-acct' }),
     });
@@ -334,7 +334,7 @@ describe('RecurlyAdapter', () => {
 
     const invRes = await ts.server.inject({
       method: 'POST',
-      url: `/recurly/accounts/${accountId}/invoices`,
+      url: `/accounts/${accountId}/invoices`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ currency: 'USD' }),
     });
@@ -342,7 +342,7 @@ describe('RecurlyAdapter', () => {
 
     const voidRes = await ts.server.inject({
       method: 'PUT',
-      url: `/recurly/invoices/${invoiceId}/void`,
+      url: `/invoices/${invoiceId}/void`,
     });
     expect(voidRes.statusCode).toBe(200);
     expect(voidRes.json().state).toBe('voided');
@@ -353,7 +353,7 @@ describe('RecurlyAdapter', () => {
   it('should create and list coupons', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/coupons',
+      url: '/coupons',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'SUMMER20', name: 'Summer 20% Off', discount_type: 'percent', discount_percent: 20 }),
     });
@@ -362,7 +362,7 @@ describe('RecurlyAdapter', () => {
 
     const listRes = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/coupons',
+      url: '/coupons',
     });
     expect(listRes.statusCode).toBe(200);
     expect(listRes.json().data.length).toBeGreaterThan(0);
@@ -373,7 +373,7 @@ describe('RecurlyAdapter', () => {
   it('should create and list items', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/recurly/items',
+      url: '/items',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ code: 'widget-001', name: 'Widget' }),
     });
@@ -382,7 +382,7 @@ describe('RecurlyAdapter', () => {
 
     const listRes = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/items',
+      url: '/items',
     });
     expect(listRes.statusCode).toBe(200);
     expect(listRes.json().data.length).toBeGreaterThan(0);
@@ -393,7 +393,7 @@ describe('RecurlyAdapter', () => {
   it('should list add-ons', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/add_ons',
+      url: '/add_ons',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().object).toBe('list');
@@ -404,7 +404,7 @@ describe('RecurlyAdapter', () => {
   it('should list transactions', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/recurly/transactions',
+      url: '/transactions',
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().object).toBe('list');
@@ -441,7 +441,7 @@ describe('RecurlyAdapter', () => {
 
     const seededAdapter = new RecurlyAdapter();
     const seededTs = await buildTestServer(seededAdapter, seedData);
-    const res = await seededTs.server.inject({ method: 'GET', url: '/recurly/accounts' });
+    const res = await seededTs.server.inject({ method: 'GET', url: '/accounts' });
     expect(res.json().data).toContainEqual(expect.objectContaining({ id: 'acct_seed1' }));
     await seededTs.close();
   });

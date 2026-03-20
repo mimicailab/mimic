@@ -109,61 +109,61 @@ export class PlaidAdapter extends OpenApiMockAdapter<PlaidConfig> {
 
   private mountOverrides(store: StateStore): void {
     // ── Link Token ──────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/link/token/create',
+    this.registerOverride('POST', '/link/token/create',
       coreOverrides.buildLinkTokenCreateHandler(store));
 
     // ── Sandbox ─────────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/sandbox/public_token/create',
+    this.registerOverride('POST', '/sandbox/public_token/create',
       coreOverrides.buildSandboxPublicTokenCreateHandler(store));
-    this.registerOverride('POST', '/plaid/sandbox/item/reset_login',
+    this.registerOverride('POST', '/sandbox/item/reset_login',
       coreOverrides.buildSandboxItemResetLoginHandler(store));
 
     // ── Item / Token Exchange ───────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/item/public_token/exchange',
+    this.registerOverride('POST', '/item/public_token/exchange',
       coreOverrides.buildItemPublicTokenExchangeHandler(store));
-    this.registerOverride('POST', '/plaid/item/get',
+    this.registerOverride('POST', '/item/get',
       coreOverrides.buildItemGetHandler(store));
-    this.registerOverride('POST', '/plaid/item/remove',
+    this.registerOverride('POST', '/item/remove',
       coreOverrides.buildItemRemoveHandler(store));
 
     // ── Accounts ────────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/accounts/get',
+    this.registerOverride('POST', '/accounts/get',
       coreOverrides.buildAccountsGetHandler(store));
-    this.registerOverride('POST', '/plaid/accounts/balance/get',
+    this.registerOverride('POST', '/accounts/balance/get',
       coreOverrides.buildAccountsBalanceGetHandler(store));
 
     // ── Auth ────────────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/auth/get',
+    this.registerOverride('POST', '/auth/get',
       coreOverrides.buildAuthGetHandler(store));
 
     // ── Transactions ────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/transactions/get',
+    this.registerOverride('POST', '/transactions/get',
       coreOverrides.buildTransactionsGetHandler(store));
-    this.registerOverride('POST', '/plaid/transactions/sync',
+    this.registerOverride('POST', '/transactions/sync',
       coreOverrides.buildTransactionsSyncHandler(store));
-    this.registerOverride('POST', '/plaid/transactions/refresh',
+    this.registerOverride('POST', '/transactions/refresh',
       coreOverrides.buildTransactionsRefreshHandler(store));
 
     // ── Identity ────────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/identity/get',
+    this.registerOverride('POST', '/identity/get',
       coreOverrides.buildIdentityGetHandler(store));
 
     // ── Institutions ────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/institutions/get',
+    this.registerOverride('POST', '/institutions/get',
       coreOverrides.buildInstitutionsGetHandler(store));
-    this.registerOverride('POST', '/plaid/institutions/get_by_id',
+    this.registerOverride('POST', '/institutions/get_by_id',
       coreOverrides.buildInstitutionsGetByIdHandler(store));
-    this.registerOverride('POST', '/plaid/institutions/search',
+    this.registerOverride('POST', '/institutions/search',
       coreOverrides.buildInstitutionsSearchHandler(store));
 
     // ── Investments ─────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/investments/holdings/get',
+    this.registerOverride('POST', '/investments/holdings/get',
       coreOverrides.buildInvestmentsHoldingsGetHandler(store));
-    this.registerOverride('POST', '/plaid/investments/transactions/get',
+    this.registerOverride('POST', '/investments/transactions/get',
       coreOverrides.buildInvestmentsTransactionsGetHandler(store));
 
     // ── Categories ──────────────────────────────────────────────────────
-    this.registerOverride('POST', '/plaid/categories/get',
+    this.registerOverride('POST', '/categories/get',
       coreOverrides.buildCategoriesGetHandler());
   }
 }

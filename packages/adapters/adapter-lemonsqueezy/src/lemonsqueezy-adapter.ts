@@ -206,27 +206,27 @@ export class LemonSqueezyAdapter extends OpenApiMockAdapter<LemonSqueezyConfig> 
     // ── Subscriptions ─────────────────────────────────────────────────────
     // Cancel via DELETE sets status to 'cancelled'
     this.registerOverride(
-      'DELETE', '/lemonsqueezy/v1/subscriptions/:id',
+      'DELETE', '/v1/subscriptions/:id',
       subOverrides.buildCancelHandler(store),
     );
 
     // Update via PATCH handles pause/unpause, cancel/uncancel
     this.registerOverride(
-      'PATCH', '/lemonsqueezy/v1/subscriptions/:id',
+      'PATCH', '/v1/subscriptions/:id',
       subOverrides.buildUpdateHandler(store),
     );
 
     // ── Discounts ─────────────────────────────────────────────────────────
     // DELETE returns 204 No Content
     this.registerOverride(
-      'DELETE', '/lemonsqueezy/v1/discounts/:id',
+      'DELETE', '/v1/discounts/:id',
       this.buildNoContentDeleteHandler(store, 'discounts'),
     );
 
     // ── Webhooks ──────────────────────────────────────────────────────────
     // DELETE returns 204 No Content
     this.registerOverride(
-      'DELETE', '/lemonsqueezy/v1/webhooks/:id',
+      'DELETE', '/v1/webhooks/:id',
       this.buildNoContentDeleteHandler(store, 'webhooks'),
     );
 

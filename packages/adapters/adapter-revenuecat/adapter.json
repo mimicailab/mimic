@@ -3,7 +3,7 @@
   "name": "RevenueCat API",
   "description": "RevenueCat subscription management, entitlements, and in-app purchase mock adapter",
   "type": "api-mock",
-  "basePath": "/revenuecat",
+  "basePath": "",
   "versions": ["2.0.0"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://www.revenuecat.com/docs/api-v2",

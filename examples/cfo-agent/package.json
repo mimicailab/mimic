@@ -9,7 +9,6 @@
     "@mimicai/adapter-chargebee": "^0.11.0",
     "@mimicai/adapter-gocardless": "^0.11.0",
     "@mimicai/adapter-revenuecat": "^0.11.0",
-    "@mimicai/adapter-lemonsqueezy": "^0.11.0",
     "@mimicai/adapter-zuora": "^0.11.0",
     "@mimicai/adapter-recurly": "^0.11.0",
     "@mimicai/adapter-postgres": "^0.11.0"

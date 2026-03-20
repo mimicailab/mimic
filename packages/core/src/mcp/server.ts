@@ -132,7 +132,8 @@ export class MimicMcpServer {
   private readonly queryBuilder: QueryBuilder | null;
   private readonly tableMap: Map<string, TableInfo>;
   private httpServer: HttpServer | null = null;
-  private sessions: Map<string, StreamableHTTPServerTransport> = new Map();
+  private sessions: Map<string, { transport: StreamableHTTPServerTransport; server: McpServer }> = new Map();
+  private readonly externalRegistrars: Array<(mcpServer: McpServer) => void> = [];
 
   constructor(
     private readonly schema?: SchemaModel,
@@ -155,11 +156,26 @@ export class MimicMcpServer {
   }
 
   /**
+   * Create a fresh McpServer with all tools registered.
+   * Each Streamable HTTP session needs its own McpServer instance
+   * because the MCP SDK only allows one transport per protocol instance.
+   */
+  private createSessionServer(): McpServer {
+    const server = new McpServer({ name: 'mimic', version: '0.1.0' });
+    this.registerToolsOn(server);
+    for (const registrar of this.externalRegistrars) {
+      registrar(server);
+    }
+    return server;
+  }
+
+  /**
    * Allow external code (e.g. API adapters with mcp: true) to register
    * additional tools on the underlying MCP server.
    */
   registerExternalTools(registrar: (mcpServer: McpServer) => void): void {
     registrar(this.mcpServer);
+    this.externalRegistrars.push(registrar);
   }
 
   // -----------------------------------------------------------------------
@@ -167,12 +183,18 @@ export class MimicMcpServer {
   // -----------------------------------------------------------------------
 
   private registerTools(): void {
-    const tools = generateTools(this.schema!);
+    this.registerToolsOn(this.mcpServer);
+  }
+
+  /** Register database tools on any McpServer instance. */
+  private registerToolsOn(server: McpServer): void {
+    if (!this.schema) return;
+    const tools = generateTools(this.schema);
 
     for (const tool of tools) {
       const zodShape = inputSchemaToZod(tool);
 
-      this.mcpServer.tool(
+      server.tool(
         tool.name,
         tool.description,
         zodShape,
@@ -295,7 +317,13 @@ export class MimicMcpServer {
 
         // DELETE — explicit session termination
         if (req.method === 'DELETE') {
-          if (sessionId) this.sessions.delete(sessionId);
+          if (sessionId) {
+            const session = this.sessions.get(sessionId);
+            if (session) {
+              this.sessions.delete(sessionId);
+              await session.server.close().catch(() => {});
+            }
+          }
           res.writeHead(204);
           res.end();
           return;
@@ -308,7 +336,7 @@ export class MimicMcpServer {
             res.end(JSON.stringify({ error: 'invalid or missing mcp-session-id' }));
             return;
           }
-          await this.sessions.get(sessionId)!.handleRequest(req, res);
+          await this.sessions.get(sessionId)!.transport.handleRequest(req, res);
           return;
         }
 
@@ -316,15 +344,16 @@ export class MimicMcpServer {
         if (req.method === 'POST') {
           if (sessionId && this.sessions.has(sessionId)) {
             // Resume existing session
-            await this.sessions.get(sessionId)!.handleRequest(req, res);
+            await this.sessions.get(sessionId)!.transport.handleRequest(req, res);
             return;
           }
 
-          // New session
+          // New session — each session gets its own McpServer instance
+          // because the MCP SDK only allows one transport per protocol instance.
           const transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
             onsessioninitialized: (id) => {
-              this.sessions.set(id, transport);
+              this.sessions.set(id, { transport, server: sessionServer });
             },
           });
 
@@ -332,7 +361,8 @@ export class MimicMcpServer {
             if (transport.sessionId) this.sessions.delete(transport.sessionId);
           };
 
-          await this.mcpServer.connect(transport);
+          const sessionServer = this.createSessionServer();
+          await sessionServer.connect(transport);
           await transport.handleRequest(req, res);
           return;
         }
@@ -357,9 +387,14 @@ export class MimicMcpServer {
    */
   async stop(): Promise<void> {
     // Close all active Streamable HTTP sessions
-    for (const transport of this.sessions.values()) {
+    for (const { transport, server } of this.sessions.values()) {
       try {
         await transport.close();
+      } catch {
+        // Best-effort cleanup
+      }
+      try {
+        await server.close();
       } catch {
         // Best-effort cleanup
       }

@@ -3,7 +3,7 @@
   "name": "Lemon Squeezy",
   "description": "Lemon Squeezy payment and subscription platform mock adapter",
   "type": "api-mock",
-  "basePath": "/lemonsqueezy",
+  "basePath": "",
   "versions": ["v1"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://docs.lemonsqueezy.com/api",

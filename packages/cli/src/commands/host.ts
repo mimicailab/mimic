@@ -85,8 +85,9 @@ async function runHost(opts: HostOptions): Promise<void> {
     );
   }
 
-  // Auto-detect transport: stdio for single server, Streamable HTTP for multiple
-  const transport: 'stdio' | 'http' = totalServers > 1 ? 'http' : 'stdio';
+  // Always use HTTP transport so the host command runs as a background server.
+  // Stdio is only useful when a parent process (IDE) spawns and pipes to us.
+  const transport: 'stdio' | 'http' = 'http';
 
   const mcpBasePort = opts.mcpBasePort ?? 4201;
   const apiBasePort = opts.apiBasePort ?? 4101;

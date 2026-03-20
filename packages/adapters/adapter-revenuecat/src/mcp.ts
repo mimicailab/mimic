@@ -42,7 +42,7 @@ const PROJECT_ID = 'proj_mock';
 
 export function registerRevenueCatTools(server: McpServer, baseUrl: string = 'http://localhost:4100'): void {
   const call = makeCall(baseUrl);
-  const p = `/revenuecat/projects/${PROJECT_ID}`;
+  const p = `/projects/${PROJECT_ID}`;
 
   // Customers
   server.tool('list_customers', 'List RevenueCat customers', {

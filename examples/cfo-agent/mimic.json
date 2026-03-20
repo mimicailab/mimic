@@ -2,8 +2,8 @@
   "domain": "Multi-platform SaaS billing and subscription management. A growth-stage analytics company (Verida Analytics) that simultaneously uses 8 billing platforms across different customer segments and geographies. Core business: B2B analytics SaaS with starter, pro, and enterprise tiers.",
 
   "llm": {
-    "provider": "openai",
-    "model": "gpt-5.4"
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6"
   },
 
   "personas": [

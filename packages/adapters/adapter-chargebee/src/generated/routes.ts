@@ -6,7 +6,7 @@ export type RouteOperation = 'list' | 'create' | 'retrieve' | 'update' | 'delete
 export interface GeneratedRoute {
   /** HTTP method */
   method: RouteMethod;
-  /** Fastify route path with colon params and /chargebee prefix */
+  /** Fastify route path with colon params */
   fastifyPath: string;
   /** Original spec path for documentation (field name is historical) */
   stripePath: string;
@@ -27,7 +27,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/remove_advance_invoice_schedule",
+    fastifyPath: "/subscriptions/:subscription_id/remove_advance_invoice_schedule",
     stripePath: "/subscriptions/{subscription-id}/remove_advance_invoice_schedule",
     resource: "subscriptions",
     operation: "action",
@@ -38,7 +38,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/update_for_items",
+    fastifyPath: "/subscriptions/:subscription_id/update_for_items",
     stripePath: "/subscriptions/{subscription-id}/update_for_items",
     resource: "subscriptions",
     operation: "action",
@@ -49,7 +49,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/remove_coupons",
+    fastifyPath: "/subscriptions/:subscription_id/remove_coupons",
     stripePath: "/subscriptions/{subscription-id}/remove_coupons",
     resource: "subscriptions",
     operation: "action",
@@ -60,7 +60,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/resume",
+    fastifyPath: "/subscriptions/:subscription_id/resume",
     stripePath: "/subscriptions/{subscription-id}/resume",
     resource: "subscriptions",
     operation: "action",
@@ -71,7 +71,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/cancel_for_items",
+    fastifyPath: "/subscriptions/:subscription_id/cancel_for_items",
     stripePath: "/subscriptions/{subscription-id}/cancel_for_items",
     resource: "subscriptions",
     operation: "action",
@@ -82,7 +82,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/regenerate_invoice",
+    fastifyPath: "/subscriptions/:subscription_id/regenerate_invoice",
     stripePath: "/subscriptions/{subscription-id}/regenerate_invoice",
     resource: "subscriptions",
     operation: "action",
@@ -93,7 +93,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions",
+    fastifyPath: "/subscriptions",
     stripePath: "/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -103,7 +103,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/move",
+    fastifyPath: "/subscriptions/:subscription_id/move",
     stripePath: "/subscriptions/{subscription-id}/move",
     resource: "subscriptions",
     operation: "action",
@@ -114,7 +114,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/import_for_items",
+    fastifyPath: "/customers/:customer_id/import_for_items",
     stripePath: "/customers/{customer-id}/import_for_items",
     resource: "customers",
     operation: "action",
@@ -125,7 +125,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/retrieve_advance_invoice_schedule",
+    fastifyPath: "/subscriptions/:subscription_id/retrieve_advance_invoice_schedule",
     stripePath: "/subscriptions/{subscription-id}/retrieve_advance_invoice_schedule",
     resource: "subscriptions",
     operation: "list",
@@ -136,7 +136,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/remove_scheduled_cancellation",
+    fastifyPath: "/subscriptions/:subscription_id/remove_scheduled_cancellation",
     stripePath: "/subscriptions/{subscription-id}/remove_scheduled_cancellation",
     resource: "subscriptions",
     operation: "action",
@@ -147,7 +147,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/retrieve_with_scheduled_changes",
+    fastifyPath: "/subscriptions/:subscription_id/retrieve_with_scheduled_changes",
     stripePath: "/subscriptions/{subscription-id}/retrieve_with_scheduled_changes",
     resource: "subscriptions",
     operation: "list",
@@ -158,7 +158,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/reactivate",
+    fastifyPath: "/subscriptions/:subscription_id/reactivate",
     stripePath: "/subscriptions/{subscription-id}/reactivate",
     resource: "subscriptions",
     operation: "action",
@@ -169,7 +169,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/charge_future_renewals",
+    fastifyPath: "/subscriptions/:subscription_id/charge_future_renewals",
     stripePath: "/subscriptions/{subscription-id}/charge_future_renewals",
     resource: "subscriptions",
     operation: "action",
@@ -180,7 +180,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/add_charge_at_term_end",
+    fastifyPath: "/subscriptions/:subscription_id/add_charge_at_term_end",
     stripePath: "/subscriptions/{subscription-id}/add_charge_at_term_end",
     resource: "subscriptions",
     operation: "action",
@@ -191,7 +191,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/remove_scheduled_changes",
+    fastifyPath: "/subscriptions/:subscription_id/remove_scheduled_changes",
     stripePath: "/subscriptions/{subscription-id}/remove_scheduled_changes",
     resource: "subscriptions",
     operation: "action",
@@ -202,7 +202,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/change_term_end",
+    fastifyPath: "/subscriptions/:subscription_id/change_term_end",
     stripePath: "/subscriptions/{subscription-id}/change_term_end",
     resource: "subscriptions",
     operation: "action",
@@ -213,7 +213,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/delete",
+    fastifyPath: "/subscriptions/:subscription_id/delete",
     stripePath: "/subscriptions/{subscription-id}/delete",
     resource: "subscriptions",
     operation: "delete",
@@ -224,7 +224,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/subscription_for_items",
+    fastifyPath: "/customers/:customer_id/subscription_for_items",
     stripePath: "/customers/{customer-id}/subscription_for_items",
     resource: "customers",
     operation: "action",
@@ -235,7 +235,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/import_unbilled_charges",
+    fastifyPath: "/subscriptions/:subscription_id/import_unbilled_charges",
     stripePath: "/subscriptions/{subscription-id}/import_unbilled_charges",
     resource: "subscriptions",
     operation: "action",
@@ -246,7 +246,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/remove_scheduled_resumption",
+    fastifyPath: "/subscriptions/:subscription_id/remove_scheduled_resumption",
     stripePath: "/subscriptions/{subscription-id}/remove_scheduled_resumption",
     resource: "subscriptions",
     operation: "action",
@@ -257,7 +257,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id",
+    fastifyPath: "/subscriptions/:subscription_id",
     stripePath: "/subscriptions/{subscription-id}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -268,7 +268,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/import_contract_term",
+    fastifyPath: "/subscriptions/:subscription_id/import_contract_term",
     stripePath: "/subscriptions/{subscription-id}/import_contract_term",
     resource: "subscriptions",
     operation: "action",
@@ -279,7 +279,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/override_billing_profile",
+    fastifyPath: "/subscriptions/:subscription_id/override_billing_profile",
     stripePath: "/subscriptions/{subscription-id}/override_billing_profile",
     resource: "subscriptions",
     operation: "action",
@@ -290,7 +290,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/remove_scheduled_pause",
+    fastifyPath: "/subscriptions/:subscription_id/remove_scheduled_pause",
     stripePath: "/subscriptions/{subscription-id}/remove_scheduled_pause",
     resource: "subscriptions",
     operation: "action",
@@ -301,7 +301,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/edit_advance_invoice_schedule",
+    fastifyPath: "/subscriptions/:subscription_id/edit_advance_invoice_schedule",
     stripePath: "/subscriptions/{subscription-id}/edit_advance_invoice_schedule",
     resource: "subscriptions",
     operation: "action",
@@ -312,7 +312,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/discounts",
+    fastifyPath: "/subscriptions/:subscription_id/discounts",
     stripePath: "/subscriptions/{subscription-id}/discounts",
     resource: "subscriptions",
     operation: "list",
@@ -323,7 +323,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/contract_terms",
+    fastifyPath: "/subscriptions/:subscription_id/contract_terms",
     stripePath: "/subscriptions/{subscription-id}/contract_terms",
     resource: "subscriptions",
     operation: "list",
@@ -334,7 +334,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/pause",
+    fastifyPath: "/subscriptions/:subscription_id/pause",
     stripePath: "/subscriptions/{subscription-id}/pause",
     resource: "subscriptions",
     operation: "action",
@@ -345,7 +345,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/scheduled_changes",
+    fastifyPath: "/subscriptions/:subscription_id/scheduled_changes",
     stripePath: "/subscriptions/{subscription-id}/scheduled_changes",
     resource: "subscriptions",
     operation: "list",
@@ -356,7 +356,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/update_scheduled_changes",
+    fastifyPath: "/subscriptions/:subscription_id/update_scheduled_changes",
     stripePath: "/subscriptions/{subscription-id}/update_scheduled_changes",
     resource: "subscriptions",
     operation: "action",
@@ -367,7 +367,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/delete",
+    fastifyPath: "/customers/:customer_id/delete",
     stripePath: "/customers/{customer-id}/delete",
     resource: "customers",
     operation: "delete",
@@ -378,7 +378,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/relationships",
+    fastifyPath: "/customers/:customer_id/relationships",
     stripePath: "/customers/{customer-id}/relationships",
     resource: "customers",
     operation: "action",
@@ -389,7 +389,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/delete_relationship",
+    fastifyPath: "/customers/:customer_id/delete_relationship",
     stripePath: "/customers/{customer-id}/delete_relationship",
     resource: "customers",
     operation: "action",
@@ -400,7 +400,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/delete_contact",
+    fastifyPath: "/customers/:customer_id/delete_contact",
     stripePath: "/customers/{customer-id}/delete_contact",
     resource: "customers",
     operation: "action",
@@ -411,7 +411,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/assign_payment_role",
+    fastifyPath: "/customers/:customer_id/assign_payment_role",
     stripePath: "/customers/{customer-id}/assign_payment_role",
     resource: "customers",
     operation: "action",
@@ -422,7 +422,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/move",
+    fastifyPath: "/customers/move",
     stripePath: "/customers/move",
     resource: "customers",
     operation: "create",
@@ -432,7 +432,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers/:customer_id/hierarchy",
+    fastifyPath: "/customers/:customer_id/hierarchy",
     stripePath: "/customers/{customer-id}/hierarchy",
     resource: "customers",
     operation: "list",
@@ -443,7 +443,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/update_payment_method",
+    fastifyPath: "/customers/:customer_id/update_payment_method",
     stripePath: "/customers/{customer-id}/update_payment_method",
     resource: "customers",
     operation: "action",
@@ -454,7 +454,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers/:customer_id",
+    fastifyPath: "/customers/:customer_id",
     stripePath: "/customers/{customer-id}",
     resource: "customers",
     operation: "retrieve",
@@ -465,7 +465,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id",
+    fastifyPath: "/customers/:customer_id",
     stripePath: "/customers/{customer-id}",
     resource: "customers",
     operation: "update",
@@ -476,7 +476,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers/:customer_id/hierarchy_detail",
+    fastifyPath: "/customers/:customer_id/hierarchy_detail",
     stripePath: "/customers/{customer-id}/hierarchy_detail",
     resource: "customers",
     operation: "list",
@@ -487,7 +487,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/change_billing_date",
+    fastifyPath: "/customers/:customer_id/change_billing_date",
     stripePath: "/customers/{customer-id}/change_billing_date",
     resource: "customers",
     operation: "action",
@@ -498,7 +498,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers",
+    fastifyPath: "/customers",
     stripePath: "/customers",
     resource: "customers",
     operation: "list",
@@ -508,7 +508,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers",
+    fastifyPath: "/customers",
     stripePath: "/customers",
     resource: "customers",
     operation: "create",
@@ -518,7 +518,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/add_contact",
+    fastifyPath: "/customers/:customer_id/add_contact",
     stripePath: "/customers/{customer-id}/add_contact",
     resource: "customers",
     operation: "action",
@@ -529,7 +529,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers/:customer_id/contacts",
+    fastifyPath: "/customers/:customer_id/contacts",
     stripePath: "/customers/{customer-id}/contacts",
     resource: "customers",
     operation: "list",
@@ -540,7 +540,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/clear_personal_data",
+    fastifyPath: "/customers/:customer_id/clear_personal_data",
     stripePath: "/customers/{customer-id}/clear_personal_data",
     resource: "customers",
     operation: "action",
@@ -551,7 +551,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/merge",
+    fastifyPath: "/customers/merge",
     stripePath: "/customers/merge",
     resource: "customers",
     operation: "create",
@@ -561,7 +561,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/collect_payment",
+    fastifyPath: "/customers/:customer_id/collect_payment",
     stripePath: "/customers/{customer-id}/collect_payment",
     resource: "customers",
     operation: "action",
@@ -572,7 +572,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/record_excess_payment",
+    fastifyPath: "/customers/:customer_id/record_excess_payment",
     stripePath: "/customers/{customer-id}/record_excess_payment",
     resource: "customers",
     operation: "action",
@@ -583,7 +583,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/update_contact",
+    fastifyPath: "/customers/:customer_id/update_contact",
     stripePath: "/customers/{customer-id}/update_contact",
     resource: "customers",
     operation: "action",
@@ -594,7 +594,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/update_hierarchy_settings",
+    fastifyPath: "/customers/:customer_id/update_hierarchy_settings",
     stripePath: "/customers/{customer-id}/update_hierarchy_settings",
     resource: "customers",
     operation: "action",
@@ -605,7 +605,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/update_billing_info",
+    fastifyPath: "/customers/:customer_id/update_billing_info",
     stripePath: "/customers/{customer-id}/update_billing_info",
     resource: "customers",
     operation: "action",
@@ -616,7 +616,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/tokens/create_using_temp_token",
+    fastifyPath: "/tokens/create_using_temp_token",
     stripePath: "/tokens/create_using_temp_token",
     resource: "tokens",
     operation: "create",
@@ -626,7 +626,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/tokens/create_for_card",
+    fastifyPath: "/tokens/create_for_card",
     stripePath: "/tokens/create_for_card",
     resource: "tokens",
     operation: "create",
@@ -636,7 +636,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/tokens/:cb_token_id",
+    fastifyPath: "/tokens/:cb_token_id",
     stripePath: "/tokens/{cb-token-id}",
     resource: "tokens",
     operation: "retrieve",
@@ -647,7 +647,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/create_using_permanent_token",
+    fastifyPath: "/payment_sources/create_using_permanent_token",
     stripePath: "/payment_sources/create_using_permanent_token",
     resource: "payment_sources",
     operation: "create",
@@ -657,7 +657,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id/delete",
+    fastifyPath: "/payment_sources/:cust_payment_source_id/delete",
     stripePath: "/payment_sources/{cust-payment-source-id}/delete",
     resource: "payment_sources",
     operation: "delete",
@@ -668,7 +668,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/create_card",
+    fastifyPath: "/payment_sources/create_card",
     stripePath: "/payment_sources/create_card",
     resource: "payment_sources",
     operation: "create",
@@ -678,7 +678,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id/verify_bank_account",
+    fastifyPath: "/payment_sources/:cust_payment_source_id/verify_bank_account",
     stripePath: "/payment_sources/{cust-payment-source-id}/verify_bank_account",
     resource: "payment_sources",
     operation: "action",
@@ -689,7 +689,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/payment_sources",
+    fastifyPath: "/payment_sources",
     stripePath: "/payment_sources",
     resource: "payment_sources",
     operation: "list",
@@ -699,7 +699,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id/export_payment_source",
+    fastifyPath: "/payment_sources/:cust_payment_source_id/export_payment_source",
     stripePath: "/payment_sources/{cust-payment-source-id}/export_payment_source",
     resource: "payment_sources",
     operation: "action",
@@ -710,7 +710,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/create_using_payment_intent",
+    fastifyPath: "/payment_sources/create_using_payment_intent",
     stripePath: "/payment_sources/create_using_payment_intent",
     resource: "payment_sources",
     operation: "create",
@@ -720,7 +720,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id",
+    fastifyPath: "/payment_sources/:cust_payment_source_id",
     stripePath: "/payment_sources/{cust-payment-source-id}",
     resource: "payment_sources",
     operation: "retrieve",
@@ -731,7 +731,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/create_voucher_payment_source",
+    fastifyPath: "/payment_sources/create_voucher_payment_source",
     stripePath: "/payment_sources/create_voucher_payment_source",
     resource: "payment_sources",
     operation: "create",
@@ -741,7 +741,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/create_using_temp_token",
+    fastifyPath: "/payment_sources/create_using_temp_token",
     stripePath: "/payment_sources/create_using_temp_token",
     resource: "payment_sources",
     operation: "create",
@@ -751,7 +751,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id/update_card",
+    fastifyPath: "/payment_sources/:cust_payment_source_id/update_card",
     stripePath: "/payment_sources/{cust-payment-source-id}/update_card",
     resource: "payment_sources",
     operation: "action",
@@ -762,7 +762,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id/switch_gateway_account",
+    fastifyPath: "/payment_sources/:cust_payment_source_id/switch_gateway_account",
     stripePath: "/payment_sources/{cust-payment-source-id}/switch_gateway_account",
     resource: "payment_sources",
     operation: "action",
@@ -773,7 +773,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/create_using_token",
+    fastifyPath: "/payment_sources/create_using_token",
     stripePath: "/payment_sources/create_using_token",
     resource: "payment_sources",
     operation: "create",
@@ -783,7 +783,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id/delete_local",
+    fastifyPath: "/payment_sources/:cust_payment_source_id/delete_local",
     stripePath: "/payment_sources/{cust-payment-source-id}/delete_local",
     resource: "payment_sources",
     operation: "action",
@@ -794,7 +794,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/create_bank_account",
+    fastifyPath: "/payment_sources/create_bank_account",
     stripePath: "/payment_sources/create_bank_account",
     resource: "payment_sources",
     operation: "create",
@@ -804,7 +804,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_sources/:cust_payment_source_id/update_bank_account",
+    fastifyPath: "/payment_sources/:cust_payment_source_id/update_bank_account",
     stripePath: "/payment_sources/{cust-payment-source-id}/update_bank_account",
     resource: "payment_sources",
     operation: "action",
@@ -815,7 +815,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/virtual_bank_accounts/:virtual_bank_account_id/delete_local",
+    fastifyPath: "/virtual_bank_accounts/:virtual_bank_account_id/delete_local",
     stripePath: "/virtual_bank_accounts/{virtual-bank-account-id}/delete_local",
     resource: "virtual_bank_accounts",
     operation: "action",
@@ -826,7 +826,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/virtual_bank_accounts/:virtual_bank_account_id/delete",
+    fastifyPath: "/virtual_bank_accounts/:virtual_bank_account_id/delete",
     stripePath: "/virtual_bank_accounts/{virtual-bank-account-id}/delete",
     resource: "virtual_bank_accounts",
     operation: "delete",
@@ -837,7 +837,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/virtual_bank_accounts",
+    fastifyPath: "/virtual_bank_accounts",
     stripePath: "/virtual_bank_accounts",
     resource: "virtual_bank_accounts",
     operation: "list",
@@ -847,7 +847,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/virtual_bank_accounts",
+    fastifyPath: "/virtual_bank_accounts",
     stripePath: "/virtual_bank_accounts",
     resource: "virtual_bank_accounts",
     operation: "create",
@@ -857,7 +857,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/virtual_bank_accounts/:virtual_bank_account_id",
+    fastifyPath: "/virtual_bank_accounts/:virtual_bank_account_id",
     stripePath: "/virtual_bank_accounts/{virtual-bank-account-id}",
     resource: "virtual_bank_accounts",
     operation: "retrieve",
@@ -868,7 +868,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/virtual_bank_accounts/create_using_permanent_token",
+    fastifyPath: "/virtual_bank_accounts/create_using_permanent_token",
     stripePath: "/virtual_bank_accounts/create_using_permanent_token",
     resource: "virtual_bank_accounts",
     operation: "create",
@@ -878,7 +878,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/copy_card",
+    fastifyPath: "/customers/:customer_id/copy_card",
     stripePath: "/customers/{customer-id}/copy_card",
     resource: "customers",
     operation: "action",
@@ -889,7 +889,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/cards/:customer_id",
+    fastifyPath: "/cards/:customer_id",
     stripePath: "/cards/{customer-id}",
     resource: "cards",
     operation: "retrieve",
@@ -900,7 +900,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/switch_gateway",
+    fastifyPath: "/customers/:customer_id/switch_gateway",
     stripePath: "/customers/{customer-id}/switch_gateway",
     resource: "customers",
     operation: "action",
@@ -911,7 +911,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/delete_card",
+    fastifyPath: "/customers/:customer_id/delete_card",
     stripePath: "/customers/{customer-id}/delete_card",
     resource: "customers",
     operation: "action",
@@ -922,7 +922,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/credit_card",
+    fastifyPath: "/customers/:customer_id/credit_card",
     stripePath: "/customers/{customer-id}/credit_card",
     resource: "customers",
     operation: "action",
@@ -933,7 +933,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/promotional_credits/:account_credit_id",
+    fastifyPath: "/promotional_credits/:account_credit_id",
     stripePath: "/promotional_credits/{account-credit-id}",
     resource: "promotional_credits",
     operation: "retrieve",
@@ -944,7 +944,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/promotional_credits",
+    fastifyPath: "/promotional_credits",
     stripePath: "/promotional_credits",
     resource: "promotional_credits",
     operation: "list",
@@ -954,7 +954,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/promotional_credits/deduct",
+    fastifyPath: "/promotional_credits/deduct",
     stripePath: "/promotional_credits/deduct",
     resource: "promotional_credits",
     operation: "create",
@@ -964,7 +964,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/promotional_credits/set",
+    fastifyPath: "/promotional_credits/set",
     stripePath: "/promotional_credits/set",
     resource: "promotional_credits",
     operation: "create",
@@ -974,7 +974,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/promotional_credits/add",
+    fastifyPath: "/promotional_credits/add",
     stripePath: "/promotional_credits/add",
     resource: "promotional_credits",
     operation: "create",
@@ -984,7 +984,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/delete_line_items",
+    fastifyPath: "/invoices/:invoice_id/delete_line_items",
     stripePath: "/invoices/{invoice-id}/delete_line_items",
     resource: "invoices",
     operation: "action",
@@ -995,7 +995,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/remove_credit_note",
+    fastifyPath: "/invoices/:invoice_id/remove_credit_note",
     stripePath: "/invoices/{invoice-id}/remove_credit_note",
     resource: "invoices",
     operation: "action",
@@ -1006,7 +1006,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/remove_payment",
+    fastifyPath: "/invoices/:invoice_id/remove_payment",
     stripePath: "/invoices/{invoice-id}/remove_payment",
     resource: "invoices",
     operation: "action",
@@ -1017,7 +1017,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/stop_dunning",
+    fastifyPath: "/invoices/:invoice_id/stop_dunning",
     stripePath: "/invoices/{invoice-id}/stop_dunning",
     resource: "invoices",
     operation: "action",
@@ -1028,7 +1028,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/apply_payments",
+    fastifyPath: "/invoices/:invoice_id/apply_payments",
     stripePath: "/invoices/{invoice-id}/apply_payments",
     resource: "invoices",
     operation: "action",
@@ -1039,7 +1039,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/apply_payment_schedule_scheme",
+    fastifyPath: "/invoices/:invoice_id/apply_payment_schedule_scheme",
     stripePath: "/invoices/{invoice-id}/apply_payment_schedule_scheme",
     resource: "invoices",
     operation: "action",
@@ -1050,7 +1050,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/void",
+    fastifyPath: "/invoices/:invoice_id/void",
     stripePath: "/invoices/{invoice-id}/void",
     resource: "invoices",
     operation: "action",
@@ -1061,7 +1061,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/add_charge",
+    fastifyPath: "/invoices/:invoice_id/add_charge",
     stripePath: "/invoices/{invoice-id}/add_charge",
     resource: "invoices",
     operation: "action",
@@ -1072,7 +1072,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/send_einvoice",
+    fastifyPath: "/invoices/:invoice_id/send_einvoice",
     stripePath: "/invoices/{invoice-id}/send_einvoice",
     resource: "invoices",
     operation: "action",
@@ -1083,7 +1083,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/invoices/:invoice_id/payment_schedules",
+    fastifyPath: "/invoices/:invoice_id/payment_schedules",
     stripePath: "/invoices/{invoice-id}/payment_schedules",
     resource: "invoices",
     operation: "list",
@@ -1094,7 +1094,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/write_off",
+    fastifyPath: "/invoices/:invoice_id/write_off",
     stripePath: "/invoices/{invoice-id}/write_off",
     resource: "invoices",
     operation: "action",
@@ -1105,7 +1105,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/add_charge_item",
+    fastifyPath: "/invoices/:invoice_id/add_charge_item",
     stripePath: "/invoices/{invoice-id}/add_charge_item",
     resource: "invoices",
     operation: "action",
@@ -1116,7 +1116,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/pause_dunning",
+    fastifyPath: "/invoices/:invoice_id/pause_dunning",
     stripePath: "/invoices/{invoice-id}/pause_dunning",
     resource: "invoices",
     operation: "action",
@@ -1127,7 +1127,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/invoices",
+    fastifyPath: "/invoices",
     stripePath: "/invoices",
     resource: "invoices",
     operation: "list",
@@ -1137,7 +1137,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/close",
+    fastifyPath: "/invoices/:invoice_id/close",
     stripePath: "/invoices/{invoice-id}/close",
     resource: "invoices",
     operation: "action",
@@ -1148,7 +1148,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/apply_credits",
+    fastifyPath: "/invoices/:invoice_id/apply_credits",
     stripePath: "/invoices/{invoice-id}/apply_credits",
     resource: "invoices",
     operation: "action",
@@ -1159,7 +1159,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/invoices/:invoice_id",
+    fastifyPath: "/invoices/:invoice_id",
     stripePath: "/invoices/{invoice-id}",
     resource: "invoices",
     operation: "retrieve",
@@ -1170,7 +1170,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/create_for_charge_items_and_charges",
+    fastifyPath: "/invoices/create_for_charge_items_and_charges",
     stripePath: "/invoices/create_for_charge_items_and_charges",
     resource: "invoices",
     operation: "create",
@@ -1180,7 +1180,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/update_details",
+    fastifyPath: "/invoices/:invoice_id/update_details",
     stripePath: "/invoices/{invoice-id}/update_details",
     resource: "invoices",
     operation: "action",
@@ -1191,7 +1191,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/record_payment",
+    fastifyPath: "/invoices/:invoice_id/record_payment",
     stripePath: "/invoices/{invoice-id}/record_payment",
     resource: "invoices",
     operation: "action",
@@ -1202,7 +1202,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/delete",
+    fastifyPath: "/invoices/:invoice_id/delete",
     stripePath: "/invoices/{invoice-id}/delete",
     resource: "invoices",
     operation: "delete",
@@ -1213,7 +1213,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/import_invoice",
+    fastifyPath: "/invoices/import_invoice",
     stripePath: "/invoices/import_invoice",
     resource: "invoices",
     operation: "create",
@@ -1223,7 +1223,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/resume_dunning",
+    fastifyPath: "/invoices/:invoice_id/resume_dunning",
     stripePath: "/invoices/{invoice-id}/resume_dunning",
     resource: "invoices",
     operation: "action",
@@ -1234,7 +1234,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/record_tax_withheld",
+    fastifyPath: "/invoices/:invoice_id/record_tax_withheld",
     stripePath: "/invoices/{invoice-id}/record_tax_withheld",
     resource: "invoices",
     operation: "action",
@@ -1245,7 +1245,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/resend_einvoice",
+    fastifyPath: "/invoices/:invoice_id/resend_einvoice",
     stripePath: "/invoices/{invoice-id}/resend_einvoice",
     resource: "invoices",
     operation: "action",
@@ -1256,7 +1256,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/remove_tax_withheld",
+    fastifyPath: "/invoices/:invoice_id/remove_tax_withheld",
     stripePath: "/invoices/{invoice-id}/remove_tax_withheld",
     resource: "invoices",
     operation: "action",
@@ -1267,7 +1267,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/invoices/payment_reference_numbers",
+    fastifyPath: "/invoices/payment_reference_numbers",
     stripePath: "/invoices/payment_reference_numbers",
     resource: "invoices",
     operation: "list",
@@ -1277,7 +1277,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/collect_payment",
+    fastifyPath: "/invoices/:invoice_id/collect_payment",
     stripePath: "/invoices/{invoice-id}/collect_payment",
     resource: "invoices",
     operation: "action",
@@ -1288,7 +1288,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/sync_usages",
+    fastifyPath: "/invoices/:invoice_id/sync_usages",
     stripePath: "/invoices/{invoice-id}/sync_usages",
     resource: "invoices",
     operation: "action",
@@ -1299,7 +1299,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/refund",
+    fastifyPath: "/invoices/:invoice_id/refund",
     stripePath: "/invoices/{invoice-id}/refund",
     resource: "invoices",
     operation: "action",
@@ -1310,7 +1310,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/record_refund",
+    fastifyPath: "/invoices/:invoice_id/record_refund",
     stripePath: "/invoices/{invoice-id}/record_refund",
     resource: "invoices",
     operation: "action",
@@ -1321,7 +1321,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/invoices/:invoice_id/pdf",
+    fastifyPath: "/invoices/:invoice_id/pdf",
     stripePath: "/invoices/{invoice-id}/pdf",
     resource: "invoices",
     operation: "action",
@@ -1332,7 +1332,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/invoices/:invoice_id/download_einvoice",
+    fastifyPath: "/invoices/:invoice_id/download_einvoice",
     stripePath: "/invoices/{invoice-id}/download_einvoice",
     resource: "invoices",
     operation: "list",
@@ -1343,7 +1343,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/record_refund",
+    fastifyPath: "/credit_notes/:credit_note_id/record_refund",
     stripePath: "/credit_notes/{credit-note-id}/record_refund",
     resource: "credit_notes",
     operation: "action",
@@ -1354,7 +1354,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/import_credit_note",
+    fastifyPath: "/credit_notes/import_credit_note",
     stripePath: "/credit_notes/import_credit_note",
     resource: "credit_notes",
     operation: "create",
@@ -1364,7 +1364,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/delete",
+    fastifyPath: "/credit_notes/:credit_note_id/delete",
     stripePath: "/credit_notes/{credit-note-id}/delete",
     resource: "credit_notes",
     operation: "delete",
@@ -1375,7 +1375,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/pdf",
+    fastifyPath: "/credit_notes/:credit_note_id/pdf",
     stripePath: "/credit_notes/{credit-note-id}/pdf",
     resource: "credit_notes",
     operation: "action",
@@ -1386,7 +1386,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/send_einvoice",
+    fastifyPath: "/credit_notes/:credit_note_id/send_einvoice",
     stripePath: "/credit_notes/{credit-note-id}/send_einvoice",
     resource: "credit_notes",
     operation: "action",
@@ -1397,7 +1397,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/void",
+    fastifyPath: "/credit_notes/:credit_note_id/void",
     stripePath: "/credit_notes/{credit-note-id}/void",
     resource: "credit_notes",
     operation: "action",
@@ -1408,7 +1408,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/refund",
+    fastifyPath: "/credit_notes/:credit_note_id/refund",
     stripePath: "/credit_notes/{credit-note-id}/refund",
     resource: "credit_notes",
     operation: "action",
@@ -1419,7 +1419,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/credit_notes",
+    fastifyPath: "/credit_notes",
     stripePath: "/credit_notes",
     resource: "credit_notes",
     operation: "list",
@@ -1429,7 +1429,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes",
+    fastifyPath: "/credit_notes",
     stripePath: "/credit_notes",
     resource: "credit_notes",
     operation: "create",
@@ -1439,7 +1439,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/download_einvoice",
+    fastifyPath: "/credit_notes/:credit_note_id/download_einvoice",
     stripePath: "/credit_notes/{credit-note-id}/download_einvoice",
     resource: "credit_notes",
     operation: "list",
@@ -1450,7 +1450,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/resend_einvoice",
+    fastifyPath: "/credit_notes/:credit_note_id/resend_einvoice",
     stripePath: "/credit_notes/{credit-note-id}/resend_einvoice",
     resource: "credit_notes",
     operation: "action",
@@ -1461,7 +1461,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id/remove_tax_withheld_refund",
+    fastifyPath: "/credit_notes/:credit_note_id/remove_tax_withheld_refund",
     stripePath: "/credit_notes/{credit-note-id}/remove_tax_withheld_refund",
     resource: "credit_notes",
     operation: "action",
@@ -1472,7 +1472,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/credit_notes/:credit_note_id",
+    fastifyPath: "/credit_notes/:credit_note_id",
     stripePath: "/credit_notes/{credit-note-id}",
     resource: "credit_notes",
     operation: "retrieve",
@@ -1483,7 +1483,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/unbilled_charges/:unbilled_charge_id/delete",
+    fastifyPath: "/unbilled_charges/:unbilled_charge_id/delete",
     stripePath: "/unbilled_charges/{unbilled-charge-id}/delete",
     resource: "unbilled_charges",
     operation: "delete",
@@ -1494,7 +1494,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/unbilled_charges/invoice_now_estimate",
+    fastifyPath: "/unbilled_charges/invoice_now_estimate",
     stripePath: "/unbilled_charges/invoice_now_estimate",
     resource: "unbilled_charges",
     operation: "create",
@@ -1504,7 +1504,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/unbilled_charges/invoice_unbilled_charges",
+    fastifyPath: "/unbilled_charges/invoice_unbilled_charges",
     stripePath: "/unbilled_charges/invoice_unbilled_charges",
     resource: "unbilled_charges",
     operation: "create",
@@ -1514,7 +1514,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/unbilled_charges",
+    fastifyPath: "/unbilled_charges",
     stripePath: "/unbilled_charges",
     resource: "unbilled_charges",
     operation: "list",
@@ -1524,7 +1524,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/unbilled_charges",
+    fastifyPath: "/unbilled_charges",
     stripePath: "/unbilled_charges",
     resource: "unbilled_charges",
     operation: "create",
@@ -1534,7 +1534,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/orders",
+    fastifyPath: "/orders",
     stripePath: "/orders",
     resource: "orders",
     operation: "list",
@@ -1544,7 +1544,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders",
+    fastifyPath: "/orders",
     stripePath: "/orders",
     resource: "orders",
     operation: "create",
@@ -1554,7 +1554,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/import_order",
+    fastifyPath: "/orders/import_order",
     stripePath: "/orders/import_order",
     resource: "orders",
     operation: "create",
@@ -1564,7 +1564,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/:order_id/assign_order_number",
+    fastifyPath: "/orders/:order_id/assign_order_number",
     stripePath: "/orders/{order-id}/assign_order_number",
     resource: "orders",
     operation: "action",
@@ -1575,7 +1575,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/:order_id/resend",
+    fastifyPath: "/orders/:order_id/resend",
     stripePath: "/orders/{order-id}/resend",
     resource: "orders",
     operation: "action",
@@ -1586,7 +1586,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/:order_id/reopen",
+    fastifyPath: "/orders/:order_id/reopen",
     stripePath: "/orders/{order-id}/reopen",
     resource: "orders",
     operation: "action",
@@ -1597,7 +1597,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/:order_id/cancel",
+    fastifyPath: "/orders/:order_id/cancel",
     stripePath: "/orders/{order-id}/cancel",
     resource: "orders",
     operation: "action",
@@ -1608,7 +1608,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/orders/:order_id",
+    fastifyPath: "/orders/:order_id",
     stripePath: "/orders/{order-id}",
     resource: "orders",
     operation: "retrieve",
@@ -1619,7 +1619,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/:order_id",
+    fastifyPath: "/orders/:order_id",
     stripePath: "/orders/{order-id}",
     resource: "orders",
     operation: "update",
@@ -1630,7 +1630,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/:order_id/delete",
+    fastifyPath: "/orders/:order_id/delete",
     stripePath: "/orders/{order-id}/delete",
     resource: "orders",
     operation: "delete",
@@ -1641,7 +1641,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/orders/:order_id/create_refundable_credit_note",
+    fastifyPath: "/orders/:order_id/create_refundable_credit_note",
     stripePath: "/orders/{order-id}/create_refundable_credit_note",
     resource: "orders",
     operation: "create",
@@ -1652,7 +1652,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/gifts/create_for_items",
+    fastifyPath: "/gifts/create_for_items",
     stripePath: "/gifts/create_for_items",
     resource: "gifts",
     operation: "create",
@@ -1662,7 +1662,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/gifts/:gift_id/cancel",
+    fastifyPath: "/gifts/:gift_id/cancel",
     stripePath: "/gifts/{gift-id}/cancel",
     resource: "gifts",
     operation: "action",
@@ -1673,7 +1673,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/gifts/:gift_id/update_gift",
+    fastifyPath: "/gifts/:gift_id/update_gift",
     stripePath: "/gifts/{gift-id}/update_gift",
     resource: "gifts",
     operation: "action",
@@ -1684,7 +1684,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/gifts",
+    fastifyPath: "/gifts",
     stripePath: "/gifts",
     resource: "gifts",
     operation: "list",
@@ -1694,7 +1694,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/gifts/:gift_id",
+    fastifyPath: "/gifts/:gift_id",
     stripePath: "/gifts/{gift-id}",
     resource: "gifts",
     operation: "retrieve",
@@ -1705,7 +1705,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/gifts/:gift_id/claim",
+    fastifyPath: "/gifts/:gift_id/claim",
     stripePath: "/gifts/{gift-id}/claim",
     resource: "gifts",
     operation: "action",
@@ -1716,7 +1716,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/transactions",
+    fastifyPath: "/transactions",
     stripePath: "/transactions",
     resource: "transactions",
     operation: "list",
@@ -1726,7 +1726,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/transactions/:transaction_id/reconcile",
+    fastifyPath: "/transactions/:transaction_id/reconcile",
     stripePath: "/transactions/{transaction-id}/reconcile",
     resource: "transactions",
     operation: "action",
@@ -1737,7 +1737,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/transactions/:transaction_id",
+    fastifyPath: "/transactions/:transaction_id",
     stripePath: "/transactions/{transaction-id}",
     resource: "transactions",
     operation: "retrieve",
@@ -1748,7 +1748,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/transactions/:transaction_id/refund",
+    fastifyPath: "/transactions/:transaction_id/refund",
     stripePath: "/transactions/{transaction-id}/refund",
     resource: "transactions",
     operation: "action",
@@ -1759,7 +1759,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/transactions/:transaction_id/record_refund",
+    fastifyPath: "/transactions/:transaction_id/record_refund",
     stripePath: "/transactions/{transaction-id}/record_refund",
     resource: "transactions",
     operation: "action",
@@ -1770,7 +1770,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/transactions/:transaction_id/void",
+    fastifyPath: "/transactions/:transaction_id/void",
     stripePath: "/transactions/{transaction-id}/void",
     resource: "transactions",
     operation: "action",
@@ -1781,7 +1781,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/transactions/create_authorization",
+    fastifyPath: "/transactions/create_authorization",
     stripePath: "/transactions/create_authorization",
     resource: "transactions",
     operation: "create",
@@ -1791,7 +1791,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/invoices/:invoice_id/payments",
+    fastifyPath: "/invoices/:invoice_id/payments",
     stripePath: "/invoices/{invoice-id}/payments",
     resource: "invoices",
     operation: "list",
@@ -1802,7 +1802,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/transactions/:transaction_id/delete_offline_transaction",
+    fastifyPath: "/transactions/:transaction_id/delete_offline_transaction",
     stripePath: "/transactions/{transaction-id}/delete_offline_transaction",
     resource: "transactions",
     operation: "action",
@@ -1813,7 +1813,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/checkout_one_time_for_items",
+    fastifyPath: "/hosted_pages/checkout_one_time_for_items",
     stripePath: "/hosted_pages/checkout_one_time_for_items",
     resource: "hosted_pages",
     operation: "create",
@@ -1823,7 +1823,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/update_payment_method",
+    fastifyPath: "/hosted_pages/update_payment_method",
     stripePath: "/hosted_pages/update_payment_method",
     resource: "hosted_pages",
     operation: "create",
@@ -1833,7 +1833,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/extend_subscription",
+    fastifyPath: "/hosted_pages/extend_subscription",
     stripePath: "/hosted_pages/extend_subscription",
     resource: "hosted_pages",
     operation: "create",
@@ -1843,7 +1843,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/events",
+    fastifyPath: "/hosted_pages/events",
     stripePath: "/hosted_pages/events",
     resource: "hosted_pages",
     operation: "create",
@@ -1853,7 +1853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/checkout_gift_for_items",
+    fastifyPath: "/hosted_pages/checkout_gift_for_items",
     stripePath: "/hosted_pages/checkout_gift_for_items",
     resource: "hosted_pages",
     operation: "create",
@@ -1863,7 +1863,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/hosted_pages",
+    fastifyPath: "/hosted_pages",
     stripePath: "/hosted_pages",
     resource: "hosted_pages",
     operation: "list",
@@ -1873,7 +1873,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/view_voucher",
+    fastifyPath: "/hosted_pages/view_voucher",
     stripePath: "/hosted_pages/view_voucher",
     resource: "hosted_pages",
     operation: "create",
@@ -1883,7 +1883,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/collect_now",
+    fastifyPath: "/hosted_pages/collect_now",
     stripePath: "/hosted_pages/collect_now",
     resource: "hosted_pages",
     operation: "create",
@@ -1893,7 +1893,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/accept_quote",
+    fastifyPath: "/hosted_pages/accept_quote",
     stripePath: "/hosted_pages/accept_quote",
     resource: "hosted_pages",
     operation: "create",
@@ -1903,7 +1903,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/checkout_new_for_items",
+    fastifyPath: "/hosted_pages/checkout_new_for_items",
     stripePath: "/hosted_pages/checkout_new_for_items",
     resource: "hosted_pages",
     operation: "create",
@@ -1913,7 +1913,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/claim_gift",
+    fastifyPath: "/hosted_pages/claim_gift",
     stripePath: "/hosted_pages/claim_gift",
     resource: "hosted_pages",
     operation: "create",
@@ -1923,7 +1923,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/checkout_existing_for_items",
+    fastifyPath: "/hosted_pages/checkout_existing_for_items",
     stripePath: "/hosted_pages/checkout_existing_for_items",
     resource: "hosted_pages",
     operation: "create",
@@ -1933,7 +1933,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/pre_cancel",
+    fastifyPath: "/hosted_pages/pre_cancel",
     stripePath: "/hosted_pages/pre_cancel",
     resource: "hosted_pages",
     operation: "create",
@@ -1943,7 +1943,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/:hosted_page_id/acknowledge",
+    fastifyPath: "/hosted_pages/:hosted_page_id/acknowledge",
     stripePath: "/hosted_pages/{hosted-page-id}/acknowledge",
     resource: "hosted_pages",
     operation: "action",
@@ -1954,7 +1954,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/retrieve_agreement_pdf",
+    fastifyPath: "/hosted_pages/retrieve_agreement_pdf",
     stripePath: "/hosted_pages/retrieve_agreement_pdf",
     resource: "hosted_pages",
     operation: "create",
@@ -1964,7 +1964,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/hosted_pages/:hosted_page_id",
+    fastifyPath: "/hosted_pages/:hosted_page_id",
     stripePath: "/hosted_pages/{hosted-page-id}",
     resource: "hosted_pages",
     operation: "retrieve",
@@ -1975,7 +1975,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/hosted_pages/manage_payment_sources",
+    fastifyPath: "/hosted_pages/manage_payment_sources",
     stripePath: "/hosted_pages/manage_payment_sources",
     resource: "hosted_pages",
     operation: "create",
@@ -1985,7 +1985,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/renewal_estimate",
+    fastifyPath: "/subscriptions/:subscription_id/renewal_estimate",
     stripePath: "/subscriptions/{subscription-id}/renewal_estimate",
     resource: "subscriptions",
     operation: "list",
@@ -1996,7 +1996,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/estimates/create_subscription_for_items",
+    fastifyPath: "/estimates/create_subscription_for_items",
     stripePath: "/estimates/create_subscription_for_items",
     resource: "estimates",
     operation: "create",
@@ -2005,7 +2005,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/estimates/payment_schedules",
+    fastifyPath: "/estimates/payment_schedules",
     stripePath: "/estimates/payment_schedules",
     resource: "estimates",
     operation: "create",
@@ -2014,7 +2014,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/cancel_subscription_for_items_estimate",
+    fastifyPath: "/subscriptions/:subscription_id/cancel_subscription_for_items_estimate",
     stripePath: "/subscriptions/{subscription-id}/cancel_subscription_for_items_estimate",
     resource: "subscriptions",
     operation: "action",
@@ -2025,7 +2025,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/resume_subscription_estimate",
+    fastifyPath: "/subscriptions/:subscription_id/resume_subscription_estimate",
     stripePath: "/subscriptions/{subscription-id}/resume_subscription_estimate",
     resource: "subscriptions",
     operation: "action",
@@ -2036,7 +2036,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/estimates/create_invoice_for_items",
+    fastifyPath: "/estimates/create_invoice_for_items",
     stripePath: "/estimates/create_invoice_for_items",
     resource: "estimates",
     operation: "create",
@@ -2045,7 +2045,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/estimates/gift_subscription_for_items",
+    fastifyPath: "/estimates/gift_subscription_for_items",
     stripePath: "/estimates/gift_subscription_for_items",
     resource: "estimates",
     operation: "create",
@@ -2054,7 +2054,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/estimates/update_subscription_for_items",
+    fastifyPath: "/estimates/update_subscription_for_items",
     stripePath: "/estimates/update_subscription_for_items",
     resource: "estimates",
     operation: "create",
@@ -2063,7 +2063,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers/:customer_id/upcoming_invoices_estimate",
+    fastifyPath: "/customers/:customer_id/upcoming_invoices_estimate",
     stripePath: "/customers/{customer-id}/upcoming_invoices_estimate",
     resource: "customers",
     operation: "list",
@@ -2074,7 +2074,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/regenerate_invoice_estimate",
+    fastifyPath: "/subscriptions/:subscription_id/regenerate_invoice_estimate",
     stripePath: "/subscriptions/{subscription-id}/regenerate_invoice_estimate",
     resource: "subscriptions",
     operation: "action",
@@ -2085,7 +2085,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/create_subscription_for_items_estimate",
+    fastifyPath: "/customers/:customer_id/create_subscription_for_items_estimate",
     stripePath: "/customers/{customer-id}/create_subscription_for_items_estimate",
     resource: "customers",
     operation: "create",
@@ -2096,7 +2096,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/change_term_end_estimate",
+    fastifyPath: "/subscriptions/:subscription_id/change_term_end_estimate",
     stripePath: "/subscriptions/{subscription-id}/change_term_end_estimate",
     resource: "subscriptions",
     operation: "action",
@@ -2107,7 +2107,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/pause_subscription_estimate",
+    fastifyPath: "/subscriptions/:subscription_id/pause_subscription_estimate",
     stripePath: "/subscriptions/{subscription-id}/pause_subscription_estimate",
     resource: "subscriptions",
     operation: "action",
@@ -2118,7 +2118,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/advance_invoice_estimate",
+    fastifyPath: "/subscriptions/:subscription_id/advance_invoice_estimate",
     stripePath: "/subscriptions/{subscription-id}/advance_invoice_estimate",
     resource: "subscriptions",
     operation: "action",
@@ -2129,7 +2129,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/customers/:customer_id/create_subscription_quote_for_items",
+    fastifyPath: "/customers/:customer_id/create_subscription_quote_for_items",
     stripePath: "/customers/{customer-id}/create_subscription_quote_for_items",
     resource: "customers",
     operation: "create",
@@ -2140,7 +2140,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/quotes/:quote_id",
+    fastifyPath: "/quotes/:quote_id",
     stripePath: "/quotes/{quote-id}",
     resource: "quotes",
     operation: "retrieve",
@@ -2151,7 +2151,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/edit_create_subscription_quote_for_items",
+    fastifyPath: "/quotes/:quote_id/edit_create_subscription_quote_for_items",
     stripePath: "/quotes/{quote-id}/edit_create_subscription_quote_for_items",
     resource: "quotes",
     operation: "action",
@@ -2162,7 +2162,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/update_status",
+    fastifyPath: "/quotes/:quote_id/update_status",
     stripePath: "/quotes/{quote-id}/update_status",
     resource: "quotes",
     operation: "action",
@@ -2173,7 +2173,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/update_subscription_quote_for_items",
+    fastifyPath: "/quotes/update_subscription_quote_for_items",
     stripePath: "/quotes/update_subscription_quote_for_items",
     resource: "quotes",
     operation: "create",
@@ -2183,7 +2183,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/quotes/:quote_id/quote_line_groups",
+    fastifyPath: "/quotes/:quote_id/quote_line_groups",
     stripePath: "/quotes/{quote-id}/quote_line_groups",
     resource: "quotes",
     operation: "list",
@@ -2194,7 +2194,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/extend_expiry_date",
+    fastifyPath: "/quotes/:quote_id/extend_expiry_date",
     stripePath: "/quotes/{quote-id}/extend_expiry_date",
     resource: "quotes",
     operation: "action",
@@ -2205,7 +2205,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/edit_for_charge_items_and_charges",
+    fastifyPath: "/quotes/:quote_id/edit_for_charge_items_and_charges",
     stripePath: "/quotes/{quote-id}/edit_for_charge_items_and_charges",
     resource: "quotes",
     operation: "action",
@@ -2216,7 +2216,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/edit_update_subscription_quote_for_items",
+    fastifyPath: "/quotes/:quote_id/edit_update_subscription_quote_for_items",
     stripePath: "/quotes/{quote-id}/edit_update_subscription_quote_for_items",
     resource: "quotes",
     operation: "action",
@@ -2227,7 +2227,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/quotes",
+    fastifyPath: "/quotes",
     stripePath: "/quotes",
     resource: "quotes",
     operation: "list",
@@ -2237,7 +2237,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/pdf",
+    fastifyPath: "/quotes/:quote_id/pdf",
     stripePath: "/quotes/{quote-id}/pdf",
     resource: "quotes",
     operation: "action",
@@ -2248,7 +2248,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/convert",
+    fastifyPath: "/quotes/:quote_id/convert",
     stripePath: "/quotes/{quote-id}/convert",
     resource: "quotes",
     operation: "action",
@@ -2259,7 +2259,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/create_for_charge_items_and_charges",
+    fastifyPath: "/quotes/create_for_charge_items_and_charges",
     stripePath: "/quotes/create_for_charge_items_and_charges",
     resource: "quotes",
     operation: "create",
@@ -2269,7 +2269,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/quotes/:quote_id/delete",
+    fastifyPath: "/quotes/:quote_id/delete",
     stripePath: "/quotes/{quote-id}/delete",
     resource: "quotes",
     operation: "delete",
@@ -2280,7 +2280,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/coupons",
+    fastifyPath: "/coupons",
     stripePath: "/coupons",
     resource: "coupons",
     operation: "list",
@@ -2290,7 +2290,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupons/:coupon_id/update_for_items",
+    fastifyPath: "/coupons/:coupon_id/update_for_items",
     stripePath: "/coupons/{coupon-id}/update_for_items",
     resource: "coupons",
     operation: "action",
@@ -2301,7 +2301,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupons/:coupon_id/unarchive",
+    fastifyPath: "/coupons/:coupon_id/unarchive",
     stripePath: "/coupons/{coupon-id}/unarchive",
     resource: "coupons",
     operation: "action",
@@ -2312,7 +2312,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupons/:coupon_id/delete",
+    fastifyPath: "/coupons/:coupon_id/delete",
     stripePath: "/coupons/{coupon-id}/delete",
     resource: "coupons",
     operation: "delete",
@@ -2323,7 +2323,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupons/copy",
+    fastifyPath: "/coupons/copy",
     stripePath: "/coupons/copy",
     resource: "coupons",
     operation: "create",
@@ -2333,7 +2333,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/coupons/:coupon_id",
+    fastifyPath: "/coupons/:coupon_id",
     stripePath: "/coupons/{coupon-id}",
     resource: "coupons",
     operation: "retrieve",
@@ -2344,7 +2344,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupons/create_for_items",
+    fastifyPath: "/coupons/create_for_items",
     stripePath: "/coupons/create_for_items",
     resource: "coupons",
     operation: "create",
@@ -2354,7 +2354,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/coupon_sets",
+    fastifyPath: "/coupon_sets",
     stripePath: "/coupon_sets",
     resource: "coupon_sets",
     operation: "list",
@@ -2364,7 +2364,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupon_sets",
+    fastifyPath: "/coupon_sets",
     stripePath: "/coupon_sets",
     resource: "coupon_sets",
     operation: "create",
@@ -2374,7 +2374,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupon_sets/:coupon_set_id/update",
+    fastifyPath: "/coupon_sets/:coupon_set_id/update",
     stripePath: "/coupon_sets/{coupon-set-id}/update",
     resource: "coupon_sets",
     operation: "action",
@@ -2385,7 +2385,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/coupon_sets/:coupon_set_id",
+    fastifyPath: "/coupon_sets/:coupon_set_id",
     stripePath: "/coupon_sets/{coupon-set-id}",
     resource: "coupon_sets",
     operation: "retrieve",
@@ -2396,7 +2396,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupon_sets/:coupon_set_id/add_coupon_codes",
+    fastifyPath: "/coupon_sets/:coupon_set_id/add_coupon_codes",
     stripePath: "/coupon_sets/{coupon-set-id}/add_coupon_codes",
     resource: "coupon_sets",
     operation: "action",
@@ -2407,7 +2407,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupon_sets/:coupon_set_id/delete_unused_coupon_codes",
+    fastifyPath: "/coupon_sets/:coupon_set_id/delete_unused_coupon_codes",
     stripePath: "/coupon_sets/{coupon-set-id}/delete_unused_coupon_codes",
     resource: "coupon_sets",
     operation: "action",
@@ -2418,7 +2418,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupon_sets/:coupon_set_id/delete",
+    fastifyPath: "/coupon_sets/:coupon_set_id/delete",
     stripePath: "/coupon_sets/{coupon-set-id}/delete",
     resource: "coupon_sets",
     operation: "delete",
@@ -2429,7 +2429,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/coupon_codes",
+    fastifyPath: "/coupon_codes",
     stripePath: "/coupon_codes",
     resource: "coupon_codes",
     operation: "list",
@@ -2439,7 +2439,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/coupon_codes/:coupon_code_code",
+    fastifyPath: "/coupon_codes/:coupon_code_code",
     stripePath: "/coupon_codes/{coupon-code-code}",
     resource: "coupon_codes",
     operation: "retrieve",
@@ -2450,7 +2450,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/coupon_codes/:coupon_code_code/archive",
+    fastifyPath: "/coupon_codes/:coupon_code_code/archive",
     stripePath: "/coupon_codes/{coupon-code-code}/archive",
     resource: "coupon_codes",
     operation: "action",
@@ -2461,7 +2461,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/addresses",
+    fastifyPath: "/addresses",
     stripePath: "/addresses",
     resource: "addresses",
     operation: "list",
@@ -2471,7 +2471,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/addresses",
+    fastifyPath: "/addresses",
     stripePath: "/addresses",
     resource: "addresses",
     operation: "create",
@@ -2481,7 +2481,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/usages/pdf",
+    fastifyPath: "/usages/pdf",
     stripePath: "/usages/pdf",
     resource: "usages",
     operation: "create",
@@ -2491,7 +2491,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/usages",
+    fastifyPath: "/subscriptions/:subscription_id/usages",
     stripePath: "/subscriptions/{subscription-id}/usages",
     resource: "subscriptions",
     operation: "list",
@@ -2502,7 +2502,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/usages",
+    fastifyPath: "/subscriptions/:subscription_id/usages",
     stripePath: "/subscriptions/{subscription-id}/usages",
     resource: "subscriptions",
     operation: "create",
@@ -2513,7 +2513,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/delete_usage",
+    fastifyPath: "/subscriptions/:subscription_id/delete_usage",
     stripePath: "/subscriptions/{subscription-id}/delete_usage",
     resource: "subscriptions",
     operation: "action",
@@ -2524,7 +2524,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/usages",
+    fastifyPath: "/usages",
     stripePath: "/usages",
     resource: "usages",
     operation: "list",
@@ -2534,7 +2534,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/events",
+    fastifyPath: "/events",
     stripePath: "/events",
     resource: "events",
     operation: "list",
@@ -2544,7 +2544,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/events/:event_id",
+    fastifyPath: "/events/:event_id",
     stripePath: "/events/{event-id}",
     resource: "events",
     operation: "retrieve",
@@ -2555,7 +2555,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/comments/:comment_id/delete",
+    fastifyPath: "/comments/:comment_id/delete",
     stripePath: "/comments/{comment-id}/delete",
     resource: "comments",
     operation: "delete",
@@ -2566,7 +2566,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/comments/:comment_id",
+    fastifyPath: "/comments/:comment_id",
     stripePath: "/comments/{comment-id}",
     resource: "comments",
     operation: "retrieve",
@@ -2577,7 +2577,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/comments",
+    fastifyPath: "/comments",
     stripePath: "/comments",
     resource: "comments",
     operation: "list",
@@ -2587,7 +2587,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/comments",
+    fastifyPath: "/comments",
     stripePath: "/comments",
     resource: "comments",
     operation: "create",
@@ -2597,7 +2597,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/portal_sessions",
+    fastifyPath: "/portal_sessions",
     stripePath: "/portal_sessions",
     resource: "portal_sessions",
     operation: "create",
@@ -2607,7 +2607,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/portal_sessions/:portal_session_id/activate",
+    fastifyPath: "/portal_sessions/:portal_session_id/activate",
     stripePath: "/portal_sessions/{portal-session-id}/activate",
     resource: "portal_sessions",
     operation: "action",
@@ -2618,7 +2618,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/portal_sessions/:portal_session_id/logout",
+    fastifyPath: "/portal_sessions/:portal_session_id/logout",
     stripePath: "/portal_sessions/{portal-session-id}/logout",
     resource: "portal_sessions",
     operation: "action",
@@ -2629,7 +2629,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/portal_sessions/:portal_session_id",
+    fastifyPath: "/portal_sessions/:portal_session_id",
     stripePath: "/portal_sessions/{portal-session-id}",
     resource: "portal_sessions",
     operation: "retrieve",
@@ -2640,7 +2640,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/site_migration_details",
+    fastifyPath: "/site_migration_details",
     stripePath: "/site_migration_details",
     resource: "site_migration_details",
     operation: "list",
@@ -2649,7 +2649,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/resource_migrations/retrieve_latest",
+    fastifyPath: "/resource_migrations/retrieve_latest",
     stripePath: "/resource_migrations/retrieve_latest",
     resource: "resource_migrations",
     operation: "list",
@@ -2658,7 +2658,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/time_machines/:time_machine_name",
+    fastifyPath: "/time_machines/:time_machine_name",
     stripePath: "/time_machines/{time-machine-name}",
     resource: "time_machines",
     operation: "retrieve",
@@ -2668,7 +2668,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/time_machines/:time_machine_name/travel_forward",
+    fastifyPath: "/time_machines/:time_machine_name/travel_forward",
     stripePath: "/time_machines/{time-machine-name}/travel_forward",
     resource: "time_machines",
     operation: "action",
@@ -2678,7 +2678,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/time_machines/:time_machine_name/start_afresh",
+    fastifyPath: "/time_machines/:time_machine_name/start_afresh",
     stripePath: "/time_machines/{time-machine-name}/start_afresh",
     resource: "time_machines",
     operation: "action",
@@ -2688,7 +2688,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/customers",
+    fastifyPath: "/exports/customers",
     stripePath: "/exports/customers",
     resource: "exports",
     operation: "create",
@@ -2697,7 +2697,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/attached_items",
+    fastifyPath: "/exports/attached_items",
     stripePath: "/exports/attached_items",
     resource: "exports",
     operation: "create",
@@ -2706,7 +2706,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/transactions",
+    fastifyPath: "/exports/transactions",
     stripePath: "/exports/transactions",
     resource: "exports",
     operation: "create",
@@ -2715,7 +2715,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/differential_prices",
+    fastifyPath: "/exports/differential_prices",
     stripePath: "/exports/differential_prices",
     resource: "exports",
     operation: "create",
@@ -2724,7 +2724,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/item_families",
+    fastifyPath: "/exports/item_families",
     stripePath: "/exports/item_families",
     resource: "exports",
     operation: "create",
@@ -2733,7 +2733,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/invoices",
+    fastifyPath: "/exports/invoices",
     stripePath: "/exports/invoices",
     resource: "exports",
     operation: "create",
@@ -2742,7 +2742,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/exports/:export_id",
+    fastifyPath: "/exports/:export_id",
     stripePath: "/exports/{export-id}",
     resource: "exports",
     operation: "retrieve",
@@ -2752,7 +2752,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/price_variants",
+    fastifyPath: "/exports/price_variants",
     stripePath: "/exports/price_variants",
     resource: "exports",
     operation: "create",
@@ -2761,7 +2761,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/items",
+    fastifyPath: "/exports/items",
     stripePath: "/exports/items",
     resource: "exports",
     operation: "create",
@@ -2770,7 +2770,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/deferred_revenue",
+    fastifyPath: "/exports/deferred_revenue",
     stripePath: "/exports/deferred_revenue",
     resource: "exports",
     operation: "create",
@@ -2779,7 +2779,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/revenue_recognition",
+    fastifyPath: "/exports/revenue_recognition",
     stripePath: "/exports/revenue_recognition",
     resource: "exports",
     operation: "create",
@@ -2788,7 +2788,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/credit_notes",
+    fastifyPath: "/exports/credit_notes",
     stripePath: "/exports/credit_notes",
     resource: "exports",
     operation: "create",
@@ -2797,7 +2797,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/coupons",
+    fastifyPath: "/exports/coupons",
     stripePath: "/exports/coupons",
     resource: "exports",
     operation: "create",
@@ -2806,7 +2806,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/orders",
+    fastifyPath: "/exports/orders",
     stripePath: "/exports/orders",
     resource: "exports",
     operation: "create",
@@ -2815,7 +2815,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/item_prices",
+    fastifyPath: "/exports/item_prices",
     stripePath: "/exports/item_prices",
     resource: "exports",
     operation: "create",
@@ -2824,7 +2824,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/exports/subscriptions",
+    fastifyPath: "/exports/subscriptions",
     stripePath: "/exports/subscriptions",
     resource: "exports",
     operation: "create",
@@ -2833,7 +2833,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/full_exports/status",
+    fastifyPath: "/full_exports/status",
     stripePath: "/full_exports/status",
     resource: "full_exports",
     operation: "list",
@@ -2842,7 +2842,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/payment_intents/:payment_intent_id",
+    fastifyPath: "/payment_intents/:payment_intent_id",
     stripePath: "/payment_intents/{payment-intent-id}",
     resource: "payment_intents",
     operation: "retrieve",
@@ -2853,7 +2853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_intents/:payment_intent_id",
+    fastifyPath: "/payment_intents/:payment_intent_id",
     stripePath: "/payment_intents/{payment-intent-id}",
     resource: "payment_intents",
     operation: "update",
@@ -2864,7 +2864,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_intents",
+    fastifyPath: "/payment_intents",
     stripePath: "/payment_intents",
     resource: "payment_intents",
     operation: "create",
@@ -2874,7 +2874,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/custom_field_configs/retrieve",
+    fastifyPath: "/custom_field_configs/retrieve",
     stripePath: "/custom_field_configs/retrieve",
     resource: "custom_field_configs",
     operation: "list",
@@ -2883,7 +2883,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/custom_field_configs",
+    fastifyPath: "/custom_field_configs",
     stripePath: "/custom_field_configs",
     resource: "custom_field_configs",
     operation: "list",
@@ -2892,7 +2892,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/item_families/:item_family_id/delete",
+    fastifyPath: "/item_families/:item_family_id/delete",
     stripePath: "/item_families/{item-family-id}/delete",
     resource: "item_families",
     operation: "delete",
@@ -2903,7 +2903,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/item_families",
+    fastifyPath: "/item_families",
     stripePath: "/item_families",
     resource: "item_families",
     operation: "list",
@@ -2913,7 +2913,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/item_families",
+    fastifyPath: "/item_families",
     stripePath: "/item_families",
     resource: "item_families",
     operation: "create",
@@ -2923,7 +2923,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/item_families/:item_family_id",
+    fastifyPath: "/item_families/:item_family_id",
     stripePath: "/item_families/{item-family-id}",
     resource: "item_families",
     operation: "retrieve",
@@ -2934,7 +2934,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/item_families/:item_family_id",
+    fastifyPath: "/item_families/:item_family_id",
     stripePath: "/item_families/{item-family-id}",
     resource: "item_families",
     operation: "update",
@@ -2945,7 +2945,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/products/:product_id",
+    fastifyPath: "/products/:product_id",
     stripePath: "/products/{product-id}",
     resource: "products",
     operation: "retrieve",
@@ -2956,7 +2956,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/products/:product_id",
+    fastifyPath: "/products/:product_id",
     stripePath: "/products/{product-id}",
     resource: "products",
     operation: "update",
@@ -2967,7 +2967,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/products/:product_id/delete",
+    fastifyPath: "/products/:product_id/delete",
     stripePath: "/products/{product-id}/delete",
     resource: "products",
     operation: "delete",
@@ -2978,7 +2978,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/products/:product_id/update_options",
+    fastifyPath: "/products/:product_id/update_options",
     stripePath: "/products/{product-id}/update_options",
     resource: "products",
     operation: "action",
@@ -2989,7 +2989,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/products",
+    fastifyPath: "/products",
     stripePath: "/products",
     resource: "products",
     operation: "list",
@@ -2999,7 +2999,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/products",
+    fastifyPath: "/products",
     stripePath: "/products",
     resource: "products",
     operation: "create",
@@ -3009,7 +3009,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/products/:product_id/variants",
+    fastifyPath: "/products/:product_id/variants",
     stripePath: "/products/{product-id}/variants",
     resource: "products",
     operation: "list",
@@ -3020,7 +3020,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/products/:product_id/variants",
+    fastifyPath: "/products/:product_id/variants",
     stripePath: "/products/{product-id}/variants",
     resource: "products",
     operation: "create",
@@ -3031,7 +3031,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/variants/:product_variant_id",
+    fastifyPath: "/variants/:product_variant_id",
     stripePath: "/variants/{product-variant-id}",
     resource: "variants",
     operation: "retrieve",
@@ -3042,7 +3042,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/variants/:product_variant_id",
+    fastifyPath: "/variants/:product_variant_id",
     stripePath: "/variants/{product-variant-id}",
     resource: "variants",
     operation: "update",
@@ -3053,7 +3053,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/variants/:product_variant_id/delete",
+    fastifyPath: "/variants/:product_variant_id/delete",
     stripePath: "/variants/{product-variant-id}/delete",
     resource: "variants",
     operation: "delete",
@@ -3064,7 +3064,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/items",
+    fastifyPath: "/items",
     stripePath: "/items",
     resource: "items",
     operation: "list",
@@ -3074,7 +3074,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/items",
+    fastifyPath: "/items",
     stripePath: "/items",
     resource: "items",
     operation: "create",
@@ -3084,7 +3084,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/items/:item_id/delete",
+    fastifyPath: "/items/:item_id/delete",
     stripePath: "/items/{item-id}/delete",
     resource: "items",
     operation: "delete",
@@ -3095,7 +3095,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/items/:item_id",
+    fastifyPath: "/items/:item_id",
     stripePath: "/items/{item-id}",
     resource: "items",
     operation: "retrieve",
@@ -3106,7 +3106,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/items/:item_id",
+    fastifyPath: "/items/:item_id",
     stripePath: "/items/{item-id}",
     resource: "items",
     operation: "update",
@@ -3117,7 +3117,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/price_variants/:price_variant_id/delete",
+    fastifyPath: "/price_variants/:price_variant_id/delete",
     stripePath: "/price_variants/{price-variant-id}/delete",
     resource: "price_variants",
     operation: "delete",
@@ -3128,7 +3128,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/price_variants",
+    fastifyPath: "/price_variants",
     stripePath: "/price_variants",
     resource: "price_variants",
     operation: "list",
@@ -3138,7 +3138,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/price_variants",
+    fastifyPath: "/price_variants",
     stripePath: "/price_variants",
     resource: "price_variants",
     operation: "create",
@@ -3148,7 +3148,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/price_variants/:price_variant_id",
+    fastifyPath: "/price_variants/:price_variant_id",
     stripePath: "/price_variants/{price-variant-id}",
     resource: "price_variants",
     operation: "retrieve",
@@ -3159,7 +3159,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/price_variants/:price_variant_id",
+    fastifyPath: "/price_variants/:price_variant_id",
     stripePath: "/price_variants/{price-variant-id}",
     resource: "price_variants",
     operation: "update",
@@ -3170,7 +3170,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/item_prices/:item_price_id",
+    fastifyPath: "/item_prices/:item_price_id",
     stripePath: "/item_prices/{item-price-id}",
     resource: "item_prices",
     operation: "retrieve",
@@ -3181,7 +3181,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/item_prices/:item_price_id",
+    fastifyPath: "/item_prices/:item_price_id",
     stripePath: "/item_prices/{item-price-id}",
     resource: "item_prices",
     operation: "update",
@@ -3192,7 +3192,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/item_prices/:item_price_id/delete",
+    fastifyPath: "/item_prices/:item_price_id/delete",
     stripePath: "/item_prices/{item-price-id}/delete",
     resource: "item_prices",
     operation: "delete",
@@ -3203,7 +3203,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/item_prices/:item_price_id/applicable_item_prices",
+    fastifyPath: "/item_prices/:item_price_id/applicable_item_prices",
     stripePath: "/item_prices/{item-price-id}/applicable_item_prices",
     resource: "item_prices",
     operation: "list",
@@ -3214,7 +3214,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/item_prices/:item_price_id/applicable_items",
+    fastifyPath: "/item_prices/:item_price_id/applicable_items",
     stripePath: "/item_prices/{item-price-id}/applicable_items",
     resource: "item_prices",
     operation: "list",
@@ -3225,7 +3225,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/item_prices",
+    fastifyPath: "/item_prices",
     stripePath: "/item_prices",
     resource: "item_prices",
     operation: "list",
@@ -3235,7 +3235,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/item_prices",
+    fastifyPath: "/item_prices",
     stripePath: "/item_prices",
     resource: "item_prices",
     operation: "create",
@@ -3245,7 +3245,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/attached_items/:attached_item_id",
+    fastifyPath: "/attached_items/:attached_item_id",
     stripePath: "/attached_items/{attached-item-id}",
     resource: "attached_items",
     operation: "retrieve",
@@ -3256,7 +3256,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/attached_items/:attached_item_id",
+    fastifyPath: "/attached_items/:attached_item_id",
     stripePath: "/attached_items/{attached-item-id}",
     resource: "attached_items",
     operation: "update",
@@ -3267,7 +3267,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/items/:item_id/attached_items",
+    fastifyPath: "/items/:item_id/attached_items",
     stripePath: "/items/{item-id}/attached_items",
     resource: "items",
     operation: "list",
@@ -3278,7 +3278,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/items/:item_id/attached_items",
+    fastifyPath: "/items/:item_id/attached_items",
     stripePath: "/items/{item-id}/attached_items",
     resource: "items",
     operation: "create",
@@ -3289,7 +3289,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/attached_items/:attached_item_id/delete",
+    fastifyPath: "/attached_items/:attached_item_id/delete",
     stripePath: "/attached_items/{attached-item-id}/delete",
     resource: "attached_items",
     operation: "delete",
@@ -3300,7 +3300,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/differential_prices/:differential_price_id/delete",
+    fastifyPath: "/differential_prices/:differential_price_id/delete",
     stripePath: "/differential_prices/{differential-price-id}/delete",
     resource: "differential_prices",
     operation: "delete",
@@ -3311,7 +3311,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/item_prices/:item_price_id/differential_prices",
+    fastifyPath: "/item_prices/:item_price_id/differential_prices",
     stripePath: "/item_prices/{item-price-id}/differential_prices",
     resource: "item_prices",
     operation: "create",
@@ -3322,7 +3322,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/differential_prices",
+    fastifyPath: "/differential_prices",
     stripePath: "/differential_prices",
     resource: "differential_prices",
     operation: "list",
@@ -3332,7 +3332,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/differential_prices/:differential_price_id",
+    fastifyPath: "/differential_prices/:differential_price_id",
     stripePath: "/differential_prices/{differential-price-id}",
     resource: "differential_prices",
     operation: "retrieve",
@@ -3343,7 +3343,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/differential_prices/:differential_price_id",
+    fastifyPath: "/differential_prices/:differential_price_id",
     stripePath: "/differential_prices/{differential-price-id}",
     resource: "differential_prices",
     operation: "update",
@@ -3354,7 +3354,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/configurations",
+    fastifyPath: "/configurations",
     stripePath: "/configurations",
     resource: "configurations",
     operation: "list",
@@ -3363,7 +3363,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/features",
+    fastifyPath: "/features",
     stripePath: "/features",
     resource: "features",
     operation: "list",
@@ -3373,7 +3373,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/features",
+    fastifyPath: "/features",
     stripePath: "/features",
     resource: "features",
     operation: "create",
@@ -3383,7 +3383,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/features/:feature_id/delete",
+    fastifyPath: "/features/:feature_id/delete",
     stripePath: "/features/{feature-id}/delete",
     resource: "features",
     operation: "delete",
@@ -3394,7 +3394,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/features/:feature_id",
+    fastifyPath: "/features/:feature_id",
     stripePath: "/features/{feature-id}",
     resource: "features",
     operation: "retrieve",
@@ -3405,7 +3405,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/features/:feature_id",
+    fastifyPath: "/features/:feature_id",
     stripePath: "/features/{feature-id}",
     resource: "features",
     operation: "update",
@@ -3416,7 +3416,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/features/:feature_id/archive_command",
+    fastifyPath: "/features/:feature_id/archive_command",
     stripePath: "/features/{feature-id}/archive_command",
     resource: "features",
     operation: "action",
@@ -3427,7 +3427,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/features/:feature_id/activate_command",
+    fastifyPath: "/features/:feature_id/activate_command",
     stripePath: "/features/{feature-id}/activate_command",
     resource: "features",
     operation: "action",
@@ -3438,7 +3438,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/features/:feature_id/reactivate_command",
+    fastifyPath: "/features/:feature_id/reactivate_command",
     stripePath: "/features/{feature-id}/reactivate_command",
     resource: "features",
     operation: "action",
@@ -3449,7 +3449,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/subscription_entitlements/set_availability",
+    fastifyPath: "/subscriptions/:subscription_id/subscription_entitlements/set_availability",
     stripePath: "/subscriptions/{subscription-id}/subscription_entitlements/set_availability",
     resource: "subscriptions",
     operation: "action",
@@ -3460,7 +3460,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/subscription_entitlements",
+    fastifyPath: "/subscriptions/:subscription_id/subscription_entitlements",
     stripePath: "/subscriptions/{subscription-id}/subscription_entitlements",
     resource: "subscriptions",
     operation: "list",
@@ -3471,7 +3471,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers/:customer_id/customer_entitlements",
+    fastifyPath: "/customers/:customer_id/customer_entitlements",
     stripePath: "/customers/{customer-id}/customer_entitlements",
     resource: "customers",
     operation: "list",
@@ -3482,7 +3482,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/features/:feature_id/item_entitlements",
+    fastifyPath: "/features/:feature_id/item_entitlements",
     stripePath: "/features/{feature-id}/item_entitlements",
     resource: "features",
     operation: "list",
@@ -3493,7 +3493,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/features/:feature_id/item_entitlements",
+    fastifyPath: "/features/:feature_id/item_entitlements",
     stripePath: "/features/{feature-id}/item_entitlements",
     resource: "features",
     operation: "action",
@@ -3504,7 +3504,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/items/:item_id/item_entitlements",
+    fastifyPath: "/items/:item_id/item_entitlements",
     stripePath: "/items/{item-id}/item_entitlements",
     resource: "items",
     operation: "list",
@@ -3515,7 +3515,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/items/:item_id/item_entitlements",
+    fastifyPath: "/items/:item_id/item_entitlements",
     stripePath: "/items/{item-id}/item_entitlements",
     resource: "items",
     operation: "action",
@@ -3526,7 +3526,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/entitlements",
+    fastifyPath: "/entitlements",
     stripePath: "/entitlements",
     resource: "entitlements",
     operation: "list",
@@ -3535,7 +3535,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/entitlements",
+    fastifyPath: "/entitlements",
     stripePath: "/entitlements",
     resource: "entitlements",
     operation: "create",
@@ -3544,7 +3544,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/in_app_subscriptions/:in_app_subscription_app_id/retrieve",
+    fastifyPath: "/in_app_subscriptions/:in_app_subscription_app_id/retrieve",
     stripePath: "/in_app_subscriptions/{in-app-subscription-app-id}/retrieve",
     resource: "in_app_subscriptions",
     operation: "action",
@@ -3554,7 +3554,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/in_app_subscriptions/:in_app_subscription_app_id/import_receipt",
+    fastifyPath: "/in_app_subscriptions/:in_app_subscription_app_id/import_receipt",
     stripePath: "/in_app_subscriptions/{in-app-subscription-app-id}/import_receipt",
     resource: "in_app_subscriptions",
     operation: "action",
@@ -3564,7 +3564,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/in_app_subscriptions/:in_app_subscription_app_id/import_subscription",
+    fastifyPath: "/in_app_subscriptions/:in_app_subscription_app_id/import_subscription",
     stripePath: "/in_app_subscriptions/{in-app-subscription-app-id}/import_subscription",
     resource: "in_app_subscriptions",
     operation: "action",
@@ -3574,7 +3574,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/in_app_subscriptions/:in_app_subscription_app_id/process_purchase_command",
+    fastifyPath: "/in_app_subscriptions/:in_app_subscription_app_id/process_purchase_command",
     stripePath: "/in_app_subscriptions/{in-app-subscription-app-id}/process_purchase_command",
     resource: "in_app_subscriptions",
     operation: "action",
@@ -3584,7 +3584,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/non_subscriptions/:non_subscription_app_id/one_time_purchase",
+    fastifyPath: "/non_subscriptions/:non_subscription_app_id/one_time_purchase",
     stripePath: "/non_subscriptions/{non-subscription-app-id}/one_time_purchase",
     resource: "non_subscriptions",
     operation: "action",
@@ -3594,7 +3594,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/entitlement_overrides",
+    fastifyPath: "/subscriptions/:subscription_id/entitlement_overrides",
     stripePath: "/subscriptions/{subscription-id}/entitlement_overrides",
     resource: "subscriptions",
     operation: "list",
@@ -3605,7 +3605,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/entitlement_overrides",
+    fastifyPath: "/subscriptions/:subscription_id/entitlement_overrides",
     stripePath: "/subscriptions/{subscription-id}/entitlement_overrides",
     resource: "subscriptions",
     operation: "action",
@@ -3616,7 +3616,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/business_entities/transfers",
+    fastifyPath: "/business_entities/transfers",
     stripePath: "/business_entities/transfers",
     resource: "business_entities",
     operation: "list",
@@ -3625,7 +3625,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/business_entities/transfers",
+    fastifyPath: "/business_entities/transfers",
     stripePath: "/business_entities/transfers",
     resource: "business_entities",
     operation: "create",
@@ -3634,7 +3634,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/purchases",
+    fastifyPath: "/purchases",
     stripePath: "/purchases",
     resource: "purchases",
     operation: "create",
@@ -3643,7 +3643,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/purchases/estimate",
+    fastifyPath: "/purchases/estimate",
     stripePath: "/purchases/estimate",
     resource: "purchases",
     operation: "create",
@@ -3652,7 +3652,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/customers/:customer_id/payment_vouchers",
+    fastifyPath: "/customers/:customer_id/payment_vouchers",
     stripePath: "/customers/{customer-id}/payment_vouchers",
     resource: "customers",
     operation: "list",
@@ -3663,7 +3663,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/invoices/:invoice_id/payment_vouchers",
+    fastifyPath: "/invoices/:invoice_id/payment_vouchers",
     stripePath: "/invoices/{invoice-id}/payment_vouchers",
     resource: "invoices",
     operation: "list",
@@ -3674,7 +3674,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/payment_vouchers/:payment_voucher_id",
+    fastifyPath: "/payment_vouchers/:payment_voucher_id",
     stripePath: "/payment_vouchers/{payment-voucher-id}",
     resource: "payment_vouchers",
     operation: "retrieve",
@@ -3684,7 +3684,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_vouchers",
+    fastifyPath: "/payment_vouchers",
     stripePath: "/payment_vouchers",
     resource: "payment_vouchers",
     operation: "create",
@@ -3693,7 +3693,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/csv_tax_rules",
+    fastifyPath: "/csv_tax_rules",
     stripePath: "/csv_tax_rules",
     resource: "csv_tax_rules",
     operation: "create",
@@ -3702,7 +3702,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/currencies/:site_currency_id/add_schedule",
+    fastifyPath: "/currencies/:site_currency_id/add_schedule",
     stripePath: "/currencies/{site-currency-id}/add_schedule",
     resource: "currencies",
     operation: "action",
@@ -3712,7 +3712,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/currencies",
+    fastifyPath: "/currencies",
     stripePath: "/currencies",
     resource: "currencies",
     operation: "create",
@@ -3721,7 +3721,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/currencies/:site_currency_id",
+    fastifyPath: "/currencies/:site_currency_id",
     stripePath: "/currencies/{site-currency-id}",
     resource: "currencies",
     operation: "retrieve",
@@ -3731,7 +3731,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/currencies/:site_currency_id",
+    fastifyPath: "/currencies/:site_currency_id",
     stripePath: "/currencies/{site-currency-id}",
     resource: "currencies",
     operation: "update",
@@ -3741,7 +3741,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/currencies/:site_currency_id/remove_schedule",
+    fastifyPath: "/currencies/:site_currency_id/remove_schedule",
     stripePath: "/currencies/{site-currency-id}/remove_schedule",
     resource: "currencies",
     operation: "action",
@@ -3751,7 +3751,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/currencies/list",
+    fastifyPath: "/currencies/list",
     stripePath: "/currencies/list",
     resource: "currencies",
     operation: "list",
@@ -3760,7 +3760,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/ramps/:ramp_id",
+    fastifyPath: "/ramps/:ramp_id",
     stripePath: "/ramps/{ramp-id}",
     resource: "ramps",
     operation: "retrieve",
@@ -3771,7 +3771,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/subscriptions/:subscription_id/create_ramp",
+    fastifyPath: "/subscriptions/:subscription_id/create_ramp",
     stripePath: "/subscriptions/{subscription-id}/create_ramp",
     resource: "subscriptions",
     operation: "create",
@@ -3782,7 +3782,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/ramps",
+    fastifyPath: "/ramps",
     stripePath: "/ramps",
     resource: "ramps",
     operation: "list",
@@ -3792,7 +3792,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/ramps/:ramp_id/update",
+    fastifyPath: "/ramps/:ramp_id/update",
     stripePath: "/ramps/{ramp-id}/update",
     resource: "ramps",
     operation: "action",
@@ -3803,7 +3803,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/ramps/:ramp_id/delete",
+    fastifyPath: "/ramps/:ramp_id/delete",
     stripePath: "/ramps/{ramp-id}/delete",
     resource: "ramps",
     operation: "delete",
@@ -3814,7 +3814,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/payment_schedule_schemes/:payment_schedule_scheme_id",
+    fastifyPath: "/payment_schedule_schemes/:payment_schedule_scheme_id",
     stripePath: "/payment_schedule_schemes/{payment-schedule-scheme-id}",
     resource: "payment_schedule_schemes",
     operation: "retrieve",
@@ -3824,7 +3824,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_schedule_schemes",
+    fastifyPath: "/payment_schedule_schemes",
     stripePath: "/payment_schedule_schemes",
     resource: "payment_schedule_schemes",
     operation: "create",
@@ -3833,7 +3833,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/payment_schedule_schemes/:payment_schedule_scheme_id/delete",
+    fastifyPath: "/payment_schedule_schemes/:payment_schedule_scheme_id/delete",
     stripePath: "/payment_schedule_schemes/{payment-schedule-scheme-id}/delete",
     resource: "payment_schedule_schemes",
     operation: "delete",
@@ -3843,7 +3843,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migrations/:pc2_migration_id/contact_support",
+    fastifyPath: "/pc2_migrations/:pc2_migration_id/contact_support",
     stripePath: "/pc2_migrations/{pc2-migration-id}/contact_support",
     resource: "pc2_migrations",
     operation: "action",
@@ -3853,7 +3853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migrations/:pc2_migration_id",
+    fastifyPath: "/pc2_migrations/:pc2_migration_id",
     stripePath: "/pc2_migrations/{pc2-migration-id}",
     resource: "pc2_migrations",
     operation: "retrieve",
@@ -3863,7 +3863,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migrations",
+    fastifyPath: "/pc2_migrations",
     stripePath: "/pc2_migrations",
     resource: "pc2_migrations",
     operation: "create",
@@ -3872,7 +3872,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migrations/:pc2_migration_id/initiate",
+    fastifyPath: "/pc2_migrations/:pc2_migration_id/initiate",
     stripePath: "/pc2_migrations/{pc2-migration-id}/initiate",
     resource: "pc2_migrations",
     operation: "action",
@@ -3882,7 +3882,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_item_families/:pc2_migration_item_family_id/delete",
+    fastifyPath: "/pc2_migration_item_families/:pc2_migration_item_family_id/delete",
     stripePath: "/pc2_migration_item_families/{pc2-migration-item-family-id}/delete",
     resource: "pc2_migration_item_families",
     operation: "delete",
@@ -3892,7 +3892,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migration_item_families/:pc2_migration_item_family_id",
+    fastifyPath: "/pc2_migration_item_families/:pc2_migration_item_family_id",
     stripePath: "/pc2_migration_item_families/{pc2-migration-item-family-id}",
     resource: "pc2_migration_item_families",
     operation: "retrieve",
@@ -3902,7 +3902,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_item_families/:pc2_migration_item_family_id",
+    fastifyPath: "/pc2_migration_item_families/:pc2_migration_item_family_id",
     stripePath: "/pc2_migration_item_families/{pc2-migration-item-family-id}",
     resource: "pc2_migration_item_families",
     operation: "update",
@@ -3912,7 +3912,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migration_item_families",
+    fastifyPath: "/pc2_migration_item_families",
     stripePath: "/pc2_migration_item_families",
     resource: "pc2_migration_item_families",
     operation: "list",
@@ -3921,7 +3921,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_item_families",
+    fastifyPath: "/pc2_migration_item_families",
     stripePath: "/pc2_migration_item_families",
     resource: "pc2_migration_item_families",
     operation: "create",
@@ -3930,7 +3930,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migration_items/:pc2_migration_item_id",
+    fastifyPath: "/pc2_migration_items/:pc2_migration_item_id",
     stripePath: "/pc2_migration_items/{pc2-migration-item-id}",
     resource: "pc2_migration_items",
     operation: "retrieve",
@@ -3940,7 +3940,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_items/:pc2_migration_item_id",
+    fastifyPath: "/pc2_migration_items/:pc2_migration_item_id",
     stripePath: "/pc2_migration_items/{pc2-migration-item-id}",
     resource: "pc2_migration_items",
     operation: "update",
@@ -3950,7 +3950,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_items/:pc2_migration_item_id/delete",
+    fastifyPath: "/pc2_migration_items/:pc2_migration_item_id/delete",
     stripePath: "/pc2_migration_items/{pc2-migration-item-id}/delete",
     resource: "pc2_migration_items",
     operation: "delete",
@@ -3960,7 +3960,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migration_items",
+    fastifyPath: "/pc2_migration_items",
     stripePath: "/pc2_migration_items",
     resource: "pc2_migration_items",
     operation: "list",
@@ -3969,7 +3969,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_items",
+    fastifyPath: "/pc2_migration_items",
     stripePath: "/pc2_migration_items",
     resource: "pc2_migration_items",
     operation: "create",
@@ -3978,7 +3978,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migration_items/applicable_items",
+    fastifyPath: "/pc2_migration_items/applicable_items",
     stripePath: "/pc2_migration_items/applicable_items",
     resource: "pc2_migration_items",
     operation: "list",
@@ -3987,7 +3987,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migration_item_prices",
+    fastifyPath: "/pc2_migration_item_prices",
     stripePath: "/pc2_migration_item_prices",
     resource: "pc2_migration_item_prices",
     operation: "list",
@@ -3996,7 +3996,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_item_prices/:pc2_migration_item_price_id/delete",
+    fastifyPath: "/pc2_migration_item_prices/:pc2_migration_item_price_id/delete",
     stripePath: "/pc2_migration_item_prices/{pc2-migration-item-price-id}/delete",
     resource: "pc2_migration_item_prices",
     operation: "delete",
@@ -4006,7 +4006,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/pc2_migration_item_prices/:pc2_migration_item_price_id",
+    fastifyPath: "/pc2_migration_item_prices/:pc2_migration_item_price_id",
     stripePath: "/pc2_migration_item_prices/{pc2-migration-item-price-id}",
     resource: "pc2_migration_item_prices",
     operation: "retrieve",
@@ -4016,7 +4016,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pc2_migration_item_prices/:pc2_migration_item_price_id",
+    fastifyPath: "/pc2_migration_item_prices/:pc2_migration_item_price_id",
     stripePath: "/pc2_migration_item_prices/{pc2-migration-item-price-id}",
     resource: "pc2_migration_item_prices",
     operation: "update",
@@ -4026,7 +4026,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pricing_page_sessions/create_for_existing_subscription",
+    fastifyPath: "/pricing_page_sessions/create_for_existing_subscription",
     stripePath: "/pricing_page_sessions/create_for_existing_subscription",
     resource: "pricing_page_sessions",
     operation: "create",
@@ -4035,7 +4035,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/pricing_page_sessions/create_for_new_subscription",
+    fastifyPath: "/pricing_page_sessions/create_for_new_subscription",
     stripePath: "/pricing_page_sessions/create_for_new_subscription",
     resource: "pricing_page_sessions",
     operation: "create",
@@ -4044,7 +4044,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/site_pc_meta_records",
+    fastifyPath: "/site_pc_meta_records",
     stripePath: "/site_pc_meta_records",
     resource: "site_pc_meta_records",
     operation: "list",
@@ -4053,7 +4053,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/omnichannel_subscriptions/:omnichannel_subscription_id/move",
+    fastifyPath: "/omnichannel_subscriptions/:omnichannel_subscription_id/move",
     stripePath: "/omnichannel_subscriptions/{omnichannel-subscription-id}/move",
     resource: "omnichannel_subscriptions",
     operation: "action",
@@ -4063,7 +4063,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/omnichannel_subscriptions/:omnichannel_subscription_id",
+    fastifyPath: "/omnichannel_subscriptions/:omnichannel_subscription_id",
     stripePath: "/omnichannel_subscriptions/{omnichannel-subscription-id}",
     resource: "omnichannel_subscriptions",
     operation: "retrieve",
@@ -4073,7 +4073,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/omnichannel_subscriptions/:omnichannel_subscription_id/omnichannel_transactions",
+    fastifyPath: "/omnichannel_subscriptions/:omnichannel_subscription_id/omnichannel_transactions",
     stripePath: "/omnichannel_subscriptions/{omnichannel-subscription-id}/omnichannel_transactions",
     resource: "omnichannel_subscriptions",
     operation: "list",
@@ -4083,7 +4083,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/omnichannel_subscriptions",
+    fastifyPath: "/omnichannel_subscriptions",
     stripePath: "/omnichannel_subscriptions",
     resource: "omnichannel_subscriptions",
     operation: "list",
@@ -4092,7 +4092,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/omnichannel_subscription_items/:omnichannel_subscription_item_id/scheduled_changes",
+    fastifyPath: "/omnichannel_subscription_items/:omnichannel_subscription_item_id/scheduled_changes",
     stripePath: "/omnichannel_subscription_items/{omnichannel-subscription-item-id}/scheduled_changes",
     resource: "omnichannel_subscription_items",
     operation: "list",
@@ -4102,7 +4102,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/recorded_purchases/:recorded_purchase_id",
+    fastifyPath: "/recorded_purchases/:recorded_purchase_id",
     stripePath: "/recorded_purchases/{recorded-purchase-id}",
     resource: "recorded_purchases",
     operation: "retrieve",
@@ -4112,7 +4112,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/recorded_purchases",
+    fastifyPath: "/recorded_purchases",
     stripePath: "/recorded_purchases",
     resource: "recorded_purchases",
     operation: "create",
@@ -4121,7 +4121,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/omnichannel_one_time_orders",
+    fastifyPath: "/omnichannel_one_time_orders",
     stripePath: "/omnichannel_one_time_orders",
     resource: "omnichannel_one_time_orders",
     operation: "list",
@@ -4130,7 +4130,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/omnichannel_one_time_orders/:omnichannel_one_time_order_id",
+    fastifyPath: "/omnichannel_one_time_orders/:omnichannel_one_time_order_id",
     stripePath: "/omnichannel_one_time_orders/{omnichannel-one-time-order-id}",
     resource: "omnichannel_one_time_orders",
     operation: "retrieve",
@@ -4140,7 +4140,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/rules/:rule_id",
+    fastifyPath: "/rules/:rule_id",
     stripePath: "/rules/{rule-id}",
     resource: "rules",
     operation: "retrieve",
@@ -4150,7 +4150,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/usage_events",
+    fastifyPath: "/usage_events",
     stripePath: "/usage_events",
     resource: "usage_events",
     operation: "create",
@@ -4159,7 +4159,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/batch/usage_events",
+    fastifyPath: "/batch/usage_events",
     stripePath: "/batch/usage_events",
     resource: "batch",
     operation: "create",
@@ -4168,7 +4168,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/usage_files/:usage_file_id/processing_status",
+    fastifyPath: "/usage_files/:usage_file_id/processing_status",
     stripePath: "/usage_files/{usage-file-id}/processing_status",
     resource: "usage_files",
     operation: "list",
@@ -4178,7 +4178,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/usage_files/upload_url",
+    fastifyPath: "/usage_files/upload_url",
     stripePath: "/usage_files/upload_url",
     resource: "usage_files",
     operation: "create",
@@ -4187,7 +4187,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/personalized_offers",
+    fastifyPath: "/personalized_offers",
     stripePath: "/personalized_offers",
     resource: "personalized_offers",
     operation: "create",
@@ -4196,7 +4196,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/offer_fulfillments",
+    fastifyPath: "/offer_fulfillments",
     stripePath: "/offer_fulfillments",
     resource: "offer_fulfillments",
     operation: "create",
@@ -4205,7 +4205,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/offer_fulfillments/:offer_fulfillment_id",
+    fastifyPath: "/offer_fulfillments/:offer_fulfillment_id",
     stripePath: "/offer_fulfillments/{offer-fulfillment-id}",
     resource: "offer_fulfillments",
     operation: "retrieve",
@@ -4215,7 +4215,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/offer_fulfillments/:offer_fulfillment_id",
+    fastifyPath: "/offer_fulfillments/:offer_fulfillment_id",
     stripePath: "/offer_fulfillments/{offer-fulfillment-id}",
     resource: "offer_fulfillments",
     operation: "update",
@@ -4225,7 +4225,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/offer_events",
+    fastifyPath: "/offer_events",
     stripePath: "/offer_events",
     resource: "offer_events",
     operation: "create",
@@ -4234,7 +4234,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/webhook_endpoints/:webhook_endpoint_id/delete",
+    fastifyPath: "/webhook_endpoints/:webhook_endpoint_id/delete",
     stripePath: "/webhook_endpoints/{webhook-endpoint-id}/delete",
     resource: "webhook_endpoints",
     operation: "delete",
@@ -4244,7 +4244,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/webhook_endpoints/:webhook_endpoint_id",
+    fastifyPath: "/webhook_endpoints/:webhook_endpoint_id",
     stripePath: "/webhook_endpoints/{webhook-endpoint-id}",
     resource: "webhook_endpoints",
     operation: "retrieve",
@@ -4254,7 +4254,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/webhook_endpoints/:webhook_endpoint_id",
+    fastifyPath: "/webhook_endpoints/:webhook_endpoint_id",
     stripePath: "/webhook_endpoints/{webhook-endpoint-id}",
     resource: "webhook_endpoints",
     operation: "update",
@@ -4264,7 +4264,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/chargebee/webhook_endpoints",
+    fastifyPath: "/webhook_endpoints",
     stripePath: "/webhook_endpoints",
     resource: "webhook_endpoints",
     operation: "list",
@@ -4273,7 +4273,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/chargebee/webhook_endpoints",
+    fastifyPath: "/webhook_endpoints",
     stripePath: "/webhook_endpoints",
     resource: "webhook_endpoints",
     operation: "create",

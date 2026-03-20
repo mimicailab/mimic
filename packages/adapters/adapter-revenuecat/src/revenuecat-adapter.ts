@@ -153,27 +153,27 @@ export class RevenueCatAdapter extends OpenApiMockAdapter<RevenueCatConfig> {
 
   private mountOverrides(store: StateStore): void {
     // Subscription lifecycle
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/subscriptions/:subscription_id/actions/cancel',
+    this.registerOverride('POST', '/projects/:project_id/subscriptions/:subscription_id/actions/cancel',
       subscriptionOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/subscriptions/:subscription_id/actions/refund',
+    this.registerOverride('POST', '/projects/:project_id/subscriptions/:subscription_id/actions/refund',
       subscriptionOverrides.buildRefundHandler(store));
 
     // Entitlement archive/unarchive
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/entitlements/:entitlement_id/actions/archive',
+    this.registerOverride('POST', '/projects/:project_id/entitlements/:entitlement_id/actions/archive',
       entitlementOverrides.buildArchiveHandler(store));
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/entitlements/:entitlement_id/actions/unarchive',
+    this.registerOverride('POST', '/projects/:project_id/entitlements/:entitlement_id/actions/unarchive',
       entitlementOverrides.buildUnarchiveHandler(store));
 
     // Product archive/unarchive
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/products/:product_id/actions/archive',
+    this.registerOverride('POST', '/projects/:project_id/products/:product_id/actions/archive',
       productOverrides.buildArchiveHandler(store));
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/products/:product_id/actions/unarchive',
+    this.registerOverride('POST', '/projects/:project_id/products/:product_id/actions/unarchive',
       productOverrides.buildUnarchiveHandler(store));
 
     // Offering archive/unarchive
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/offerings/:offering_id/actions/archive',
+    this.registerOverride('POST', '/projects/:project_id/offerings/:offering_id/actions/archive',
       offeringOverrides.buildArchiveHandler(store));
-    this.registerOverride('POST', '/revenuecat/projects/:project_id/offerings/:offering_id/actions/unarchive',
+    this.registerOverride('POST', '/projects/:project_id/offerings/:offering_id/actions/unarchive',
       offeringOverrides.buildUnarchiveHandler(store));
   }
 }

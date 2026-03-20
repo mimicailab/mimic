@@ -105,65 +105,65 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
   private mountOverrides(store: StateStore): void {
     // ── Payment Intents ───────────────────────────────────────────────────────
     this.registerOverride(
-      'POST', '/stripe/v1/payment_intents/:intent/confirm',
+      'POST', '/v1/payment_intents/:intent/confirm',
       piOverrides.buildConfirmHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/payment_intents/:intent/capture',
+      'POST', '/v1/payment_intents/:intent/capture',
       piOverrides.buildCaptureHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/payment_intents/:intent/cancel',
+      'POST', '/v1/payment_intents/:intent/cancel',
       piOverrides.buildCancelHandler(store),
     );
 
     // ── Setup Intents ─────────────────────────────────────────────────────────
     this.registerOverride(
-      'POST', '/stripe/v1/setup_intents/:intent/confirm',
+      'POST', '/v1/setup_intents/:intent/confirm',
       siOverrides.buildConfirmHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/setup_intents/:intent/cancel',
+      'POST', '/v1/setup_intents/:intent/cancel',
       siOverrides.buildCancelHandler(store),
     );
 
     // ── Invoices ──────────────────────────────────────────────────────────────
     this.registerOverride(
-      'POST', '/stripe/v1/invoices/:invoice/finalize',
+      'POST', '/v1/invoices/:invoice/finalize',
       invOverrides.buildFinalizeHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/invoices/:invoice/pay',
+      'POST', '/v1/invoices/:invoice/pay',
       invOverrides.buildPayHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/invoices/:invoice/void',
+      'POST', '/v1/invoices/:invoice/void',
       invOverrides.buildVoidHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/invoices/:invoice/mark_uncollectible',
+      'POST', '/v1/invoices/:invoice/mark_uncollectible',
       invOverrides.buildMarkUncollectibleHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/invoices/:invoice/send',
+      'POST', '/v1/invoices/:invoice/send',
       invOverrides.buildSendHandler(store),
     );
 
     // ── Charges ───────────────────────────────────────────────────────────────
     this.registerOverride(
-      'POST', '/stripe/v1/charges/:charge/capture',
+      'POST', '/v1/charges/:charge/capture',
       chOverrides.buildCaptureHandler(store),
     );
 
     // ── Billing Portal ────────────────────────────────────────────────────────
     this.registerOverride(
-      'POST', '/stripe/v1/billing_portal/sessions',
+      'POST', '/v1/billing_portal/sessions',
       bpOverrides.buildCreateSessionHandler(store),
     );
 
     // ── Subscriptions — create converts items array to Stripe list format ────────
     this.registerOverride(
-      'POST', '/stripe/v1/subscriptions',
+      'POST', '/v1/subscriptions',
       async (req, reply) => {
         const body = (req.body ?? {}) as Record<string, unknown>;
         const now = unixNow();
@@ -215,7 +215,7 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
 
     // ── Subscriptions — cancel returns updated object, not deleted stub ────────
     this.registerOverride(
-      'DELETE', '/stripe/v1/subscriptions/:subscription_exposed_id',
+      'DELETE', '/v1/subscriptions/:subscription_exposed_id',
       async (req, reply) => {
         const { subscription_exposed_id } = (req.params as { subscription_exposed_id: string });
         const sub = store.get<Record<string, unknown>>(ns('subscriptions'), subscription_exposed_id);
@@ -233,49 +233,49 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
 
     // ── Refunds — sync charge.amount_refunded on create/cancel ───────────────
     this.registerOverride(
-      'POST', '/stripe/v1/refunds',
+      'POST', '/v1/refunds',
       refundOverrides.buildCreateHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/refunds/:refund/cancel',
+      'POST', '/v1/refunds/:refund/cancel',
       refundOverrides.buildCancelHandler(store),
     );
 
     // ── Payment Methods — attach/detach mutate existing PM, not create new ────
     this.registerOverride(
-      'POST', '/stripe/v1/payment_methods/:payment_method/attach',
+      'POST', '/v1/payment_methods/:payment_method/attach',
       pmOverrides.buildAttachHandler(store),
     );
     this.registerOverride(
-      'POST', '/stripe/v1/payment_methods/:payment_method/detach',
+      'POST', '/v1/payment_methods/:payment_method/detach',
       pmOverrides.buildDetachHandler(store),
     );
 
     // ── Customers — cascade-cancel subscriptions on delete ───────────────────
     this.registerOverride(
-      'DELETE', '/stripe/v1/customers/:customer',
+      'DELETE', '/v1/customers/:customer',
       custOverrides.buildDeleteHandler(store),
     );
 
     // ── Invoices — only draft invoices can be deleted ─────────────────────────
     this.registerOverride(
-      'DELETE', '/stripe/v1/invoices/:invoice',
+      'DELETE', '/v1/invoices/:invoice',
       invOverrides.buildDeleteHandler(store),
     );
 
     // ── Subscription Items — keep parent subscription.items in sync ───────────
     this.registerOverride(
-      'POST', '/stripe/v1/subscription_items',
+      'POST', '/v1/subscription_items',
       subItemOverrides.buildCreateHandler(store),
     );
     this.registerOverride(
-      'DELETE', '/stripe/v1/subscription_items/:item',
+      'DELETE', '/v1/subscription_items/:item',
       subItemOverrides.buildDeleteHandler(store),
     );
 
     // ── Balance — computed from store charges/refunds ─────────────────────────
     this.registerOverride(
-      'GET', '/stripe/v1/balance',
+      'GET', '/v1/balance',
       async (_req, reply) => {
         const charges = store.list<Record<string, unknown>>(ns('charges'));
         const refunds = store.list<Record<string, unknown>>(ns('refunds'));
@@ -300,7 +300,7 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
 
     // ── Account — return first seeded account or domain-derived default ────────
     this.registerOverride(
-      'GET', '/stripe/v1/account',
+      'GET', '/v1/account',
       async (_req, reply) => {
         const accounts = store.list<Record<string, unknown>>(ns('accounts'));
         if (accounts.length > 0) {

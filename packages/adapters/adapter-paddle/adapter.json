@@ -3,7 +3,7 @@
   "name": "Paddle API",
   "description": "Paddle Billing subscriptions, transactions, and revenue management mock adapter",
   "type": "api-mock",
-  "basePath": "/paddle",
+  "basePath": "",
   "versions": ["1"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://developer.paddle.com",

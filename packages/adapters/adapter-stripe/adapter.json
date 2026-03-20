@@ -3,7 +3,7 @@
   "name": "Stripe API",
   "description": "Stripe payments, billing, subscriptions mock adapter",
   "type": "api-mock",
-  "basePath": "/stripe",
+  "basePath": "",
   "versions": [
     "2025-03-31.basil",
     "2025-09-30.clover",

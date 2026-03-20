@@ -20,7 +20,7 @@ describe('RevenueCatAdapter', () => {
   // ── Metadata ────────────────────────────────────────────────────────────────
   it('should have correct metadata', () => {
     expect(adapter.id).toBe('revenuecat');
-    expect(adapter.basePath).toBe('/revenuecat');
+    expect(adapter.basePath).toBe('');
   });
 
   it('should return endpoint definitions', () => {
@@ -36,7 +36,7 @@ describe('RevenueCatAdapter', () => {
   it('should create a customer', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/customers`,
+      url: `/projects/${PROJECT}/customers`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ last_seen_platform: 'android', last_seen_country: 'GB' }),
     });
@@ -50,7 +50,7 @@ describe('RevenueCatAdapter', () => {
   it('should list customers', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/revenuecat/projects/${PROJECT}/customers`,
+      url: `/projects/${PROJECT}/customers`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -63,7 +63,7 @@ describe('RevenueCatAdapter', () => {
   it('should retrieve a customer', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/customers`,
+      url: `/projects/${PROJECT}/customers`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ last_seen_platform: 'ios' }),
     });
@@ -71,7 +71,7 @@ describe('RevenueCatAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/revenuecat/projects/${PROJECT}/customers/${customerId}`,
+      url: `/projects/${PROJECT}/customers/${customerId}`,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().id).toBe(customerId);
@@ -80,7 +80,7 @@ describe('RevenueCatAdapter', () => {
   it('should return 404 for non-existent customer', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/revenuecat/projects/${PROJECT}/customers/nonexistent_id`,
+      url: `/projects/${PROJECT}/customers/nonexistent_id`,
     });
     expect(res.statusCode).toBe(404);
     const body = res.json();
@@ -90,7 +90,7 @@ describe('RevenueCatAdapter', () => {
   it('should delete a customer', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/customers`,
+      url: `/projects/${PROJECT}/customers`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({}),
     });
@@ -98,7 +98,7 @@ describe('RevenueCatAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'DELETE',
-      url: `/revenuecat/projects/${PROJECT}/customers/${customerId}`,
+      url: `/projects/${PROJECT}/customers/${customerId}`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -109,7 +109,7 @@ describe('RevenueCatAdapter', () => {
   it('should create and list entitlements', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/entitlements`,
+      url: `/projects/${PROJECT}/entitlements`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ lookup_key: 'premium', display_name: 'Premium Access' }),
     });
@@ -120,7 +120,7 @@ describe('RevenueCatAdapter', () => {
 
     const listRes = await ts.server.inject({
       method: 'GET',
-      url: `/revenuecat/projects/${PROJECT}/entitlements`,
+      url: `/projects/${PROJECT}/entitlements`,
     });
     expect(listRes.json().items.length).toBeGreaterThan(0);
   });
@@ -129,7 +129,7 @@ describe('RevenueCatAdapter', () => {
   it('should create an offering', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/offerings`,
+      url: `/projects/${PROJECT}/offerings`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ lookup_key: 'default', display_name: 'Default Offering' }),
     });
@@ -143,7 +143,7 @@ describe('RevenueCatAdapter', () => {
   it('should create a product', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/products`,
+      url: `/projects/${PROJECT}/products`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         store_identifier: 'com.example.premium_monthly',
@@ -163,7 +163,7 @@ describe('RevenueCatAdapter', () => {
     // Create a subscription manually via the create endpoint
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/customers`,
+      url: `/projects/${PROJECT}/customers`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({}),
     });
@@ -173,7 +173,7 @@ describe('RevenueCatAdapter', () => {
     // First seed a subscription
     const subCreateRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/customers/${customerId}/subscriptions`,
+      url: `/projects/${PROJECT}/customers/${customerId}/subscriptions`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ customer_id: customerId, status: 'active' }),
     });
@@ -188,7 +188,7 @@ describe('RevenueCatAdapter', () => {
   it('should archive and unarchive an entitlement', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/entitlements`,
+      url: `/projects/${PROJECT}/entitlements`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ lookup_key: 'pro', display_name: 'Pro Access' }),
     });
@@ -197,7 +197,7 @@ describe('RevenueCatAdapter', () => {
     // Archive
     const archiveRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/entitlements/${entitlementId}/actions/archive`,
+      url: `/projects/${PROJECT}/entitlements/${entitlementId}/actions/archive`,
     });
     expect(archiveRes.statusCode).toBe(200);
     expect(archiveRes.json().state).toBe('inactive');
@@ -205,7 +205,7 @@ describe('RevenueCatAdapter', () => {
     // Unarchive
     const unarchiveRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/entitlements/${entitlementId}/actions/unarchive`,
+      url: `/projects/${PROJECT}/entitlements/${entitlementId}/actions/unarchive`,
     });
     expect(unarchiveRes.statusCode).toBe(200);
     expect(unarchiveRes.json().state).toBe('active');
@@ -215,7 +215,7 @@ describe('RevenueCatAdapter', () => {
   it('should archive and unarchive a product', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/products`,
+      url: `/projects/${PROJECT}/products`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         store_identifier: 'com.example.archive_test',
@@ -228,7 +228,7 @@ describe('RevenueCatAdapter', () => {
     // Archive
     const archiveRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/products/${productId}/actions/archive`,
+      url: `/projects/${PROJECT}/products/${productId}/actions/archive`,
     });
     expect(archiveRes.statusCode).toBe(200);
     expect(archiveRes.json().state).toBe('inactive');
@@ -236,7 +236,7 @@ describe('RevenueCatAdapter', () => {
     // Unarchive
     const unarchiveRes = await ts.server.inject({
       method: 'POST',
-      url: `/revenuecat/projects/${PROJECT}/products/${productId}/actions/unarchive`,
+      url: `/projects/${PROJECT}/products/${productId}/actions/unarchive`,
     });
     expect(unarchiveRes.statusCode).toBe(200);
     expect(unarchiveRes.json().state).toBe('active');
@@ -260,7 +260,7 @@ describe('RevenueCatAdapter', () => {
     const seededTs = await buildTestServer(adapter, seedData);
     const res = await seededTs.server.inject({
       method: 'GET',
-      url: `/revenuecat/projects/${PROJECT}/customers`,
+      url: `/projects/${PROJECT}/customers`,
     });
     const items = res.json().items;
     expect(items).toContainEqual(expect.objectContaining({ id: 'seed_cust_1' }));

@@ -19,7 +19,7 @@ describe('ChargebeeAdapter', () => {
 
   it('should have correct metadata', () => {
     expect(adapter.id).toBe('chargebee');
-    expect(adapter.basePath).toBe('/chargebee');
+    expect(adapter.basePath).toBe('');
     expect(adapter.name).toBe('Chargebee');
   });
 
@@ -39,7 +39,7 @@ describe('ChargebeeAdapter', () => {
   it('should create a customer', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/chargebee/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'email=test@example.com&first_name=Test&last_name=User',
     });
@@ -55,7 +55,7 @@ describe('ChargebeeAdapter', () => {
   it('should list customers', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/chargebee/customers',
+      url: '/customers',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -67,7 +67,7 @@ describe('ChargebeeAdapter', () => {
   it('should retrieve a customer', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/chargebee/customers/${customerId}`,
+      url: `/customers/${customerId}`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -79,7 +79,7 @@ describe('ChargebeeAdapter', () => {
   it('should update a customer', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/customers/${customerId}`,
+      url: `/customers/${customerId}`,
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'first_name=Updated&company=Acme',
     });
@@ -94,7 +94,7 @@ describe('ChargebeeAdapter', () => {
   it('should delete a customer', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/customers/${customerId}/delete`,
+      url: `/customers/${customerId}/delete`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -105,7 +105,7 @@ describe('ChargebeeAdapter', () => {
   it('should return 404 for non-existent customer', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/chargebee/customers/nonexistent_id',
+      url: '/customers/nonexistent_id',
     });
     expect(res.statusCode).toBe(404);
     const body = res.json();
@@ -119,7 +119,7 @@ describe('ChargebeeAdapter', () => {
   it('should create an item', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/chargebee/items',
+      url: '/items',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'id=silver-plan&name=Silver+Plan&type=plan',
     });
@@ -133,7 +133,7 @@ describe('ChargebeeAdapter', () => {
   it('should list items', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/chargebee/items',
+      url: '/items',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -150,7 +150,7 @@ describe('ChargebeeAdapter', () => {
     // First create a customer
     const cusRes = await ts.server.inject({
       method: 'POST',
-      url: '/chargebee/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'email=subscriber@example.com',
     });
@@ -158,7 +158,7 @@ describe('ChargebeeAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/customers/${cusId}/subscription_for_items`,
+      url: `/customers/${cusId}/subscription_for_items`,
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
     expect(res.statusCode).toBe(200);
@@ -172,7 +172,7 @@ describe('ChargebeeAdapter', () => {
   it('should cancel a subscription', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/subscriptions/${subId}/cancel_for_items`,
+      url: `/subscriptions/${subId}/cancel_for_items`,
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
     expect(res.statusCode).toBe(200);
@@ -183,7 +183,7 @@ describe('ChargebeeAdapter', () => {
   it('should reactivate a cancelled subscription', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/subscriptions/${subId}/reactivate`,
+      url: `/subscriptions/${subId}/reactivate`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -193,7 +193,7 @@ describe('ChargebeeAdapter', () => {
   it('should pause a subscription', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/subscriptions/${subId}/pause`,
+      url: `/subscriptions/${subId}/pause`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -203,7 +203,7 @@ describe('ChargebeeAdapter', () => {
   it('should resume a paused subscription', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/subscriptions/${subId}/resume`,
+      url: `/subscriptions/${subId}/resume`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -213,7 +213,7 @@ describe('ChargebeeAdapter', () => {
   it('should cancel at end of term', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/subscriptions/${subId}/cancel_for_items`,
+      url: `/subscriptions/${subId}/cancel_for_items`,
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'end_of_term=true',
     });
@@ -230,7 +230,7 @@ describe('ChargebeeAdapter', () => {
   it('should create an invoice via /invoices/create_for_charge_items_and_charges', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/chargebee/invoices/create_for_charge_items_and_charges',
+      url: '/invoices/create_for_charge_items_and_charges',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'customer_id=cus_test&total=5000&amount_due=5000',
     });
@@ -244,7 +244,7 @@ describe('ChargebeeAdapter', () => {
   it('should record payment on an invoice', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/invoices/${invoiceId}/record_payment`,
+      url: `/invoices/${invoiceId}/record_payment`,
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'amount=5000',
     });
@@ -257,7 +257,7 @@ describe('ChargebeeAdapter', () => {
     // Create a new invoice first
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/chargebee/invoices/create_for_charge_items_and_charges',
+      url: '/invoices/create_for_charge_items_and_charges',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'customer_id=cus_test&total=3000&amount_due=3000',
     });
@@ -265,7 +265,7 @@ describe('ChargebeeAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/invoices/${newInvId}/void`,
+      url: `/invoices/${newInvId}/void`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -279,7 +279,7 @@ describe('ChargebeeAdapter', () => {
     for (let i = 0; i < 3; i++) {
       await ts.server.inject({
         method: 'POST',
-        url: '/chargebee/customers',
+        url: '/customers',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
         payload: `email=page${i}@test.com`,
       });
@@ -287,7 +287,7 @@ describe('ChargebeeAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/chargebee/customers?limit=2',
+      url: '/customers?limit=2',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -297,7 +297,7 @@ describe('ChargebeeAdapter', () => {
     // Fetch next page
     const res2 = await ts.server.inject({
       method: 'GET',
-      url: `/chargebee/customers?limit=2&offset=${body.next_offset}`,
+      url: `/customers?limit=2&offset=${body.next_offset}`,
     });
     expect(res2.statusCode).toBe(200);
     const body2 = res2.json();
@@ -310,7 +310,7 @@ describe('ChargebeeAdapter', () => {
     // Create a customer and subscription
     const cusRes = await ts.server.inject({
       method: 'POST',
-      url: '/chargebee/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'email=cancel-test@example.com',
     });
@@ -318,20 +318,20 @@ describe('ChargebeeAdapter', () => {
 
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/customers/${cusId}/subscription_for_items`,
+      url: `/customers/${cusId}/subscription_for_items`,
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
     });
     const sid = createRes.json().subscription.id;
 
     await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/subscriptions/${sid}/cancel_for_items`,
+      url: `/subscriptions/${sid}/cancel_for_items`,
     });
 
     // Try to cancel again
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/subscriptions/${sid}/cancel_for_items`,
+      url: `/subscriptions/${sid}/cancel_for_items`,
     });
     expect(res.statusCode).toBe(400);
   });
@@ -340,7 +340,7 @@ describe('ChargebeeAdapter', () => {
     // invoiceId was already paid in earlier test
     const res = await ts.server.inject({
       method: 'POST',
-      url: `/chargebee/invoices/${invoiceId}/void`,
+      url: `/invoices/${invoiceId}/void`,
     });
     expect(res.statusCode).toBe(400);
   });
@@ -368,7 +368,7 @@ describe('ChargebeeAdapter', () => {
   it('should create and list coupons', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/chargebee/coupons/create_for_items',
+      url: '/coupons/create_for_items',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       payload: 'id=SUMMER20&name=Summer+Discount&discount_type=percentage&discount_percentage=20',
     });
@@ -378,7 +378,7 @@ describe('ChargebeeAdapter', () => {
 
     const listRes = await ts.server.inject({
       method: 'GET',
-      url: '/chargebee/coupons',
+      url: '/coupons',
     });
     expect(listRes.statusCode).toBe(200);
     expect(listRes.json().list.length).toBeGreaterThan(0);

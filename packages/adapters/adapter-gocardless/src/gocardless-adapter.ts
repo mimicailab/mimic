@@ -53,7 +53,7 @@ export class GoCardlessAdapter extends OpenApiMockAdapter<GoCardlessConfig> {
           if (wk in p) return payload;
         }
         // Derive wrapper key from URL path
-        const url = request.url.replace('/gocardless/', '');
+        const url = request.url.replace('/', '');
         const segments = url.split('/');
         const wrapperKey = segments[0] ?? 'unknown';
         return { [wrapperKey]: payload };
@@ -164,23 +164,23 @@ export class GoCardlessAdapter extends OpenApiMockAdapter<GoCardlessConfig> {
 
   private mountOverrides(store: StateStore): void {
     // Mandate lifecycle
-    this.registerOverride('POST', '/gocardless/mandates/:mandate_id/actions/cancel',
+    this.registerOverride('POST', '/mandates/:mandate_id/actions/cancel',
       mandateOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/gocardless/mandates/:mandate_id/actions/reinstate',
+    this.registerOverride('POST', '/mandates/:mandate_id/actions/reinstate',
       mandateOverrides.buildReinstateHandler(store));
 
     // Payment lifecycle
-    this.registerOverride('POST', '/gocardless/payments/:payment_id/actions/cancel',
+    this.registerOverride('POST', '/payments/:payment_id/actions/cancel',
       paymentOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/gocardless/payments/:payment_id/actions/retry',
+    this.registerOverride('POST', '/payments/:payment_id/actions/retry',
       paymentOverrides.buildRetryHandler(store));
 
     // Subscription lifecycle
-    this.registerOverride('POST', '/gocardless/subscriptions/:subscription_id/actions/cancel',
+    this.registerOverride('POST', '/subscriptions/:subscription_id/actions/cancel',
       subscriptionOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/gocardless/subscriptions/:subscription_id/actions/pause',
+    this.registerOverride('POST', '/subscriptions/:subscription_id/actions/pause',
       subscriptionOverrides.buildPauseHandler(store));
-    this.registerOverride('POST', '/gocardless/subscriptions/:subscription_id/actions/resume',
+    this.registerOverride('POST', '/subscriptions/:subscription_id/actions/resume',
       subscriptionOverrides.buildResumeHandler(store));
   }
 }

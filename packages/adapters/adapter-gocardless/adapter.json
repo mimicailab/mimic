@@ -3,7 +3,7 @@
   "name": "GoCardless API",
   "description": "GoCardless Direct Debit payments, mandates, and subscriptions mock adapter",
   "type": "api-mock",
-  "basePath": "/gocardless",
+  "basePath": "",
   "versions": ["2015-07-06"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://developer.gocardless.com",

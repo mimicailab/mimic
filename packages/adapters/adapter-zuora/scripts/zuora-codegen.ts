@@ -683,8 +683,8 @@ function extractRoutes(spec: OaSpec): ExtractedRoute[] {
       const description = operation.summary ?? operation.operationId ?? '';
 
       // Convert {param-name} to :paramName for Fastify (camelCase — Fastify
-      // doesn't support hyphens in param names), prefix with /zuora
-      const fastifyPath = '/zuora' + specPath.replace(/\{([^}]+)\}/g, (_, p) => ':' + kebabToCamel(p));
+      // doesn't support hyphens in param names), 
+      const fastifyPath = specPath.replace(/\{([^}]+)\}/g, (_, p) => ':' + kebabToCamel(p));
 
       const resource = detectZuoraResource(specPath);
       const op = detectZuoraOperation(specPath, method);

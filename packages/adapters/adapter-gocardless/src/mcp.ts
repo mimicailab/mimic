@@ -37,7 +37,7 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
   server.tool('list_customers', 'List GoCardless customers', {
     limit: z.number().optional().describe('Max results (1-500)'),
   }, async ({ limit }) => {
-    const data = await call('GET', `/gocardless/customers${qs({ limit: limit ?? 50 })}`) as any;
+    const data = await call('GET', `/customers${qs({ limit: limit ?? 50 })}`) as any;
     if (!data.customers?.length) return text('No customers found.');
     const lines = data.customers.map((c: any) => `- ${c.id} — ${c.given_name ?? ''} ${c.family_name ?? ''} (${c.email ?? 'no email'})`);
     return text(`Customers (${data.customers.length}):\n${lines.join('\n')}`);
@@ -50,7 +50,7 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     country_code: z.string().optional().describe('ISO country code'),
     metadata: z.record(z.string()).optional(),
   }, async (params) => {
-    const data = await call('POST', '/gocardless/customers', { customers: params }) as any;
+    const data = await call('POST', '/customers', { customers: params }) as any;
     const c = data.customers;
     return text(`Created customer ${c.id}: ${c.given_name ?? ''} ${c.family_name ?? ''}`);
   });
@@ -60,7 +60,7 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     customer: z.string().optional().describe('Filter by customer ID'),
     status: z.string().optional().describe('Filter by status'),
   }, async ({ customer, status }) => {
-    const data = await call('GET', `/gocardless/mandates${qs({ customer, status })}`) as any;
+    const data = await call('GET', `/mandates${qs({ customer, status })}`) as any;
     if (!data.mandates?.length) return text('No mandates found.');
     const lines = data.mandates.map((m: any) => `- ${m.id} — ${m.scheme} [${m.status}]`);
     return text(`Mandates (${data.mandates.length}):\n${lines.join('\n')}`);
@@ -70,14 +70,14 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     scheme: z.string().describe('Direct Debit scheme (e.g. bacs, sepa_core, ach)'),
     metadata: z.record(z.string()).optional(),
   }, async (params) => {
-    const data = await call('POST', '/gocardless/mandates', { mandates: params }) as any;
+    const data = await call('POST', '/mandates', { mandates: params }) as any;
     return text(`Created mandate ${data.mandates.id} [${data.mandates.status}]`);
   });
 
   server.tool('cancel_mandate', 'Cancel a Direct Debit mandate', {
     mandate_id: z.string().describe('Mandate ID'),
   }, async ({ mandate_id }) => {
-    const data = await call('POST', `/gocardless/mandates/${mandate_id}/actions/cancel`) as any;
+    const data = await call('POST', `/mandates/${mandate_id}/actions/cancel`) as any;
     return text(`Cancelled mandate ${data.mandates.id} [${data.mandates.status}]`);
   });
 
@@ -87,7 +87,7 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     mandate: z.string().optional(),
     status: z.string().optional(),
   }, async ({ customer, mandate, status }) => {
-    const data = await call('GET', `/gocardless/payments${qs({ customer, mandate, status })}`) as any;
+    const data = await call('GET', `/payments${qs({ customer, mandate, status })}`) as any;
     if (!data.payments?.length) return text('No payments found.');
     const lines = data.payments.map((p: any) => `- ${p.id} — ${p.amount} ${p.currency} [${p.status}]`);
     return text(`Payments (${data.payments.length}):\n${lines.join('\n')}`);
@@ -100,14 +100,14 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     mandate: z.string().describe('Mandate ID to charge'),
     metadata: z.record(z.string()).optional(),
   }, async ({ mandate, ...rest }) => {
-    const data = await call('POST', '/gocardless/payments', { payments: { ...rest, links: { mandate } } }) as any;
+    const data = await call('POST', '/payments', { payments: { ...rest, links: { mandate } } }) as any;
     return text(`Created payment ${data.payments.id} — ${data.payments.amount} ${data.payments.currency} [${data.payments.status}]`);
   });
 
   server.tool('cancel_payment', 'Cancel a payment', {
     payment_id: z.string().describe('Payment ID'),
   }, async ({ payment_id }) => {
-    const data = await call('POST', `/gocardless/payments/${payment_id}/actions/cancel`) as any;
+    const data = await call('POST', `/payments/${payment_id}/actions/cancel`) as any;
     return text(`Cancelled payment ${data.payments.id} [${data.payments.status}]`);
   });
 
@@ -117,7 +117,7 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     mandate: z.string().optional(),
     status: z.string().optional(),
   }, async ({ customer, mandate, status }) => {
-    const data = await call('GET', `/gocardless/subscriptions${qs({ customer, mandate, status })}`) as any;
+    const data = await call('GET', `/subscriptions${qs({ customer, mandate, status })}`) as any;
     if (!data.subscriptions?.length) return text('No subscriptions found.');
     const lines = data.subscriptions.map((s: any) => `- ${s.id} — ${s.amount} ${s.currency} every ${s.interval} ${s.interval_unit}(s) [${s.status}]`);
     return text(`Subscriptions (${data.subscriptions.length}):\n${lines.join('\n')}`);
@@ -132,14 +132,14 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     name: z.string().optional(),
     metadata: z.record(z.string()).optional(),
   }, async ({ mandate, ...rest }) => {
-    const data = await call('POST', '/gocardless/subscriptions', { subscriptions: { ...rest, links: { mandate } } }) as any;
+    const data = await call('POST', '/subscriptions', { subscriptions: { ...rest, links: { mandate } } }) as any;
     return text(`Created subscription ${data.subscriptions.id} [${data.subscriptions.status}]`);
   });
 
   server.tool('cancel_subscription', 'Cancel a subscription', {
     subscription_id: z.string().describe('Subscription ID'),
   }, async ({ subscription_id }) => {
-    const data = await call('POST', `/gocardless/subscriptions/${subscription_id}/actions/cancel`) as any;
+    const data = await call('POST', `/subscriptions/${subscription_id}/actions/cancel`) as any;
     return text(`Cancelled subscription ${data.subscriptions.id} [${data.subscriptions.status}]`);
   });
 
@@ -150,7 +150,7 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
     total_amount_confirmation: z.number().int().describe('Total amount of payment for confirmation'),
     metadata: z.record(z.string()).optional(),
   }, async ({ payment, total_amount_confirmation, ...rest }) => {
-    const data = await call('POST', '/gocardless/refunds', { refunds: { ...rest, total_amount_confirmation, links: { payment } } }) as any;
+    const data = await call('POST', '/refunds', { refunds: { ...rest, total_amount_confirmation, links: { payment } } }) as any;
     return text(`Created refund ${data.refunds.id} — ${data.refunds.amount} ${data.refunds.currency} [${data.refunds.status}]`);
   });
 
@@ -164,7 +164,7 @@ export function registerGoCardlessTools(server: McpServer, baseUrl: string = 'ht
 
     for (const type of types) {
       try {
-        const data = await call('GET', `/gocardless/${type}`) as any;
+        const data = await call('GET', `/${type}`) as any;
         const items = data[type] ?? [];
         if (!items.length) continue;
         const matches = items.filter((item: any) => {

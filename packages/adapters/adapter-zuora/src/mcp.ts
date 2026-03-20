@@ -3,7 +3,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import meta from './adapter-meta.js';
 
-const BP = '/zuora/v1';
+const BP = '/v1';
 
 function makeCall(baseUrl: string) {
   return async (method: string, path: string, body?: unknown): Promise<unknown> => {

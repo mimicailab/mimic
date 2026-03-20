@@ -22,7 +22,7 @@ describe('Stripe E2E Lifecycle', () => {
     // ── 1. Create a customer ──────────────────────────────────
     const createCust = await ts.server.inject({
       method: 'POST',
-      url: '/stripe/v1/customers',
+      url: '/v1/customers',
       payload: { name: 'Jane Doe', email: 'jane@acme.com', phone: '+15551234567' },
     });
     expect(createCust.statusCode).toBe(200);
@@ -35,7 +35,7 @@ describe('Stripe E2E Lifecycle', () => {
     // ── 2. Create a product + price ───────────────────────────
     const createProd = await ts.server.inject({
       method: 'POST',
-      url: '/stripe/v1/products',
+      url: '/v1/products',
       payload: { name: 'Pro Plan' },
     });
     expect(createProd.statusCode).toBe(200);
@@ -45,7 +45,7 @@ describe('Stripe E2E Lifecycle', () => {
 
     const createPrice = await ts.server.inject({
       method: 'POST',
-      url: '/stripe/v1/prices',
+      url: '/v1/prices',
       payload: { unit_amount: 9900, currency: 'usd', product: prod.id, recurring: { interval: 'month' } },
     });
     expect(createPrice.statusCode).toBe(200);
@@ -57,7 +57,7 @@ describe('Stripe E2E Lifecycle', () => {
     // ── 3. Create a subscription ──────────────────────────────
     const createSub = await ts.server.inject({
       method: 'POST',
-      url: '/stripe/v1/subscriptions',
+      url: '/v1/subscriptions',
       payload: { customer: cust.id, price: price.id },
     });
     expect(createSub.statusCode).toBe(200);
@@ -70,7 +70,7 @@ describe('Stripe E2E Lifecycle', () => {
     // ── 4. Create a payment intent + confirm ──────────────────
     const createPI = await ts.server.inject({
       method: 'POST',
-      url: '/stripe/v1/payment_intents',
+      url: '/v1/payment_intents',
       payload: { amount: 9900, currency: 'usd', customer: cust.id, description: 'Pro plan monthly' },
     });
     expect(createPI.statusCode).toBe(200);
@@ -82,7 +82,7 @@ describe('Stripe E2E Lifecycle', () => {
 
     const confirmPI = await ts.server.inject({
       method: 'POST',
-      url: `/stripe/v1/payment_intents/${pi.id}/confirm`,
+      url: `/v1/payment_intents/${pi.id}/confirm`,
     });
     expect(confirmPI.statusCode).toBe(200);
     const confirmedPI = confirmPI.json();
@@ -91,7 +91,7 @@ describe('Stripe E2E Lifecycle', () => {
     console.log(`✓ Confirmed PI: ${confirmedPI.id} → ${confirmedPI.status}, charge: ${confirmedPI.latest_charge}`);
 
     // ── 5. Verify charge was created ──────────────────────────
-    const listCharges = await ts.server.inject({ method: 'GET', url: '/stripe/v1/charges' });
+    const listCharges = await ts.server.inject({ method: 'GET', url: '/v1/charges' });
     const charges = listCharges.json();
     expect(charges.object).toBe('list');
     expect(charges.data.length).toBeGreaterThanOrEqual(1);
@@ -104,7 +104,7 @@ describe('Stripe E2E Lifecycle', () => {
     // ── 6. Create invoice + pay ───────────────────────────────
     const createInv = await ts.server.inject({
       method: 'POST',
-      url: '/stripe/v1/invoices',
+      url: '/v1/invoices',
       payload: { customer: cust.id },
     });
     expect(createInv.statusCode).toBe(200);
@@ -115,7 +115,7 @@ describe('Stripe E2E Lifecycle', () => {
 
     const payInv = await ts.server.inject({
       method: 'POST',
-      url: `/stripe/v1/invoices/${inv.id}/pay`,
+      url: `/v1/invoices/${inv.id}/pay`,
     });
     expect(payInv.statusCode).toBe(200);
     const paidInv = payInv.json();
@@ -125,7 +125,7 @@ describe('Stripe E2E Lifecycle', () => {
     // ── 7. Create refund ──────────────────────────────────────
     const createRefund = await ts.server.inject({
       method: 'POST',
-      url: '/stripe/v1/refunds',
+      url: '/v1/refunds',
       payload: { payment_intent: pi.id, amount: 5000, reason: 'requested_by_customer' },
     });
     expect(createRefund.statusCode).toBe(200);
@@ -138,7 +138,7 @@ describe('Stripe E2E Lifecycle', () => {
     // ── 8. Cancel subscription ────────────────────────────────
     const cancelSub = await ts.server.inject({
       method: 'DELETE',
-      url: `/stripe/v1/subscriptions/${sub.id}`,
+      url: `/v1/subscriptions/${sub.id}`,
     });
     expect(cancelSub.statusCode).toBe(200);
     const canceledSub = cancelSub.json();
@@ -146,7 +146,7 @@ describe('Stripe E2E Lifecycle', () => {
     console.log(`✓ Cancelled subscription: ${canceledSub.id} [${canceledSub.status}]`);
 
     // ── 9. Get balance ────────────────────────────────────────
-    const balance = await ts.server.inject({ method: 'GET', url: '/stripe/v1/balance' });
+    const balance = await ts.server.inject({ method: 'GET', url: '/v1/balance' });
     expect(balance.statusCode).toBe(200);
     const bal = balance.json();
     expect(bal.object).toBe('balance');
@@ -155,12 +155,12 @@ describe('Stripe E2E Lifecycle', () => {
 
     // ── 10. List all resources ────────────────────────────────
     const [custs, subs, invs, refunds, prods, prices] = await Promise.all([
-      ts.server.inject({ method: 'GET', url: '/stripe/v1/customers' }).then(r => r.json()),
-      ts.server.inject({ method: 'GET', url: '/stripe/v1/subscriptions' }).then(r => r.json()),
-      ts.server.inject({ method: 'GET', url: '/stripe/v1/invoices' }).then(r => r.json()),
-      ts.server.inject({ method: 'GET', url: '/stripe/v1/refunds' }).then(r => r.json()),
-      ts.server.inject({ method: 'GET', url: '/stripe/v1/products' }).then(r => r.json()),
-      ts.server.inject({ method: 'GET', url: '/stripe/v1/prices' }).then(r => r.json()),
+      ts.server.inject({ method: 'GET', url: '/v1/customers' }).then(r => r.json()),
+      ts.server.inject({ method: 'GET', url: '/v1/subscriptions' }).then(r => r.json()),
+      ts.server.inject({ method: 'GET', url: '/v1/invoices' }).then(r => r.json()),
+      ts.server.inject({ method: 'GET', url: '/v1/refunds' }).then(r => r.json()),
+      ts.server.inject({ method: 'GET', url: '/v1/products' }).then(r => r.json()),
+      ts.server.inject({ method: 'GET', url: '/v1/prices' }).then(r => r.json()),
     ]);
 
     console.log('\n── Final State ──');
@@ -172,7 +172,7 @@ describe('Stripe E2E Lifecycle', () => {
     console.log(`Prices: ${prices.data.length}`);
 
     // ── 11. Error handling ────────────────────────────────────
-    const notFound = await ts.server.inject({ method: 'GET', url: '/stripe/v1/customers/cus_nonexistent' });
+    const notFound = await ts.server.inject({ method: 'GET', url: '/v1/customers/cus_nonexistent' });
     expect(notFound.statusCode).toBe(404);
     const err = notFound.json();
     expect(err.error.type).toBe('invalid_request_error');

@@ -243,47 +243,47 @@ export class ChargebeeAdapter extends OpenApiMockAdapter<ChargebeeConfig> {
   private mountOverrides(store: StateStore): void {
     // ── Subscriptions — create via /customers/{id}/subscription_for_items ──
     this.registerOverride(
-      'POST', '/chargebee/customers/:customer_id/subscription_for_items',
+      'POST', '/customers/:customer_id/subscription_for_items',
       subOverrides.buildCreateSubscriptionHandler(store),
     );
     this.registerOverride(
-      'POST', '/chargebee/subscriptions/:subscription_id/cancel_for_items',
+      'POST', '/subscriptions/:subscription_id/cancel_for_items',
       subOverrides.buildCancelHandler(store),
     );
     this.registerOverride(
-      'POST', '/chargebee/subscriptions/:subscription_id/reactivate',
+      'POST', '/subscriptions/:subscription_id/reactivate',
       subOverrides.buildReactivateHandler(store),
     );
     this.registerOverride(
-      'POST', '/chargebee/subscriptions/:subscription_id/pause',
+      'POST', '/subscriptions/:subscription_id/pause',
       subOverrides.buildPauseHandler(store),
     );
     this.registerOverride(
-      'POST', '/chargebee/subscriptions/:subscription_id/resume',
+      'POST', '/subscriptions/:subscription_id/resume',
       subOverrides.buildResumeHandler(store),
     );
 
     // ── Invoices — create via /invoices/create_for_charge_items_and_charges ──
     this.registerOverride(
-      'POST', '/chargebee/invoices/create_for_charge_items_and_charges',
+      'POST', '/invoices/create_for_charge_items_and_charges',
       invOverrides.buildCreateInvoiceHandler(store),
     );
     this.registerOverride(
-      'POST', '/chargebee/invoices/:invoice_id/void',
+      'POST', '/invoices/:invoice_id/void',
       invOverrides.buildVoidHandler(store),
     );
     this.registerOverride(
-      'POST', '/chargebee/invoices/:invoice_id/write_off',
+      'POST', '/invoices/:invoice_id/write_off',
       invOverrides.buildWriteOffHandler(store),
     );
     this.registerOverride(
-      'POST', '/chargebee/invoices/:invoice_id/record_payment',
+      'POST', '/invoices/:invoice_id/record_payment',
       invOverrides.buildRecordPaymentHandler(store),
     );
 
     // ── Coupons — create via /coupons/create_for_items ──
     this.registerOverride(
-      'POST', '/chargebee/coupons/create_for_items',
+      'POST', '/coupons/create_for_items',
       async (req, reply) => {
         const body = this.parseBody(req);
         const factory = SCHEMA_DEFAULTS['coupon'];

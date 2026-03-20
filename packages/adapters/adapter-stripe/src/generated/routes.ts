@@ -6,7 +6,7 @@ export type RouteOperation = 'list' | 'create' | 'retrieve' | 'update' | 'delete
 export interface GeneratedRoute {
   /** HTTP method */
   method: RouteMethod;
-  /** Fastify route path with colon params and /stripe prefix */
+  /** Fastify route path with colon params */
   fastifyPath: string;
   /** Original Stripe path for documentation */
   stripePath: string;
@@ -27,7 +27,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/account",
+    fastifyPath: "/v1/account",
     stripePath: "/v1/account",
     resource: "account",
     operation: "retrieve",
@@ -37,7 +37,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/account_links",
+    fastifyPath: "/v1/account_links",
     stripePath: "/v1/account_links",
     resource: "account_links",
     operation: "create",
@@ -47,7 +47,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/account_sessions",
+    fastifyPath: "/v1/account_sessions",
     stripePath: "/v1/account_sessions",
     resource: "account_sessions",
     operation: "create",
@@ -57,7 +57,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts",
+    fastifyPath: "/v1/accounts",
     stripePath: "/v1/accounts",
     resource: "accounts",
     operation: "list",
@@ -66,7 +66,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts",
+    fastifyPath: "/v1/accounts",
     stripePath: "/v1/accounts",
     resource: "accounts",
     operation: "create",
@@ -75,7 +75,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account",
+    fastifyPath: "/v1/accounts/:account",
     stripePath: "/v1/accounts/{account}",
     resource: "accounts",
     operation: "retrieve",
@@ -85,7 +85,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account",
+    fastifyPath: "/v1/accounts/:account",
     stripePath: "/v1/accounts/{account}",
     resource: "accounts",
     operation: "update",
@@ -95,7 +95,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/accounts/:account",
+    fastifyPath: "/v1/accounts/:account",
     stripePath: "/v1/accounts/{account}",
     resource: "accounts",
     operation: "delete",
@@ -105,7 +105,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/bank_accounts",
+    fastifyPath: "/v1/accounts/:account/bank_accounts",
     stripePath: "/v1/accounts/{account}/bank_accounts",
     resource: "bank_accounts",
     operation: "create",
@@ -116,7 +116,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/bank_accounts/:id",
+    fastifyPath: "/v1/accounts/:account/bank_accounts/:id",
     stripePath: "/v1/accounts/{account}/bank_accounts/{id}",
     resource: "bank_accounts",
     operation: "retrieve",
@@ -127,7 +127,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/bank_accounts/:id",
+    fastifyPath: "/v1/accounts/:account/bank_accounts/:id",
     stripePath: "/v1/accounts/{account}/bank_accounts/{id}",
     resource: "bank_accounts",
     operation: "update",
@@ -138,7 +138,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/accounts/:account/bank_accounts/:id",
+    fastifyPath: "/v1/accounts/:account/bank_accounts/:id",
     stripePath: "/v1/accounts/{account}/bank_accounts/{id}",
     resource: "bank_accounts",
     operation: "delete",
@@ -149,7 +149,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/capabilities",
+    fastifyPath: "/v1/accounts/:account/capabilities",
     stripePath: "/v1/accounts/{account}/capabilities",
     resource: "capabilities",
     operation: "list",
@@ -160,7 +160,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/capabilities/:capability",
+    fastifyPath: "/v1/accounts/:account/capabilities/:capability",
     stripePath: "/v1/accounts/{account}/capabilities/{capability}",
     resource: "capabilities",
     operation: "retrieve",
@@ -171,7 +171,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/capabilities/:capability",
+    fastifyPath: "/v1/accounts/:account/capabilities/:capability",
     stripePath: "/v1/accounts/{account}/capabilities/{capability}",
     resource: "capabilities",
     operation: "update",
@@ -182,7 +182,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/external_accounts",
+    fastifyPath: "/v1/accounts/:account/external_accounts",
     stripePath: "/v1/accounts/{account}/external_accounts",
     resource: "external_accounts",
     operation: "list",
@@ -193,7 +193,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/external_accounts",
+    fastifyPath: "/v1/accounts/:account/external_accounts",
     stripePath: "/v1/accounts/{account}/external_accounts",
     resource: "external_accounts",
     operation: "create",
@@ -204,7 +204,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/external_accounts/:id",
+    fastifyPath: "/v1/accounts/:account/external_accounts/:id",
     stripePath: "/v1/accounts/{account}/external_accounts/{id}",
     resource: "external_accounts",
     operation: "retrieve",
@@ -215,7 +215,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/external_accounts/:id",
+    fastifyPath: "/v1/accounts/:account/external_accounts/:id",
     stripePath: "/v1/accounts/{account}/external_accounts/{id}",
     resource: "external_accounts",
     operation: "update",
@@ -226,7 +226,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/accounts/:account/external_accounts/:id",
+    fastifyPath: "/v1/accounts/:account/external_accounts/:id",
     stripePath: "/v1/accounts/{account}/external_accounts/{id}",
     resource: "external_accounts",
     operation: "delete",
@@ -237,7 +237,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/login_links",
+    fastifyPath: "/v1/accounts/:account/login_links",
     stripePath: "/v1/accounts/{account}/login_links",
     resource: "login_links",
     operation: "create",
@@ -248,7 +248,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/people",
+    fastifyPath: "/v1/accounts/:account/people",
     stripePath: "/v1/accounts/{account}/people",
     resource: "accounts",
     operation: "list",
@@ -258,7 +258,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/people",
+    fastifyPath: "/v1/accounts/:account/people",
     stripePath: "/v1/accounts/{account}/people",
     resource: "accounts",
     operation: "create",
@@ -268,7 +268,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/people/:person",
+    fastifyPath: "/v1/accounts/:account/people/:person",
     stripePath: "/v1/accounts/{account}/people/{person}",
     resource: "accounts",
     operation: "retrieve",
@@ -278,7 +278,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/people/:person",
+    fastifyPath: "/v1/accounts/:account/people/:person",
     stripePath: "/v1/accounts/{account}/people/{person}",
     resource: "accounts",
     operation: "update",
@@ -288,7 +288,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/accounts/:account/people/:person",
+    fastifyPath: "/v1/accounts/:account/people/:person",
     stripePath: "/v1/accounts/{account}/people/{person}",
     resource: "accounts",
     operation: "delete",
@@ -298,7 +298,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/persons",
+    fastifyPath: "/v1/accounts/:account/persons",
     stripePath: "/v1/accounts/{account}/persons",
     resource: "persons",
     operation: "list",
@@ -309,7 +309,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/persons",
+    fastifyPath: "/v1/accounts/:account/persons",
     stripePath: "/v1/accounts/{account}/persons",
     resource: "persons",
     operation: "create",
@@ -320,7 +320,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/accounts/:account/persons/:person",
+    fastifyPath: "/v1/accounts/:account/persons/:person",
     stripePath: "/v1/accounts/{account}/persons/{person}",
     resource: "persons",
     operation: "retrieve",
@@ -331,7 +331,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/persons/:person",
+    fastifyPath: "/v1/accounts/:account/persons/:person",
     stripePath: "/v1/accounts/{account}/persons/{person}",
     resource: "persons",
     operation: "update",
@@ -342,7 +342,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/accounts/:account/persons/:person",
+    fastifyPath: "/v1/accounts/:account/persons/:person",
     stripePath: "/v1/accounts/{account}/persons/{person}",
     resource: "persons",
     operation: "delete",
@@ -353,7 +353,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/accounts/:account/reject",
+    fastifyPath: "/v1/accounts/:account/reject",
     stripePath: "/v1/accounts/{account}/reject",
     resource: "accounts",
     operation: "create",
@@ -363,7 +363,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/apple_pay/domains",
+    fastifyPath: "/v1/apple_pay/domains",
     stripePath: "/v1/apple_pay/domains",
     resource: "apple_pay",
     operation: "list",
@@ -372,7 +372,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/apple_pay/domains",
+    fastifyPath: "/v1/apple_pay/domains",
     stripePath: "/v1/apple_pay/domains",
     resource: "apple_pay",
     operation: "create",
@@ -381,7 +381,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/apple_pay/domains/:domain",
+    fastifyPath: "/v1/apple_pay/domains/:domain",
     stripePath: "/v1/apple_pay/domains/{domain}",
     resource: "apple_pay",
     operation: "retrieve",
@@ -391,7 +391,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/apple_pay/domains/:domain",
+    fastifyPath: "/v1/apple_pay/domains/:domain",
     stripePath: "/v1/apple_pay/domains/{domain}",
     resource: "apple_pay",
     operation: "delete",
@@ -401,7 +401,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/application_fees",
+    fastifyPath: "/v1/application_fees",
     stripePath: "/v1/application_fees",
     resource: "application_fees",
     operation: "list",
@@ -411,7 +411,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/application_fees/:fee/refunds/:id",
+    fastifyPath: "/v1/application_fees/:fee/refunds/:id",
     stripePath: "/v1/application_fees/{fee}/refunds/{id}",
     resource: "refunds",
     operation: "retrieve",
@@ -422,7 +422,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/application_fees/:fee/refunds/:id",
+    fastifyPath: "/v1/application_fees/:fee/refunds/:id",
     stripePath: "/v1/application_fees/{fee}/refunds/{id}",
     resource: "refunds",
     operation: "update",
@@ -433,7 +433,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/application_fees/:id",
+    fastifyPath: "/v1/application_fees/:id",
     stripePath: "/v1/application_fees/{id}",
     resource: "application_fees",
     operation: "retrieve",
@@ -444,7 +444,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/application_fees/:id/refund",
+    fastifyPath: "/v1/application_fees/:id/refund",
     stripePath: "/v1/application_fees/{id}/refund",
     resource: "application_fees",
     operation: "create",
@@ -455,7 +455,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/application_fees/:id/refunds",
+    fastifyPath: "/v1/application_fees/:id/refunds",
     stripePath: "/v1/application_fees/{id}/refunds",
     resource: "refunds",
     operation: "list",
@@ -466,7 +466,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/application_fees/:id/refunds",
+    fastifyPath: "/v1/application_fees/:id/refunds",
     stripePath: "/v1/application_fees/{id}/refunds",
     resource: "refunds",
     operation: "create",
@@ -477,7 +477,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/apps/secrets",
+    fastifyPath: "/v1/apps/secrets",
     stripePath: "/v1/apps/secrets",
     resource: "apps",
     operation: "list",
@@ -486,7 +486,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/apps/secrets",
+    fastifyPath: "/v1/apps/secrets",
     stripePath: "/v1/apps/secrets",
     resource: "apps",
     operation: "create",
@@ -495,7 +495,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/apps/secrets/delete",
+    fastifyPath: "/v1/apps/secrets/delete",
     stripePath: "/v1/apps/secrets/delete",
     resource: "apps",
     operation: "create",
@@ -504,7 +504,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/apps/secrets/find",
+    fastifyPath: "/v1/apps/secrets/find",
     stripePath: "/v1/apps/secrets/find",
     resource: "apps",
     operation: "list",
@@ -513,7 +513,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/balance",
+    fastifyPath: "/v1/balance",
     stripePath: "/v1/balance",
     resource: "balance",
     operation: "retrieve",
@@ -523,7 +523,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/balance/history",
+    fastifyPath: "/v1/balance/history",
     stripePath: "/v1/balance/history",
     resource: "balance",
     operation: "retrieve",
@@ -533,7 +533,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/balance/history/:id",
+    fastifyPath: "/v1/balance/history/:id",
     stripePath: "/v1/balance/history/{id}",
     resource: "balance",
     operation: "retrieve",
@@ -544,7 +544,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/balance_settings",
+    fastifyPath: "/v1/balance_settings",
     stripePath: "/v1/balance_settings",
     resource: "balance_settings",
     operation: "list",
@@ -554,7 +554,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/balance_settings",
+    fastifyPath: "/v1/balance_settings",
     stripePath: "/v1/balance_settings",
     resource: "balance_settings",
     operation: "create",
@@ -564,7 +564,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/balance_transactions",
+    fastifyPath: "/v1/balance_transactions",
     stripePath: "/v1/balance_transactions",
     resource: "balance_transactions",
     operation: "list",
@@ -574,7 +574,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/balance_transactions/:id",
+    fastifyPath: "/v1/balance_transactions/:id",
     stripePath: "/v1/balance_transactions/{id}",
     resource: "balance_transactions",
     operation: "retrieve",
@@ -585,7 +585,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/alerts",
+    fastifyPath: "/v1/billing/alerts",
     stripePath: "/v1/billing/alerts",
     resource: "billing",
     operation: "list",
@@ -594,7 +594,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/alerts",
+    fastifyPath: "/v1/billing/alerts",
     stripePath: "/v1/billing/alerts",
     resource: "billing",
     operation: "create",
@@ -603,7 +603,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/alerts/:id",
+    fastifyPath: "/v1/billing/alerts/:id",
     stripePath: "/v1/billing/alerts/{id}",
     resource: "billing",
     operation: "retrieve",
@@ -613,7 +613,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/alerts/:id/activate",
+    fastifyPath: "/v1/billing/alerts/:id/activate",
     stripePath: "/v1/billing/alerts/{id}/activate",
     resource: "billing",
     operation: "create",
@@ -623,7 +623,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/alerts/:id/archive",
+    fastifyPath: "/v1/billing/alerts/:id/archive",
     stripePath: "/v1/billing/alerts/{id}/archive",
     resource: "billing",
     operation: "create",
@@ -633,7 +633,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/alerts/:id/deactivate",
+    fastifyPath: "/v1/billing/alerts/:id/deactivate",
     stripePath: "/v1/billing/alerts/{id}/deactivate",
     resource: "billing",
     operation: "create",
@@ -643,7 +643,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/credit_balance_summary",
+    fastifyPath: "/v1/billing/credit_balance_summary",
     stripePath: "/v1/billing/credit_balance_summary",
     resource: "billing",
     operation: "list",
@@ -652,7 +652,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/credit_balance_transactions",
+    fastifyPath: "/v1/billing/credit_balance_transactions",
     stripePath: "/v1/billing/credit_balance_transactions",
     resource: "billing",
     operation: "list",
@@ -661,7 +661,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/credit_balance_transactions/:id",
+    fastifyPath: "/v1/billing/credit_balance_transactions/:id",
     stripePath: "/v1/billing/credit_balance_transactions/{id}",
     resource: "billing",
     operation: "retrieve",
@@ -671,7 +671,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/credit_grants",
+    fastifyPath: "/v1/billing/credit_grants",
     stripePath: "/v1/billing/credit_grants",
     resource: "billing",
     operation: "list",
@@ -680,7 +680,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/credit_grants",
+    fastifyPath: "/v1/billing/credit_grants",
     stripePath: "/v1/billing/credit_grants",
     resource: "billing",
     operation: "create",
@@ -689,7 +689,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/credit_grants/:id",
+    fastifyPath: "/v1/billing/credit_grants/:id",
     stripePath: "/v1/billing/credit_grants/{id}",
     resource: "billing",
     operation: "retrieve",
@@ -699,7 +699,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/credit_grants/:id",
+    fastifyPath: "/v1/billing/credit_grants/:id",
     stripePath: "/v1/billing/credit_grants/{id}",
     resource: "billing",
     operation: "update",
@@ -709,7 +709,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/credit_grants/:id/expire",
+    fastifyPath: "/v1/billing/credit_grants/:id/expire",
     stripePath: "/v1/billing/credit_grants/{id}/expire",
     resource: "billing",
     operation: "create",
@@ -719,7 +719,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/credit_grants/:id/void",
+    fastifyPath: "/v1/billing/credit_grants/:id/void",
     stripePath: "/v1/billing/credit_grants/{id}/void",
     resource: "billing",
     operation: "create",
@@ -729,7 +729,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/meter_event_adjustments",
+    fastifyPath: "/v1/billing/meter_event_adjustments",
     stripePath: "/v1/billing/meter_event_adjustments",
     resource: "billing",
     operation: "create",
@@ -738,7 +738,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/meter_events",
+    fastifyPath: "/v1/billing/meter_events",
     stripePath: "/v1/billing/meter_events",
     resource: "billing",
     operation: "create",
@@ -747,7 +747,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/meters",
+    fastifyPath: "/v1/billing/meters",
     stripePath: "/v1/billing/meters",
     resource: "billing",
     operation: "list",
@@ -756,7 +756,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/meters",
+    fastifyPath: "/v1/billing/meters",
     stripePath: "/v1/billing/meters",
     resource: "billing",
     operation: "create",
@@ -765,7 +765,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/meters/:id",
+    fastifyPath: "/v1/billing/meters/:id",
     stripePath: "/v1/billing/meters/{id}",
     resource: "billing",
     operation: "retrieve",
@@ -775,7 +775,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/meters/:id",
+    fastifyPath: "/v1/billing/meters/:id",
     stripePath: "/v1/billing/meters/{id}",
     resource: "billing",
     operation: "update",
@@ -785,7 +785,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/meters/:id/deactivate",
+    fastifyPath: "/v1/billing/meters/:id/deactivate",
     stripePath: "/v1/billing/meters/{id}/deactivate",
     resource: "billing",
     operation: "create",
@@ -795,7 +795,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing/meters/:id/event_summaries",
+    fastifyPath: "/v1/billing/meters/:id/event_summaries",
     stripePath: "/v1/billing/meters/{id}/event_summaries",
     resource: "billing",
     operation: "list",
@@ -805,7 +805,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing/meters/:id/reactivate",
+    fastifyPath: "/v1/billing/meters/:id/reactivate",
     stripePath: "/v1/billing/meters/{id}/reactivate",
     resource: "billing",
     operation: "create",
@@ -815,7 +815,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing_portal/configurations",
+    fastifyPath: "/v1/billing_portal/configurations",
     stripePath: "/v1/billing_portal/configurations",
     resource: "billing_portal",
     operation: "list",
@@ -824,7 +824,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing_portal/configurations",
+    fastifyPath: "/v1/billing_portal/configurations",
     stripePath: "/v1/billing_portal/configurations",
     resource: "billing_portal",
     operation: "create",
@@ -833,7 +833,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/billing_portal/configurations/:configuration",
+    fastifyPath: "/v1/billing_portal/configurations/:configuration",
     stripePath: "/v1/billing_portal/configurations/{configuration}",
     resource: "billing_portal",
     operation: "retrieve",
@@ -843,7 +843,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing_portal/configurations/:configuration",
+    fastifyPath: "/v1/billing_portal/configurations/:configuration",
     stripePath: "/v1/billing_portal/configurations/{configuration}",
     resource: "billing_portal",
     operation: "update",
@@ -853,7 +853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/billing_portal/sessions",
+    fastifyPath: "/v1/billing_portal/sessions",
     stripePath: "/v1/billing_portal/sessions",
     resource: "billing_portal",
     operation: "create",
@@ -862,7 +862,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/charges",
+    fastifyPath: "/v1/charges",
     stripePath: "/v1/charges",
     resource: "charges",
     operation: "list",
@@ -872,7 +872,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges",
+    fastifyPath: "/v1/charges",
     stripePath: "/v1/charges",
     resource: "charges",
     operation: "create",
@@ -882,7 +882,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/charges/search",
+    fastifyPath: "/v1/charges/search",
     stripePath: "/v1/charges/search",
     resource: "charges",
     operation: "list",
@@ -892,7 +892,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/charges/:charge",
+    fastifyPath: "/v1/charges/:charge",
     stripePath: "/v1/charges/{charge}",
     resource: "charges",
     operation: "retrieve",
@@ -903,7 +903,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges/:charge",
+    fastifyPath: "/v1/charges/:charge",
     stripePath: "/v1/charges/{charge}",
     resource: "charges",
     operation: "update",
@@ -914,7 +914,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges/:charge/capture",
+    fastifyPath: "/v1/charges/:charge/capture",
     stripePath: "/v1/charges/{charge}/capture",
     resource: "charges",
     operation: "create",
@@ -925,7 +925,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/charges/:charge/dispute",
+    fastifyPath: "/v1/charges/:charge/dispute",
     stripePath: "/v1/charges/{charge}/dispute",
     resource: "charges",
     operation: "list",
@@ -936,7 +936,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges/:charge/dispute",
+    fastifyPath: "/v1/charges/:charge/dispute",
     stripePath: "/v1/charges/{charge}/dispute",
     resource: "charges",
     operation: "create",
@@ -947,7 +947,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges/:charge/dispute/close",
+    fastifyPath: "/v1/charges/:charge/dispute/close",
     stripePath: "/v1/charges/{charge}/dispute/close",
     resource: "charges",
     operation: "action",
@@ -958,7 +958,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges/:charge/refund",
+    fastifyPath: "/v1/charges/:charge/refund",
     stripePath: "/v1/charges/{charge}/refund",
     resource: "charges",
     operation: "create",
@@ -969,7 +969,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/charges/:charge/refunds",
+    fastifyPath: "/v1/charges/:charge/refunds",
     stripePath: "/v1/charges/{charge}/refunds",
     resource: "refunds",
     operation: "list",
@@ -980,7 +980,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges/:charge/refunds",
+    fastifyPath: "/v1/charges/:charge/refunds",
     stripePath: "/v1/charges/{charge}/refunds",
     resource: "refunds",
     operation: "create",
@@ -991,7 +991,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/charges/:charge/refunds/:refund",
+    fastifyPath: "/v1/charges/:charge/refunds/:refund",
     stripePath: "/v1/charges/{charge}/refunds/{refund}",
     resource: "refunds",
     operation: "retrieve",
@@ -1002,7 +1002,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/charges/:charge/refunds/:refund",
+    fastifyPath: "/v1/charges/:charge/refunds/:refund",
     stripePath: "/v1/charges/{charge}/refunds/{refund}",
     resource: "refunds",
     operation: "update",
@@ -1013,7 +1013,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/checkout/sessions",
+    fastifyPath: "/v1/checkout/sessions",
     stripePath: "/v1/checkout/sessions",
     resource: "checkout",
     operation: "list",
@@ -1022,7 +1022,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/checkout/sessions",
+    fastifyPath: "/v1/checkout/sessions",
     stripePath: "/v1/checkout/sessions",
     resource: "checkout",
     operation: "create",
@@ -1031,7 +1031,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/checkout/sessions/:session",
+    fastifyPath: "/v1/checkout/sessions/:session",
     stripePath: "/v1/checkout/sessions/{session}",
     resource: "checkout",
     operation: "retrieve",
@@ -1041,7 +1041,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/checkout/sessions/:session",
+    fastifyPath: "/v1/checkout/sessions/:session",
     stripePath: "/v1/checkout/sessions/{session}",
     resource: "checkout",
     operation: "update",
@@ -1051,7 +1051,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/checkout/sessions/:session/expire",
+    fastifyPath: "/v1/checkout/sessions/:session/expire",
     stripePath: "/v1/checkout/sessions/{session}/expire",
     resource: "checkout",
     operation: "create",
@@ -1061,7 +1061,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/checkout/sessions/:session/line_items",
+    fastifyPath: "/v1/checkout/sessions/:session/line_items",
     stripePath: "/v1/checkout/sessions/{session}/line_items",
     resource: "line_items",
     operation: "list",
@@ -1072,7 +1072,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/climate/orders",
+    fastifyPath: "/v1/climate/orders",
     stripePath: "/v1/climate/orders",
     resource: "climate",
     operation: "list",
@@ -1081,7 +1081,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/climate/orders",
+    fastifyPath: "/v1/climate/orders",
     stripePath: "/v1/climate/orders",
     resource: "climate",
     operation: "create",
@@ -1090,7 +1090,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/climate/orders/:order",
+    fastifyPath: "/v1/climate/orders/:order",
     stripePath: "/v1/climate/orders/{order}",
     resource: "climate",
     operation: "retrieve",
@@ -1100,7 +1100,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/climate/orders/:order",
+    fastifyPath: "/v1/climate/orders/:order",
     stripePath: "/v1/climate/orders/{order}",
     resource: "climate",
     operation: "update",
@@ -1110,7 +1110,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/climate/orders/:order/cancel",
+    fastifyPath: "/v1/climate/orders/:order/cancel",
     stripePath: "/v1/climate/orders/{order}/cancel",
     resource: "climate",
     operation: "create",
@@ -1120,7 +1120,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/climate/products",
+    fastifyPath: "/v1/climate/products",
     stripePath: "/v1/climate/products",
     resource: "products",
     operation: "list",
@@ -1130,7 +1130,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/climate/products/:product",
+    fastifyPath: "/v1/climate/products/:product",
     stripePath: "/v1/climate/products/{product}",
     resource: "products",
     operation: "retrieve",
@@ -1141,7 +1141,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/climate/suppliers",
+    fastifyPath: "/v1/climate/suppliers",
     stripePath: "/v1/climate/suppliers",
     resource: "climate",
     operation: "list",
@@ -1150,7 +1150,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/climate/suppliers/:supplier",
+    fastifyPath: "/v1/climate/suppliers/:supplier",
     stripePath: "/v1/climate/suppliers/{supplier}",
     resource: "climate",
     operation: "retrieve",
@@ -1160,7 +1160,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/confirmation_tokens/:confirmation_token",
+    fastifyPath: "/v1/confirmation_tokens/:confirmation_token",
     stripePath: "/v1/confirmation_tokens/{confirmation_token}",
     resource: "confirmation_tokens",
     operation: "retrieve",
@@ -1171,7 +1171,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/country_specs",
+    fastifyPath: "/v1/country_specs",
     stripePath: "/v1/country_specs",
     resource: "country_specs",
     operation: "list",
@@ -1181,7 +1181,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/country_specs/:country",
+    fastifyPath: "/v1/country_specs/:country",
     stripePath: "/v1/country_specs/{country}",
     resource: "country_specs",
     operation: "retrieve",
@@ -1192,7 +1192,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/coupons",
+    fastifyPath: "/v1/coupons",
     stripePath: "/v1/coupons",
     resource: "coupons",
     operation: "list",
@@ -1202,7 +1202,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/coupons",
+    fastifyPath: "/v1/coupons",
     stripePath: "/v1/coupons",
     resource: "coupons",
     operation: "create",
@@ -1212,7 +1212,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/coupons/:coupon",
+    fastifyPath: "/v1/coupons/:coupon",
     stripePath: "/v1/coupons/{coupon}",
     resource: "coupons",
     operation: "retrieve",
@@ -1223,7 +1223,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/coupons/:coupon",
+    fastifyPath: "/v1/coupons/:coupon",
     stripePath: "/v1/coupons/{coupon}",
     resource: "coupons",
     operation: "update",
@@ -1234,7 +1234,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/coupons/:coupon",
+    fastifyPath: "/v1/coupons/:coupon",
     stripePath: "/v1/coupons/{coupon}",
     resource: "coupons",
     operation: "delete",
@@ -1245,7 +1245,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/credit_notes",
+    fastifyPath: "/v1/credit_notes",
     stripePath: "/v1/credit_notes",
     resource: "credit_notes",
     operation: "list",
@@ -1255,7 +1255,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/credit_notes",
+    fastifyPath: "/v1/credit_notes",
     stripePath: "/v1/credit_notes",
     resource: "credit_notes",
     operation: "create",
@@ -1265,7 +1265,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/credit_notes/preview",
+    fastifyPath: "/v1/credit_notes/preview",
     stripePath: "/v1/credit_notes/preview",
     resource: "credit_notes",
     operation: "list",
@@ -1275,7 +1275,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/credit_notes/preview/lines",
+    fastifyPath: "/v1/credit_notes/preview/lines",
     stripePath: "/v1/credit_notes/preview/lines",
     resource: "credit_notes",
     operation: "list",
@@ -1285,7 +1285,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/credit_notes/:credit_note/lines",
+    fastifyPath: "/v1/credit_notes/:credit_note/lines",
     stripePath: "/v1/credit_notes/{credit_note}/lines",
     resource: "credit_notes",
     operation: "list",
@@ -1296,7 +1296,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/credit_notes/:id",
+    fastifyPath: "/v1/credit_notes/:id",
     stripePath: "/v1/credit_notes/{id}",
     resource: "credit_notes",
     operation: "retrieve",
@@ -1307,7 +1307,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/credit_notes/:id",
+    fastifyPath: "/v1/credit_notes/:id",
     stripePath: "/v1/credit_notes/{id}",
     resource: "credit_notes",
     operation: "update",
@@ -1318,7 +1318,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/credit_notes/:id/void",
+    fastifyPath: "/v1/credit_notes/:id/void",
     stripePath: "/v1/credit_notes/{id}/void",
     resource: "credit_notes",
     operation: "create",
@@ -1329,7 +1329,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customer_sessions",
+    fastifyPath: "/v1/customer_sessions",
     stripePath: "/v1/customer_sessions",
     resource: "customer_sessions",
     operation: "create",
@@ -1339,7 +1339,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers",
+    fastifyPath: "/v1/customers",
     stripePath: "/v1/customers",
     resource: "customers",
     operation: "list",
@@ -1349,7 +1349,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers",
+    fastifyPath: "/v1/customers",
     stripePath: "/v1/customers",
     resource: "customers",
     operation: "create",
@@ -1359,7 +1359,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/search",
+    fastifyPath: "/v1/customers/search",
     stripePath: "/v1/customers/search",
     resource: "customers",
     operation: "list",
@@ -1369,7 +1369,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer",
+    fastifyPath: "/v1/customers/:customer",
     stripePath: "/v1/customers/{customer}",
     resource: "customers",
     operation: "retrieve",
@@ -1380,7 +1380,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer",
+    fastifyPath: "/v1/customers/:customer",
     stripePath: "/v1/customers/{customer}",
     resource: "customers",
     operation: "update",
@@ -1391,7 +1391,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer",
+    fastifyPath: "/v1/customers/:customer",
     stripePath: "/v1/customers/{customer}",
     resource: "customers",
     operation: "delete",
@@ -1402,7 +1402,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/balance_transactions",
+    fastifyPath: "/v1/customers/:customer/balance_transactions",
     stripePath: "/v1/customers/{customer}/balance_transactions",
     resource: "balance_transactions",
     operation: "list",
@@ -1413,7 +1413,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/balance_transactions",
+    fastifyPath: "/v1/customers/:customer/balance_transactions",
     stripePath: "/v1/customers/{customer}/balance_transactions",
     resource: "balance_transactions",
     operation: "create",
@@ -1424,7 +1424,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/balance_transactions/:transaction",
+    fastifyPath: "/v1/customers/:customer/balance_transactions/:transaction",
     stripePath: "/v1/customers/{customer}/balance_transactions/{transaction}",
     resource: "balance_transactions",
     operation: "retrieve",
@@ -1435,7 +1435,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/balance_transactions/:transaction",
+    fastifyPath: "/v1/customers/:customer/balance_transactions/:transaction",
     stripePath: "/v1/customers/{customer}/balance_transactions/{transaction}",
     resource: "balance_transactions",
     operation: "update",
@@ -1446,7 +1446,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/bank_accounts",
+    fastifyPath: "/v1/customers/:customer/bank_accounts",
     stripePath: "/v1/customers/{customer}/bank_accounts",
     resource: "bank_accounts",
     operation: "list",
@@ -1457,7 +1457,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/bank_accounts",
+    fastifyPath: "/v1/customers/:customer/bank_accounts",
     stripePath: "/v1/customers/{customer}/bank_accounts",
     resource: "bank_accounts",
     operation: "create",
@@ -1468,7 +1468,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/bank_accounts/:id",
+    fastifyPath: "/v1/customers/:customer/bank_accounts/:id",
     stripePath: "/v1/customers/{customer}/bank_accounts/{id}",
     resource: "bank_accounts",
     operation: "retrieve",
@@ -1479,7 +1479,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/bank_accounts/:id",
+    fastifyPath: "/v1/customers/:customer/bank_accounts/:id",
     stripePath: "/v1/customers/{customer}/bank_accounts/{id}",
     resource: "bank_accounts",
     operation: "update",
@@ -1490,7 +1490,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer/bank_accounts/:id",
+    fastifyPath: "/v1/customers/:customer/bank_accounts/:id",
     stripePath: "/v1/customers/{customer}/bank_accounts/{id}",
     resource: "bank_accounts",
     operation: "delete",
@@ -1501,7 +1501,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/bank_accounts/:id/verify",
+    fastifyPath: "/v1/customers/:customer/bank_accounts/:id/verify",
     stripePath: "/v1/customers/{customer}/bank_accounts/{id}/verify",
     resource: "bank_accounts",
     operation: "create",
@@ -1512,7 +1512,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/cards",
+    fastifyPath: "/v1/customers/:customer/cards",
     stripePath: "/v1/customers/{customer}/cards",
     resource: "cards",
     operation: "list",
@@ -1523,7 +1523,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/cards",
+    fastifyPath: "/v1/customers/:customer/cards",
     stripePath: "/v1/customers/{customer}/cards",
     resource: "cards",
     operation: "create",
@@ -1534,7 +1534,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/cards/:id",
+    fastifyPath: "/v1/customers/:customer/cards/:id",
     stripePath: "/v1/customers/{customer}/cards/{id}",
     resource: "cards",
     operation: "retrieve",
@@ -1545,7 +1545,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/cards/:id",
+    fastifyPath: "/v1/customers/:customer/cards/:id",
     stripePath: "/v1/customers/{customer}/cards/{id}",
     resource: "cards",
     operation: "update",
@@ -1556,7 +1556,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer/cards/:id",
+    fastifyPath: "/v1/customers/:customer/cards/:id",
     stripePath: "/v1/customers/{customer}/cards/{id}",
     resource: "cards",
     operation: "delete",
@@ -1567,7 +1567,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/cash_balance",
+    fastifyPath: "/v1/customers/:customer/cash_balance",
     stripePath: "/v1/customers/{customer}/cash_balance",
     resource: "customers",
     operation: "list",
@@ -1578,7 +1578,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/cash_balance",
+    fastifyPath: "/v1/customers/:customer/cash_balance",
     stripePath: "/v1/customers/{customer}/cash_balance",
     resource: "customers",
     operation: "create",
@@ -1589,7 +1589,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/cash_balance_transactions",
+    fastifyPath: "/v1/customers/:customer/cash_balance_transactions",
     stripePath: "/v1/customers/{customer}/cash_balance_transactions",
     resource: "customers",
     operation: "list",
@@ -1600,7 +1600,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/cash_balance_transactions/:transaction",
+    fastifyPath: "/v1/customers/:customer/cash_balance_transactions/:transaction",
     stripePath: "/v1/customers/{customer}/cash_balance_transactions/{transaction}",
     resource: "customers",
     operation: "retrieve",
@@ -1611,7 +1611,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/discount",
+    fastifyPath: "/v1/customers/:customer/discount",
     stripePath: "/v1/customers/{customer}/discount",
     resource: "customers",
     operation: "list",
@@ -1622,7 +1622,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer/discount",
+    fastifyPath: "/v1/customers/:customer/discount",
     stripePath: "/v1/customers/{customer}/discount",
     resource: "customers",
     operation: "delete",
@@ -1633,7 +1633,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/funding_instructions",
+    fastifyPath: "/v1/customers/:customer/funding_instructions",
     stripePath: "/v1/customers/{customer}/funding_instructions",
     resource: "customers",
     operation: "create",
@@ -1644,7 +1644,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/payment_methods",
+    fastifyPath: "/v1/customers/:customer/payment_methods",
     stripePath: "/v1/customers/{customer}/payment_methods",
     resource: "payment_methods",
     operation: "list",
@@ -1655,7 +1655,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/payment_methods/:payment_method",
+    fastifyPath: "/v1/customers/:customer/payment_methods/:payment_method",
     stripePath: "/v1/customers/{customer}/payment_methods/{payment_method}",
     resource: "payment_methods",
     operation: "retrieve",
@@ -1666,7 +1666,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/sources",
+    fastifyPath: "/v1/customers/:customer/sources",
     stripePath: "/v1/customers/{customer}/sources",
     resource: "sources",
     operation: "list",
@@ -1677,7 +1677,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/sources",
+    fastifyPath: "/v1/customers/:customer/sources",
     stripePath: "/v1/customers/{customer}/sources",
     resource: "sources",
     operation: "create",
@@ -1688,7 +1688,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/sources/:id",
+    fastifyPath: "/v1/customers/:customer/sources/:id",
     stripePath: "/v1/customers/{customer}/sources/{id}",
     resource: "sources",
     operation: "retrieve",
@@ -1699,7 +1699,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/sources/:id",
+    fastifyPath: "/v1/customers/:customer/sources/:id",
     stripePath: "/v1/customers/{customer}/sources/{id}",
     resource: "sources",
     operation: "update",
@@ -1710,7 +1710,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer/sources/:id",
+    fastifyPath: "/v1/customers/:customer/sources/:id",
     stripePath: "/v1/customers/{customer}/sources/{id}",
     resource: "sources",
     operation: "delete",
@@ -1721,7 +1721,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/sources/:id/verify",
+    fastifyPath: "/v1/customers/:customer/sources/:id/verify",
     stripePath: "/v1/customers/{customer}/sources/{id}/verify",
     resource: "sources",
     operation: "create",
@@ -1732,7 +1732,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/subscriptions",
+    fastifyPath: "/v1/customers/:customer/subscriptions",
     stripePath: "/v1/customers/{customer}/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -1743,7 +1743,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/subscriptions",
+    fastifyPath: "/v1/customers/:customer/subscriptions",
     stripePath: "/v1/customers/{customer}/subscriptions",
     resource: "subscriptions",
     operation: "create",
@@ -1754,7 +1754,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/subscriptions/:subscription_exposed_id",
+    fastifyPath: "/v1/customers/:customer/subscriptions/:subscription_exposed_id",
     stripePath: "/v1/customers/{customer}/subscriptions/{subscription_exposed_id}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -1765,7 +1765,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/subscriptions/:subscription_exposed_id",
+    fastifyPath: "/v1/customers/:customer/subscriptions/:subscription_exposed_id",
     stripePath: "/v1/customers/{customer}/subscriptions/{subscription_exposed_id}",
     resource: "subscriptions",
     operation: "update",
@@ -1776,7 +1776,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer/subscriptions/:subscription_exposed_id",
+    fastifyPath: "/v1/customers/:customer/subscriptions/:subscription_exposed_id",
     stripePath: "/v1/customers/{customer}/subscriptions/{subscription_exposed_id}",
     resource: "subscriptions",
     operation: "delete",
@@ -1787,7 +1787,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/subscriptions/:subscription_exposed_id/discount",
+    fastifyPath: "/v1/customers/:customer/subscriptions/:subscription_exposed_id/discount",
     stripePath: "/v1/customers/{customer}/subscriptions/{subscription_exposed_id}/discount",
     resource: "subscriptions",
     operation: "list",
@@ -1798,7 +1798,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer/subscriptions/:subscription_exposed_id/discount",
+    fastifyPath: "/v1/customers/:customer/subscriptions/:subscription_exposed_id/discount",
     stripePath: "/v1/customers/{customer}/subscriptions/{subscription_exposed_id}/discount",
     resource: "subscriptions",
     operation: "delete",
@@ -1809,7 +1809,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/tax_ids",
+    fastifyPath: "/v1/customers/:customer/tax_ids",
     stripePath: "/v1/customers/{customer}/tax_ids",
     resource: "tax_ids",
     operation: "list",
@@ -1820,7 +1820,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/customers/:customer/tax_ids",
+    fastifyPath: "/v1/customers/:customer/tax_ids",
     stripePath: "/v1/customers/{customer}/tax_ids",
     resource: "tax_ids",
     operation: "create",
@@ -1831,7 +1831,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/customers/:customer/tax_ids/:id",
+    fastifyPath: "/v1/customers/:customer/tax_ids/:id",
     stripePath: "/v1/customers/{customer}/tax_ids/{id}",
     resource: "tax_ids",
     operation: "retrieve",
@@ -1842,7 +1842,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/customers/:customer/tax_ids/:id",
+    fastifyPath: "/v1/customers/:customer/tax_ids/:id",
     stripePath: "/v1/customers/{customer}/tax_ids/{id}",
     resource: "tax_ids",
     operation: "delete",
@@ -1853,7 +1853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/disputes",
+    fastifyPath: "/v1/disputes",
     stripePath: "/v1/disputes",
     resource: "disputes",
     operation: "list",
@@ -1863,7 +1863,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/disputes/:dispute",
+    fastifyPath: "/v1/disputes/:dispute",
     stripePath: "/v1/disputes/{dispute}",
     resource: "disputes",
     operation: "retrieve",
@@ -1874,7 +1874,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/disputes/:dispute",
+    fastifyPath: "/v1/disputes/:dispute",
     stripePath: "/v1/disputes/{dispute}",
     resource: "disputes",
     operation: "update",
@@ -1885,7 +1885,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/disputes/:dispute/close",
+    fastifyPath: "/v1/disputes/:dispute/close",
     stripePath: "/v1/disputes/{dispute}/close",
     resource: "disputes",
     operation: "create",
@@ -1896,7 +1896,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/entitlements/active_entitlements",
+    fastifyPath: "/v1/entitlements/active_entitlements",
     stripePath: "/v1/entitlements/active_entitlements",
     resource: "entitlements",
     operation: "list",
@@ -1905,7 +1905,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/entitlements/active_entitlements/:id",
+    fastifyPath: "/v1/entitlements/active_entitlements/:id",
     stripePath: "/v1/entitlements/active_entitlements/{id}",
     resource: "entitlements",
     operation: "retrieve",
@@ -1915,7 +1915,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/entitlements/features",
+    fastifyPath: "/v1/entitlements/features",
     stripePath: "/v1/entitlements/features",
     resource: "entitlements",
     operation: "list",
@@ -1924,7 +1924,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/entitlements/features",
+    fastifyPath: "/v1/entitlements/features",
     stripePath: "/v1/entitlements/features",
     resource: "entitlements",
     operation: "create",
@@ -1933,7 +1933,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/entitlements/features/:id",
+    fastifyPath: "/v1/entitlements/features/:id",
     stripePath: "/v1/entitlements/features/{id}",
     resource: "entitlements",
     operation: "retrieve",
@@ -1943,7 +1943,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/entitlements/features/:id",
+    fastifyPath: "/v1/entitlements/features/:id",
     stripePath: "/v1/entitlements/features/{id}",
     resource: "entitlements",
     operation: "update",
@@ -1953,7 +1953,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/ephemeral_keys",
+    fastifyPath: "/v1/ephemeral_keys",
     stripePath: "/v1/ephemeral_keys",
     resource: "ephemeral_keys",
     operation: "create",
@@ -1963,7 +1963,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/ephemeral_keys/:key",
+    fastifyPath: "/v1/ephemeral_keys/:key",
     stripePath: "/v1/ephemeral_keys/{key}",
     resource: "ephemeral_keys",
     operation: "delete",
@@ -1974,7 +1974,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/events",
+    fastifyPath: "/v1/events",
     stripePath: "/v1/events",
     resource: "events",
     operation: "list",
@@ -1984,7 +1984,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/events/:id",
+    fastifyPath: "/v1/events/:id",
     stripePath: "/v1/events/{id}",
     resource: "events",
     operation: "retrieve",
@@ -1995,7 +1995,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/exchange_rates",
+    fastifyPath: "/v1/exchange_rates",
     stripePath: "/v1/exchange_rates",
     resource: "exchange_rates",
     operation: "list",
@@ -2005,7 +2005,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/exchange_rates/:rate_id",
+    fastifyPath: "/v1/exchange_rates/:rate_id",
     stripePath: "/v1/exchange_rates/{rate_id}",
     resource: "exchange_rates",
     operation: "retrieve",
@@ -2016,7 +2016,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/external_accounts/:id",
+    fastifyPath: "/v1/external_accounts/:id",
     stripePath: "/v1/external_accounts/{id}",
     resource: "external_accounts",
     operation: "update",
@@ -2027,7 +2027,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/file_links",
+    fastifyPath: "/v1/file_links",
     stripePath: "/v1/file_links",
     resource: "file_links",
     operation: "list",
@@ -2037,7 +2037,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/file_links",
+    fastifyPath: "/v1/file_links",
     stripePath: "/v1/file_links",
     resource: "file_links",
     operation: "create",
@@ -2047,7 +2047,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/file_links/:link",
+    fastifyPath: "/v1/file_links/:link",
     stripePath: "/v1/file_links/{link}",
     resource: "file_links",
     operation: "retrieve",
@@ -2058,7 +2058,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/file_links/:link",
+    fastifyPath: "/v1/file_links/:link",
     stripePath: "/v1/file_links/{link}",
     resource: "file_links",
     operation: "update",
@@ -2069,7 +2069,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/files",
+    fastifyPath: "/v1/files",
     stripePath: "/v1/files",
     resource: "files",
     operation: "list",
@@ -2079,7 +2079,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/files",
+    fastifyPath: "/v1/files",
     stripePath: "/v1/files",
     resource: "files",
     operation: "create",
@@ -2089,7 +2089,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/files/:file",
+    fastifyPath: "/v1/files/:file",
     stripePath: "/v1/files/{file}",
     resource: "files",
     operation: "retrieve",
@@ -2100,7 +2100,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/financial_connections/accounts",
+    fastifyPath: "/v1/financial_connections/accounts",
     stripePath: "/v1/financial_connections/accounts",
     resource: "financial_connections",
     operation: "list",
@@ -2109,7 +2109,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/financial_connections/accounts/:account",
+    fastifyPath: "/v1/financial_connections/accounts/:account",
     stripePath: "/v1/financial_connections/accounts/{account}",
     resource: "financial_connections",
     operation: "retrieve",
@@ -2119,7 +2119,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/financial_connections/accounts/:account/disconnect",
+    fastifyPath: "/v1/financial_connections/accounts/:account/disconnect",
     stripePath: "/v1/financial_connections/accounts/{account}/disconnect",
     resource: "financial_connections",
     operation: "create",
@@ -2129,7 +2129,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/financial_connections/accounts/:account/owners",
+    fastifyPath: "/v1/financial_connections/accounts/:account/owners",
     stripePath: "/v1/financial_connections/accounts/{account}/owners",
     resource: "financial_connections",
     operation: "list",
@@ -2139,7 +2139,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/financial_connections/accounts/:account/refresh",
+    fastifyPath: "/v1/financial_connections/accounts/:account/refresh",
     stripePath: "/v1/financial_connections/accounts/{account}/refresh",
     resource: "financial_connections",
     operation: "create",
@@ -2149,7 +2149,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/financial_connections/accounts/:account/subscribe",
+    fastifyPath: "/v1/financial_connections/accounts/:account/subscribe",
     stripePath: "/v1/financial_connections/accounts/{account}/subscribe",
     resource: "financial_connections",
     operation: "create",
@@ -2159,7 +2159,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/financial_connections/accounts/:account/unsubscribe",
+    fastifyPath: "/v1/financial_connections/accounts/:account/unsubscribe",
     stripePath: "/v1/financial_connections/accounts/{account}/unsubscribe",
     resource: "financial_connections",
     operation: "create",
@@ -2169,7 +2169,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/financial_connections/sessions",
+    fastifyPath: "/v1/financial_connections/sessions",
     stripePath: "/v1/financial_connections/sessions",
     resource: "financial_connections",
     operation: "create",
@@ -2178,7 +2178,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/financial_connections/sessions/:session",
+    fastifyPath: "/v1/financial_connections/sessions/:session",
     stripePath: "/v1/financial_connections/sessions/{session}",
     resource: "financial_connections",
     operation: "retrieve",
@@ -2188,7 +2188,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/financial_connections/transactions",
+    fastifyPath: "/v1/financial_connections/transactions",
     stripePath: "/v1/financial_connections/transactions",
     resource: "financial_connections",
     operation: "list",
@@ -2197,7 +2197,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/financial_connections/transactions/:transaction",
+    fastifyPath: "/v1/financial_connections/transactions/:transaction",
     stripePath: "/v1/financial_connections/transactions/{transaction}",
     resource: "financial_connections",
     operation: "retrieve",
@@ -2207,7 +2207,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/forwarding/requests",
+    fastifyPath: "/v1/forwarding/requests",
     stripePath: "/v1/forwarding/requests",
     resource: "forwarding",
     operation: "list",
@@ -2216,7 +2216,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/forwarding/requests",
+    fastifyPath: "/v1/forwarding/requests",
     stripePath: "/v1/forwarding/requests",
     resource: "forwarding",
     operation: "create",
@@ -2225,7 +2225,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/forwarding/requests/:id",
+    fastifyPath: "/v1/forwarding/requests/:id",
     stripePath: "/v1/forwarding/requests/{id}",
     resource: "forwarding",
     operation: "retrieve",
@@ -2235,7 +2235,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/identity/verification_reports",
+    fastifyPath: "/v1/identity/verification_reports",
     stripePath: "/v1/identity/verification_reports",
     resource: "identity",
     operation: "list",
@@ -2244,7 +2244,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/identity/verification_reports/:report",
+    fastifyPath: "/v1/identity/verification_reports/:report",
     stripePath: "/v1/identity/verification_reports/{report}",
     resource: "identity",
     operation: "retrieve",
@@ -2254,7 +2254,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/identity/verification_sessions",
+    fastifyPath: "/v1/identity/verification_sessions",
     stripePath: "/v1/identity/verification_sessions",
     resource: "identity",
     operation: "list",
@@ -2263,7 +2263,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/identity/verification_sessions",
+    fastifyPath: "/v1/identity/verification_sessions",
     stripePath: "/v1/identity/verification_sessions",
     resource: "identity",
     operation: "create",
@@ -2272,7 +2272,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/identity/verification_sessions/:session",
+    fastifyPath: "/v1/identity/verification_sessions/:session",
     stripePath: "/v1/identity/verification_sessions/{session}",
     resource: "identity",
     operation: "retrieve",
@@ -2282,7 +2282,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/identity/verification_sessions/:session",
+    fastifyPath: "/v1/identity/verification_sessions/:session",
     stripePath: "/v1/identity/verification_sessions/{session}",
     resource: "identity",
     operation: "update",
@@ -2292,7 +2292,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/identity/verification_sessions/:session/cancel",
+    fastifyPath: "/v1/identity/verification_sessions/:session/cancel",
     stripePath: "/v1/identity/verification_sessions/{session}/cancel",
     resource: "identity",
     operation: "create",
@@ -2302,7 +2302,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/identity/verification_sessions/:session/redact",
+    fastifyPath: "/v1/identity/verification_sessions/:session/redact",
     stripePath: "/v1/identity/verification_sessions/{session}/redact",
     resource: "identity",
     operation: "create",
@@ -2312,7 +2312,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoice_payments",
+    fastifyPath: "/v1/invoice_payments",
     stripePath: "/v1/invoice_payments",
     resource: "invoice_payments",
     operation: "list",
@@ -2322,7 +2322,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoice_payments/:invoice_payment",
+    fastifyPath: "/v1/invoice_payments/:invoice_payment",
     stripePath: "/v1/invoice_payments/{invoice_payment}",
     resource: "invoice_payments",
     operation: "retrieve",
@@ -2333,7 +2333,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoice_rendering_templates",
+    fastifyPath: "/v1/invoice_rendering_templates",
     stripePath: "/v1/invoice_rendering_templates",
     resource: "invoice_rendering_templates",
     operation: "list",
@@ -2343,7 +2343,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoice_rendering_templates/:template",
+    fastifyPath: "/v1/invoice_rendering_templates/:template",
     stripePath: "/v1/invoice_rendering_templates/{template}",
     resource: "invoice_rendering_templates",
     operation: "retrieve",
@@ -2354,7 +2354,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoice_rendering_templates/:template/archive",
+    fastifyPath: "/v1/invoice_rendering_templates/:template/archive",
     stripePath: "/v1/invoice_rendering_templates/{template}/archive",
     resource: "invoice_rendering_templates",
     operation: "create",
@@ -2365,7 +2365,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoice_rendering_templates/:template/unarchive",
+    fastifyPath: "/v1/invoice_rendering_templates/:template/unarchive",
     stripePath: "/v1/invoice_rendering_templates/{template}/unarchive",
     resource: "invoice_rendering_templates",
     operation: "create",
@@ -2376,7 +2376,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoiceitems",
+    fastifyPath: "/v1/invoiceitems",
     stripePath: "/v1/invoiceitems",
     resource: "invoiceitems",
     operation: "list",
@@ -2386,7 +2386,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoiceitems",
+    fastifyPath: "/v1/invoiceitems",
     stripePath: "/v1/invoiceitems",
     resource: "invoiceitems",
     operation: "create",
@@ -2396,7 +2396,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoiceitems/:invoiceitem",
+    fastifyPath: "/v1/invoiceitems/:invoiceitem",
     stripePath: "/v1/invoiceitems/{invoiceitem}",
     resource: "invoiceitems",
     operation: "retrieve",
@@ -2407,7 +2407,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoiceitems/:invoiceitem",
+    fastifyPath: "/v1/invoiceitems/:invoiceitem",
     stripePath: "/v1/invoiceitems/{invoiceitem}",
     resource: "invoiceitems",
     operation: "update",
@@ -2418,7 +2418,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/invoiceitems/:invoiceitem",
+    fastifyPath: "/v1/invoiceitems/:invoiceitem",
     stripePath: "/v1/invoiceitems/{invoiceitem}",
     resource: "invoiceitems",
     operation: "delete",
@@ -2429,7 +2429,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoices",
+    fastifyPath: "/v1/invoices",
     stripePath: "/v1/invoices",
     resource: "invoices",
     operation: "list",
@@ -2439,7 +2439,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices",
+    fastifyPath: "/v1/invoices",
     stripePath: "/v1/invoices",
     resource: "invoices",
     operation: "create",
@@ -2449,7 +2449,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/create_preview",
+    fastifyPath: "/v1/invoices/create_preview",
     stripePath: "/v1/invoices/create_preview",
     resource: "invoices",
     operation: "create",
@@ -2459,7 +2459,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoices/search",
+    fastifyPath: "/v1/invoices/search",
     stripePath: "/v1/invoices/search",
     resource: "invoices",
     operation: "list",
@@ -2469,7 +2469,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoices/:invoice",
+    fastifyPath: "/v1/invoices/:invoice",
     stripePath: "/v1/invoices/{invoice}",
     resource: "invoices",
     operation: "retrieve",
@@ -2480,7 +2480,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice",
+    fastifyPath: "/v1/invoices/:invoice",
     stripePath: "/v1/invoices/{invoice}",
     resource: "invoices",
     operation: "update",
@@ -2491,7 +2491,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/invoices/:invoice",
+    fastifyPath: "/v1/invoices/:invoice",
     stripePath: "/v1/invoices/{invoice}",
     resource: "invoices",
     operation: "delete",
@@ -2502,7 +2502,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/add_lines",
+    fastifyPath: "/v1/invoices/:invoice/add_lines",
     stripePath: "/v1/invoices/{invoice}/add_lines",
     resource: "invoices",
     operation: "create",
@@ -2513,7 +2513,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/attach_payment",
+    fastifyPath: "/v1/invoices/:invoice/attach_payment",
     stripePath: "/v1/invoices/{invoice}/attach_payment",
     resource: "invoices",
     operation: "create",
@@ -2524,7 +2524,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/finalize",
+    fastifyPath: "/v1/invoices/:invoice/finalize",
     stripePath: "/v1/invoices/{invoice}/finalize",
     resource: "invoices",
     operation: "create",
@@ -2535,7 +2535,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/invoices/:invoice/lines",
+    fastifyPath: "/v1/invoices/:invoice/lines",
     stripePath: "/v1/invoices/{invoice}/lines",
     resource: "invoices",
     operation: "list",
@@ -2546,7 +2546,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/lines/:line_item_id",
+    fastifyPath: "/v1/invoices/:invoice/lines/:line_item_id",
     stripePath: "/v1/invoices/{invoice}/lines/{line_item_id}",
     resource: "invoices",
     operation: "update",
@@ -2557,7 +2557,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/mark_uncollectible",
+    fastifyPath: "/v1/invoices/:invoice/mark_uncollectible",
     stripePath: "/v1/invoices/{invoice}/mark_uncollectible",
     resource: "invoices",
     operation: "create",
@@ -2568,7 +2568,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/pay",
+    fastifyPath: "/v1/invoices/:invoice/pay",
     stripePath: "/v1/invoices/{invoice}/pay",
     resource: "invoices",
     operation: "create",
@@ -2579,7 +2579,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/remove_lines",
+    fastifyPath: "/v1/invoices/:invoice/remove_lines",
     stripePath: "/v1/invoices/{invoice}/remove_lines",
     resource: "invoices",
     operation: "create",
@@ -2590,7 +2590,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/send",
+    fastifyPath: "/v1/invoices/:invoice/send",
     stripePath: "/v1/invoices/{invoice}/send",
     resource: "invoices",
     operation: "create",
@@ -2601,7 +2601,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/update_lines",
+    fastifyPath: "/v1/invoices/:invoice/update_lines",
     stripePath: "/v1/invoices/{invoice}/update_lines",
     resource: "invoices",
     operation: "create",
@@ -2612,7 +2612,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/invoices/:invoice/void",
+    fastifyPath: "/v1/invoices/:invoice/void",
     stripePath: "/v1/invoices/{invoice}/void",
     resource: "invoices",
     operation: "create",
@@ -2623,7 +2623,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/authorizations",
+    fastifyPath: "/v1/issuing/authorizations",
     stripePath: "/v1/issuing/authorizations",
     resource: "issuing",
     operation: "list",
@@ -2632,7 +2632,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/authorizations/:authorization",
+    fastifyPath: "/v1/issuing/authorizations/:authorization",
     stripePath: "/v1/issuing/authorizations/{authorization}",
     resource: "issuing",
     operation: "retrieve",
@@ -2642,7 +2642,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/authorizations/:authorization",
+    fastifyPath: "/v1/issuing/authorizations/:authorization",
     stripePath: "/v1/issuing/authorizations/{authorization}",
     resource: "issuing",
     operation: "update",
@@ -2652,7 +2652,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/authorizations/:authorization/approve",
+    fastifyPath: "/v1/issuing/authorizations/:authorization/approve",
     stripePath: "/v1/issuing/authorizations/{authorization}/approve",
     resource: "issuing",
     operation: "create",
@@ -2662,7 +2662,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/authorizations/:authorization/decline",
+    fastifyPath: "/v1/issuing/authorizations/:authorization/decline",
     stripePath: "/v1/issuing/authorizations/{authorization}/decline",
     resource: "issuing",
     operation: "create",
@@ -2672,7 +2672,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/cardholders",
+    fastifyPath: "/v1/issuing/cardholders",
     stripePath: "/v1/issuing/cardholders",
     resource: "issuing",
     operation: "list",
@@ -2681,7 +2681,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/cardholders",
+    fastifyPath: "/v1/issuing/cardholders",
     stripePath: "/v1/issuing/cardholders",
     resource: "issuing",
     operation: "create",
@@ -2690,7 +2690,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/cardholders/:cardholder",
+    fastifyPath: "/v1/issuing/cardholders/:cardholder",
     stripePath: "/v1/issuing/cardholders/{cardholder}",
     resource: "issuing",
     operation: "retrieve",
@@ -2700,7 +2700,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/cardholders/:cardholder",
+    fastifyPath: "/v1/issuing/cardholders/:cardholder",
     stripePath: "/v1/issuing/cardholders/{cardholder}",
     resource: "issuing",
     operation: "update",
@@ -2710,7 +2710,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/cards",
+    fastifyPath: "/v1/issuing/cards",
     stripePath: "/v1/issuing/cards",
     resource: "cards",
     operation: "list",
@@ -2720,7 +2720,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/cards",
+    fastifyPath: "/v1/issuing/cards",
     stripePath: "/v1/issuing/cards",
     resource: "cards",
     operation: "create",
@@ -2730,7 +2730,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/cards/:card",
+    fastifyPath: "/v1/issuing/cards/:card",
     stripePath: "/v1/issuing/cards/{card}",
     resource: "cards",
     operation: "retrieve",
@@ -2741,7 +2741,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/cards/:card",
+    fastifyPath: "/v1/issuing/cards/:card",
     stripePath: "/v1/issuing/cards/{card}",
     resource: "cards",
     operation: "update",
@@ -2752,7 +2752,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/disputes",
+    fastifyPath: "/v1/issuing/disputes",
     stripePath: "/v1/issuing/disputes",
     resource: "disputes",
     operation: "list",
@@ -2762,7 +2762,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/disputes",
+    fastifyPath: "/v1/issuing/disputes",
     stripePath: "/v1/issuing/disputes",
     resource: "disputes",
     operation: "create",
@@ -2772,7 +2772,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/disputes/:dispute",
+    fastifyPath: "/v1/issuing/disputes/:dispute",
     stripePath: "/v1/issuing/disputes/{dispute}",
     resource: "disputes",
     operation: "retrieve",
@@ -2783,7 +2783,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/disputes/:dispute",
+    fastifyPath: "/v1/issuing/disputes/:dispute",
     stripePath: "/v1/issuing/disputes/{dispute}",
     resource: "disputes",
     operation: "update",
@@ -2794,7 +2794,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/disputes/:dispute/submit",
+    fastifyPath: "/v1/issuing/disputes/:dispute/submit",
     stripePath: "/v1/issuing/disputes/{dispute}/submit",
     resource: "disputes",
     operation: "create",
@@ -2805,7 +2805,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/personalization_designs",
+    fastifyPath: "/v1/issuing/personalization_designs",
     stripePath: "/v1/issuing/personalization_designs",
     resource: "issuing",
     operation: "list",
@@ -2814,7 +2814,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/personalization_designs",
+    fastifyPath: "/v1/issuing/personalization_designs",
     stripePath: "/v1/issuing/personalization_designs",
     resource: "issuing",
     operation: "create",
@@ -2823,7 +2823,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/personalization_designs/:personalization_design",
+    fastifyPath: "/v1/issuing/personalization_designs/:personalization_design",
     stripePath: "/v1/issuing/personalization_designs/{personalization_design}",
     resource: "issuing",
     operation: "retrieve",
@@ -2833,7 +2833,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/personalization_designs/:personalization_design",
+    fastifyPath: "/v1/issuing/personalization_designs/:personalization_design",
     stripePath: "/v1/issuing/personalization_designs/{personalization_design}",
     resource: "issuing",
     operation: "update",
@@ -2843,7 +2843,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/physical_bundles",
+    fastifyPath: "/v1/issuing/physical_bundles",
     stripePath: "/v1/issuing/physical_bundles",
     resource: "issuing",
     operation: "list",
@@ -2852,7 +2852,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/physical_bundles/:physical_bundle",
+    fastifyPath: "/v1/issuing/physical_bundles/:physical_bundle",
     stripePath: "/v1/issuing/physical_bundles/{physical_bundle}",
     resource: "issuing",
     operation: "retrieve",
@@ -2862,7 +2862,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/settlements/:settlement",
+    fastifyPath: "/v1/issuing/settlements/:settlement",
     stripePath: "/v1/issuing/settlements/{settlement}",
     resource: "issuing",
     operation: "retrieve",
@@ -2872,7 +2872,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/settlements/:settlement",
+    fastifyPath: "/v1/issuing/settlements/:settlement",
     stripePath: "/v1/issuing/settlements/{settlement}",
     resource: "issuing",
     operation: "update",
@@ -2882,7 +2882,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/tokens",
+    fastifyPath: "/v1/issuing/tokens",
     stripePath: "/v1/issuing/tokens",
     resource: "tokens",
     operation: "list",
@@ -2892,7 +2892,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/tokens/:token",
+    fastifyPath: "/v1/issuing/tokens/:token",
     stripePath: "/v1/issuing/tokens/{token}",
     resource: "tokens",
     operation: "retrieve",
@@ -2903,7 +2903,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/tokens/:token",
+    fastifyPath: "/v1/issuing/tokens/:token",
     stripePath: "/v1/issuing/tokens/{token}",
     resource: "tokens",
     operation: "update",
@@ -2914,7 +2914,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/transactions",
+    fastifyPath: "/v1/issuing/transactions",
     stripePath: "/v1/issuing/transactions",
     resource: "issuing",
     operation: "list",
@@ -2923,7 +2923,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/issuing/transactions/:transaction",
+    fastifyPath: "/v1/issuing/transactions/:transaction",
     stripePath: "/v1/issuing/transactions/{transaction}",
     resource: "issuing",
     operation: "retrieve",
@@ -2933,7 +2933,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/issuing/transactions/:transaction",
+    fastifyPath: "/v1/issuing/transactions/:transaction",
     stripePath: "/v1/issuing/transactions/{transaction}",
     resource: "issuing",
     operation: "update",
@@ -2943,7 +2943,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/link_account_sessions",
+    fastifyPath: "/v1/link_account_sessions",
     stripePath: "/v1/link_account_sessions",
     resource: "link_account_sessions",
     operation: "create",
@@ -2952,7 +2952,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/link_account_sessions/:session",
+    fastifyPath: "/v1/link_account_sessions/:session",
     stripePath: "/v1/link_account_sessions/{session}",
     resource: "link_account_sessions",
     operation: "retrieve",
@@ -2962,7 +2962,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/linked_accounts",
+    fastifyPath: "/v1/linked_accounts",
     stripePath: "/v1/linked_accounts",
     resource: "linked_accounts",
     operation: "list",
@@ -2971,7 +2971,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/linked_accounts/:account",
+    fastifyPath: "/v1/linked_accounts/:account",
     stripePath: "/v1/linked_accounts/{account}",
     resource: "linked_accounts",
     operation: "retrieve",
@@ -2981,7 +2981,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/linked_accounts/:account/disconnect",
+    fastifyPath: "/v1/linked_accounts/:account/disconnect",
     stripePath: "/v1/linked_accounts/{account}/disconnect",
     resource: "linked_accounts",
     operation: "create",
@@ -2991,7 +2991,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/linked_accounts/:account/owners",
+    fastifyPath: "/v1/linked_accounts/:account/owners",
     stripePath: "/v1/linked_accounts/{account}/owners",
     resource: "linked_accounts",
     operation: "list",
@@ -3001,7 +3001,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/linked_accounts/:account/refresh",
+    fastifyPath: "/v1/linked_accounts/:account/refresh",
     stripePath: "/v1/linked_accounts/{account}/refresh",
     resource: "linked_accounts",
     operation: "create",
@@ -3011,7 +3011,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/mandates/:mandate",
+    fastifyPath: "/v1/mandates/:mandate",
     stripePath: "/v1/mandates/{mandate}",
     resource: "mandates",
     operation: "retrieve",
@@ -3022,7 +3022,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_attempt_records",
+    fastifyPath: "/v1/payment_attempt_records",
     stripePath: "/v1/payment_attempt_records",
     resource: "payment_attempt_records",
     operation: "list",
@@ -3032,7 +3032,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_attempt_records/:id",
+    fastifyPath: "/v1/payment_attempt_records/:id",
     stripePath: "/v1/payment_attempt_records/{id}",
     resource: "payment_attempt_records",
     operation: "retrieve",
@@ -3043,7 +3043,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_intents",
+    fastifyPath: "/v1/payment_intents",
     stripePath: "/v1/payment_intents",
     resource: "payment_intents",
     operation: "list",
@@ -3053,7 +3053,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents",
+    fastifyPath: "/v1/payment_intents",
     stripePath: "/v1/payment_intents",
     resource: "payment_intents",
     operation: "create",
@@ -3063,7 +3063,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_intents/search",
+    fastifyPath: "/v1/payment_intents/search",
     stripePath: "/v1/payment_intents/search",
     resource: "payment_intents",
     operation: "list",
@@ -3073,7 +3073,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_intents/:intent",
+    fastifyPath: "/v1/payment_intents/:intent",
     stripePath: "/v1/payment_intents/{intent}",
     resource: "payment_intents",
     operation: "retrieve",
@@ -3084,7 +3084,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents/:intent",
+    fastifyPath: "/v1/payment_intents/:intent",
     stripePath: "/v1/payment_intents/{intent}",
     resource: "payment_intents",
     operation: "update",
@@ -3095,7 +3095,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_intents/:intent/amount_details_line_items",
+    fastifyPath: "/v1/payment_intents/:intent/amount_details_line_items",
     stripePath: "/v1/payment_intents/{intent}/amount_details_line_items",
     resource: "payment_intents",
     operation: "list",
@@ -3106,7 +3106,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents/:intent/apply_customer_balance",
+    fastifyPath: "/v1/payment_intents/:intent/apply_customer_balance",
     stripePath: "/v1/payment_intents/{intent}/apply_customer_balance",
     resource: "payment_intents",
     operation: "create",
@@ -3117,7 +3117,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents/:intent/cancel",
+    fastifyPath: "/v1/payment_intents/:intent/cancel",
     stripePath: "/v1/payment_intents/{intent}/cancel",
     resource: "payment_intents",
     operation: "create",
@@ -3128,7 +3128,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents/:intent/capture",
+    fastifyPath: "/v1/payment_intents/:intent/capture",
     stripePath: "/v1/payment_intents/{intent}/capture",
     resource: "payment_intents",
     operation: "create",
@@ -3139,7 +3139,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents/:intent/confirm",
+    fastifyPath: "/v1/payment_intents/:intent/confirm",
     stripePath: "/v1/payment_intents/{intent}/confirm",
     resource: "payment_intents",
     operation: "create",
@@ -3150,7 +3150,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents/:intent/increment_authorization",
+    fastifyPath: "/v1/payment_intents/:intent/increment_authorization",
     stripePath: "/v1/payment_intents/{intent}/increment_authorization",
     resource: "payment_intents",
     operation: "create",
@@ -3161,7 +3161,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_intents/:intent/verify_microdeposits",
+    fastifyPath: "/v1/payment_intents/:intent/verify_microdeposits",
     stripePath: "/v1/payment_intents/{intent}/verify_microdeposits",
     resource: "payment_intents",
     operation: "create",
@@ -3172,7 +3172,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_links",
+    fastifyPath: "/v1/payment_links",
     stripePath: "/v1/payment_links",
     resource: "payment_links",
     operation: "list",
@@ -3182,7 +3182,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_links",
+    fastifyPath: "/v1/payment_links",
     stripePath: "/v1/payment_links",
     resource: "payment_links",
     operation: "create",
@@ -3192,7 +3192,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_links/:payment_link",
+    fastifyPath: "/v1/payment_links/:payment_link",
     stripePath: "/v1/payment_links/{payment_link}",
     resource: "payment_links",
     operation: "retrieve",
@@ -3203,7 +3203,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_links/:payment_link",
+    fastifyPath: "/v1/payment_links/:payment_link",
     stripePath: "/v1/payment_links/{payment_link}",
     resource: "payment_links",
     operation: "update",
@@ -3214,7 +3214,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_links/:payment_link/line_items",
+    fastifyPath: "/v1/payment_links/:payment_link/line_items",
     stripePath: "/v1/payment_links/{payment_link}/line_items",
     resource: "line_items",
     operation: "list",
@@ -3225,7 +3225,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_method_configurations",
+    fastifyPath: "/v1/payment_method_configurations",
     stripePath: "/v1/payment_method_configurations",
     resource: "payment_method_configurations",
     operation: "list",
@@ -3235,7 +3235,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_method_configurations",
+    fastifyPath: "/v1/payment_method_configurations",
     stripePath: "/v1/payment_method_configurations",
     resource: "payment_method_configurations",
     operation: "create",
@@ -3245,7 +3245,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_method_configurations/:configuration",
+    fastifyPath: "/v1/payment_method_configurations/:configuration",
     stripePath: "/v1/payment_method_configurations/{configuration}",
     resource: "payment_method_configurations",
     operation: "retrieve",
@@ -3256,7 +3256,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_method_configurations/:configuration",
+    fastifyPath: "/v1/payment_method_configurations/:configuration",
     stripePath: "/v1/payment_method_configurations/{configuration}",
     resource: "payment_method_configurations",
     operation: "update",
@@ -3267,7 +3267,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_method_domains",
+    fastifyPath: "/v1/payment_method_domains",
     stripePath: "/v1/payment_method_domains",
     resource: "payment_method_domains",
     operation: "list",
@@ -3277,7 +3277,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_method_domains",
+    fastifyPath: "/v1/payment_method_domains",
     stripePath: "/v1/payment_method_domains",
     resource: "payment_method_domains",
     operation: "create",
@@ -3287,7 +3287,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_method_domains/:payment_method_domain",
+    fastifyPath: "/v1/payment_method_domains/:payment_method_domain",
     stripePath: "/v1/payment_method_domains/{payment_method_domain}",
     resource: "payment_method_domains",
     operation: "retrieve",
@@ -3298,7 +3298,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_method_domains/:payment_method_domain",
+    fastifyPath: "/v1/payment_method_domains/:payment_method_domain",
     stripePath: "/v1/payment_method_domains/{payment_method_domain}",
     resource: "payment_method_domains",
     operation: "update",
@@ -3309,7 +3309,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_method_domains/:payment_method_domain/validate",
+    fastifyPath: "/v1/payment_method_domains/:payment_method_domain/validate",
     stripePath: "/v1/payment_method_domains/{payment_method_domain}/validate",
     resource: "payment_method_domains",
     operation: "create",
@@ -3320,7 +3320,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_methods",
+    fastifyPath: "/v1/payment_methods",
     stripePath: "/v1/payment_methods",
     resource: "payment_methods",
     operation: "list",
@@ -3330,7 +3330,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_methods",
+    fastifyPath: "/v1/payment_methods",
     stripePath: "/v1/payment_methods",
     resource: "payment_methods",
     operation: "create",
@@ -3340,7 +3340,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_methods/:payment_method",
+    fastifyPath: "/v1/payment_methods/:payment_method",
     stripePath: "/v1/payment_methods/{payment_method}",
     resource: "payment_methods",
     operation: "retrieve",
@@ -3351,7 +3351,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_methods/:payment_method",
+    fastifyPath: "/v1/payment_methods/:payment_method",
     stripePath: "/v1/payment_methods/{payment_method}",
     resource: "payment_methods",
     operation: "update",
@@ -3362,7 +3362,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_methods/:payment_method/attach",
+    fastifyPath: "/v1/payment_methods/:payment_method/attach",
     stripePath: "/v1/payment_methods/{payment_method}/attach",
     resource: "payment_methods",
     operation: "create",
@@ -3373,7 +3373,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_methods/:payment_method/detach",
+    fastifyPath: "/v1/payment_methods/:payment_method/detach",
     stripePath: "/v1/payment_methods/{payment_method}/detach",
     resource: "payment_methods",
     operation: "create",
@@ -3384,7 +3384,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_records/report_payment",
+    fastifyPath: "/v1/payment_records/report_payment",
     stripePath: "/v1/payment_records/report_payment",
     resource: "payment_records",
     operation: "create",
@@ -3394,7 +3394,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payment_records/:id",
+    fastifyPath: "/v1/payment_records/:id",
     stripePath: "/v1/payment_records/{id}",
     resource: "payment_records",
     operation: "retrieve",
@@ -3405,7 +3405,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_records/:id/report_payment_attempt",
+    fastifyPath: "/v1/payment_records/:id/report_payment_attempt",
     stripePath: "/v1/payment_records/{id}/report_payment_attempt",
     resource: "payment_records",
     operation: "create",
@@ -3416,7 +3416,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_records/:id/report_payment_attempt_canceled",
+    fastifyPath: "/v1/payment_records/:id/report_payment_attempt_canceled",
     stripePath: "/v1/payment_records/{id}/report_payment_attempt_canceled",
     resource: "payment_records",
     operation: "create",
@@ -3427,7 +3427,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_records/:id/report_payment_attempt_failed",
+    fastifyPath: "/v1/payment_records/:id/report_payment_attempt_failed",
     stripePath: "/v1/payment_records/{id}/report_payment_attempt_failed",
     resource: "payment_records",
     operation: "create",
@@ -3438,7 +3438,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_records/:id/report_payment_attempt_guaranteed",
+    fastifyPath: "/v1/payment_records/:id/report_payment_attempt_guaranteed",
     stripePath: "/v1/payment_records/{id}/report_payment_attempt_guaranteed",
     resource: "payment_records",
     operation: "create",
@@ -3449,7 +3449,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_records/:id/report_payment_attempt_informational",
+    fastifyPath: "/v1/payment_records/:id/report_payment_attempt_informational",
     stripePath: "/v1/payment_records/{id}/report_payment_attempt_informational",
     resource: "payment_records",
     operation: "create",
@@ -3460,7 +3460,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payment_records/:id/report_refund",
+    fastifyPath: "/v1/payment_records/:id/report_refund",
     stripePath: "/v1/payment_records/{id}/report_refund",
     resource: "payment_records",
     operation: "create",
@@ -3471,7 +3471,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payouts",
+    fastifyPath: "/v1/payouts",
     stripePath: "/v1/payouts",
     resource: "payouts",
     operation: "list",
@@ -3481,7 +3481,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payouts",
+    fastifyPath: "/v1/payouts",
     stripePath: "/v1/payouts",
     resource: "payouts",
     operation: "create",
@@ -3491,7 +3491,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/payouts/:payout",
+    fastifyPath: "/v1/payouts/:payout",
     stripePath: "/v1/payouts/{payout}",
     resource: "payouts",
     operation: "retrieve",
@@ -3502,7 +3502,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payouts/:payout",
+    fastifyPath: "/v1/payouts/:payout",
     stripePath: "/v1/payouts/{payout}",
     resource: "payouts",
     operation: "update",
@@ -3513,7 +3513,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payouts/:payout/cancel",
+    fastifyPath: "/v1/payouts/:payout/cancel",
     stripePath: "/v1/payouts/{payout}/cancel",
     resource: "payouts",
     operation: "create",
@@ -3524,7 +3524,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/payouts/:payout/reverse",
+    fastifyPath: "/v1/payouts/:payout/reverse",
     stripePath: "/v1/payouts/{payout}/reverse",
     resource: "payouts",
     operation: "create",
@@ -3535,7 +3535,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/plans",
+    fastifyPath: "/v1/plans",
     stripePath: "/v1/plans",
     resource: "plans",
     operation: "list",
@@ -3545,7 +3545,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/plans",
+    fastifyPath: "/v1/plans",
     stripePath: "/v1/plans",
     resource: "plans",
     operation: "create",
@@ -3555,7 +3555,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/plans/:plan",
+    fastifyPath: "/v1/plans/:plan",
     stripePath: "/v1/plans/{plan}",
     resource: "plans",
     operation: "retrieve",
@@ -3566,7 +3566,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/plans/:plan",
+    fastifyPath: "/v1/plans/:plan",
     stripePath: "/v1/plans/{plan}",
     resource: "plans",
     operation: "update",
@@ -3577,7 +3577,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/plans/:plan",
+    fastifyPath: "/v1/plans/:plan",
     stripePath: "/v1/plans/{plan}",
     resource: "plans",
     operation: "delete",
@@ -3588,7 +3588,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/prices",
+    fastifyPath: "/v1/prices",
     stripePath: "/v1/prices",
     resource: "prices",
     operation: "list",
@@ -3598,7 +3598,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/prices",
+    fastifyPath: "/v1/prices",
     stripePath: "/v1/prices",
     resource: "prices",
     operation: "create",
@@ -3608,7 +3608,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/prices/search",
+    fastifyPath: "/v1/prices/search",
     stripePath: "/v1/prices/search",
     resource: "prices",
     operation: "list",
@@ -3618,7 +3618,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/prices/:price",
+    fastifyPath: "/v1/prices/:price",
     stripePath: "/v1/prices/{price}",
     resource: "prices",
     operation: "retrieve",
@@ -3629,7 +3629,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/prices/:price",
+    fastifyPath: "/v1/prices/:price",
     stripePath: "/v1/prices/{price}",
     resource: "prices",
     operation: "update",
@@ -3640,7 +3640,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/products",
+    fastifyPath: "/v1/products",
     stripePath: "/v1/products",
     resource: "products",
     operation: "list",
@@ -3650,7 +3650,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/products",
+    fastifyPath: "/v1/products",
     stripePath: "/v1/products",
     resource: "products",
     operation: "create",
@@ -3660,7 +3660,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/products/search",
+    fastifyPath: "/v1/products/search",
     stripePath: "/v1/products/search",
     resource: "products",
     operation: "list",
@@ -3670,7 +3670,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/products/:id",
+    fastifyPath: "/v1/products/:id",
     stripePath: "/v1/products/{id}",
     resource: "products",
     operation: "retrieve",
@@ -3681,7 +3681,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/products/:id",
+    fastifyPath: "/v1/products/:id",
     stripePath: "/v1/products/{id}",
     resource: "products",
     operation: "update",
@@ -3692,7 +3692,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/products/:id",
+    fastifyPath: "/v1/products/:id",
     stripePath: "/v1/products/{id}",
     resource: "products",
     operation: "delete",
@@ -3703,7 +3703,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/products/:product/features",
+    fastifyPath: "/v1/products/:product/features",
     stripePath: "/v1/products/{product}/features",
     resource: "products",
     operation: "list",
@@ -3714,7 +3714,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/products/:product/features",
+    fastifyPath: "/v1/products/:product/features",
     stripePath: "/v1/products/{product}/features",
     resource: "products",
     operation: "create",
@@ -3725,7 +3725,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/products/:product/features/:id",
+    fastifyPath: "/v1/products/:product/features/:id",
     stripePath: "/v1/products/{product}/features/{id}",
     resource: "products",
     operation: "retrieve",
@@ -3736,7 +3736,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/products/:product/features/:id",
+    fastifyPath: "/v1/products/:product/features/:id",
     stripePath: "/v1/products/{product}/features/{id}",
     resource: "products",
     operation: "delete",
@@ -3747,7 +3747,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/promotion_codes",
+    fastifyPath: "/v1/promotion_codes",
     stripePath: "/v1/promotion_codes",
     resource: "promotion_codes",
     operation: "list",
@@ -3757,7 +3757,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/promotion_codes",
+    fastifyPath: "/v1/promotion_codes",
     stripePath: "/v1/promotion_codes",
     resource: "promotion_codes",
     operation: "create",
@@ -3767,7 +3767,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/promotion_codes/:promotion_code",
+    fastifyPath: "/v1/promotion_codes/:promotion_code",
     stripePath: "/v1/promotion_codes/{promotion_code}",
     resource: "promotion_codes",
     operation: "retrieve",
@@ -3778,7 +3778,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/promotion_codes/:promotion_code",
+    fastifyPath: "/v1/promotion_codes/:promotion_code",
     stripePath: "/v1/promotion_codes/{promotion_code}",
     resource: "promotion_codes",
     operation: "update",
@@ -3789,7 +3789,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/quotes",
+    fastifyPath: "/v1/quotes",
     stripePath: "/v1/quotes",
     resource: "quotes",
     operation: "list",
@@ -3799,7 +3799,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/quotes",
+    fastifyPath: "/v1/quotes",
     stripePath: "/v1/quotes",
     resource: "quotes",
     operation: "create",
@@ -3809,7 +3809,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/quotes/:quote",
+    fastifyPath: "/v1/quotes/:quote",
     stripePath: "/v1/quotes/{quote}",
     resource: "quotes",
     operation: "retrieve",
@@ -3820,7 +3820,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/quotes/:quote",
+    fastifyPath: "/v1/quotes/:quote",
     stripePath: "/v1/quotes/{quote}",
     resource: "quotes",
     operation: "update",
@@ -3831,7 +3831,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/quotes/:quote/accept",
+    fastifyPath: "/v1/quotes/:quote/accept",
     stripePath: "/v1/quotes/{quote}/accept",
     resource: "quotes",
     operation: "create",
@@ -3842,7 +3842,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/quotes/:quote/cancel",
+    fastifyPath: "/v1/quotes/:quote/cancel",
     stripePath: "/v1/quotes/{quote}/cancel",
     resource: "quotes",
     operation: "create",
@@ -3853,7 +3853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/quotes/:quote/computed_upfront_line_items",
+    fastifyPath: "/v1/quotes/:quote/computed_upfront_line_items",
     stripePath: "/v1/quotes/{quote}/computed_upfront_line_items",
     resource: "quotes",
     operation: "list",
@@ -3864,7 +3864,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/quotes/:quote/finalize",
+    fastifyPath: "/v1/quotes/:quote/finalize",
     stripePath: "/v1/quotes/{quote}/finalize",
     resource: "quotes",
     operation: "create",
@@ -3875,7 +3875,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/quotes/:quote/line_items",
+    fastifyPath: "/v1/quotes/:quote/line_items",
     stripePath: "/v1/quotes/{quote}/line_items",
     resource: "line_items",
     operation: "list",
@@ -3886,7 +3886,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/quotes/:quote/pdf",
+    fastifyPath: "/v1/quotes/:quote/pdf",
     stripePath: "/v1/quotes/{quote}/pdf",
     resource: "quotes",
     operation: "list",
@@ -3897,7 +3897,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/radar/early_fraud_warnings",
+    fastifyPath: "/v1/radar/early_fraud_warnings",
     stripePath: "/v1/radar/early_fraud_warnings",
     resource: "radar",
     operation: "list",
@@ -3906,7 +3906,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/radar/early_fraud_warnings/:early_fraud_warning",
+    fastifyPath: "/v1/radar/early_fraud_warnings/:early_fraud_warning",
     stripePath: "/v1/radar/early_fraud_warnings/{early_fraud_warning}",
     resource: "radar",
     operation: "retrieve",
@@ -3916,7 +3916,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/radar/payment_evaluations",
+    fastifyPath: "/v1/radar/payment_evaluations",
     stripePath: "/v1/radar/payment_evaluations",
     resource: "radar",
     operation: "create",
@@ -3925,7 +3925,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/radar/value_list_items",
+    fastifyPath: "/v1/radar/value_list_items",
     stripePath: "/v1/radar/value_list_items",
     resource: "radar",
     operation: "list",
@@ -3934,7 +3934,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/radar/value_list_items",
+    fastifyPath: "/v1/radar/value_list_items",
     stripePath: "/v1/radar/value_list_items",
     resource: "radar",
     operation: "create",
@@ -3943,7 +3943,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/radar/value_list_items/:item",
+    fastifyPath: "/v1/radar/value_list_items/:item",
     stripePath: "/v1/radar/value_list_items/{item}",
     resource: "radar",
     operation: "retrieve",
@@ -3953,7 +3953,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/radar/value_list_items/:item",
+    fastifyPath: "/v1/radar/value_list_items/:item",
     stripePath: "/v1/radar/value_list_items/{item}",
     resource: "radar",
     operation: "delete",
@@ -3963,7 +3963,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/radar/value_lists",
+    fastifyPath: "/v1/radar/value_lists",
     stripePath: "/v1/radar/value_lists",
     resource: "radar",
     operation: "list",
@@ -3972,7 +3972,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/radar/value_lists",
+    fastifyPath: "/v1/radar/value_lists",
     stripePath: "/v1/radar/value_lists",
     resource: "radar",
     operation: "create",
@@ -3981,7 +3981,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/radar/value_lists/:value_list",
+    fastifyPath: "/v1/radar/value_lists/:value_list",
     stripePath: "/v1/radar/value_lists/{value_list}",
     resource: "radar",
     operation: "retrieve",
@@ -3991,7 +3991,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/radar/value_lists/:value_list",
+    fastifyPath: "/v1/radar/value_lists/:value_list",
     stripePath: "/v1/radar/value_lists/{value_list}",
     resource: "radar",
     operation: "update",
@@ -4001,7 +4001,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/radar/value_lists/:value_list",
+    fastifyPath: "/v1/radar/value_lists/:value_list",
     stripePath: "/v1/radar/value_lists/{value_list}",
     resource: "radar",
     operation: "delete",
@@ -4011,7 +4011,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/refunds",
+    fastifyPath: "/v1/refunds",
     stripePath: "/v1/refunds",
     resource: "refunds",
     operation: "list",
@@ -4021,7 +4021,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/refunds",
+    fastifyPath: "/v1/refunds",
     stripePath: "/v1/refunds",
     resource: "refunds",
     operation: "create",
@@ -4031,7 +4031,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/refunds/:refund",
+    fastifyPath: "/v1/refunds/:refund",
     stripePath: "/v1/refunds/{refund}",
     resource: "refunds",
     operation: "retrieve",
@@ -4042,7 +4042,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/refunds/:refund",
+    fastifyPath: "/v1/refunds/:refund",
     stripePath: "/v1/refunds/{refund}",
     resource: "refunds",
     operation: "update",
@@ -4053,7 +4053,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/refunds/:refund/cancel",
+    fastifyPath: "/v1/refunds/:refund/cancel",
     stripePath: "/v1/refunds/{refund}/cancel",
     resource: "refunds",
     operation: "create",
@@ -4064,7 +4064,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/reporting/report_runs",
+    fastifyPath: "/v1/reporting/report_runs",
     stripePath: "/v1/reporting/report_runs",
     resource: "reporting",
     operation: "list",
@@ -4073,7 +4073,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/reporting/report_runs",
+    fastifyPath: "/v1/reporting/report_runs",
     stripePath: "/v1/reporting/report_runs",
     resource: "reporting",
     operation: "create",
@@ -4082,7 +4082,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/reporting/report_runs/:report_run",
+    fastifyPath: "/v1/reporting/report_runs/:report_run",
     stripePath: "/v1/reporting/report_runs/{report_run}",
     resource: "reporting",
     operation: "retrieve",
@@ -4092,7 +4092,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/reporting/report_types",
+    fastifyPath: "/v1/reporting/report_types",
     stripePath: "/v1/reporting/report_types",
     resource: "reporting",
     operation: "list",
@@ -4101,7 +4101,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/reporting/report_types/:report_type",
+    fastifyPath: "/v1/reporting/report_types/:report_type",
     stripePath: "/v1/reporting/report_types/{report_type}",
     resource: "reporting",
     operation: "retrieve",
@@ -4111,7 +4111,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/reviews",
+    fastifyPath: "/v1/reviews",
     stripePath: "/v1/reviews",
     resource: "reviews",
     operation: "list",
@@ -4121,7 +4121,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/reviews/:review",
+    fastifyPath: "/v1/reviews/:review",
     stripePath: "/v1/reviews/{review}",
     resource: "reviews",
     operation: "retrieve",
@@ -4132,7 +4132,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/reviews/:review/approve",
+    fastifyPath: "/v1/reviews/:review/approve",
     stripePath: "/v1/reviews/{review}/approve",
     resource: "reviews",
     operation: "create",
@@ -4143,7 +4143,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/setup_attempts",
+    fastifyPath: "/v1/setup_attempts",
     stripePath: "/v1/setup_attempts",
     resource: "setup_attempts",
     operation: "list",
@@ -4153,7 +4153,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/setup_intents",
+    fastifyPath: "/v1/setup_intents",
     stripePath: "/v1/setup_intents",
     resource: "setup_intents",
     operation: "list",
@@ -4163,7 +4163,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/setup_intents",
+    fastifyPath: "/v1/setup_intents",
     stripePath: "/v1/setup_intents",
     resource: "setup_intents",
     operation: "create",
@@ -4173,7 +4173,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/setup_intents/:intent",
+    fastifyPath: "/v1/setup_intents/:intent",
     stripePath: "/v1/setup_intents/{intent}",
     resource: "setup_intents",
     operation: "retrieve",
@@ -4184,7 +4184,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/setup_intents/:intent",
+    fastifyPath: "/v1/setup_intents/:intent",
     stripePath: "/v1/setup_intents/{intent}",
     resource: "setup_intents",
     operation: "update",
@@ -4195,7 +4195,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/setup_intents/:intent/cancel",
+    fastifyPath: "/v1/setup_intents/:intent/cancel",
     stripePath: "/v1/setup_intents/{intent}/cancel",
     resource: "setup_intents",
     operation: "create",
@@ -4206,7 +4206,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/setup_intents/:intent/confirm",
+    fastifyPath: "/v1/setup_intents/:intent/confirm",
     stripePath: "/v1/setup_intents/{intent}/confirm",
     resource: "setup_intents",
     operation: "create",
@@ -4217,7 +4217,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/setup_intents/:intent/verify_microdeposits",
+    fastifyPath: "/v1/setup_intents/:intent/verify_microdeposits",
     stripePath: "/v1/setup_intents/{intent}/verify_microdeposits",
     resource: "setup_intents",
     operation: "create",
@@ -4228,7 +4228,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/shipping_rates",
+    fastifyPath: "/v1/shipping_rates",
     stripePath: "/v1/shipping_rates",
     resource: "shipping_rates",
     operation: "list",
@@ -4238,7 +4238,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/shipping_rates",
+    fastifyPath: "/v1/shipping_rates",
     stripePath: "/v1/shipping_rates",
     resource: "shipping_rates",
     operation: "create",
@@ -4248,7 +4248,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/shipping_rates/:shipping_rate_token",
+    fastifyPath: "/v1/shipping_rates/:shipping_rate_token",
     stripePath: "/v1/shipping_rates/{shipping_rate_token}",
     resource: "shipping_rates",
     operation: "retrieve",
@@ -4259,7 +4259,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/shipping_rates/:shipping_rate_token",
+    fastifyPath: "/v1/shipping_rates/:shipping_rate_token",
     stripePath: "/v1/shipping_rates/{shipping_rate_token}",
     resource: "shipping_rates",
     operation: "update",
@@ -4270,7 +4270,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/sigma/saved_queries/:id",
+    fastifyPath: "/v1/sigma/saved_queries/:id",
     stripePath: "/v1/sigma/saved_queries/{id}",
     resource: "sigma",
     operation: "update",
@@ -4280,7 +4280,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/sigma/scheduled_query_runs",
+    fastifyPath: "/v1/sigma/scheduled_query_runs",
     stripePath: "/v1/sigma/scheduled_query_runs",
     resource: "scheduled_query_runs",
     operation: "list",
@@ -4290,7 +4290,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/sigma/scheduled_query_runs/:scheduled_query_run",
+    fastifyPath: "/v1/sigma/scheduled_query_runs/:scheduled_query_run",
     stripePath: "/v1/sigma/scheduled_query_runs/{scheduled_query_run}",
     resource: "scheduled_query_runs",
     operation: "retrieve",
@@ -4301,7 +4301,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/sources",
+    fastifyPath: "/v1/sources",
     stripePath: "/v1/sources",
     resource: "sources",
     operation: "create",
@@ -4311,7 +4311,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/sources/:source",
+    fastifyPath: "/v1/sources/:source",
     stripePath: "/v1/sources/{source}",
     resource: "sources",
     operation: "retrieve",
@@ -4322,7 +4322,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/sources/:source",
+    fastifyPath: "/v1/sources/:source",
     stripePath: "/v1/sources/{source}",
     resource: "sources",
     operation: "update",
@@ -4333,7 +4333,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/sources/:source/mandate_notifications/:mandate_notification",
+    fastifyPath: "/v1/sources/:source/mandate_notifications/:mandate_notification",
     stripePath: "/v1/sources/{source}/mandate_notifications/{mandate_notification}",
     resource: "sources",
     operation: "retrieve",
@@ -4344,7 +4344,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/sources/:source/source_transactions",
+    fastifyPath: "/v1/sources/:source/source_transactions",
     stripePath: "/v1/sources/{source}/source_transactions",
     resource: "source_transactions",
     operation: "list",
@@ -4355,7 +4355,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/sources/:source/source_transactions/:source_transaction",
+    fastifyPath: "/v1/sources/:source/source_transactions/:source_transaction",
     stripePath: "/v1/sources/{source}/source_transactions/{source_transaction}",
     resource: "source_transactions",
     operation: "retrieve",
@@ -4366,7 +4366,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/sources/:source/verify",
+    fastifyPath: "/v1/sources/:source/verify",
     stripePath: "/v1/sources/{source}/verify",
     resource: "sources",
     operation: "create",
@@ -4377,7 +4377,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/subscription_items",
+    fastifyPath: "/v1/subscription_items",
     stripePath: "/v1/subscription_items",
     resource: "subscription_items",
     operation: "list",
@@ -4387,7 +4387,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscription_items",
+    fastifyPath: "/v1/subscription_items",
     stripePath: "/v1/subscription_items",
     resource: "subscription_items",
     operation: "create",
@@ -4397,7 +4397,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/subscription_items/:item",
+    fastifyPath: "/v1/subscription_items/:item",
     stripePath: "/v1/subscription_items/{item}",
     resource: "subscription_items",
     operation: "retrieve",
@@ -4408,7 +4408,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscription_items/:item",
+    fastifyPath: "/v1/subscription_items/:item",
     stripePath: "/v1/subscription_items/{item}",
     resource: "subscription_items",
     operation: "update",
@@ -4419,7 +4419,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/subscription_items/:item",
+    fastifyPath: "/v1/subscription_items/:item",
     stripePath: "/v1/subscription_items/{item}",
     resource: "subscription_items",
     operation: "delete",
@@ -4430,7 +4430,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/subscription_schedules",
+    fastifyPath: "/v1/subscription_schedules",
     stripePath: "/v1/subscription_schedules",
     resource: "subscription_schedules",
     operation: "list",
@@ -4440,7 +4440,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscription_schedules",
+    fastifyPath: "/v1/subscription_schedules",
     stripePath: "/v1/subscription_schedules",
     resource: "subscription_schedules",
     operation: "create",
@@ -4450,7 +4450,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/subscription_schedules/:schedule",
+    fastifyPath: "/v1/subscription_schedules/:schedule",
     stripePath: "/v1/subscription_schedules/{schedule}",
     resource: "subscription_schedules",
     operation: "retrieve",
@@ -4461,7 +4461,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscription_schedules/:schedule",
+    fastifyPath: "/v1/subscription_schedules/:schedule",
     stripePath: "/v1/subscription_schedules/{schedule}",
     resource: "subscription_schedules",
     operation: "update",
@@ -4472,7 +4472,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscription_schedules/:schedule/cancel",
+    fastifyPath: "/v1/subscription_schedules/:schedule/cancel",
     stripePath: "/v1/subscription_schedules/{schedule}/cancel",
     resource: "subscription_schedules",
     operation: "create",
@@ -4483,7 +4483,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscription_schedules/:schedule/release",
+    fastifyPath: "/v1/subscription_schedules/:schedule/release",
     stripePath: "/v1/subscription_schedules/{schedule}/release",
     resource: "subscription_schedules",
     operation: "create",
@@ -4494,7 +4494,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/subscriptions",
+    fastifyPath: "/v1/subscriptions",
     stripePath: "/v1/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -4504,7 +4504,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscriptions",
+    fastifyPath: "/v1/subscriptions",
     stripePath: "/v1/subscriptions",
     resource: "subscriptions",
     operation: "create",
@@ -4514,7 +4514,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/subscriptions/search",
+    fastifyPath: "/v1/subscriptions/search",
     stripePath: "/v1/subscriptions/search",
     resource: "subscriptions",
     operation: "list",
@@ -4524,7 +4524,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/subscriptions/:subscription_exposed_id",
+    fastifyPath: "/v1/subscriptions/:subscription_exposed_id",
     stripePath: "/v1/subscriptions/{subscription_exposed_id}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -4535,7 +4535,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscriptions/:subscription_exposed_id",
+    fastifyPath: "/v1/subscriptions/:subscription_exposed_id",
     stripePath: "/v1/subscriptions/{subscription_exposed_id}",
     resource: "subscriptions",
     operation: "update",
@@ -4546,7 +4546,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/subscriptions/:subscription_exposed_id",
+    fastifyPath: "/v1/subscriptions/:subscription_exposed_id",
     stripePath: "/v1/subscriptions/{subscription_exposed_id}",
     resource: "subscriptions",
     operation: "delete",
@@ -4557,7 +4557,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/subscriptions/:subscription_exposed_id/discount",
+    fastifyPath: "/v1/subscriptions/:subscription_exposed_id/discount",
     stripePath: "/v1/subscriptions/{subscription_exposed_id}/discount",
     resource: "subscriptions",
     operation: "delete",
@@ -4568,7 +4568,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscriptions/:subscription/migrate",
+    fastifyPath: "/v1/subscriptions/:subscription/migrate",
     stripePath: "/v1/subscriptions/{subscription}/migrate",
     resource: "subscriptions",
     operation: "create",
@@ -4579,7 +4579,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/subscriptions/:subscription/resume",
+    fastifyPath: "/v1/subscriptions/:subscription/resume",
     stripePath: "/v1/subscriptions/{subscription}/resume",
     resource: "subscriptions",
     operation: "create",
@@ -4590,7 +4590,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/associations/find",
+    fastifyPath: "/v1/tax/associations/find",
     stripePath: "/v1/tax/associations/find",
     resource: "tax",
     operation: "list",
@@ -4599,7 +4599,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax/calculations",
+    fastifyPath: "/v1/tax/calculations",
     stripePath: "/v1/tax/calculations",
     resource: "tax",
     operation: "create",
@@ -4608,7 +4608,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/calculations/:calculation",
+    fastifyPath: "/v1/tax/calculations/:calculation",
     stripePath: "/v1/tax/calculations/{calculation}",
     resource: "tax",
     operation: "retrieve",
@@ -4618,7 +4618,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/calculations/:calculation/line_items",
+    fastifyPath: "/v1/tax/calculations/:calculation/line_items",
     stripePath: "/v1/tax/calculations/{calculation}/line_items",
     resource: "line_items",
     operation: "list",
@@ -4629,7 +4629,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/registrations",
+    fastifyPath: "/v1/tax/registrations",
     stripePath: "/v1/tax/registrations",
     resource: "tax",
     operation: "list",
@@ -4638,7 +4638,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax/registrations",
+    fastifyPath: "/v1/tax/registrations",
     stripePath: "/v1/tax/registrations",
     resource: "tax",
     operation: "create",
@@ -4647,7 +4647,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/registrations/:id",
+    fastifyPath: "/v1/tax/registrations/:id",
     stripePath: "/v1/tax/registrations/{id}",
     resource: "tax",
     operation: "retrieve",
@@ -4657,7 +4657,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax/registrations/:id",
+    fastifyPath: "/v1/tax/registrations/:id",
     stripePath: "/v1/tax/registrations/{id}",
     resource: "tax",
     operation: "update",
@@ -4667,7 +4667,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/settings",
+    fastifyPath: "/v1/tax/settings",
     stripePath: "/v1/tax/settings",
     resource: "tax",
     operation: "list",
@@ -4676,7 +4676,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax/settings",
+    fastifyPath: "/v1/tax/settings",
     stripePath: "/v1/tax/settings",
     resource: "tax",
     operation: "create",
@@ -4685,7 +4685,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax/transactions/create_from_calculation",
+    fastifyPath: "/v1/tax/transactions/create_from_calculation",
     stripePath: "/v1/tax/transactions/create_from_calculation",
     resource: "tax",
     operation: "create",
@@ -4694,7 +4694,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax/transactions/create_reversal",
+    fastifyPath: "/v1/tax/transactions/create_reversal",
     stripePath: "/v1/tax/transactions/create_reversal",
     resource: "tax",
     operation: "create",
@@ -4703,7 +4703,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/transactions/:transaction",
+    fastifyPath: "/v1/tax/transactions/:transaction",
     stripePath: "/v1/tax/transactions/{transaction}",
     resource: "tax",
     operation: "retrieve",
@@ -4713,7 +4713,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax/transactions/:transaction/line_items",
+    fastifyPath: "/v1/tax/transactions/:transaction/line_items",
     stripePath: "/v1/tax/transactions/{transaction}/line_items",
     resource: "line_items",
     operation: "list",
@@ -4724,7 +4724,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax_codes",
+    fastifyPath: "/v1/tax_codes",
     stripePath: "/v1/tax_codes",
     resource: "tax_codes",
     operation: "list",
@@ -4734,7 +4734,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax_codes/:id",
+    fastifyPath: "/v1/tax_codes/:id",
     stripePath: "/v1/tax_codes/{id}",
     resource: "tax_codes",
     operation: "retrieve",
@@ -4745,7 +4745,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax_ids",
+    fastifyPath: "/v1/tax_ids",
     stripePath: "/v1/tax_ids",
     resource: "tax_ids",
     operation: "list",
@@ -4755,7 +4755,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax_ids",
+    fastifyPath: "/v1/tax_ids",
     stripePath: "/v1/tax_ids",
     resource: "tax_ids",
     operation: "create",
@@ -4765,7 +4765,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax_ids/:id",
+    fastifyPath: "/v1/tax_ids/:id",
     stripePath: "/v1/tax_ids/{id}",
     resource: "tax_ids",
     operation: "retrieve",
@@ -4776,7 +4776,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/tax_ids/:id",
+    fastifyPath: "/v1/tax_ids/:id",
     stripePath: "/v1/tax_ids/{id}",
     resource: "tax_ids",
     operation: "delete",
@@ -4787,7 +4787,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax_rates",
+    fastifyPath: "/v1/tax_rates",
     stripePath: "/v1/tax_rates",
     resource: "tax_rates",
     operation: "list",
@@ -4797,7 +4797,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax_rates",
+    fastifyPath: "/v1/tax_rates",
     stripePath: "/v1/tax_rates",
     resource: "tax_rates",
     operation: "create",
@@ -4807,7 +4807,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tax_rates/:tax_rate",
+    fastifyPath: "/v1/tax_rates/:tax_rate",
     stripePath: "/v1/tax_rates/{tax_rate}",
     resource: "tax_rates",
     operation: "retrieve",
@@ -4818,7 +4818,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tax_rates/:tax_rate",
+    fastifyPath: "/v1/tax_rates/:tax_rate",
     stripePath: "/v1/tax_rates/{tax_rate}",
     resource: "tax_rates",
     operation: "update",
@@ -4829,7 +4829,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/terminal/configurations",
+    fastifyPath: "/v1/terminal/configurations",
     stripePath: "/v1/terminal/configurations",
     resource: "terminal",
     operation: "list",
@@ -4838,7 +4838,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/configurations",
+    fastifyPath: "/v1/terminal/configurations",
     stripePath: "/v1/terminal/configurations",
     resource: "terminal",
     operation: "create",
@@ -4847,7 +4847,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/terminal/configurations/:configuration",
+    fastifyPath: "/v1/terminal/configurations/:configuration",
     stripePath: "/v1/terminal/configurations/{configuration}",
     resource: "terminal",
     operation: "retrieve",
@@ -4857,7 +4857,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/configurations/:configuration",
+    fastifyPath: "/v1/terminal/configurations/:configuration",
     stripePath: "/v1/terminal/configurations/{configuration}",
     resource: "terminal",
     operation: "update",
@@ -4867,7 +4867,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/terminal/configurations/:configuration",
+    fastifyPath: "/v1/terminal/configurations/:configuration",
     stripePath: "/v1/terminal/configurations/{configuration}",
     resource: "terminal",
     operation: "delete",
@@ -4877,7 +4877,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/connection_tokens",
+    fastifyPath: "/v1/terminal/connection_tokens",
     stripePath: "/v1/terminal/connection_tokens",
     resource: "terminal",
     operation: "create",
@@ -4886,7 +4886,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/terminal/locations",
+    fastifyPath: "/v1/terminal/locations",
     stripePath: "/v1/terminal/locations",
     resource: "terminal",
     operation: "list",
@@ -4895,7 +4895,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/locations",
+    fastifyPath: "/v1/terminal/locations",
     stripePath: "/v1/terminal/locations",
     resource: "terminal",
     operation: "create",
@@ -4904,7 +4904,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/terminal/locations/:location",
+    fastifyPath: "/v1/terminal/locations/:location",
     stripePath: "/v1/terminal/locations/{location}",
     resource: "terminal",
     operation: "retrieve",
@@ -4914,7 +4914,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/locations/:location",
+    fastifyPath: "/v1/terminal/locations/:location",
     stripePath: "/v1/terminal/locations/{location}",
     resource: "terminal",
     operation: "update",
@@ -4924,7 +4924,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/terminal/locations/:location",
+    fastifyPath: "/v1/terminal/locations/:location",
     stripePath: "/v1/terminal/locations/{location}",
     resource: "terminal",
     operation: "delete",
@@ -4934,7 +4934,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/onboarding_links",
+    fastifyPath: "/v1/terminal/onboarding_links",
     stripePath: "/v1/terminal/onboarding_links",
     resource: "terminal",
     operation: "create",
@@ -4943,7 +4943,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/terminal/readers",
+    fastifyPath: "/v1/terminal/readers",
     stripePath: "/v1/terminal/readers",
     resource: "terminal",
     operation: "list",
@@ -4952,7 +4952,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers",
+    fastifyPath: "/v1/terminal/readers",
     stripePath: "/v1/terminal/readers",
     resource: "terminal",
     operation: "create",
@@ -4961,7 +4961,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader",
+    fastifyPath: "/v1/terminal/readers/:reader",
     stripePath: "/v1/terminal/readers/{reader}",
     resource: "terminal",
     operation: "retrieve",
@@ -4971,7 +4971,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader",
+    fastifyPath: "/v1/terminal/readers/:reader",
     stripePath: "/v1/terminal/readers/{reader}",
     resource: "terminal",
     operation: "update",
@@ -4981,7 +4981,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader",
+    fastifyPath: "/v1/terminal/readers/:reader",
     stripePath: "/v1/terminal/readers/{reader}",
     resource: "terminal",
     operation: "delete",
@@ -4991,7 +4991,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/cancel_action",
+    fastifyPath: "/v1/terminal/readers/:reader/cancel_action",
     stripePath: "/v1/terminal/readers/{reader}/cancel_action",
     resource: "terminal",
     operation: "create",
@@ -5001,7 +5001,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/collect_inputs",
+    fastifyPath: "/v1/terminal/readers/:reader/collect_inputs",
     stripePath: "/v1/terminal/readers/{reader}/collect_inputs",
     resource: "terminal",
     operation: "create",
@@ -5011,7 +5011,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/collect_payment_method",
+    fastifyPath: "/v1/terminal/readers/:reader/collect_payment_method",
     stripePath: "/v1/terminal/readers/{reader}/collect_payment_method",
     resource: "terminal",
     operation: "create",
@@ -5021,7 +5021,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/confirm_payment_intent",
+    fastifyPath: "/v1/terminal/readers/:reader/confirm_payment_intent",
     stripePath: "/v1/terminal/readers/{reader}/confirm_payment_intent",
     resource: "terminal",
     operation: "create",
@@ -5031,7 +5031,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/process_payment_intent",
+    fastifyPath: "/v1/terminal/readers/:reader/process_payment_intent",
     stripePath: "/v1/terminal/readers/{reader}/process_payment_intent",
     resource: "terminal",
     operation: "create",
@@ -5041,7 +5041,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/process_setup_intent",
+    fastifyPath: "/v1/terminal/readers/:reader/process_setup_intent",
     stripePath: "/v1/terminal/readers/{reader}/process_setup_intent",
     resource: "terminal",
     operation: "create",
@@ -5051,7 +5051,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/refund_payment",
+    fastifyPath: "/v1/terminal/readers/:reader/refund_payment",
     stripePath: "/v1/terminal/readers/{reader}/refund_payment",
     resource: "terminal",
     operation: "create",
@@ -5061,7 +5061,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/readers/:reader/set_reader_display",
+    fastifyPath: "/v1/terminal/readers/:reader/set_reader_display",
     stripePath: "/v1/terminal/readers/{reader}/set_reader_display",
     resource: "terminal",
     operation: "create",
@@ -5071,7 +5071,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/terminal/refunds",
+    fastifyPath: "/v1/terminal/refunds",
     stripePath: "/v1/terminal/refunds",
     resource: "refunds",
     operation: "create",
@@ -5081,7 +5081,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/confirmation_tokens",
+    fastifyPath: "/v1/test_helpers/confirmation_tokens",
     stripePath: "/v1/test_helpers/confirmation_tokens",
     resource: "confirmation_tokens",
     operation: "create",
@@ -5091,7 +5091,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/customers/:customer/fund_cash_balance",
+    fastifyPath: "/v1/test_helpers/customers/:customer/fund_cash_balance",
     stripePath: "/v1/test_helpers/customers/{customer}/fund_cash_balance",
     resource: "customers",
     operation: "create",
@@ -5102,7 +5102,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/authorizations",
+    fastifyPath: "/v1/test_helpers/issuing/authorizations",
     stripePath: "/v1/test_helpers/issuing/authorizations",
     resource: "test_helpers",
     operation: "create",
@@ -5111,7 +5111,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/authorizations/:authorization/capture",
+    fastifyPath: "/v1/test_helpers/issuing/authorizations/:authorization/capture",
     stripePath: "/v1/test_helpers/issuing/authorizations/{authorization}/capture",
     resource: "test_helpers",
     operation: "create",
@@ -5121,7 +5121,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/authorizations/:authorization/expire",
+    fastifyPath: "/v1/test_helpers/issuing/authorizations/:authorization/expire",
     stripePath: "/v1/test_helpers/issuing/authorizations/{authorization}/expire",
     resource: "test_helpers",
     operation: "create",
@@ -5131,7 +5131,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/authorizations/:authorization/finalize_amount",
+    fastifyPath: "/v1/test_helpers/issuing/authorizations/:authorization/finalize_amount",
     stripePath: "/v1/test_helpers/issuing/authorizations/{authorization}/finalize_amount",
     resource: "test_helpers",
     operation: "create",
@@ -5141,7 +5141,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/authorizations/:authorization/fraud_challenges/respond",
+    fastifyPath: "/v1/test_helpers/issuing/authorizations/:authorization/fraud_challenges/respond",
     stripePath: "/v1/test_helpers/issuing/authorizations/{authorization}/fraud_challenges/respond",
     resource: "test_helpers",
     operation: "action",
@@ -5151,7 +5151,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/authorizations/:authorization/increment",
+    fastifyPath: "/v1/test_helpers/issuing/authorizations/:authorization/increment",
     stripePath: "/v1/test_helpers/issuing/authorizations/{authorization}/increment",
     resource: "test_helpers",
     operation: "create",
@@ -5161,7 +5161,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/authorizations/:authorization/reverse",
+    fastifyPath: "/v1/test_helpers/issuing/authorizations/:authorization/reverse",
     stripePath: "/v1/test_helpers/issuing/authorizations/{authorization}/reverse",
     resource: "test_helpers",
     operation: "create",
@@ -5171,7 +5171,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/cards/:card/shipping/deliver",
+    fastifyPath: "/v1/test_helpers/issuing/cards/:card/shipping/deliver",
     stripePath: "/v1/test_helpers/issuing/cards/{card}/shipping/deliver",
     resource: "cards",
     operation: "action",
@@ -5182,7 +5182,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/cards/:card/shipping/fail",
+    fastifyPath: "/v1/test_helpers/issuing/cards/:card/shipping/fail",
     stripePath: "/v1/test_helpers/issuing/cards/{card}/shipping/fail",
     resource: "cards",
     operation: "action",
@@ -5193,7 +5193,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/cards/:card/shipping/return",
+    fastifyPath: "/v1/test_helpers/issuing/cards/:card/shipping/return",
     stripePath: "/v1/test_helpers/issuing/cards/{card}/shipping/return",
     resource: "cards",
     operation: "action",
@@ -5204,7 +5204,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/cards/:card/shipping/ship",
+    fastifyPath: "/v1/test_helpers/issuing/cards/:card/shipping/ship",
     stripePath: "/v1/test_helpers/issuing/cards/{card}/shipping/ship",
     resource: "cards",
     operation: "action",
@@ -5215,7 +5215,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/cards/:card/shipping/submit",
+    fastifyPath: "/v1/test_helpers/issuing/cards/:card/shipping/submit",
     stripePath: "/v1/test_helpers/issuing/cards/{card}/shipping/submit",
     resource: "cards",
     operation: "action",
@@ -5226,7 +5226,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/personalization_designs/:personalization_design/activate",
+    fastifyPath: "/v1/test_helpers/issuing/personalization_designs/:personalization_design/activate",
     stripePath: "/v1/test_helpers/issuing/personalization_designs/{personalization_design}/activate",
     resource: "test_helpers",
     operation: "create",
@@ -5236,7 +5236,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/personalization_designs/:personalization_design/deactivate",
+    fastifyPath: "/v1/test_helpers/issuing/personalization_designs/:personalization_design/deactivate",
     stripePath: "/v1/test_helpers/issuing/personalization_designs/{personalization_design}/deactivate",
     resource: "test_helpers",
     operation: "create",
@@ -5246,7 +5246,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/personalization_designs/:personalization_design/reject",
+    fastifyPath: "/v1/test_helpers/issuing/personalization_designs/:personalization_design/reject",
     stripePath: "/v1/test_helpers/issuing/personalization_designs/{personalization_design}/reject",
     resource: "test_helpers",
     operation: "create",
@@ -5256,7 +5256,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/settlements",
+    fastifyPath: "/v1/test_helpers/issuing/settlements",
     stripePath: "/v1/test_helpers/issuing/settlements",
     resource: "test_helpers",
     operation: "create",
@@ -5265,7 +5265,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/settlements/:settlement/complete",
+    fastifyPath: "/v1/test_helpers/issuing/settlements/:settlement/complete",
     stripePath: "/v1/test_helpers/issuing/settlements/{settlement}/complete",
     resource: "test_helpers",
     operation: "create",
@@ -5275,7 +5275,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/transactions/create_force_capture",
+    fastifyPath: "/v1/test_helpers/issuing/transactions/create_force_capture",
     stripePath: "/v1/test_helpers/issuing/transactions/create_force_capture",
     resource: "test_helpers",
     operation: "create",
@@ -5284,7 +5284,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/transactions/create_unlinked_refund",
+    fastifyPath: "/v1/test_helpers/issuing/transactions/create_unlinked_refund",
     stripePath: "/v1/test_helpers/issuing/transactions/create_unlinked_refund",
     resource: "test_helpers",
     operation: "create",
@@ -5293,7 +5293,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/issuing/transactions/:transaction/refund",
+    fastifyPath: "/v1/test_helpers/issuing/transactions/:transaction/refund",
     stripePath: "/v1/test_helpers/issuing/transactions/{transaction}/refund",
     resource: "test_helpers",
     operation: "create",
@@ -5303,7 +5303,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/refunds/:refund/expire",
+    fastifyPath: "/v1/test_helpers/refunds/:refund/expire",
     stripePath: "/v1/test_helpers/refunds/{refund}/expire",
     resource: "refunds",
     operation: "create",
@@ -5314,7 +5314,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/terminal/readers/:reader/present_payment_method",
+    fastifyPath: "/v1/test_helpers/terminal/readers/:reader/present_payment_method",
     stripePath: "/v1/test_helpers/terminal/readers/{reader}/present_payment_method",
     resource: "test_helpers",
     operation: "create",
@@ -5324,7 +5324,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/terminal/readers/:reader/succeed_input_collection",
+    fastifyPath: "/v1/test_helpers/terminal/readers/:reader/succeed_input_collection",
     stripePath: "/v1/test_helpers/terminal/readers/{reader}/succeed_input_collection",
     resource: "test_helpers",
     operation: "create",
@@ -5334,7 +5334,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/terminal/readers/:reader/timeout_input_collection",
+    fastifyPath: "/v1/test_helpers/terminal/readers/:reader/timeout_input_collection",
     stripePath: "/v1/test_helpers/terminal/readers/{reader}/timeout_input_collection",
     resource: "test_helpers",
     operation: "create",
@@ -5344,7 +5344,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/test_helpers/test_clocks",
+    fastifyPath: "/v1/test_helpers/test_clocks",
     stripePath: "/v1/test_helpers/test_clocks",
     resource: "test_helpers",
     operation: "list",
@@ -5353,7 +5353,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/test_clocks",
+    fastifyPath: "/v1/test_helpers/test_clocks",
     stripePath: "/v1/test_helpers/test_clocks",
     resource: "test_helpers",
     operation: "create",
@@ -5362,7 +5362,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/test_helpers/test_clocks/:test_clock",
+    fastifyPath: "/v1/test_helpers/test_clocks/:test_clock",
     stripePath: "/v1/test_helpers/test_clocks/{test_clock}",
     resource: "test_helpers",
     operation: "retrieve",
@@ -5372,7 +5372,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/test_helpers/test_clocks/:test_clock",
+    fastifyPath: "/v1/test_helpers/test_clocks/:test_clock",
     stripePath: "/v1/test_helpers/test_clocks/{test_clock}",
     resource: "test_helpers",
     operation: "delete",
@@ -5382,7 +5382,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/test_clocks/:test_clock/advance",
+    fastifyPath: "/v1/test_helpers/test_clocks/:test_clock/advance",
     stripePath: "/v1/test_helpers/test_clocks/{test_clock}/advance",
     resource: "test_helpers",
     operation: "create",
@@ -5392,7 +5392,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/inbound_transfers/:id/fail",
+    fastifyPath: "/v1/test_helpers/treasury/inbound_transfers/:id/fail",
     stripePath: "/v1/test_helpers/treasury/inbound_transfers/{id}/fail",
     resource: "test_helpers",
     operation: "create",
@@ -5402,7 +5402,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/inbound_transfers/:id/return",
+    fastifyPath: "/v1/test_helpers/treasury/inbound_transfers/:id/return",
     stripePath: "/v1/test_helpers/treasury/inbound_transfers/{id}/return",
     resource: "test_helpers",
     operation: "create",
@@ -5412,7 +5412,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/inbound_transfers/:id/succeed",
+    fastifyPath: "/v1/test_helpers/treasury/inbound_transfers/:id/succeed",
     stripePath: "/v1/test_helpers/treasury/inbound_transfers/{id}/succeed",
     resource: "test_helpers",
     operation: "create",
@@ -5422,7 +5422,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_payments/:id",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_payments/:id",
     stripePath: "/v1/test_helpers/treasury/outbound_payments/{id}",
     resource: "test_helpers",
     operation: "update",
@@ -5432,7 +5432,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_payments/:id/fail",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_payments/:id/fail",
     stripePath: "/v1/test_helpers/treasury/outbound_payments/{id}/fail",
     resource: "test_helpers",
     operation: "create",
@@ -5442,7 +5442,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_payments/:id/post",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_payments/:id/post",
     stripePath: "/v1/test_helpers/treasury/outbound_payments/{id}/post",
     resource: "test_helpers",
     operation: "create",
@@ -5452,7 +5452,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_payments/:id/return",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_payments/:id/return",
     stripePath: "/v1/test_helpers/treasury/outbound_payments/{id}/return",
     resource: "test_helpers",
     operation: "create",
@@ -5462,7 +5462,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer",
     stripePath: "/v1/test_helpers/treasury/outbound_transfers/{outbound_transfer}",
     resource: "test_helpers",
     operation: "update",
@@ -5472,7 +5472,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer/fail",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer/fail",
     stripePath: "/v1/test_helpers/treasury/outbound_transfers/{outbound_transfer}/fail",
     resource: "test_helpers",
     operation: "create",
@@ -5482,7 +5482,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer/post",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer/post",
     stripePath: "/v1/test_helpers/treasury/outbound_transfers/{outbound_transfer}/post",
     resource: "test_helpers",
     operation: "create",
@@ -5492,7 +5492,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer/return",
+    fastifyPath: "/v1/test_helpers/treasury/outbound_transfers/:outbound_transfer/return",
     stripePath: "/v1/test_helpers/treasury/outbound_transfers/{outbound_transfer}/return",
     resource: "test_helpers",
     operation: "create",
@@ -5502,7 +5502,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/received_credits",
+    fastifyPath: "/v1/test_helpers/treasury/received_credits",
     stripePath: "/v1/test_helpers/treasury/received_credits",
     resource: "test_helpers",
     operation: "create",
@@ -5511,7 +5511,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/test_helpers/treasury/received_debits",
+    fastifyPath: "/v1/test_helpers/treasury/received_debits",
     stripePath: "/v1/test_helpers/treasury/received_debits",
     resource: "test_helpers",
     operation: "create",
@@ -5520,7 +5520,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/tokens",
+    fastifyPath: "/v1/tokens",
     stripePath: "/v1/tokens",
     resource: "tokens",
     operation: "create",
@@ -5530,7 +5530,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/tokens/:token",
+    fastifyPath: "/v1/tokens/:token",
     stripePath: "/v1/tokens/{token}",
     resource: "tokens",
     operation: "retrieve",
@@ -5541,7 +5541,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/topups",
+    fastifyPath: "/v1/topups",
     stripePath: "/v1/topups",
     resource: "topups",
     operation: "list",
@@ -5551,7 +5551,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/topups",
+    fastifyPath: "/v1/topups",
     stripePath: "/v1/topups",
     resource: "topups",
     operation: "create",
@@ -5561,7 +5561,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/topups/:topup",
+    fastifyPath: "/v1/topups/:topup",
     stripePath: "/v1/topups/{topup}",
     resource: "topups",
     operation: "retrieve",
@@ -5572,7 +5572,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/topups/:topup",
+    fastifyPath: "/v1/topups/:topup",
     stripePath: "/v1/topups/{topup}",
     resource: "topups",
     operation: "update",
@@ -5583,7 +5583,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/topups/:topup/cancel",
+    fastifyPath: "/v1/topups/:topup/cancel",
     stripePath: "/v1/topups/{topup}/cancel",
     resource: "topups",
     operation: "create",
@@ -5594,7 +5594,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/transfers",
+    fastifyPath: "/v1/transfers",
     stripePath: "/v1/transfers",
     resource: "transfers",
     operation: "list",
@@ -5604,7 +5604,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/transfers",
+    fastifyPath: "/v1/transfers",
     stripePath: "/v1/transfers",
     resource: "transfers",
     operation: "create",
@@ -5614,7 +5614,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/transfers/:id/reversals",
+    fastifyPath: "/v1/transfers/:id/reversals",
     stripePath: "/v1/transfers/{id}/reversals",
     resource: "transfers",
     operation: "list",
@@ -5625,7 +5625,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/transfers/:id/reversals",
+    fastifyPath: "/v1/transfers/:id/reversals",
     stripePath: "/v1/transfers/{id}/reversals",
     resource: "transfers",
     operation: "create",
@@ -5636,7 +5636,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/transfers/:transfer",
+    fastifyPath: "/v1/transfers/:transfer",
     stripePath: "/v1/transfers/{transfer}",
     resource: "transfers",
     operation: "retrieve",
@@ -5647,7 +5647,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/transfers/:transfer",
+    fastifyPath: "/v1/transfers/:transfer",
     stripePath: "/v1/transfers/{transfer}",
     resource: "transfers",
     operation: "update",
@@ -5658,7 +5658,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/transfers/:transfer/reversals/:id",
+    fastifyPath: "/v1/transfers/:transfer/reversals/:id",
     stripePath: "/v1/transfers/{transfer}/reversals/{id}",
     resource: "transfers",
     operation: "retrieve",
@@ -5669,7 +5669,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/transfers/:transfer/reversals/:id",
+    fastifyPath: "/v1/transfers/:transfer/reversals/:id",
     stripePath: "/v1/transfers/{transfer}/reversals/{id}",
     resource: "transfers",
     operation: "update",
@@ -5680,7 +5680,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/credit_reversals",
+    fastifyPath: "/v1/treasury/credit_reversals",
     stripePath: "/v1/treasury/credit_reversals",
     resource: "treasury",
     operation: "list",
@@ -5689,7 +5689,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/credit_reversals",
+    fastifyPath: "/v1/treasury/credit_reversals",
     stripePath: "/v1/treasury/credit_reversals",
     resource: "treasury",
     operation: "create",
@@ -5698,7 +5698,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/credit_reversals/:credit_reversal",
+    fastifyPath: "/v1/treasury/credit_reversals/:credit_reversal",
     stripePath: "/v1/treasury/credit_reversals/{credit_reversal}",
     resource: "treasury",
     operation: "retrieve",
@@ -5708,7 +5708,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/debit_reversals",
+    fastifyPath: "/v1/treasury/debit_reversals",
     stripePath: "/v1/treasury/debit_reversals",
     resource: "treasury",
     operation: "list",
@@ -5717,7 +5717,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/debit_reversals",
+    fastifyPath: "/v1/treasury/debit_reversals",
     stripePath: "/v1/treasury/debit_reversals",
     resource: "treasury",
     operation: "create",
@@ -5726,7 +5726,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/debit_reversals/:debit_reversal",
+    fastifyPath: "/v1/treasury/debit_reversals/:debit_reversal",
     stripePath: "/v1/treasury/debit_reversals/{debit_reversal}",
     resource: "treasury",
     operation: "retrieve",
@@ -5736,7 +5736,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/financial_accounts",
+    fastifyPath: "/v1/treasury/financial_accounts",
     stripePath: "/v1/treasury/financial_accounts",
     resource: "treasury",
     operation: "list",
@@ -5745,7 +5745,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/financial_accounts",
+    fastifyPath: "/v1/treasury/financial_accounts",
     stripePath: "/v1/treasury/financial_accounts",
     resource: "treasury",
     operation: "create",
@@ -5754,7 +5754,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/financial_accounts/:financial_account",
+    fastifyPath: "/v1/treasury/financial_accounts/:financial_account",
     stripePath: "/v1/treasury/financial_accounts/{financial_account}",
     resource: "treasury",
     operation: "retrieve",
@@ -5764,7 +5764,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/financial_accounts/:financial_account",
+    fastifyPath: "/v1/treasury/financial_accounts/:financial_account",
     stripePath: "/v1/treasury/financial_accounts/{financial_account}",
     resource: "treasury",
     operation: "update",
@@ -5774,7 +5774,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/financial_accounts/:financial_account/close",
+    fastifyPath: "/v1/treasury/financial_accounts/:financial_account/close",
     stripePath: "/v1/treasury/financial_accounts/{financial_account}/close",
     resource: "treasury",
     operation: "create",
@@ -5784,7 +5784,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/financial_accounts/:financial_account/features",
+    fastifyPath: "/v1/treasury/financial_accounts/:financial_account/features",
     stripePath: "/v1/treasury/financial_accounts/{financial_account}/features",
     resource: "treasury",
     operation: "list",
@@ -5794,7 +5794,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/financial_accounts/:financial_account/features",
+    fastifyPath: "/v1/treasury/financial_accounts/:financial_account/features",
     stripePath: "/v1/treasury/financial_accounts/{financial_account}/features",
     resource: "treasury",
     operation: "create",
@@ -5804,7 +5804,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/inbound_transfers",
+    fastifyPath: "/v1/treasury/inbound_transfers",
     stripePath: "/v1/treasury/inbound_transfers",
     resource: "treasury",
     operation: "list",
@@ -5813,7 +5813,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/inbound_transfers",
+    fastifyPath: "/v1/treasury/inbound_transfers",
     stripePath: "/v1/treasury/inbound_transfers",
     resource: "treasury",
     operation: "create",
@@ -5822,7 +5822,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/inbound_transfers/:id",
+    fastifyPath: "/v1/treasury/inbound_transfers/:id",
     stripePath: "/v1/treasury/inbound_transfers/{id}",
     resource: "treasury",
     operation: "retrieve",
@@ -5832,7 +5832,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/inbound_transfers/:inbound_transfer/cancel",
+    fastifyPath: "/v1/treasury/inbound_transfers/:inbound_transfer/cancel",
     stripePath: "/v1/treasury/inbound_transfers/{inbound_transfer}/cancel",
     resource: "treasury",
     operation: "create",
@@ -5842,7 +5842,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/outbound_payments",
+    fastifyPath: "/v1/treasury/outbound_payments",
     stripePath: "/v1/treasury/outbound_payments",
     resource: "treasury",
     operation: "list",
@@ -5851,7 +5851,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/outbound_payments",
+    fastifyPath: "/v1/treasury/outbound_payments",
     stripePath: "/v1/treasury/outbound_payments",
     resource: "treasury",
     operation: "create",
@@ -5860,7 +5860,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/outbound_payments/:id",
+    fastifyPath: "/v1/treasury/outbound_payments/:id",
     stripePath: "/v1/treasury/outbound_payments/{id}",
     resource: "treasury",
     operation: "retrieve",
@@ -5870,7 +5870,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/outbound_payments/:id/cancel",
+    fastifyPath: "/v1/treasury/outbound_payments/:id/cancel",
     stripePath: "/v1/treasury/outbound_payments/{id}/cancel",
     resource: "treasury",
     operation: "create",
@@ -5880,7 +5880,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/outbound_transfers",
+    fastifyPath: "/v1/treasury/outbound_transfers",
     stripePath: "/v1/treasury/outbound_transfers",
     resource: "treasury",
     operation: "list",
@@ -5889,7 +5889,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/outbound_transfers",
+    fastifyPath: "/v1/treasury/outbound_transfers",
     stripePath: "/v1/treasury/outbound_transfers",
     resource: "treasury",
     operation: "create",
@@ -5898,7 +5898,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/outbound_transfers/:outbound_transfer",
+    fastifyPath: "/v1/treasury/outbound_transfers/:outbound_transfer",
     stripePath: "/v1/treasury/outbound_transfers/{outbound_transfer}",
     resource: "treasury",
     operation: "retrieve",
@@ -5908,7 +5908,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/treasury/outbound_transfers/:outbound_transfer/cancel",
+    fastifyPath: "/v1/treasury/outbound_transfers/:outbound_transfer/cancel",
     stripePath: "/v1/treasury/outbound_transfers/{outbound_transfer}/cancel",
     resource: "treasury",
     operation: "create",
@@ -5918,7 +5918,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/received_credits",
+    fastifyPath: "/v1/treasury/received_credits",
     stripePath: "/v1/treasury/received_credits",
     resource: "treasury",
     operation: "list",
@@ -5927,7 +5927,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/received_credits/:id",
+    fastifyPath: "/v1/treasury/received_credits/:id",
     stripePath: "/v1/treasury/received_credits/{id}",
     resource: "treasury",
     operation: "retrieve",
@@ -5937,7 +5937,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/received_debits",
+    fastifyPath: "/v1/treasury/received_debits",
     stripePath: "/v1/treasury/received_debits",
     resource: "treasury",
     operation: "list",
@@ -5946,7 +5946,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/received_debits/:id",
+    fastifyPath: "/v1/treasury/received_debits/:id",
     stripePath: "/v1/treasury/received_debits/{id}",
     resource: "treasury",
     operation: "retrieve",
@@ -5956,7 +5956,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/transaction_entries",
+    fastifyPath: "/v1/treasury/transaction_entries",
     stripePath: "/v1/treasury/transaction_entries",
     resource: "treasury",
     operation: "list",
@@ -5965,7 +5965,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/transaction_entries/:id",
+    fastifyPath: "/v1/treasury/transaction_entries/:id",
     stripePath: "/v1/treasury/transaction_entries/{id}",
     resource: "treasury",
     operation: "retrieve",
@@ -5975,7 +5975,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/transactions",
+    fastifyPath: "/v1/treasury/transactions",
     stripePath: "/v1/treasury/transactions",
     resource: "treasury",
     operation: "list",
@@ -5984,7 +5984,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/treasury/transactions/:id",
+    fastifyPath: "/v1/treasury/transactions/:id",
     stripePath: "/v1/treasury/transactions/{id}",
     resource: "treasury",
     operation: "retrieve",
@@ -5994,7 +5994,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/webhook_endpoints",
+    fastifyPath: "/v1/webhook_endpoints",
     stripePath: "/v1/webhook_endpoints",
     resource: "webhook_endpoints",
     operation: "list",
@@ -6004,7 +6004,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/webhook_endpoints",
+    fastifyPath: "/v1/webhook_endpoints",
     stripePath: "/v1/webhook_endpoints",
     resource: "webhook_endpoints",
     operation: "create",
@@ -6014,7 +6014,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v1/webhook_endpoints/:webhook_endpoint",
+    fastifyPath: "/v1/webhook_endpoints/:webhook_endpoint",
     stripePath: "/v1/webhook_endpoints/{webhook_endpoint}",
     resource: "webhook_endpoints",
     operation: "retrieve",
@@ -6025,7 +6025,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v1/webhook_endpoints/:webhook_endpoint",
+    fastifyPath: "/v1/webhook_endpoints/:webhook_endpoint",
     stripePath: "/v1/webhook_endpoints/{webhook_endpoint}",
     resource: "webhook_endpoints",
     operation: "update",
@@ -6036,7 +6036,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v1/webhook_endpoints/:webhook_endpoint",
+    fastifyPath: "/v1/webhook_endpoints/:webhook_endpoint",
     stripePath: "/v1/webhook_endpoints/{webhook_endpoint}",
     resource: "webhook_endpoints",
     operation: "delete",
@@ -6047,7 +6047,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/billing/meter_event_adjustments",
+    fastifyPath: "/v2/billing/meter_event_adjustments",
     stripePath: "/v2/billing/meter_event_adjustments",
     resource: "billing",
     operation: "create",
@@ -6056,7 +6056,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/billing/meter_event_session",
+    fastifyPath: "/v2/billing/meter_event_session",
     stripePath: "/v2/billing/meter_event_session",
     resource: "billing",
     operation: "create",
@@ -6065,7 +6065,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/billing/meter_event_stream",
+    fastifyPath: "/v2/billing/meter_event_stream",
     stripePath: "/v2/billing/meter_event_stream",
     resource: "billing",
     operation: "create",
@@ -6074,7 +6074,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/billing/meter_events",
+    fastifyPath: "/v2/billing/meter_events",
     stripePath: "/v2/billing/meter_events",
     resource: "billing",
     operation: "create",
@@ -6083,7 +6083,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/account_links",
+    fastifyPath: "/v2/core/account_links",
     stripePath: "/v2/core/account_links",
     resource: "account_links",
     operation: "create",
@@ -6093,7 +6093,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/account_tokens",
+    fastifyPath: "/v2/core/account_tokens",
     stripePath: "/v2/core/account_tokens",
     resource: "core",
     operation: "create",
@@ -6102,7 +6102,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/account_tokens/:id",
+    fastifyPath: "/v2/core/account_tokens/:id",
     stripePath: "/v2/core/account_tokens/{id}",
     resource: "core",
     operation: "retrieve",
@@ -6112,7 +6112,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/accounts",
+    fastifyPath: "/v2/core/accounts",
     stripePath: "/v2/core/accounts",
     resource: "core",
     operation: "list",
@@ -6121,7 +6121,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/accounts",
+    fastifyPath: "/v2/core/accounts",
     stripePath: "/v2/core/accounts",
     resource: "core",
     operation: "create",
@@ -6130,7 +6130,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/accounts/:account_id/person_tokens",
+    fastifyPath: "/v2/core/accounts/:account_id/person_tokens",
     stripePath: "/v2/core/accounts/{account_id}/person_tokens",
     resource: "core",
     operation: "create",
@@ -6140,7 +6140,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/accounts/:account_id/person_tokens/:id",
+    fastifyPath: "/v2/core/accounts/:account_id/person_tokens/:id",
     stripePath: "/v2/core/accounts/{account_id}/person_tokens/{id}",
     resource: "core",
     operation: "retrieve",
@@ -6150,7 +6150,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/accounts/:account_id/persons",
+    fastifyPath: "/v2/core/accounts/:account_id/persons",
     stripePath: "/v2/core/accounts/{account_id}/persons",
     resource: "persons",
     operation: "list",
@@ -6161,7 +6161,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/accounts/:account_id/persons",
+    fastifyPath: "/v2/core/accounts/:account_id/persons",
     stripePath: "/v2/core/accounts/{account_id}/persons",
     resource: "persons",
     operation: "create",
@@ -6172,7 +6172,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/accounts/:account_id/persons/:id",
+    fastifyPath: "/v2/core/accounts/:account_id/persons/:id",
     stripePath: "/v2/core/accounts/{account_id}/persons/{id}",
     resource: "persons",
     operation: "retrieve",
@@ -6183,7 +6183,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/accounts/:account_id/persons/:id",
+    fastifyPath: "/v2/core/accounts/:account_id/persons/:id",
     stripePath: "/v2/core/accounts/{account_id}/persons/{id}",
     resource: "persons",
     operation: "update",
@@ -6194,7 +6194,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v2/core/accounts/:account_id/persons/:id",
+    fastifyPath: "/v2/core/accounts/:account_id/persons/:id",
     stripePath: "/v2/core/accounts/{account_id}/persons/{id}",
     resource: "persons",
     operation: "delete",
@@ -6205,7 +6205,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/accounts/:id",
+    fastifyPath: "/v2/core/accounts/:id",
     stripePath: "/v2/core/accounts/{id}",
     resource: "core",
     operation: "retrieve",
@@ -6215,7 +6215,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/accounts/:id",
+    fastifyPath: "/v2/core/accounts/:id",
     stripePath: "/v2/core/accounts/{id}",
     resource: "core",
     operation: "update",
@@ -6225,7 +6225,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/accounts/:id/close",
+    fastifyPath: "/v2/core/accounts/:id/close",
     stripePath: "/v2/core/accounts/{id}/close",
     resource: "core",
     operation: "create",
@@ -6235,7 +6235,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/event_destinations",
+    fastifyPath: "/v2/core/event_destinations",
     stripePath: "/v2/core/event_destinations",
     resource: "core",
     operation: "list",
@@ -6244,7 +6244,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/event_destinations",
+    fastifyPath: "/v2/core/event_destinations",
     stripePath: "/v2/core/event_destinations",
     resource: "core",
     operation: "create",
@@ -6253,7 +6253,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/event_destinations/:id",
+    fastifyPath: "/v2/core/event_destinations/:id",
     stripePath: "/v2/core/event_destinations/{id}",
     resource: "core",
     operation: "retrieve",
@@ -6263,7 +6263,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/event_destinations/:id",
+    fastifyPath: "/v2/core/event_destinations/:id",
     stripePath: "/v2/core/event_destinations/{id}",
     resource: "core",
     operation: "update",
@@ -6273,7 +6273,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/stripe/v2/core/event_destinations/:id",
+    fastifyPath: "/v2/core/event_destinations/:id",
     stripePath: "/v2/core/event_destinations/{id}",
     resource: "core",
     operation: "delete",
@@ -6283,7 +6283,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/event_destinations/:id/disable",
+    fastifyPath: "/v2/core/event_destinations/:id/disable",
     stripePath: "/v2/core/event_destinations/{id}/disable",
     resource: "core",
     operation: "create",
@@ -6293,7 +6293,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/event_destinations/:id/enable",
+    fastifyPath: "/v2/core/event_destinations/:id/enable",
     stripePath: "/v2/core/event_destinations/{id}/enable",
     resource: "core",
     operation: "create",
@@ -6303,7 +6303,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/stripe/v2/core/event_destinations/:id/ping",
+    fastifyPath: "/v2/core/event_destinations/:id/ping",
     stripePath: "/v2/core/event_destinations/{id}/ping",
     resource: "core",
     operation: "create",
@@ -6313,7 +6313,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/events",
+    fastifyPath: "/v2/core/events",
     stripePath: "/v2/core/events",
     resource: "events",
     operation: "list",
@@ -6323,7 +6323,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/stripe/v2/core/events/:id",
+    fastifyPath: "/v2/core/events/:id",
     stripePath: "/v2/core/events/{id}",
     resource: "events",
     operation: "retrieve",

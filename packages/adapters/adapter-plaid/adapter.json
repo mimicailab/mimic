@@ -3,7 +3,7 @@
   "name": "Plaid API",
   "description": "Plaid banking data — accounts, transactions, auth, identity, balance, investments",
   "type": "api-mock",
-  "basePath": "/plaid",
+  "basePath": "",
   "versions": ["2020-09-14"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://plaid.com/docs/api",

@@ -3,7 +3,7 @@
   "name": "Chargebee",
   "description": "Chargebee subscription billing mock adapter",
   "type": "api-mock",
-  "basePath": "/chargebee",
+  "basePath": "",
   "versions": ["v2"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://apidocs.chargebee.com/docs/api",

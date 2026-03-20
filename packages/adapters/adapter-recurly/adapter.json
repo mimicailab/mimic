@@ -3,7 +3,7 @@
   "name": "Recurly API",
   "description": "Recurly subscription management, recurring billing, and revenue recognition mock adapter",
   "type": "api-mock",
-  "basePath": "/recurly",
+  "basePath": "",
   "versions": ["v2021-02-25"],
   "logoFile": "logo.svg",
   "documentationUrl": "https://developers.recurly.com/api/v2021-02-25",

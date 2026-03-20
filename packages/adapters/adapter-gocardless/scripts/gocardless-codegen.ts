@@ -492,7 +492,7 @@ function extractRoutes(spec: OaSpec): ExtractedRoute[] {
       const httpMethod = method.toUpperCase() as ExtractedRoute['method'];
       const description = operation.summary ?? operation.description ?? '';
 
-      const fastifyPath = '/gocardless' + specPath.replace(/\{([^}]+)\}/g, ':$1');
+      const fastifyPath = specPath.replace(/\{([^}]+)\}/g, ':$1');
       const resource = detectGCResource(specPath);
       const op = detectGCOperation(specPath, method);
 

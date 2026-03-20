@@ -54,7 +54,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   // ── Stores ──────────────────────────────────────────────────────────
 
   server.tool('list_stores', 'List Lemon Squeezy stores', {}, async () => {
-    const data = await call('GET', '/lemonsqueezy/v1/stores');
+    const data = await call('GET', '/v1/stores');
     const items = extractListData(data);
     if (!items.length) return text('No stores found.');
     const lines = items.map((s: any) => `• ${s.id} — ${s.name} (${s.currency})`);
@@ -64,7 +64,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('get_store', 'Get a specific store', {
     store_id: z.string().describe('Store ID'),
   }, async ({ store_id }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/stores/${store_id}`);
+    const data = await call('GET', `/v1/stores/${store_id}`);
     return text(JSON.stringify(extractData(data), null, 2));
   });
 
@@ -78,7 +78,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     region: z.string().optional().describe('Region'),
     country: z.string().optional().describe('Country (ISO 3166-1 alpha-2)'),
   }, async ({ name, email, store_id, city, region, country }) => {
-    const data = await call('POST', '/lemonsqueezy/v1/customers', {
+    const data = await call('POST', '/v1/customers', {
       data: { type: 'customers', attributes: { name, email, city, region, country }, relationships: { store: { data: { type: 'stores', id: store_id } } } },
     });
     const item = extractData(data);
@@ -89,7 +89,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     store_id: z.string().optional().describe('Filter by store ID'),
     limit: z.number().int().min(1).max(100).optional().describe('Max results'),
   }, async ({ store_id, limit }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/customers${qs({ 'page[size]': limit ?? 10, store_id })}`);
+    const data = await call('GET', `/v1/customers${qs({ 'page[size]': limit ?? 10, store_id })}`);
     const items = extractListData(data);
     if (!items.length) return text('No customers found.');
     const lines = items.map((c: any) => `• ${c.id} — ${c.name} (${c.email}) [${c.status}]`);
@@ -99,7 +99,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('get_customer', 'Get a specific customer', {
     customer_id: z.string().describe('Customer ID'),
   }, async ({ customer_id }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/customers/${customer_id}`);
+    const data = await call('GET', `/v1/customers/${customer_id}`);
     return text(JSON.stringify(extractData(data), null, 2));
   });
 
@@ -108,7 +108,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('list_products', 'List products', {
     store_id: z.string().optional().describe('Filter by store ID'),
   }, async ({ store_id }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/products${qs({ store_id })}`);
+    const data = await call('GET', `/v1/products${qs({ store_id })}`);
     const items = extractListData(data);
     if (!items.length) return text('No products found.');
     const lines = items.map((p: any) => `• ${p.id} — ${p.name} [${p.status}] ${p.price_formatted}`);
@@ -121,7 +121,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     store_id: z.string().optional().describe('Filter by store ID'),
     limit: z.number().int().min(1).max(100).optional().describe('Max results'),
   }, async ({ store_id, limit }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/orders${qs({ 'page[size]': limit ?? 10, store_id })}`);
+    const data = await call('GET', `/v1/orders${qs({ 'page[size]': limit ?? 10, store_id })}`);
     const items = extractListData(data);
     if (!items.length) return text('No orders found.');
     const lines = items.map((o: any) => `• ${o.id} — ${o.user_name} ${o.total_formatted} [${o.status}]`);
@@ -131,7 +131,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('get_order', 'Get a specific order', {
     order_id: z.string().describe('Order ID'),
   }, async ({ order_id }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/orders/${order_id}`);
+    const data = await call('GET', `/v1/orders/${order_id}`);
     return text(JSON.stringify(extractData(data), null, 2));
   });
 
@@ -142,7 +142,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     status: z.enum(['on_trial', 'active', 'paused', 'past_due', 'unpaid', 'cancelled', 'expired']).optional().describe('Filter by status'),
     limit: z.number().int().min(1).max(100).optional().describe('Max results'),
   }, async ({ store_id, status, limit }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/subscriptions${qs({ 'page[size]': limit ?? 10, store_id, status })}`);
+    const data = await call('GET', `/v1/subscriptions${qs({ 'page[size]': limit ?? 10, store_id, status })}`);
     const items = extractListData(data);
     if (!items.length) return text('No subscriptions found.');
     const lines = items.map((s: any) => `• ${s.id} — ${s.product_name} [${s.status}]`);
@@ -152,14 +152,14 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('get_subscription', 'Get a specific subscription', {
     subscription_id: z.string().describe('Subscription ID'),
   }, async ({ subscription_id }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/subscriptions/${subscription_id}`);
+    const data = await call('GET', `/v1/subscriptions/${subscription_id}`);
     return text(JSON.stringify(extractData(data), null, 2));
   });
 
   server.tool('cancel_subscription', 'Cancel a subscription', {
     subscription_id: z.string().describe('Subscription ID'),
   }, async ({ subscription_id }) => {
-    const data = await call('DELETE', `/lemonsqueezy/v1/subscriptions/${subscription_id}`);
+    const data = await call('DELETE', `/v1/subscriptions/${subscription_id}`);
     const item = extractData(data);
     return text(`Cancelled subscription ${item.id} [${item.status}]`);
   });
@@ -168,7 +168,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     subscription_id: z.string().describe('Subscription ID'),
     mode: z.enum(['void', 'free']).optional().describe('Pause mode (default: void)'),
   }, async ({ subscription_id, mode }) => {
-    const data = await call('PATCH', `/lemonsqueezy/v1/subscriptions/${subscription_id}`, {
+    const data = await call('PATCH', `/v1/subscriptions/${subscription_id}`, {
       data: { type: 'subscriptions', id: subscription_id, attributes: { pause: { mode: mode ?? 'void' } } },
     });
     const item = extractData(data);
@@ -178,7 +178,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('resume_subscription', 'Resume a paused subscription', {
     subscription_id: z.string().describe('Subscription ID'),
   }, async ({ subscription_id }) => {
-    const data = await call('PATCH', `/lemonsqueezy/v1/subscriptions/${subscription_id}`, {
+    const data = await call('PATCH', `/v1/subscriptions/${subscription_id}`, {
       data: { type: 'subscriptions', id: subscription_id, attributes: { pause: null } },
     });
     const item = extractData(data);
@@ -194,7 +194,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     amount_type: z.enum(['percent', 'fixed']).describe('Amount type'),
     store_id: z.string().describe('Store ID'),
   }, async ({ name, code, amount, amount_type, store_id }) => {
-    const data = await call('POST', '/lemonsqueezy/v1/discounts', {
+    const data = await call('POST', '/v1/discounts', {
       data: {
         type: 'discounts',
         attributes: { name, code, amount, amount_type },
@@ -208,7 +208,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('list_discounts', 'List discounts', {
     store_id: z.string().optional().describe('Filter by store ID'),
   }, async ({ store_id }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/discounts${qs({ store_id })}`);
+    const data = await call('GET', `/v1/discounts${qs({ store_id })}`);
     const items = extractListData(data);
     if (!items.length) return text('No discounts found.');
     const lines = items.map((d: any) => `• ${d.id} — ${d.name} (${d.code}) [${d.status}]`);
@@ -218,7 +218,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
   server.tool('delete_discount', 'Delete a discount', {
     discount_id: z.string().describe('Discount ID'),
   }, async ({ discount_id }) => {
-    await call('DELETE', `/lemonsqueezy/v1/discounts/${discount_id}`);
+    await call('DELETE', `/v1/discounts/${discount_id}`);
     return text(`Deleted discount ${discount_id}`);
   });
 
@@ -228,7 +228,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     store_id: z.string().optional().describe('Filter by store ID'),
     status: z.enum(['inactive', 'active', 'expired', 'disabled']).optional().describe('Filter by status'),
   }, async ({ store_id, status }) => {
-    const data = await call('GET', `/lemonsqueezy/v1/license-keys${qs({ store_id, status })}`);
+    const data = await call('GET', `/v1/license-keys${qs({ store_id, status })}`);
     const items = extractListData(data);
     if (!items.length) return text('No license keys found.');
     const lines = items.map((l: any) => `• ${l.id} — ${l.key_short} [${l.status}]`);
@@ -242,7 +242,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
     variant_id: z.string().describe('Variant ID'),
     custom_price: z.number().optional().describe('Custom price in cents'),
   }, async ({ store_id, variant_id, custom_price }) => {
-    const data = await call('POST', '/lemonsqueezy/v1/checkouts', {
+    const data = await call('POST', '/v1/checkouts', {
       data: {
         type: 'checkouts',
         attributes: { custom_price },
@@ -267,7 +267,7 @@ export function registerLemonSqueezyTools(server: McpServer, baseUrl: string = '
 
     for (const type of types) {
       try {
-        const data = await call('GET', `/lemonsqueezy/v1/${type}`) as any;
+        const data = await call('GET', `/v1/${type}`) as any;
         const items = extractListData(data);
         const matches = items.filter((item: any) => {
           const str = JSON.stringify(item).toLowerCase();

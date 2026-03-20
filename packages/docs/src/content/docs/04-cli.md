@@ -97,14 +97,9 @@ Ports are assigned sequentially starting from the base port values:
 
 Use `--mcp-base-port` and `--api-base-port` to shift the port ranges if they conflict with other services.
 
-#### Transport auto-detection
+#### Transport
 
-The MCP transport protocol is chosen automatically based on server count:
-
-- **One server** &rarr; `stdio` (reads/writes stdin&sol;stdout directly)
-- **Multiple servers** &rarr; `http` (each MCP server listens at `http://localhost:&lt;port&gt;/mcp`, Streamable HTTP per MCP spec 2025-03-26)
-
-You cannot override this &mdash; use `--no-api` to reduce server count if you need `stdio` with a single adapter.
+All MCP servers use the **Streamable HTTP** transport (`http://localhost:<port>/mcp`, per MCP spec 2025-03-26). This allows `mimic host` to run as a background server that agents connect to over HTTP.
 
 #### Connection summary
 
@@ -126,6 +121,52 @@ Skips starting mock HTTP API servers for all adapters. MCP servers for adapters 
 #### Graceful shutdown
 
 `mimic host` blocks the terminal until you press `Ctrl+C` (or send `SIGTERM`). On shutdown it stops all MCP servers, mock API servers, and closes all database connections cleanly.
+
+<h2 id="cli-explore">mimic explore</h2>
+
+Open the interactive data explorer UI in your browser.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic explore [options]
+&#8203;
+<span class="cm">Options:</span>
+  <span class="flag">--port</span> &lt;number&gt;           Port for the explorer UI (default: 7879)
+  <span class="flag">--no-open</span>                Do not auto-open the browser</code></pre>
+</div>
+
+Launches a local web UI for browsing and inspecting generated persona data. The explorer reads from `.mimic/data/` and presents it in a navigable interface.
+
+#### Background process
+
+`mimic explore` spawns the explorer as a **detached background process** and exits immediately &mdash; it does not block your terminal. The background process PID is printed so you can stop it later:
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> mimic explore
+&#8203;
+  mimic explore
+  ✔ Using port 7879
+  ✔ Explorer running at http://localhost:7879
+  ℹ Background process PID 12345 — to stop: kill 12345</code></pre>
+</div>
+
+#### Port selection
+
+By default the explorer uses port **7879**. If that port is in use, it automatically finds the next available port. Use `--port` to specify a custom port.
+
+#### Browser auto-open
+
+The explorer automatically opens your default browser. Pass `--no-open` to disable this behavior &mdash; useful in headless or CI environments.
+
+#### Requirements
+
+The explorer requires the `@mimicai/explorer` package. If it is not installed, the command will exit with an install hint:
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="prompt">$</span> pnpm add @mimicai/explorer</code></pre>
+</div>
 
 <h2 id="cli-test">mimic test</h2>
 

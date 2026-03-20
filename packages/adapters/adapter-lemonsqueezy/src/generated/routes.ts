@@ -18,7 +18,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/users/me",
+    fastifyPath: "/v1/users/me",
     stripePath: "/v1/users/me",
     resource: "users",
     operation: "retrieve",
@@ -29,7 +29,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/stores/:id",
+    fastifyPath: "/v1/stores/:id",
     stripePath: "/v1/stores/:id",
     resource: "stores",
     operation: "retrieve",
@@ -40,7 +40,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/stores",
+    fastifyPath: "/v1/stores",
     stripePath: "/v1/stores",
     resource: "stores",
     operation: "list",
@@ -50,7 +50,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/lemonsqueezy/v1/customers",
+    fastifyPath: "/v1/customers",
     stripePath: "/v1/customers",
     resource: "customers",
     operation: "create",
@@ -60,7 +60,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/customers/:id",
+    fastifyPath: "/v1/customers/:id",
     stripePath: "/v1/customers/:id",
     resource: "customers",
     operation: "retrieve",
@@ -71,7 +71,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PATCH",
-    fastifyPath: "/lemonsqueezy/v1/customers/:id",
+    fastifyPath: "/v1/customers/:id",
     stripePath: "/v1/customers/:id",
     resource: "customers",
     operation: "update",
@@ -82,7 +82,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/customers",
+    fastifyPath: "/v1/customers",
     stripePath: "/v1/customers",
     resource: "customers",
     operation: "list",
@@ -92,7 +92,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/products/:id",
+    fastifyPath: "/v1/products/:id",
     stripePath: "/v1/products/:id",
     resource: "products",
     operation: "retrieve",
@@ -103,7 +103,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/products",
+    fastifyPath: "/v1/products",
     stripePath: "/v1/products",
     resource: "products",
     operation: "list",
@@ -113,7 +113,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/variants/:id",
+    fastifyPath: "/v1/variants/:id",
     stripePath: "/v1/variants/:id",
     resource: "variants",
     operation: "retrieve",
@@ -124,7 +124,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/variants",
+    fastifyPath: "/v1/variants",
     stripePath: "/v1/variants",
     resource: "variants",
     operation: "list",
@@ -134,7 +134,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/prices/:id",
+    fastifyPath: "/v1/prices/:id",
     stripePath: "/v1/prices/:id",
     resource: "prices",
     operation: "retrieve",
@@ -145,7 +145,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/prices",
+    fastifyPath: "/v1/prices",
     stripePath: "/v1/prices",
     resource: "prices",
     operation: "list",
@@ -155,7 +155,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/lemonsqueezy/v1/orders",
+    fastifyPath: "/v1/orders",
     stripePath: "/v1/orders",
     resource: "orders",
     operation: "create",
@@ -165,7 +165,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/orders/:id",
+    fastifyPath: "/v1/orders/:id",
     stripePath: "/v1/orders/:id",
     resource: "orders",
     operation: "retrieve",
@@ -176,7 +176,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/orders",
+    fastifyPath: "/v1/orders",
     stripePath: "/v1/orders",
     resource: "orders",
     operation: "list",
@@ -186,7 +186,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/lemonsqueezy/v1/subscriptions",
+    fastifyPath: "/v1/subscriptions",
     stripePath: "/v1/subscriptions",
     resource: "subscriptions",
     operation: "create",
@@ -196,7 +196,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/subscriptions/:id",
+    fastifyPath: "/v1/subscriptions/:id",
     stripePath: "/v1/subscriptions/:id",
     resource: "subscriptions",
     operation: "retrieve",
@@ -207,7 +207,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PATCH",
-    fastifyPath: "/lemonsqueezy/v1/subscriptions/:id",
+    fastifyPath: "/v1/subscriptions/:id",
     stripePath: "/v1/subscriptions/:id",
     resource: "subscriptions",
     operation: "update",
@@ -218,7 +218,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/lemonsqueezy/v1/subscriptions/:id",
+    fastifyPath: "/v1/subscriptions/:id",
     stripePath: "/v1/subscriptions/:id",
     resource: "subscriptions",
     operation: "delete",
@@ -229,7 +229,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/subscriptions",
+    fastifyPath: "/v1/subscriptions",
     stripePath: "/v1/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -239,7 +239,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/lemonsqueezy/v1/discounts",
+    fastifyPath: "/v1/discounts",
     stripePath: "/v1/discounts",
     resource: "discounts",
     operation: "create",
@@ -249,7 +249,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/discounts/:id",
+    fastifyPath: "/v1/discounts/:id",
     stripePath: "/v1/discounts/:id",
     resource: "discounts",
     operation: "retrieve",
@@ -260,7 +260,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/lemonsqueezy/v1/discounts/:id",
+    fastifyPath: "/v1/discounts/:id",
     stripePath: "/v1/discounts/:id",
     resource: "discounts",
     operation: "delete",
@@ -271,7 +271,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/discounts",
+    fastifyPath: "/v1/discounts",
     stripePath: "/v1/discounts",
     resource: "discounts",
     operation: "list",
@@ -281,7 +281,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/lemonsqueezy/v1/checkouts",
+    fastifyPath: "/v1/checkouts",
     stripePath: "/v1/checkouts",
     resource: "checkouts",
     operation: "create",
@@ -291,7 +291,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/checkouts/:id",
+    fastifyPath: "/v1/checkouts/:id",
     stripePath: "/v1/checkouts/:id",
     resource: "checkouts",
     operation: "retrieve",
@@ -302,7 +302,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/checkouts",
+    fastifyPath: "/v1/checkouts",
     stripePath: "/v1/checkouts",
     resource: "checkouts",
     operation: "list",
@@ -312,7 +312,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/files/:id",
+    fastifyPath: "/v1/files/:id",
     stripePath: "/v1/files/:id",
     resource: "files",
     operation: "retrieve",
@@ -323,7 +323,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/files",
+    fastifyPath: "/v1/files",
     stripePath: "/v1/files",
     resource: "files",
     operation: "list",
@@ -333,7 +333,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/order-items/:id",
+    fastifyPath: "/v1/order-items/:id",
     stripePath: "/v1/order-items/:id",
     resource: "order-items",
     operation: "retrieve",
@@ -344,7 +344,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/order-items",
+    fastifyPath: "/v1/order-items",
     stripePath: "/v1/order-items",
     resource: "order-items",
     operation: "list",
@@ -354,7 +354,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/subscription-invoices/:id",
+    fastifyPath: "/v1/subscription-invoices/:id",
     stripePath: "/v1/subscription-invoices/:id",
     resource: "subscription-invoices",
     operation: "retrieve",
@@ -365,7 +365,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/subscription-invoices",
+    fastifyPath: "/v1/subscription-invoices",
     stripePath: "/v1/subscription-invoices",
     resource: "subscription-invoices",
     operation: "list",
@@ -375,7 +375,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/subscription-items/:id",
+    fastifyPath: "/v1/subscription-items/:id",
     stripePath: "/v1/subscription-items/:id",
     resource: "subscription-items",
     operation: "retrieve",
@@ -386,7 +386,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PATCH",
-    fastifyPath: "/lemonsqueezy/v1/subscription-items/:id",
+    fastifyPath: "/v1/subscription-items/:id",
     stripePath: "/v1/subscription-items/:id",
     resource: "subscription-items",
     operation: "update",
@@ -397,7 +397,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/subscription-items",
+    fastifyPath: "/v1/subscription-items",
     stripePath: "/v1/subscription-items",
     resource: "subscription-items",
     operation: "list",
@@ -407,7 +407,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/lemonsqueezy/v1/usage-records",
+    fastifyPath: "/v1/usage-records",
     stripePath: "/v1/usage-records",
     resource: "usage-records",
     operation: "create",
@@ -417,7 +417,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/usage-records/:id",
+    fastifyPath: "/v1/usage-records/:id",
     stripePath: "/v1/usage-records/:id",
     resource: "usage-records",
     operation: "retrieve",
@@ -428,7 +428,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/usage-records",
+    fastifyPath: "/v1/usage-records",
     stripePath: "/v1/usage-records",
     resource: "usage-records",
     operation: "list",
@@ -438,7 +438,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/discount-redemptions/:id",
+    fastifyPath: "/v1/discount-redemptions/:id",
     stripePath: "/v1/discount-redemptions/:id",
     resource: "discount-redemptions",
     operation: "retrieve",
@@ -449,7 +449,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/discount-redemptions",
+    fastifyPath: "/v1/discount-redemptions",
     stripePath: "/v1/discount-redemptions",
     resource: "discount-redemptions",
     operation: "list",
@@ -459,7 +459,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/license-keys/:id",
+    fastifyPath: "/v1/license-keys/:id",
     stripePath: "/v1/license-keys/:id",
     resource: "license-keys",
     operation: "retrieve",
@@ -470,7 +470,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PATCH",
-    fastifyPath: "/lemonsqueezy/v1/license-keys/:id",
+    fastifyPath: "/v1/license-keys/:id",
     stripePath: "/v1/license-keys/:id",
     resource: "license-keys",
     operation: "update",
@@ -481,7 +481,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/license-keys",
+    fastifyPath: "/v1/license-keys",
     stripePath: "/v1/license-keys",
     resource: "license-keys",
     operation: "list",
@@ -491,7 +491,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/license-key-instances/:id",
+    fastifyPath: "/v1/license-key-instances/:id",
     stripePath: "/v1/license-key-instances/:id",
     resource: "license-key-instances",
     operation: "retrieve",
@@ -502,7 +502,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/license-key-instances",
+    fastifyPath: "/v1/license-key-instances",
     stripePath: "/v1/license-key-instances",
     resource: "license-key-instances",
     operation: "list",
@@ -512,7 +512,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/lemonsqueezy/v1/webhooks",
+    fastifyPath: "/v1/webhooks",
     stripePath: "/v1/webhooks",
     resource: "webhooks",
     operation: "create",
@@ -522,7 +522,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/webhooks/:id",
+    fastifyPath: "/v1/webhooks/:id",
     stripePath: "/v1/webhooks/:id",
     resource: "webhooks",
     operation: "retrieve",
@@ -533,7 +533,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PATCH",
-    fastifyPath: "/lemonsqueezy/v1/webhooks/:id",
+    fastifyPath: "/v1/webhooks/:id",
     stripePath: "/v1/webhooks/:id",
     resource: "webhooks",
     operation: "update",
@@ -544,7 +544,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/lemonsqueezy/v1/webhooks/:id",
+    fastifyPath: "/v1/webhooks/:id",
     stripePath: "/v1/webhooks/:id",
     resource: "webhooks",
     operation: "delete",
@@ -555,7 +555,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/lemonsqueezy/v1/webhooks",
+    fastifyPath: "/v1/webhooks",
     stripePath: "/v1/webhooks",
     resource: "webhooks",
     operation: "list",

@@ -19,7 +19,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/object/product",
+    fastifyPath: "/v1/object/product",
     stripePath: "/v1/object/product",
     resource: "products",
     operation: "create",
@@ -29,7 +29,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/product/:id",
+    fastifyPath: "/v1/object/product/:id",
     stripePath: "/v1/object/product/{id}",
     resource: "products",
     operation: "retrieve",
@@ -40,7 +40,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/object/product/:id",
+    fastifyPath: "/v1/object/product/:id",
     stripePath: "/v1/object/product/{id}",
     resource: "products",
     operation: "update",
@@ -51,7 +51,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/object/product/:id",
+    fastifyPath: "/v1/object/product/:id",
     stripePath: "/v1/object/product/{id}",
     resource: "products",
     operation: "delete",
@@ -62,7 +62,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/catalog/products",
+    fastifyPath: "/v1/catalog/products",
     stripePath: "/v1/catalog/products",
     resource: "products",
     operation: "list",
@@ -72,7 +72,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/catalog/products/:productKey",
+    fastifyPath: "/v1/catalog/products/:productKey",
     stripePath: "/v1/catalog/products/{product-key}",
     resource: "products",
     operation: "retrieve",
@@ -83,7 +83,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/catalog-groups",
+    fastifyPath: "/v1/catalog-groups",
     stripePath: "/v1/catalog-groups",
     resource: "catalog-groups",
     operation: "list",
@@ -93,7 +93,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/catalog-groups",
+    fastifyPath: "/v1/catalog-groups",
     stripePath: "/v1/catalog-groups",
     resource: "catalog-groups",
     operation: "create",
@@ -103,7 +103,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/catalog-groups/:catalogGroupKey",
+    fastifyPath: "/v1/catalog-groups/:catalogGroupKey",
     stripePath: "/v1/catalog-groups/{catalog-group-key}",
     resource: "catalog-groups",
     operation: "retrieve",
@@ -114,7 +114,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/catalog-groups/:catalogGroupKey",
+    fastifyPath: "/v1/catalog-groups/:catalogGroupKey",
     stripePath: "/v1/catalog-groups/{catalog-group-key}",
     resource: "catalog-groups",
     operation: "update",
@@ -125,7 +125,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/catalog-groups/:catalogGroupKey",
+    fastifyPath: "/v1/catalog-groups/:catalogGroupKey",
     stripePath: "/v1/catalog-groups/{catalog-group-key}",
     resource: "catalog-groups",
     operation: "delete",
@@ -136,7 +136,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/products/:productKey/product-rate-plans",
+    fastifyPath: "/v1/products/:productKey/product-rate-plans",
     stripePath: "/v1/products/{product-key}/product-rate-plans",
     resource: "products",
     operation: "list",
@@ -147,7 +147,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/product-rate-plans/:id",
+    fastifyPath: "/v1/product-rate-plans/:id",
     stripePath: "/v1/product-rate-plans/{id}",
     resource: "product-rate-plans",
     operation: "retrieve",
@@ -158,7 +158,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/product-rate-plans/external-id/:id",
+    fastifyPath: "/v1/product-rate-plans/external-id/:id",
     stripePath: "/v1/product-rate-plans/external-id/{id}",
     resource: "product-rate-plans",
     operation: "retrieve",
@@ -169,7 +169,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/object/product-rate-plan",
+    fastifyPath: "/v1/object/product-rate-plan",
     stripePath: "/v1/object/product-rate-plan",
     resource: "product-rate-plans",
     operation: "create",
@@ -179,7 +179,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/product-rate-plan/:id",
+    fastifyPath: "/v1/object/product-rate-plan/:id",
     stripePath: "/v1/object/product-rate-plan/{id}",
     resource: "product-rate-plans",
     operation: "retrieve",
@@ -190,7 +190,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/object/product-rate-plan/:id",
+    fastifyPath: "/v1/object/product-rate-plan/:id",
     stripePath: "/v1/object/product-rate-plan/{id}",
     resource: "product-rate-plans",
     operation: "update",
@@ -201,7 +201,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/object/product-rate-plan/:id",
+    fastifyPath: "/v1/object/product-rate-plan/:id",
     stripePath: "/v1/object/product-rate-plan/{id}",
     resource: "product-rate-plans",
     operation: "delete",
@@ -212,7 +212,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/product-rateplan-definitions",
+    fastifyPath: "/v1/product-rateplan-definitions",
     stripePath: "/v1/product-rateplan-definitions",
     resource: "product-rateplan-definitions",
     operation: "list",
@@ -221,7 +221,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/product-rateplan-definitions",
+    fastifyPath: "/v1/product-rateplan-definitions",
     stripePath: "/v1/product-rateplan-definitions",
     resource: "product-rateplan-definitions",
     operation: "create",
@@ -230,7 +230,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/product-rateplan-definitions/:productRateplanDefinitionKey",
+    fastifyPath: "/v1/product-rateplan-definitions/:productRateplanDefinitionKey",
     stripePath: "/v1/product-rateplan-definitions/{product-rateplan-definition-key}",
     resource: "product-rateplan-definitions",
     operation: "retrieve",
@@ -240,7 +240,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/product-rateplan-definitions/:productRateplanDefinitionKey",
+    fastifyPath: "/v1/product-rateplan-definitions/:productRateplanDefinitionKey",
     stripePath: "/v1/product-rateplan-definitions/{product-rateplan-definition-key}",
     resource: "product-rateplan-definitions",
     operation: "delete",
@@ -250,7 +250,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/product-rate-plan-charges/:productRatePlanChargeKey",
+    fastifyPath: "/v1/product-rate-plan-charges/:productRatePlanChargeKey",
     stripePath: "/v1/product-rate-plan-charges/{product-rate-plan-charge-key}",
     resource: "product-rate-plan-charges",
     operation: "retrieve",
@@ -260,7 +260,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/object/product-rate-plan-charge",
+    fastifyPath: "/v1/object/product-rate-plan-charge",
     stripePath: "/v1/object/product-rate-plan-charge",
     resource: "product-rate-plan-charges",
     operation: "create",
@@ -269,7 +269,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/product-rate-plan-charge/:id",
+    fastifyPath: "/v1/object/product-rate-plan-charge/:id",
     stripePath: "/v1/object/product-rate-plan-charge/{id}",
     resource: "product-rate-plan-charges",
     operation: "retrieve",
@@ -279,7 +279,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/object/product-rate-plan-charge/:id",
+    fastifyPath: "/v1/object/product-rate-plan-charge/:id",
     stripePath: "/v1/object/product-rate-plan-charge/{id}",
     resource: "product-rate-plan-charges",
     operation: "update",
@@ -289,7 +289,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/object/product-rate-plan-charge/:id",
+    fastifyPath: "/v1/object/product-rate-plan-charge/:id",
     stripePath: "/v1/object/product-rate-plan-charge/{id}",
     resource: "product-rate-plan-charges",
     operation: "delete",
@@ -299,7 +299,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/product-charge-definitions",
+    fastifyPath: "/v1/product-charge-definitions",
     stripePath: "/v1/product-charge-definitions",
     resource: "product-charge-definitions",
     operation: "list",
@@ -308,7 +308,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/product-charge-definitions",
+    fastifyPath: "/v1/product-charge-definitions",
     stripePath: "/v1/product-charge-definitions",
     resource: "product-charge-definitions",
     operation: "create",
@@ -317,7 +317,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/product-charge-definitions/bulk",
+    fastifyPath: "/v1/product-charge-definitions/bulk",
     stripePath: "/v1/product-charge-definitions/bulk",
     resource: "product-charge-definitions",
     operation: "action",
@@ -326,7 +326,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/product-charge-definitions/bulk",
+    fastifyPath: "/v1/product-charge-definitions/bulk",
     stripePath: "/v1/product-charge-definitions/bulk",
     resource: "product-charge-definitions",
     operation: "action",
@@ -335,7 +335,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/product-charge-definitions/:productChargeDefinitionKey",
+    fastifyPath: "/v1/product-charge-definitions/:productChargeDefinitionKey",
     stripePath: "/v1/product-charge-definitions/{product-charge-definition-key}",
     resource: "product-charge-definitions",
     operation: "retrieve",
@@ -345,7 +345,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/product-charge-definitions/:productChargeDefinitionKey",
+    fastifyPath: "/v1/product-charge-definitions/:productChargeDefinitionKey",
     stripePath: "/v1/product-charge-definitions/{product-charge-definition-key}",
     resource: "product-charge-definitions",
     operation: "update",
@@ -355,7 +355,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/product-charge-definitions/:productChargeDefinitionKey",
+    fastifyPath: "/v1/product-charge-definitions/:productChargeDefinitionKey",
     stripePath: "/v1/product-charge-definitions/{product-charge-definition-key}",
     resource: "product-charge-definitions",
     operation: "delete",
@@ -365,7 +365,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/product-rate-plan-charge-tier/:id",
+    fastifyPath: "/v1/object/product-rate-plan-charge-tier/:id",
     stripePath: "/v1/object/product-rate-plan-charge-tier/{id}",
     resource: "object",
     operation: "retrieve",
@@ -375,7 +375,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/object/product-rate-plan-charge-tier/:id",
+    fastifyPath: "/v1/object/product-rate-plan-charge-tier/:id",
     stripePath: "/v1/object/product-rate-plan-charge-tier/{id}",
     resource: "object",
     operation: "update",
@@ -385,7 +385,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/revpro-accounting-codes",
+    fastifyPath: "/v1/revpro-accounting-codes",
     stripePath: "/v1/revpro-accounting-codes",
     resource: "revpro-accounting-codes",
     operation: "action",
@@ -394,7 +394,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/accounts",
+    fastifyPath: "/v1/accounts",
     stripePath: "/v1/accounts",
     resource: "accounts",
     operation: "create",
@@ -404,7 +404,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounts/:accountKey",
+    fastifyPath: "/v1/accounts/:accountKey",
     stripePath: "/v1/accounts/{account-key}",
     resource: "accounts",
     operation: "retrieve",
@@ -415,7 +415,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounts/:accountKey",
+    fastifyPath: "/v1/accounts/:accountKey",
     stripePath: "/v1/accounts/{account-key}",
     resource: "accounts",
     operation: "update",
@@ -426,7 +426,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/accounts/:accountKey",
+    fastifyPath: "/v1/accounts/:accountKey",
     stripePath: "/v1/accounts/{account-key}",
     resource: "accounts",
     operation: "delete",
@@ -437,7 +437,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounts/:accountKey/payment-methods",
+    fastifyPath: "/v1/accounts/:accountKey/payment-methods",
     stripePath: "/v1/accounts/{account-key}/payment-methods",
     resource: "accounts",
     operation: "list",
@@ -448,7 +448,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounts/:accountKey/payment-methods/cascading",
+    fastifyPath: "/v1/accounts/:accountKey/payment-methods/cascading",
     stripePath: "/v1/accounts/{account-key}/payment-methods/cascading",
     resource: "accounts",
     operation: "list",
@@ -459,7 +459,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounts/:accountKey/payment-methods/cascading",
+    fastifyPath: "/v1/accounts/:accountKey/payment-methods/cascading",
     stripePath: "/v1/accounts/{account-key}/payment-methods/cascading",
     resource: "accounts",
     operation: "action",
@@ -470,7 +470,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounts/:accountKey/payment-methods/default",
+    fastifyPath: "/v1/accounts/:accountKey/payment-methods/default",
     stripePath: "/v1/accounts/{account-key}/payment-methods/default",
     resource: "accounts",
     operation: "list",
@@ -481,7 +481,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounts/:accountKey/summary",
+    fastifyPath: "/v1/accounts/:accountKey/summary",
     stripePath: "/v1/accounts/{account-key}/summary",
     resource: "accounts",
     operation: "list",
@@ -492,7 +492,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/contacts",
+    fastifyPath: "/v1/contacts",
     stripePath: "/v1/contacts",
     resource: "contacts",
     operation: "create",
@@ -502,7 +502,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/contacts/:contactId",
+    fastifyPath: "/v1/contacts/:contactId",
     stripePath: "/v1/contacts/{contactId}",
     resource: "contacts",
     operation: "retrieve",
@@ -513,7 +513,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/contacts/:contactId",
+    fastifyPath: "/v1/contacts/:contactId",
     stripePath: "/v1/contacts/{contactId}",
     resource: "contacts",
     operation: "update",
@@ -524,7 +524,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/contacts/:contactId",
+    fastifyPath: "/v1/contacts/:contactId",
     stripePath: "/v1/contacts/{contactId}",
     resource: "contacts",
     operation: "delete",
@@ -535,7 +535,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/contacts/:contactId/transfer",
+    fastifyPath: "/v1/contacts/:contactId/transfer",
     stripePath: "/v1/contacts/{contactId}/transfer",
     resource: "contacts",
     operation: "action",
@@ -546,7 +546,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/contacts/:contactId/scrub",
+    fastifyPath: "/v1/contacts/:contactId/scrub",
     stripePath: "/v1/contacts/{contactId}/scrub",
     resource: "contacts",
     operation: "action",
@@ -557,7 +557,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/contact-snapshots/:contactSnapshotId",
+    fastifyPath: "/v1/contact-snapshots/:contactSnapshotId",
     stripePath: "/v1/contact-snapshots/{contact-snapshot-id}",
     resource: "contact-snapshots",
     operation: "retrieve",
@@ -567,7 +567,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/sign-up",
+    fastifyPath: "/v1/sign-up",
     stripePath: "/v1/sign-up",
     resource: "sign-up",
     operation: "create",
@@ -576,7 +576,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/orders/preview",
+    fastifyPath: "/v1/orders/preview",
     stripePath: "/v1/orders/preview",
     resource: "orders",
     operation: "action",
@@ -586,7 +586,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/async/orders/preview",
+    fastifyPath: "/v1/async/orders/preview",
     stripePath: "/v1/async/orders/preview",
     resource: "async",
     operation: "action",
@@ -595,7 +595,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/orders",
+    fastifyPath: "/v1/orders",
     stripePath: "/v1/orders",
     resource: "orders",
     operation: "list",
@@ -605,7 +605,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/orders",
+    fastifyPath: "/v1/orders",
     stripePath: "/v1/orders",
     resource: "orders",
     operation: "create",
@@ -615,7 +615,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/async/orders",
+    fastifyPath: "/v1/async/orders",
     stripePath: "/v1/async/orders",
     resource: "async",
     operation: "create",
@@ -624,7 +624,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/orders/:orderNumber",
+    fastifyPath: "/v1/orders/:orderNumber",
     stripePath: "/v1/orders/{orderNumber}",
     resource: "orders",
     operation: "retrieve",
@@ -635,7 +635,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/orders/:orderNumber",
+    fastifyPath: "/v1/orders/:orderNumber",
     stripePath: "/v1/orders/{orderNumber}",
     resource: "orders",
     operation: "update",
@@ -646,7 +646,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/orders/:orderNumber",
+    fastifyPath: "/v1/orders/:orderNumber",
     stripePath: "/v1/orders/{orderNumber}",
     resource: "orders",
     operation: "delete",
@@ -657,7 +657,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/async/orders/:orderNumber",
+    fastifyPath: "/v1/async/orders/:orderNumber",
     stripePath: "/v1/async/orders/{orderNumber}",
     resource: "async",
     operation: "delete",
@@ -667,7 +667,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/async-jobs/:jobId",
+    fastifyPath: "/v1/async-jobs/:jobId",
     stripePath: "/v1/async-jobs/{jobId}",
     resource: "async-jobs",
     operation: "retrieve",
@@ -677,7 +677,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/orders/subscriptionOwner/:accountNumber",
+    fastifyPath: "/v1/orders/subscriptionOwner/:accountNumber",
     stripePath: "/v1/orders/subscriptionOwner/{accountNumber}",
     resource: "orders",
     operation: "retrieve",
@@ -688,7 +688,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/orders/subscription/:subscriptionNumber",
+    fastifyPath: "/v1/orders/subscription/:subscriptionNumber",
     stripePath: "/v1/orders/subscription/{subscriptionNumber}",
     resource: "orders",
     operation: "retrieve",
@@ -699,7 +699,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/orders/invoiceOwner/:accountNumber",
+    fastifyPath: "/v1/orders/invoiceOwner/:accountNumber",
     stripePath: "/v1/orders/invoiceOwner/{accountNumber}",
     resource: "orders",
     operation: "retrieve",
@@ -710,7 +710,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/orders/:orderNumber/customFields",
+    fastifyPath: "/v1/orders/:orderNumber/customFields",
     stripePath: "/v1/orders/{orderNumber}/customFields",
     resource: "orders",
     operation: "action",
@@ -721,7 +721,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionNumber/customFields",
+    fastifyPath: "/v1/subscriptions/:subscriptionNumber/customFields",
     stripePath: "/v1/subscriptions/{subscriptionNumber}/customFields",
     resource: "subscriptions",
     operation: "action",
@@ -732,7 +732,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/orders/:orderNumber/triggerDates",
+    fastifyPath: "/v1/orders/:orderNumber/triggerDates",
     stripePath: "/v1/orders/{orderNumber}/triggerDates",
     resource: "orders",
     operation: "action",
@@ -743,7 +743,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/orders/:orderNumber/activate",
+    fastifyPath: "/v1/orders/:orderNumber/activate",
     stripePath: "/v1/orders/{orderNumber}/activate",
     resource: "orders",
     operation: "action",
@@ -754,7 +754,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/orders/:orderNumber/cancel",
+    fastifyPath: "/v1/orders/:orderNumber/cancel",
     stripePath: "/v1/orders/{orderNumber}/cancel",
     resource: "orders",
     operation: "action",
@@ -765,7 +765,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/orders/:orderNumber/revert",
+    fastifyPath: "/v1/orders/:orderNumber/revert",
     stripePath: "/v1/orders/{orderNumber}/revert",
     resource: "orders",
     operation: "create",
@@ -776,7 +776,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/orders/subscription/:subscriptionKey/pending",
+    fastifyPath: "/v1/orders/subscription/:subscriptionKey/pending",
     stripePath: "/v1/orders/subscription/{subscription-key}/pending",
     resource: "orders",
     operation: "list",
@@ -787,7 +787,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/orderActions/:id",
+    fastifyPath: "/v1/orderActions/:id",
     stripePath: "/v1/orderActions/{id}",
     resource: "orderActions",
     operation: "update",
@@ -797,7 +797,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/order-line-items/:itemId",
+    fastifyPath: "/v1/order-line-items/:itemId",
     stripePath: "/v1/order-line-items/{itemId}",
     resource: "order-line-items",
     operation: "retrieve",
@@ -808,7 +808,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/order-line-items/:itemId",
+    fastifyPath: "/v1/order-line-items/:itemId",
     stripePath: "/v1/order-line-items/{itemId}",
     resource: "order-line-items",
     operation: "update",
@@ -819,7 +819,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/order-line-items/bulk",
+    fastifyPath: "/v1/order-line-items/bulk",
     stripePath: "/v1/order-line-items/bulk",
     resource: "order-line-items",
     operation: "action",
@@ -829,7 +829,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/fulfillments",
+    fastifyPath: "/v1/fulfillments",
     stripePath: "/v1/fulfillments",
     resource: "fulfillments",
     operation: "create",
@@ -839,7 +839,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/fulfillments/:key",
+    fastifyPath: "/v1/fulfillments/:key",
     stripePath: "/v1/fulfillments/{key}",
     resource: "fulfillments",
     operation: "retrieve",
@@ -850,7 +850,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/fulfillments/:key",
+    fastifyPath: "/v1/fulfillments/:key",
     stripePath: "/v1/fulfillments/{key}",
     resource: "fulfillments",
     operation: "update",
@@ -861,7 +861,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/fulfillments/:key",
+    fastifyPath: "/v1/fulfillments/:key",
     stripePath: "/v1/fulfillments/{key}",
     resource: "fulfillments",
     operation: "delete",
@@ -872,7 +872,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/fulfillment-items",
+    fastifyPath: "/v1/fulfillment-items",
     stripePath: "/v1/fulfillment-items",
     resource: "fulfillment-items",
     operation: "create",
@@ -881,7 +881,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/fulfillment-items/:id",
+    fastifyPath: "/v1/fulfillment-items/:id",
     stripePath: "/v1/fulfillment-items/{id}",
     resource: "fulfillment-items",
     operation: "retrieve",
@@ -891,7 +891,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/fulfillment-items/:id",
+    fastifyPath: "/v1/fulfillment-items/:id",
     stripePath: "/v1/fulfillment-items/{id}",
     resource: "fulfillment-items",
     operation: "update",
@@ -901,7 +901,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/fulfillment-items/:id",
+    fastifyPath: "/v1/fulfillment-items/:id",
     stripePath: "/v1/fulfillment-items/{id}",
     resource: "fulfillment-items",
     operation: "delete",
@@ -911,7 +911,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/ramps/:rampNumber",
+    fastifyPath: "/v1/ramps/:rampNumber",
     stripePath: "/v1/ramps/{rampNumber}",
     resource: "ramps",
     operation: "retrieve",
@@ -921,7 +921,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/ramps/:rampNumber/ramp-metrics",
+    fastifyPath: "/v1/ramps/:rampNumber/ramp-metrics",
     stripePath: "/v1/ramps/{rampNumber}/ramp-metrics",
     resource: "ramps",
     operation: "list",
@@ -931,7 +931,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/ramps",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/ramps",
     stripePath: "/v1/subscriptions/{subscriptionKey}/ramps",
     resource: "subscriptions",
     operation: "list",
@@ -942,7 +942,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/ramp-metrics",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/ramp-metrics",
     stripePath: "/v1/subscriptions/{subscriptionKey}/ramp-metrics",
     resource: "subscriptions",
     operation: "list",
@@ -953,7 +953,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/orders/:orderNumber/ramp-metrics",
+    fastifyPath: "/v1/orders/:orderNumber/ramp-metrics",
     stripePath: "/v1/orders/{orderNumber}/ramp-metrics",
     resource: "orders",
     operation: "list",
@@ -964,7 +964,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/subscriptions/preview",
+    fastifyPath: "/v1/subscriptions/preview",
     stripePath: "/v1/subscriptions/preview",
     resource: "subscriptions",
     operation: "action",
@@ -974,7 +974,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/preview",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/preview",
     stripePath: "/v1/subscriptions/{subscription-key}/preview",
     resource: "subscriptions",
     operation: "action",
@@ -985,7 +985,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/subscriptions",
+    fastifyPath: "/v1/subscriptions",
     stripePath: "/v1/subscriptions",
     resource: "subscriptions",
     operation: "create",
@@ -995,7 +995,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscriptions/accounts/:accountKey",
+    fastifyPath: "/v1/subscriptions/accounts/:accountKey",
     stripePath: "/v1/subscriptions/accounts/{account-key}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -1006,7 +1006,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey",
     stripePath: "/v1/subscriptions/{subscription-key}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -1017,7 +1017,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey",
     stripePath: "/v1/subscriptions/{subscription-key}",
     resource: "subscriptions",
     operation: "update",
@@ -1028,7 +1028,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/versions/:version",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/versions/:version",
     stripePath: "/v1/subscriptions/{subscription-key}/versions/{version}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -1039,7 +1039,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/renew",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/renew",
     stripePath: "/v1/subscriptions/{subscription-key}/renew",
     resource: "subscriptions",
     operation: "action",
@@ -1050,7 +1050,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/cancel",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/cancel",
     stripePath: "/v1/subscriptions/{subscription-key}/cancel",
     resource: "subscriptions",
     operation: "action",
@@ -1061,7 +1061,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/resume",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/resume",
     stripePath: "/v1/subscriptions/{subscription-key}/resume",
     resource: "subscriptions",
     operation: "action",
@@ -1072,7 +1072,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/suspend",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/suspend",
     stripePath: "/v1/subscriptions/{subscription-key}/suspend",
     resource: "subscriptions",
     operation: "action",
@@ -1083,7 +1083,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionKey/delete",
+    fastifyPath: "/v1/subscriptions/:subscriptionKey/delete",
     stripePath: "/v1/subscriptions/{subscription-key}/delete",
     resource: "subscriptions",
     operation: "action",
@@ -1094,7 +1094,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/subscriptions/:subscriptionNumber/versions/:version/customFields",
+    fastifyPath: "/v1/subscriptions/:subscriptionNumber/versions/:version/customFields",
     stripePath: "/v1/subscriptions/{subscriptionNumber}/versions/{version}/customFields",
     resource: "subscriptions",
     operation: "action",
@@ -1105,7 +1105,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscriptions/subscription-metrics",
+    fastifyPath: "/v1/subscriptions/subscription-metrics",
     stripePath: "/v1/subscriptions/subscription-metrics",
     resource: "subscriptions",
     operation: "list",
@@ -1115,7 +1115,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/rateplans/:ratePlanId",
+    fastifyPath: "/v1/rateplans/:ratePlanId",
     stripePath: "/v1/rateplans/{ratePlanId}",
     resource: "rateplans",
     operation: "retrieve",
@@ -1125,7 +1125,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/omni-channel-subscriptions",
+    fastifyPath: "/v1/omni-channel-subscriptions",
     stripePath: "/v1/omni-channel-subscriptions",
     resource: "omni-channel-subscriptions",
     operation: "create",
@@ -1134,7 +1134,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/omni-channel-subscriptions/:subscriptionKey",
+    fastifyPath: "/v1/omni-channel-subscriptions/:subscriptionKey",
     stripePath: "/v1/omni-channel-subscriptions/{subscriptionKey}",
     resource: "omni-channel-subscriptions",
     operation: "retrieve",
@@ -1144,7 +1144,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/omni-channel-subscriptions/:subscriptionKey",
+    fastifyPath: "/v1/omni-channel-subscriptions/:subscriptionKey",
     stripePath: "/v1/omni-channel-subscriptions/{subscriptionKey}",
     resource: "omni-channel-subscriptions",
     operation: "delete",
@@ -1154,7 +1154,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscription-change-logs/:subscriptionNumber",
+    fastifyPath: "/v1/subscription-change-logs/:subscriptionNumber",
     stripePath: "/v1/subscription-change-logs/{subscriptionNumber}",
     resource: "subscription-change-logs",
     operation: "retrieve",
@@ -1164,7 +1164,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscription-change-logs/orders/:orderNumber",
+    fastifyPath: "/v1/subscription-change-logs/orders/:orderNumber",
     stripePath: "/v1/subscription-change-logs/orders/{orderNumber}",
     resource: "subscription-change-logs",
     operation: "retrieve",
@@ -1174,7 +1174,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/subscription-change-logs/:subscriptionNumber/versions/:version",
+    fastifyPath: "/v1/subscription-change-logs/:subscriptionNumber/versions/:version",
     stripePath: "/v1/subscription-change-logs/{subscriptionNumber}/versions/{version}",
     resource: "subscription-change-logs",
     operation: "retrieve",
@@ -1184,7 +1184,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/ppdd/reverse-rollover",
+    fastifyPath: "/v1/ppdd/reverse-rollover",
     stripePath: "/v1/ppdd/reverse-rollover",
     resource: "ppdd",
     operation: "create",
@@ -1193,7 +1193,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/ppdd/rollover",
+    fastifyPath: "/v1/ppdd/rollover",
     stripePath: "/v1/ppdd/rollover",
     resource: "ppdd",
     operation: "create",
@@ -1202,7 +1202,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/prepaid-balance-funds/deplete",
+    fastifyPath: "/v1/prepaid-balance-funds/deplete",
     stripePath: "/v1/prepaid-balance-funds/deplete",
     resource: "prepaid-balance-funds",
     operation: "create",
@@ -1211,7 +1211,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/usage",
+    fastifyPath: "/v1/usage",
     stripePath: "/v1/usage",
     resource: "usage",
     operation: "create",
@@ -1221,7 +1221,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/invoice-item/:invoiceItemId/usage-rate-detail",
+    fastifyPath: "/v1/invoices/invoice-item/:invoiceItemId/usage-rate-detail",
     stripePath: "/v1/invoices/invoice-item/{invoice-item-id}/usage-rate-detail",
     resource: "invoices",
     operation: "list",
@@ -1232,7 +1232,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/object/usage",
+    fastifyPath: "/v1/object/usage",
     stripePath: "/v1/object/usage",
     resource: "usage",
     operation: "create",
@@ -1242,7 +1242,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/usage/:id",
+    fastifyPath: "/v1/object/usage/:id",
     stripePath: "/v1/object/usage/{id}",
     resource: "usage",
     operation: "retrieve",
@@ -1253,7 +1253,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/object/usage/:id",
+    fastifyPath: "/v1/object/usage/:id",
     stripePath: "/v1/object/usage/{id}",
     resource: "usage",
     operation: "update",
@@ -1264,7 +1264,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/object/usage/:id",
+    fastifyPath: "/v1/object/usage/:id",
     stripePath: "/v1/object/usage/{id}",
     resource: "usage",
     operation: "delete",
@@ -1275,7 +1275,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/adjustments",
+    fastifyPath: "/v1/adjustments",
     stripePath: "/v1/adjustments",
     resource: "adjustments",
     operation: "list",
@@ -1285,7 +1285,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/adjustments",
+    fastifyPath: "/v1/adjustments",
     stripePath: "/v1/adjustments",
     resource: "adjustments",
     operation: "create",
@@ -1295,7 +1295,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/adjustments/preview",
+    fastifyPath: "/v1/adjustments/preview",
     stripePath: "/v1/adjustments/preview",
     resource: "adjustments",
     operation: "action",
@@ -1305,7 +1305,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/adjustments/:adjustmentKey",
+    fastifyPath: "/v1/adjustments/:adjustmentKey",
     stripePath: "/v1/adjustments/{adjustment-key}",
     resource: "adjustments",
     operation: "retrieve",
@@ -1316,7 +1316,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/adjustments/:adjustmentId/cancel",
+    fastifyPath: "/v1/adjustments/:adjustmentId/cancel",
     stripePath: "/v1/adjustments/{adjustmentId}/cancel",
     resource: "adjustments",
     operation: "action",
@@ -1327,7 +1327,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/billing-documents",
+    fastifyPath: "/v1/billing-documents",
     stripePath: "/v1/billing-documents",
     resource: "billing-documents",
     operation: "list",
@@ -1336,7 +1336,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/accounts/billing-documents/files/deletion-jobs",
+    fastifyPath: "/v1/accounts/billing-documents/files/deletion-jobs",
     stripePath: "/v1/accounts/billing-documents/files/deletion-jobs",
     resource: "accounts",
     operation: "create",
@@ -1346,7 +1346,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounts/billing-documents/files/deletion-jobs/:jobId",
+    fastifyPath: "/v1/accounts/billing-documents/files/deletion-jobs/:jobId",
     stripePath: "/v1/accounts/billing-documents/files/deletion-jobs/{jobId}",
     resource: "accounts",
     operation: "retrieve",
@@ -1357,7 +1357,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/accounts/:key/billing-documents/generate",
+    fastifyPath: "/v1/accounts/:key/billing-documents/generate",
     stripePath: "/v1/accounts/{key}/billing-documents/generate",
     resource: "accounts",
     operation: "action",
@@ -1368,7 +1368,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoices",
+    fastifyPath: "/v1/invoices",
     stripePath: "/v1/invoices",
     resource: "invoices",
     operation: "create",
@@ -1378,7 +1378,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoices",
+    fastifyPath: "/v1/invoices",
     stripePath: "/v1/invoices",
     resource: "invoices",
     operation: "action",
@@ -1388,7 +1388,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoices/batch",
+    fastifyPath: "/v1/invoices/batch",
     stripePath: "/v1/invoices/batch",
     resource: "invoices",
     operation: "action",
@@ -1398,7 +1398,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoices/bulk-post",
+    fastifyPath: "/v1/invoices/bulk-post",
     stripePath: "/v1/invoices/bulk-post",
     resource: "invoices",
     operation: "create",
@@ -1408,7 +1408,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/pdf-status",
+    fastifyPath: "/v1/invoices/pdf-status",
     stripePath: "/v1/invoices/pdf-status",
     resource: "invoices",
     operation: "action",
@@ -1418,7 +1418,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey",
+    fastifyPath: "/v1/invoices/:invoiceKey",
     stripePath: "/v1/invoices/{invoiceKey}",
     resource: "invoices",
     operation: "retrieve",
@@ -1429,7 +1429,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey",
+    fastifyPath: "/v1/invoices/:invoiceKey",
     stripePath: "/v1/invoices/{invoiceKey}",
     resource: "invoices",
     operation: "update",
@@ -1440,7 +1440,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey",
+    fastifyPath: "/v1/invoices/:invoiceKey",
     stripePath: "/v1/invoices/{invoiceKey}",
     resource: "invoices",
     operation: "delete",
@@ -1451,7 +1451,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/application-parts",
+    fastifyPath: "/v1/invoices/:invoiceKey/application-parts",
     stripePath: "/v1/invoices/{invoiceKey}/application-parts",
     resource: "invoices",
     operation: "list",
@@ -1462,7 +1462,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/emails",
+    fastifyPath: "/v1/invoices/:invoiceKey/emails",
     stripePath: "/v1/invoices/{invoiceKey}/emails",
     resource: "invoices",
     operation: "create",
@@ -1473,7 +1473,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/files",
+    fastifyPath: "/v1/invoices/:invoiceKey/files",
     stripePath: "/v1/invoices/{invoiceKey}/files",
     resource: "invoices",
     operation: "list",
@@ -1484,7 +1484,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/files",
+    fastifyPath: "/v1/invoices/:invoiceKey/files",
     stripePath: "/v1/invoices/{invoiceKey}/files",
     resource: "invoices",
     operation: "create",
@@ -1495,7 +1495,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/items",
+    fastifyPath: "/v1/invoices/:invoiceKey/items",
     stripePath: "/v1/invoices/{invoiceKey}/items",
     resource: "invoices",
     operation: "list",
@@ -1506,7 +1506,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/items/:itemId/taxation-items",
+    fastifyPath: "/v1/invoices/:invoiceKey/items/:itemId/taxation-items",
     stripePath: "/v1/invoices/{invoiceKey}/items/{itemId}/taxation-items",
     resource: "invoices",
     operation: "list",
@@ -1517,7 +1517,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/reverse",
+    fastifyPath: "/v1/invoices/:invoiceKey/reverse",
     stripePath: "/v1/invoices/{invoiceKey}/reverse",
     resource: "invoices",
     operation: "action",
@@ -1528,7 +1528,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/taxation-items",
+    fastifyPath: "/v1/invoices/:invoiceKey/taxation-items",
     stripePath: "/v1/invoices/{invoiceKey}/taxation-items",
     resource: "invoices",
     operation: "create",
@@ -1539,7 +1539,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/write-off",
+    fastifyPath: "/v1/invoices/:invoiceKey/write-off",
     stripePath: "/v1/invoices/{invoiceKey}/write-off",
     resource: "invoices",
     operation: "action",
@@ -1550,7 +1550,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos",
+    fastifyPath: "/v1/credit-memos",
     stripePath: "/v1/credit-memos",
     resource: "credit-memos",
     operation: "list",
@@ -1560,7 +1560,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos",
+    fastifyPath: "/v1/credit-memos",
     stripePath: "/v1/credit-memos",
     resource: "credit-memos",
     operation: "create",
@@ -1570,7 +1570,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos/bulk",
+    fastifyPath: "/v1/credit-memos/bulk",
     stripePath: "/v1/credit-memos/bulk",
     resource: "credit-memos",
     operation: "action",
@@ -1580,7 +1580,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/bulk",
+    fastifyPath: "/v1/credit-memos/bulk",
     stripePath: "/v1/credit-memos/bulk",
     resource: "credit-memos",
     operation: "action",
@@ -1590,7 +1590,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/pdf-status",
+    fastifyPath: "/v1/credit-memos/pdf-status",
     stripePath: "/v1/credit-memos/pdf-status",
     resource: "credit-memos",
     operation: "action",
@@ -1600,7 +1600,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoId/items/:cmitemid/taxation-items",
+    fastifyPath: "/v1/credit-memos/:creditMemoId/items/:cmitemid/taxation-items",
     stripePath: "/v1/credit-memos/{creditMemoId}/items/{cmitemid}/taxation-items",
     resource: "credit-memos",
     operation: "list",
@@ -1611,7 +1611,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoId/write-off",
+    fastifyPath: "/v1/credit-memos/:creditMemoId/write-off",
     stripePath: "/v1/credit-memos/{creditMemoId}/write-off",
     resource: "credit-memos",
     operation: "action",
@@ -1622,7 +1622,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey",
     stripePath: "/v1/credit-memos/{creditMemoKey}",
     resource: "credit-memos",
     operation: "retrieve",
@@ -1633,7 +1633,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey",
     stripePath: "/v1/credit-memos/{creditMemoKey}",
     resource: "credit-memos",
     operation: "update",
@@ -1644,7 +1644,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey",
     stripePath: "/v1/credit-memos/{creditMemoKey}",
     resource: "credit-memos",
     operation: "delete",
@@ -1655,7 +1655,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/apply",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/apply",
     stripePath: "/v1/credit-memos/{creditMemoKey}/apply",
     resource: "credit-memos",
     operation: "action",
@@ -1666,7 +1666,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/cancel",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/cancel",
     stripePath: "/v1/credit-memos/{creditMemoKey}/cancel",
     resource: "credit-memos",
     operation: "action",
@@ -1677,7 +1677,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/emails",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/emails",
     stripePath: "/v1/credit-memos/{creditMemoKey}/emails",
     resource: "credit-memos",
     operation: "create",
@@ -1688,7 +1688,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/files",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/files",
     stripePath: "/v1/credit-memos/{creditMemoKey}/files",
     resource: "credit-memos",
     operation: "list",
@@ -1699,7 +1699,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/files",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/files",
     stripePath: "/v1/credit-memos/{creditMemoKey}/files",
     resource: "credit-memos",
     operation: "create",
@@ -1710,7 +1710,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/items",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/items",
     stripePath: "/v1/credit-memos/{creditMemoKey}/items",
     resource: "credit-memos",
     operation: "list",
@@ -1721,7 +1721,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/items/:cmitemid",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/items/:cmitemid",
     stripePath: "/v1/credit-memos/{creditMemoKey}/items/{cmitemid}",
     resource: "credit-memos",
     operation: "retrieve",
@@ -1732,7 +1732,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/parts",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/parts",
     stripePath: "/v1/credit-memos/{creditMemoKey}/parts",
     resource: "credit-memos",
     operation: "list",
@@ -1743,7 +1743,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/parts/:partid",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/parts/:partid",
     stripePath: "/v1/credit-memos/{creditMemoKey}/parts/{partid}",
     resource: "credit-memos",
     operation: "retrieve",
@@ -1754,7 +1754,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/pdfs",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/pdfs",
     stripePath: "/v1/credit-memos/{creditMemoKey}/pdfs",
     resource: "credit-memos",
     operation: "create",
@@ -1765,7 +1765,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/post",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/post",
     stripePath: "/v1/credit-memos/{creditMemoKey}/post",
     resource: "credit-memos",
     operation: "action",
@@ -1776,7 +1776,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/refund",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/refund",
     stripePath: "/v1/credit-memos/{creditMemoKey}/refund",
     resource: "credit-memos",
     operation: "action",
@@ -1787,7 +1787,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/reverse",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/reverse",
     stripePath: "/v1/credit-memos/{creditMemoKey}/reverse",
     resource: "credit-memos",
     operation: "action",
@@ -1798,7 +1798,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/taxation-items",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/taxation-items",
     stripePath: "/v1/credit-memos/{creditMemoKey}/taxation-items",
     resource: "credit-memos",
     operation: "create",
@@ -1809,7 +1809,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/unapply",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/unapply",
     stripePath: "/v1/credit-memos/{creditMemoKey}/unapply",
     resource: "credit-memos",
     operation: "action",
@@ -1820,7 +1820,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/unpost",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/unpost",
     stripePath: "/v1/credit-memos/{creditMemoKey}/unpost",
     resource: "credit-memos",
     operation: "action",
@@ -1831,7 +1831,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/credit-memos/invoice/:invoiceKey",
+    fastifyPath: "/v1/credit-memos/invoice/:invoiceKey",
     stripePath: "/v1/credit-memos/invoice/{invoiceKey}",
     resource: "credit-memos",
     operation: "create",
@@ -1842,7 +1842,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/unapply-async-jobs/:unapplyAsyncJobId",
+    fastifyPath: "/v1/credit-memos/unapply-async-jobs/:unapplyAsyncJobId",
     stripePath: "/v1/credit-memos/unapply-async-jobs/{unapplyAsyncJobId}",
     resource: "credit-memos",
     operation: "retrieve",
@@ -1853,7 +1853,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/apply-async-jobs/:applyAsyncJobId",
+    fastifyPath: "/v1/credit-memos/apply-async-jobs/:applyAsyncJobId",
     stripePath: "/v1/credit-memos/apply-async-jobs/{applyAsyncJobId}",
     resource: "credit-memos",
     operation: "retrieve",
@@ -1864,7 +1864,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/apply-async",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/apply-async",
     stripePath: "/v1/credit-memos/{creditMemoKey}/apply-async",
     resource: "credit-memos",
     operation: "action",
@@ -1875,7 +1875,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/unapply-async",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/unapply-async",
     stripePath: "/v1/credit-memos/{creditMemoKey}/unapply-async",
     resource: "credit-memos",
     operation: "action",
@@ -1886,7 +1886,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos",
+    fastifyPath: "/v1/debit-memos",
     stripePath: "/v1/debit-memos",
     resource: "debit-memos",
     operation: "list",
@@ -1896,7 +1896,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos",
+    fastifyPath: "/v1/debit-memos",
     stripePath: "/v1/debit-memos",
     resource: "debit-memos",
     operation: "create",
@@ -1906,7 +1906,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos",
+    fastifyPath: "/v1/debit-memos",
     stripePath: "/v1/debit-memos",
     resource: "debit-memos",
     operation: "action",
@@ -1916,7 +1916,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos/bulk",
+    fastifyPath: "/v1/debit-memos/bulk",
     stripePath: "/v1/debit-memos/bulk",
     resource: "debit-memos",
     operation: "action",
@@ -1926,7 +1926,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/bulk",
+    fastifyPath: "/v1/debit-memos/bulk",
     stripePath: "/v1/debit-memos/bulk",
     resource: "debit-memos",
     operation: "action",
@@ -1936,7 +1936,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/pdf-status",
+    fastifyPath: "/v1/debit-memos/pdf-status",
     stripePath: "/v1/debit-memos/pdf-status",
     resource: "debit-memos",
     operation: "action",
@@ -1946,7 +1946,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoId/application-parts",
+    fastifyPath: "/v1/debit-memos/:debitMemoId/application-parts",
     stripePath: "/v1/debit-memos/{debitMemoId}/application-parts",
     resource: "debit-memos",
     operation: "list",
@@ -1957,7 +1957,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoId/items/:dmitemid/taxation-items",
+    fastifyPath: "/v1/debit-memos/:debitMemoId/items/:dmitemid/taxation-items",
     stripePath: "/v1/debit-memos/{debitMemoId}/items/{dmitemid}/taxation-items",
     resource: "debit-memos",
     operation: "list",
@@ -1968,7 +1968,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey",
     stripePath: "/v1/debit-memos/{debitMemoKey}",
     resource: "debit-memos",
     operation: "retrieve",
@@ -1979,7 +1979,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey",
     stripePath: "/v1/debit-memos/{debitMemoKey}",
     resource: "debit-memos",
     operation: "update",
@@ -1990,7 +1990,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey",
     stripePath: "/v1/debit-memos/{debitMemoKey}",
     resource: "debit-memos",
     operation: "delete",
@@ -2001,7 +2001,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/cancel",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/cancel",
     stripePath: "/v1/debit-memos/{debitMemoKey}/cancel",
     resource: "debit-memos",
     operation: "action",
@@ -2012,7 +2012,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/collect",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/collect",
     stripePath: "/v1/debit-memos/{debitMemoKey}/collect",
     resource: "debit-memos",
     operation: "action",
@@ -2023,7 +2023,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/emails",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/emails",
     stripePath: "/v1/debit-memos/{debitMemoKey}/emails",
     resource: "debit-memos",
     operation: "create",
@@ -2034,7 +2034,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/files",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/files",
     stripePath: "/v1/debit-memos/{debitMemoKey}/files",
     resource: "debit-memos",
     operation: "list",
@@ -2045,7 +2045,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/files",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/files",
     stripePath: "/v1/debit-memos/{debitMemoKey}/files",
     resource: "debit-memos",
     operation: "create",
@@ -2056,7 +2056,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/items",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/items",
     stripePath: "/v1/debit-memos/{debitMemoKey}/items",
     resource: "debit-memos",
     operation: "list",
@@ -2067,7 +2067,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/items/:dmitemid",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/items/:dmitemid",
     stripePath: "/v1/debit-memos/{debitMemoKey}/items/{dmitemid}",
     resource: "debit-memos",
     operation: "retrieve",
@@ -2078,7 +2078,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/pdfs",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/pdfs",
     stripePath: "/v1/debit-memos/{debitMemoKey}/pdfs",
     resource: "debit-memos",
     operation: "create",
@@ -2089,7 +2089,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/post",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/post",
     stripePath: "/v1/debit-memos/{debitMemoKey}/post",
     resource: "debit-memos",
     operation: "action",
@@ -2100,7 +2100,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/taxation-items",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/taxation-items",
     stripePath: "/v1/debit-memos/{debitMemoKey}/taxation-items",
     resource: "debit-memos",
     operation: "create",
@@ -2111,7 +2111,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/unpost",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/unpost",
     stripePath: "/v1/debit-memos/{debitMemoKey}/unpost",
     resource: "debit-memos",
     operation: "action",
@@ -2122,7 +2122,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/debit-memos/invoice/:invoiceKey",
+    fastifyPath: "/v1/debit-memos/invoice/:invoiceKey",
     stripePath: "/v1/debit-memos/invoice/{invoiceKey}",
     resource: "debit-memos",
     operation: "create",
@@ -2133,7 +2133,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/write-off",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/write-off",
     stripePath: "/v1/debit-memos/{debitMemoKey}/write-off",
     resource: "debit-memos",
     operation: "action",
@@ -2144,7 +2144,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/einvoice/service-providers",
+    fastifyPath: "/v1/einvoice/service-providers",
     stripePath: "/v1/einvoice/service-providers",
     resource: "einvoice",
     operation: "list",
@@ -2153,7 +2153,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/einvoice/service-providers",
+    fastifyPath: "/v1/einvoice/service-providers",
     stripePath: "/v1/einvoice/service-providers",
     resource: "einvoice",
     operation: "create",
@@ -2162,7 +2162,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/einvoice/service-providers/:key",
+    fastifyPath: "/v1/einvoice/service-providers/:key",
     stripePath: "/v1/einvoice/service-providers/{key}",
     resource: "einvoice",
     operation: "retrieve",
@@ -2172,7 +2172,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/einvoice/service-providers/:key",
+    fastifyPath: "/v1/einvoice/service-providers/:key",
     stripePath: "/v1/einvoice/service-providers/{key}",
     resource: "einvoice",
     operation: "update",
@@ -2182,7 +2182,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/einvoice/service-providers/:key",
+    fastifyPath: "/v1/einvoice/service-providers/:key",
     stripePath: "/v1/einvoice/service-providers/{key}",
     resource: "einvoice",
     operation: "delete",
@@ -2192,7 +2192,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/einvoice/business-regions",
+    fastifyPath: "/v1/einvoice/business-regions",
     stripePath: "/v1/einvoice/business-regions",
     resource: "einvoice",
     operation: "list",
@@ -2201,7 +2201,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/einvoice/business-regions",
+    fastifyPath: "/v1/einvoice/business-regions",
     stripePath: "/v1/einvoice/business-regions",
     resource: "einvoice",
     operation: "create",
@@ -2210,7 +2210,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/einvoice/business-regions/:key",
+    fastifyPath: "/v1/einvoice/business-regions/:key",
     stripePath: "/v1/einvoice/business-regions/{key}",
     resource: "einvoice",
     operation: "retrieve",
@@ -2220,7 +2220,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/einvoice/business-regions/:key",
+    fastifyPath: "/v1/einvoice/business-regions/:key",
     stripePath: "/v1/einvoice/business-regions/{key}",
     resource: "einvoice",
     operation: "update",
@@ -2230,7 +2230,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/einvoice/business-regions/:key",
+    fastifyPath: "/v1/einvoice/business-regions/:key",
     stripePath: "/v1/einvoice/business-regions/{key}",
     resource: "einvoice",
     operation: "delete",
@@ -2240,7 +2240,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/e-invoice/mandates",
+    fastifyPath: "/v1/e-invoice/mandates",
     stripePath: "/v1/e-invoice/mandates",
     resource: "e-invoice",
     operation: "list",
@@ -2249,7 +2249,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/e-invoice/mandate",
+    fastifyPath: "/v1/invoices/:invoiceKey/e-invoice/mandate",
     stripePath: "/v1/invoices/{invoiceKey}/e-invoice/mandate",
     resource: "invoices",
     operation: "list",
@@ -2260,7 +2260,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/e-invoice/mandate",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/e-invoice/mandate",
     stripePath: "/v1/credit-memos/{creditMemoKey}/e-invoice/mandate",
     resource: "credit-memos",
     operation: "list",
@@ -2271,7 +2271,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/e-invoice/mandate",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/e-invoice/mandate",
     stripePath: "/v1/debit-memos/{debitMemoKey}/e-invoice/mandate",
     resource: "debit-memos",
     operation: "list",
@@ -2282,7 +2282,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/e-invoice/download",
+    fastifyPath: "/v1/invoices/:invoiceKey/e-invoice/download",
     stripePath: "/v1/invoices/{invoiceKey}/e-invoice/download",
     resource: "invoices",
     operation: "list",
@@ -2293,7 +2293,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/e-invoice/download",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/e-invoice/download",
     stripePath: "/v1/credit-memos/{creditMemoKey}/e-invoice/download",
     resource: "credit-memos",
     operation: "list",
@@ -2304,7 +2304,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/e-invoice/download",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/e-invoice/download",
     stripePath: "/v1/debit-memos/{debitMemoKey}/e-invoice/download",
     resource: "debit-memos",
     operation: "list",
@@ -2315,7 +2315,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/e-invoice/cancel",
+    fastifyPath: "/v1/invoices/:invoiceKey/e-invoice/cancel",
     stripePath: "/v1/invoices/{invoiceKey}/e-invoice/cancel",
     resource: "invoices",
     operation: "action",
@@ -2326,7 +2326,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/einvoice/templates",
+    fastifyPath: "/v1/einvoice/templates",
     stripePath: "/v1/einvoice/templates",
     resource: "einvoice",
     operation: "list",
@@ -2335,7 +2335,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/einvoice/templates",
+    fastifyPath: "/v1/einvoice/templates",
     stripePath: "/v1/einvoice/templates",
     resource: "einvoice",
     operation: "create",
@@ -2344,7 +2344,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/einvoice/templates/:key",
+    fastifyPath: "/v1/einvoice/templates/:key",
     stripePath: "/v1/einvoice/templates/{key}",
     resource: "einvoice",
     operation: "retrieve",
@@ -2354,7 +2354,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/einvoice/templates/:key",
+    fastifyPath: "/v1/einvoice/templates/:key",
     stripePath: "/v1/einvoice/templates/{key}",
     resource: "einvoice",
     operation: "update",
@@ -2364,7 +2364,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/einvoice/templates/:key",
+    fastifyPath: "/v1/einvoice/templates/:key",
     stripePath: "/v1/einvoice/templates/{key}",
     resource: "einvoice",
     operation: "delete",
@@ -2374,7 +2374,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/e-invoice/sync-status",
+    fastifyPath: "/v1/invoices/:invoiceKey/e-invoice/sync-status",
     stripePath: "/v1/invoices/{invoiceKey}/e-invoice/sync-status",
     resource: "invoices",
     operation: "action",
@@ -2385,7 +2385,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/e-invoice/sync-status",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/e-invoice/sync-status",
     stripePath: "/v1/debit-memos/{debitMemoKey}/e-invoice/sync-status",
     resource: "debit-memos",
     operation: "action",
@@ -2396,7 +2396,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/e-invoice/sync-status",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/e-invoice/sync-status",
     stripePath: "/v1/credit-memos/{creditMemoKey}/e-invoice/sync-status",
     resource: "credit-memos",
     operation: "action",
@@ -2407,7 +2407,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoices/:invoiceKey/einvoice/generate",
+    fastifyPath: "/v1/invoices/:invoiceKey/einvoice/generate",
     stripePath: "/v1/invoices/{invoiceKey}/einvoice/generate",
     resource: "invoices",
     operation: "action",
@@ -2418,7 +2418,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/credit-memos/:creditMemoKey/e-invoice/generate",
+    fastifyPath: "/v1/credit-memos/:creditMemoKey/e-invoice/generate",
     stripePath: "/v1/credit-memos/{creditMemoKey}/e-invoice/generate",
     resource: "credit-memos",
     operation: "action",
@@ -2429,7 +2429,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/debit-memos/:debitMemoKey/e-invoice/generate",
+    fastifyPath: "/v1/debit-memos/:debitMemoKey/e-invoice/generate",
     stripePath: "/v1/debit-memos/{debitMemoKey}/e-invoice/generate",
     resource: "debit-memos",
     operation: "action",
@@ -2440,7 +2440,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoice-schedules",
+    fastifyPath: "/v1/invoice-schedules",
     stripePath: "/v1/invoice-schedules",
     resource: "invoice-schedules",
     operation: "create",
@@ -2450,7 +2450,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey",
     stripePath: "/v1/invoice-schedules/{scheduleKey}",
     resource: "invoice-schedules",
     operation: "retrieve",
@@ -2461,7 +2461,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey",
     stripePath: "/v1/invoice-schedules/{scheduleKey}",
     resource: "invoice-schedules",
     operation: "update",
@@ -2472,7 +2472,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey",
     stripePath: "/v1/invoice-schedules/{scheduleKey}",
     resource: "invoice-schedules",
     operation: "delete",
@@ -2483,7 +2483,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey/execute",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey/execute",
     stripePath: "/v1/invoice-schedules/{scheduleKey}/execute",
     resource: "invoice-schedules",
     operation: "action",
@@ -2494,7 +2494,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey/pause",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey/pause",
     stripePath: "/v1/invoice-schedules/{scheduleKey}/pause",
     resource: "invoice-schedules",
     operation: "action",
@@ -2505,7 +2505,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey/resume",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey/resume",
     stripePath: "/v1/invoice-schedules/{scheduleKey}/resume",
     resource: "invoice-schedules",
     operation: "action",
@@ -2516,7 +2516,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey/detach",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey/detach",
     stripePath: "/v1/invoice-schedules/{scheduleKey}/detach",
     resource: "invoice-schedules",
     operation: "action",
@@ -2527,7 +2527,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/invoice-schedules/:scheduleKey/attach",
+    fastifyPath: "/v1/invoice-schedules/:scheduleKey/attach",
     stripePath: "/v1/invoice-schedules/{scheduleKey}/attach",
     resource: "invoice-schedules",
     operation: "action",
@@ -2538,7 +2538,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/object/taxation-item",
+    fastifyPath: "/v1/object/taxation-item",
     stripePath: "/v1/object/taxation-item",
     resource: "object",
     operation: "create",
@@ -2547,7 +2547,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/taxation-items/:id",
+    fastifyPath: "/v1/taxation-items/:id",
     stripePath: "/v1/taxation-items/{id}",
     resource: "taxation-items",
     operation: "retrieve",
@@ -2557,7 +2557,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/taxation-items/:id",
+    fastifyPath: "/v1/taxation-items/:id",
     stripePath: "/v1/taxation-items/{id}",
     resource: "taxation-items",
     operation: "update",
@@ -2567,7 +2567,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/taxation-items/:id",
+    fastifyPath: "/v1/taxation-items/:id",
     stripePath: "/v1/taxation-items/{id}",
     resource: "taxation-items",
     operation: "delete",
@@ -2577,7 +2577,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/sequence-sets",
+    fastifyPath: "/v1/sequence-sets",
     stripePath: "/v1/sequence-sets",
     resource: "sequence-sets",
     operation: "list",
@@ -2587,7 +2587,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/sequence-sets",
+    fastifyPath: "/v1/sequence-sets",
     stripePath: "/v1/sequence-sets",
     resource: "sequence-sets",
     operation: "create",
@@ -2597,7 +2597,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/sequence-sets/:id",
+    fastifyPath: "/v1/sequence-sets/:id",
     stripePath: "/v1/sequence-sets/{id}",
     resource: "sequence-sets",
     operation: "retrieve",
@@ -2608,7 +2608,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/sequence-sets/:id",
+    fastifyPath: "/v1/sequence-sets/:id",
     stripePath: "/v1/sequence-sets/{id}",
     resource: "sequence-sets",
     operation: "update",
@@ -2619,7 +2619,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/sequence-sets/:id",
+    fastifyPath: "/v1/sequence-sets/:id",
     stripePath: "/v1/sequence-sets/{id}",
     resource: "sequence-sets",
     operation: "delete",
@@ -2630,7 +2630,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/operations/billing-preview",
+    fastifyPath: "/v1/operations/billing-preview",
     stripePath: "/v1/operations/billing-preview",
     resource: "operations",
     operation: "create",
@@ -2639,7 +2639,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/operations/invoice-collect",
+    fastifyPath: "/v1/operations/invoice-collect",
     stripePath: "/v1/operations/invoice-collect",
     resource: "operations",
     operation: "create",
@@ -2648,7 +2648,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/operations/jobs/:jobId",
+    fastifyPath: "/v1/operations/jobs/:jobId",
     stripePath: "/v1/operations/jobs/{jobId}",
     resource: "operations",
     operation: "retrieve",
@@ -2658,7 +2658,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/operations/bulk-pdf",
+    fastifyPath: "/v1/operations/bulk-pdf",
     stripePath: "/v1/operations/bulk-pdf",
     resource: "operations",
     operation: "create",
@@ -2667,7 +2667,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/operations/bulk-pdf/:jobId",
+    fastifyPath: "/v1/operations/bulk-pdf/:jobId",
     stripePath: "/v1/operations/bulk-pdf/{jobId}",
     resource: "operations",
     operation: "retrieve",
@@ -2677,7 +2677,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/bill-runs",
+    fastifyPath: "/v1/bill-runs",
     stripePath: "/v1/bill-runs",
     resource: "bill-runs",
     operation: "create",
@@ -2687,7 +2687,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/bill-runs/:billRunId",
+    fastifyPath: "/v1/bill-runs/:billRunId",
     stripePath: "/v1/bill-runs/{billRunId}",
     resource: "bill-runs",
     operation: "retrieve",
@@ -2698,7 +2698,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/bill-runs/:billRunId",
+    fastifyPath: "/v1/bill-runs/:billRunId",
     stripePath: "/v1/bill-runs/{billRunId}",
     resource: "bill-runs",
     operation: "delete",
@@ -2709,7 +2709,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/bill-runs/:billRunId/cancel",
+    fastifyPath: "/v1/bill-runs/:billRunId/cancel",
     stripePath: "/v1/bill-runs/{billRunId}/cancel",
     resource: "bill-runs",
     operation: "action",
@@ -2720,7 +2720,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/bill-runs/:billRunId/post",
+    fastifyPath: "/v1/bill-runs/:billRunId/post",
     stripePath: "/v1/bill-runs/{billRunId}/post",
     resource: "bill-runs",
     operation: "action",
@@ -2731,7 +2731,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/bill-runs/:billRunKey/emails",
+    fastifyPath: "/v1/bill-runs/:billRunKey/emails",
     stripePath: "/v1/bill-runs/{billRunKey}/emails",
     resource: "bill-runs",
     operation: "create",
@@ -2742,7 +2742,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/billing-preview-runs",
+    fastifyPath: "/v1/billing-preview-runs",
     stripePath: "/v1/billing-preview-runs",
     resource: "billing-preview-runs",
     operation: "create",
@@ -2751,7 +2751,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/billing-preview-runs/:billingPreviewRunId",
+    fastifyPath: "/v1/billing-preview-runs/:billingPreviewRunId",
     stripePath: "/v1/billing-preview-runs/{billingPreviewRunId}",
     resource: "billing-preview-runs",
     operation: "retrieve",
@@ -2761,7 +2761,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods",
+    fastifyPath: "/v1/payment-methods",
     stripePath: "/v1/payment-methods",
     resource: "payment-methods",
     operation: "create",
@@ -2771,7 +2771,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods/decryption",
+    fastifyPath: "/v1/payment-methods/decryption",
     stripePath: "/v1/payment-methods/decryption",
     resource: "payment-methods",
     operation: "create",
@@ -2781,7 +2781,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId",
     stripePath: "/v1/payment-methods/{payment-method-id}",
     resource: "payment-methods",
     operation: "retrieve",
@@ -2792,7 +2792,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId",
     stripePath: "/v1/payment-methods/{payment-method-id}",
     resource: "payment-methods",
     operation: "update",
@@ -2803,7 +2803,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId",
     stripePath: "/v1/payment-methods/{payment-method-id}",
     resource: "payment-methods",
     operation: "delete",
@@ -2814,7 +2814,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/verify",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/verify",
     stripePath: "/v1/payment-methods/{payment-method-id}/verify",
     resource: "payment-methods",
     operation: "action",
@@ -2825,7 +2825,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/scrub",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/scrub",
     stripePath: "/v1/payment-methods/{payment-method-id}/scrub",
     resource: "payment-methods",
     operation: "action",
@@ -2836,7 +2836,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/balance",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/balance",
     stripePath: "/v1/payment-methods/{payment-method-id}/balance",
     resource: "payment-methods",
     operation: "list",
@@ -2847,7 +2847,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/profiles",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/profiles",
     stripePath: "/v1/payment-methods/{payment-method-id}/profiles",
     resource: "payment-methods",
     operation: "list",
@@ -2858,7 +2858,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/profiles",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/profiles",
     stripePath: "/v1/payment-methods/{payment-method-id}/profiles",
     resource: "payment-methods",
     operation: "create",
@@ -2869,7 +2869,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/profiles/:profileNumber/cancel",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/profiles/:profileNumber/cancel",
     stripePath: "/v1/payment-methods/{payment-method-id}/profiles/{profile-number}/cancel",
     resource: "payment-methods",
     operation: "action",
@@ -2880,7 +2880,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/profiles/:profileNumber/expire",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/profiles/:profileNumber/expire",
     stripePath: "/v1/payment-methods/{payment-method-id}/profiles/{profile-number}/expire",
     resource: "payment-methods",
     operation: "create",
@@ -2891,7 +2891,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-methods/apple-pay/domains",
+    fastifyPath: "/v1/payment-methods/apple-pay/domains",
     stripePath: "/v1/payment-methods/apple-pay/domains",
     resource: "payment-methods",
     operation: "list",
@@ -2901,7 +2901,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods/apple-pay/domains",
+    fastifyPath: "/v1/payment-methods/apple-pay/domains",
     stripePath: "/v1/payment-methods/apple-pay/domains",
     resource: "payment-methods",
     operation: "create",
@@ -2911,7 +2911,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/payment-methods/apple-pay/domains/:id",
+    fastifyPath: "/v1/payment-methods/apple-pay/domains/:id",
     stripePath: "/v1/payment-methods/apple-pay/domains/{id}",
     resource: "payment-methods",
     operation: "delete",
@@ -2922,7 +2922,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/payment-method-snapshot/:id",
+    fastifyPath: "/v1/object/payment-method-snapshot/:id",
     stripePath: "/v1/object/payment-method-snapshot/{id}",
     resource: "object",
     operation: "retrieve",
@@ -2932,7 +2932,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/payment-method-transaction-log/:id",
+    fastifyPath: "/v1/object/payment-method-transaction-log/:id",
     stripePath: "/v1/object/payment-method-transaction-log/{id}",
     resource: "object",
     operation: "retrieve",
@@ -2942,7 +2942,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-method-updaters",
+    fastifyPath: "/v1/payment-method-updaters",
     stripePath: "/v1/payment-method-updaters",
     resource: "payment-method-updaters",
     operation: "list",
@@ -2951,7 +2951,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-method-updaters/batches",
+    fastifyPath: "/v1/payment-method-updaters/batches",
     stripePath: "/v1/payment-method-updaters/batches",
     resource: "payment-method-updaters",
     operation: "create",
@@ -2960,7 +2960,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/rsa-signatures",
+    fastifyPath: "/v1/rsa-signatures",
     stripePath: "/v1/rsa-signatures",
     resource: "rsa-signatures",
     operation: "create",
@@ -2969,7 +2969,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/rsa-signatures/decrypt",
+    fastifyPath: "/v1/rsa-signatures/decrypt",
     stripePath: "/v1/rsa-signatures/decrypt",
     resource: "rsa-signatures",
     operation: "create",
@@ -2978,7 +2978,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/hostedpages",
+    fastifyPath: "/v1/hostedpages",
     stripePath: "/v1/hostedpages",
     resource: "hostedpages",
     operation: "list",
@@ -2987,7 +2987,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/authorize",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/authorize",
     stripePath: "/v1/payment-methods/{payment-method-id}/authorize",
     resource: "payment-methods",
     operation: "create",
@@ -2998,7 +2998,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-methods/:paymentMethodId/voidAuthorize",
+    fastifyPath: "/v1/payment-methods/:paymentMethodId/voidAuthorize",
     stripePath: "/v1/payment-methods/{payment-method-id}/voidAuthorize",
     resource: "payment-methods",
     operation: "create",
@@ -3009,7 +3009,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/paymentgateways",
+    fastifyPath: "/v1/paymentgateways",
     stripePath: "/v1/paymentgateways",
     resource: "paymentgateways",
     operation: "list",
@@ -3018,7 +3018,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-gateways/pre-debit-notification",
+    fastifyPath: "/v1/payment-gateways/pre-debit-notification",
     stripePath: "/v1/payment-gateways/pre-debit-notification",
     resource: "payment-gateways",
     operation: "create",
@@ -3027,7 +3027,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/gateway-settlement/payments/:paymentKey/chargeback",
+    fastifyPath: "/v1/gateway-settlement/payments/:paymentKey/chargeback",
     stripePath: "/v1/gateway-settlement/payments/{payment-key}/chargeback",
     resource: "gateway-settlement",
     operation: "create",
@@ -3037,7 +3037,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/gateway-settlement/payments/:paymentKey/reject",
+    fastifyPath: "/v1/gateway-settlement/payments/:paymentKey/reject",
     stripePath: "/v1/gateway-settlement/payments/{payment-key}/reject",
     resource: "gateway-settlement",
     operation: "create",
@@ -3047,7 +3047,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/gateway-settlement/payments/:paymentKey/settle",
+    fastifyPath: "/v1/gateway-settlement/payments/:paymentKey/settle",
     stripePath: "/v1/gateway-settlement/payments/{payment-key}/settle",
     resource: "gateway-settlement",
     operation: "create",
@@ -3057,7 +3057,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/refunds/:refundKey/reconcile",
+    fastifyPath: "/v1/refunds/:refundKey/reconcile",
     stripePath: "/v1/refunds/{refund-key}/reconcile",
     resource: "refunds",
     operation: "action",
@@ -3068,7 +3068,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payments",
+    fastifyPath: "/v1/payments",
     stripePath: "/v1/payments",
     resource: "payments",
     operation: "list",
@@ -3078,7 +3078,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payments",
+    fastifyPath: "/v1/payments",
     stripePath: "/v1/payments",
     resource: "payments",
     operation: "create",
@@ -3088,7 +3088,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payments/:paymentKey",
+    fastifyPath: "/v1/payments/:paymentKey",
     stripePath: "/v1/payments/{paymentKey}",
     resource: "payments",
     operation: "retrieve",
@@ -3099,7 +3099,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payments/:paymentKey",
+    fastifyPath: "/v1/payments/:paymentKey",
     stripePath: "/v1/payments/{paymentKey}",
     resource: "payments",
     operation: "update",
@@ -3110,7 +3110,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/payments/:paymentKey",
+    fastifyPath: "/v1/payments/:paymentKey",
     stripePath: "/v1/payments/{paymentKey}",
     resource: "payments",
     operation: "delete",
@@ -3121,7 +3121,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/apply",
+    fastifyPath: "/v1/payments/:paymentKey/apply",
     stripePath: "/v1/payments/{paymentKey}/apply",
     resource: "payments",
     operation: "action",
@@ -3132,7 +3132,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/cancel",
+    fastifyPath: "/v1/payments/:paymentKey/cancel",
     stripePath: "/v1/payments/{paymentKey}/cancel",
     resource: "payments",
     operation: "action",
@@ -3143,7 +3143,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/parts",
+    fastifyPath: "/v1/payments/:paymentKey/parts",
     stripePath: "/v1/payments/{paymentKey}/parts",
     resource: "payments",
     operation: "list",
@@ -3154,7 +3154,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/parts/:partid",
+    fastifyPath: "/v1/payments/:paymentKey/parts/:partid",
     stripePath: "/v1/payments/{paymentKey}/parts/{partid}",
     resource: "payments",
     operation: "retrieve",
@@ -3165,7 +3165,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/parts/:partid/item-parts",
+    fastifyPath: "/v1/payments/:paymentKey/parts/:partid/item-parts",
     stripePath: "/v1/payments/{paymentKey}/parts/{partid}/item-parts",
     resource: "payments",
     operation: "list",
@@ -3176,7 +3176,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/parts/:partid/item-parts/:itempartid",
+    fastifyPath: "/v1/payments/:paymentKey/parts/:partid/item-parts/:itempartid",
     stripePath: "/v1/payments/{paymentKey}/parts/{partid}/item-parts/{itempartid}",
     resource: "payments",
     operation: "retrieve",
@@ -3187,7 +3187,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/refunds",
+    fastifyPath: "/v1/payments/:paymentKey/refunds",
     stripePath: "/v1/payments/{paymentKey}/refunds",
     resource: "payments",
     operation: "create",
@@ -3198,7 +3198,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/refunds/unapply",
+    fastifyPath: "/v1/payments/:paymentKey/refunds/unapply",
     stripePath: "/v1/payments/{paymentKey}/refunds/unapply",
     resource: "payments",
     operation: "action",
@@ -3209,7 +3209,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/transfer",
+    fastifyPath: "/v1/payments/:paymentKey/transfer",
     stripePath: "/v1/payments/{paymentKey}/transfer",
     resource: "payments",
     operation: "action",
@@ -3220,7 +3220,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payments/:paymentKey/unapply",
+    fastifyPath: "/v1/payments/:paymentKey/unapply",
     stripePath: "/v1/payments/{paymentKey}/unapply",
     resource: "payments",
     operation: "action",
@@ -3231,7 +3231,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/payment-transaction-log/:id",
+    fastifyPath: "/v1/object/payment-transaction-log/:id",
     stripePath: "/v1/object/payment-transaction-log/{id}",
     resource: "object",
     operation: "retrieve",
@@ -3241,7 +3241,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-runs",
+    fastifyPath: "/v1/payment-runs",
     stripePath: "/v1/payment-runs",
     resource: "payment-runs",
     operation: "list",
@@ -3251,7 +3251,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-runs",
+    fastifyPath: "/v1/payment-runs",
     stripePath: "/v1/payment-runs",
     resource: "payment-runs",
     operation: "create",
@@ -3261,7 +3261,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-runs/:paymentRunKey",
+    fastifyPath: "/v1/payment-runs/:paymentRunKey",
     stripePath: "/v1/payment-runs/{paymentRunKey}",
     resource: "payment-runs",
     operation: "retrieve",
@@ -3272,7 +3272,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-runs/:paymentRunKey",
+    fastifyPath: "/v1/payment-runs/:paymentRunKey",
     stripePath: "/v1/payment-runs/{paymentRunKey}",
     resource: "payment-runs",
     operation: "update",
@@ -3283,7 +3283,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/payment-runs/:paymentRunKey",
+    fastifyPath: "/v1/payment-runs/:paymentRunKey",
     stripePath: "/v1/payment-runs/{paymentRunKey}",
     resource: "payment-runs",
     operation: "delete",
@@ -3294,7 +3294,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-runs/:paymentRunKey/data",
+    fastifyPath: "/v1/payment-runs/:paymentRunKey/data",
     stripePath: "/v1/payment-runs/{paymentRunKey}/data",
     resource: "payment-runs",
     operation: "list",
@@ -3305,7 +3305,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-runs/:paymentRunKey/summary",
+    fastifyPath: "/v1/payment-runs/:paymentRunKey/summary",
     stripePath: "/v1/payment-runs/{paymentRunKey}/summary",
     resource: "payment-runs",
     operation: "list",
@@ -3316,7 +3316,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-schedule-items/retry-payment",
+    fastifyPath: "/v1/payment-schedule-items/retry-payment",
     stripePath: "/v1/payment-schedule-items/retry-payment",
     resource: "payment-schedule-items",
     operation: "create",
@@ -3325,7 +3325,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-schedule-items/:itemId/cancel",
+    fastifyPath: "/v1/payment-schedule-items/:itemId/cancel",
     stripePath: "/v1/payment-schedule-items/{item-id}/cancel",
     resource: "payment-schedule-items",
     operation: "action",
@@ -3335,7 +3335,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-schedule-items/:itemId/skip",
+    fastifyPath: "/v1/payment-schedule-items/:itemId/skip",
     stripePath: "/v1/payment-schedule-items/{item-id}/skip",
     resource: "payment-schedule-items",
     operation: "action",
@@ -3345,7 +3345,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-schedule-items/:psiId",
+    fastifyPath: "/v1/payment-schedule-items/:psiId",
     stripePath: "/v1/payment-schedule-items/{psi-id}",
     resource: "payment-schedule-items",
     operation: "retrieve",
@@ -3355,7 +3355,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-schedule-items/:psiId",
+    fastifyPath: "/v1/payment-schedule-items/:psiId",
     stripePath: "/v1/payment-schedule-items/{psi-id}",
     resource: "payment-schedule-items",
     operation: "update",
@@ -3365,7 +3365,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/payment-schedule-items/:psiId",
+    fastifyPath: "/v1/payment-schedule-items/:psiId",
     stripePath: "/v1/payment-schedule-items/{psi-id}",
     resource: "payment-schedule-items",
     operation: "delete",
@@ -3375,7 +3375,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-schedules",
+    fastifyPath: "/v1/payment-schedules",
     stripePath: "/v1/payment-schedules",
     resource: "payment-schedules",
     operation: "list",
@@ -3385,7 +3385,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-schedules",
+    fastifyPath: "/v1/payment-schedules",
     stripePath: "/v1/payment-schedules",
     resource: "payment-schedules",
     operation: "create",
@@ -3395,7 +3395,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-schedules/batch",
+    fastifyPath: "/v1/payment-schedules/batch",
     stripePath: "/v1/payment-schedules/batch",
     resource: "payment-schedules",
     operation: "action",
@@ -3405,7 +3405,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-schedules/statistics/:yyyyMmDd",
+    fastifyPath: "/v1/payment-schedules/statistics/:yyyyMmDd",
     stripePath: "/v1/payment-schedules/statistics/{yyyy-mm-dd}",
     resource: "payment-schedules",
     operation: "retrieve",
@@ -3416,7 +3416,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/payment-schedules/:paymentScheduleKey",
+    fastifyPath: "/v1/payment-schedules/:paymentScheduleKey",
     stripePath: "/v1/payment-schedules/{paymentScheduleKey}",
     resource: "payment-schedules",
     operation: "retrieve",
@@ -3427,7 +3427,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-schedules/:paymentScheduleKey",
+    fastifyPath: "/v1/payment-schedules/:paymentScheduleKey",
     stripePath: "/v1/payment-schedules/{paymentScheduleKey}",
     resource: "payment-schedules",
     operation: "update",
@@ -3438,7 +3438,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/payment-schedules/:paymentScheduleKey",
+    fastifyPath: "/v1/payment-schedules/:paymentScheduleKey",
     stripePath: "/v1/payment-schedules/{paymentScheduleKey}",
     resource: "payment-schedules",
     operation: "delete",
@@ -3449,7 +3449,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-schedules/:paymentScheduleKey/cancel",
+    fastifyPath: "/v1/payment-schedules/:paymentScheduleKey/cancel",
     stripePath: "/v1/payment-schedules/{paymentScheduleKey}/cancel",
     resource: "payment-schedules",
     operation: "action",
@@ -3460,7 +3460,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/payment-schedules/:paymentScheduleKey/items",
+    fastifyPath: "/v1/payment-schedules/:paymentScheduleKey/items",
     stripePath: "/v1/payment-schedules/{paymentScheduleKey}/items",
     resource: "payment-schedules",
     operation: "create",
@@ -3471,7 +3471,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-schedules/:paymentScheduleKey/preview",
+    fastifyPath: "/v1/payment-schedules/:paymentScheduleKey/preview",
     stripePath: "/v1/payment-schedules/{paymentScheduleKey}/preview",
     resource: "payment-schedules",
     operation: "action",
@@ -3482,7 +3482,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/refunds",
+    fastifyPath: "/v1/refunds",
     stripePath: "/v1/refunds",
     resource: "refunds",
     operation: "list",
@@ -3492,7 +3492,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/refunds/:refundKey",
+    fastifyPath: "/v1/refunds/:refundKey",
     stripePath: "/v1/refunds/{refundKey}",
     resource: "refunds",
     operation: "retrieve",
@@ -3503,7 +3503,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/refunds/:refundKey",
+    fastifyPath: "/v1/refunds/:refundKey",
     stripePath: "/v1/refunds/{refundKey}",
     resource: "refunds",
     operation: "update",
@@ -3514,7 +3514,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/refunds/:refundKey",
+    fastifyPath: "/v1/refunds/:refundKey",
     stripePath: "/v1/refunds/{refundKey}",
     resource: "refunds",
     operation: "delete",
@@ -3525,7 +3525,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/refunds/:refundKey/cancel",
+    fastifyPath: "/v1/refunds/:refundKey/cancel",
     stripePath: "/v1/refunds/{refundKey}/cancel",
     resource: "refunds",
     operation: "action",
@@ -3536,7 +3536,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/refunds/:refundKey/parts",
+    fastifyPath: "/v1/refunds/:refundKey/parts",
     stripePath: "/v1/refunds/{refundKey}/parts",
     resource: "refunds",
     operation: "list",
@@ -3547,7 +3547,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/refunds/:refundKey/parts/:refundpartid",
+    fastifyPath: "/v1/refunds/:refundKey/parts/:refundpartid",
     stripePath: "/v1/refunds/{refundKey}/parts/{refundpartid}",
     resource: "refunds",
     operation: "retrieve",
@@ -3558,7 +3558,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/refunds/:refundKey/parts/:refundpartid/item-parts",
+    fastifyPath: "/v1/refunds/:refundKey/parts/:refundpartid/item-parts",
     stripePath: "/v1/refunds/{refundKey}/parts/{refundpartid}/item-parts",
     resource: "refunds",
     operation: "list",
@@ -3569,7 +3569,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/refunds/:refundKey/parts/:refundpartid/item-parts/:itempartid",
+    fastifyPath: "/v1/refunds/:refundKey/parts/:refundpartid/item-parts/:itempartid",
     stripePath: "/v1/refunds/{refundKey}/parts/{refundpartid}/item-parts/{itempartid}",
     resource: "refunds",
     operation: "retrieve",
@@ -3580,7 +3580,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/payment-profile",
+    fastifyPath: "/v1/payment-profile",
     stripePath: "/v1/payment-profile",
     resource: "payment-profile",
     operation: "action",
@@ -3589,7 +3589,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/summary-statement-runs",
+    fastifyPath: "/v1/summary-statement-runs",
     stripePath: "/v1/summary-statement-runs",
     resource: "summary-statement-runs",
     operation: "create",
@@ -3598,7 +3598,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounting-codes",
+    fastifyPath: "/v1/accounting-codes",
     stripePath: "/v1/accounting-codes",
     resource: "accounting-codes",
     operation: "list",
@@ -3608,7 +3608,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/accounting-codes",
+    fastifyPath: "/v1/accounting-codes",
     stripePath: "/v1/accounting-codes",
     resource: "accounting-codes",
     operation: "create",
@@ -3618,7 +3618,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounting-codes/:acId",
+    fastifyPath: "/v1/accounting-codes/:acId",
     stripePath: "/v1/accounting-codes/{ac-id}",
     resource: "accounting-codes",
     operation: "retrieve",
@@ -3629,7 +3629,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-codes/:acId",
+    fastifyPath: "/v1/accounting-codes/:acId",
     stripePath: "/v1/accounting-codes/{ac-id}",
     resource: "accounting-codes",
     operation: "update",
@@ -3640,7 +3640,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/accounting-codes/:acId",
+    fastifyPath: "/v1/accounting-codes/:acId",
     stripePath: "/v1/accounting-codes/{ac-id}",
     resource: "accounting-codes",
     operation: "delete",
@@ -3651,7 +3651,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-codes/:acId/activate",
+    fastifyPath: "/v1/accounting-codes/:acId/activate",
     stripePath: "/v1/accounting-codes/{ac-id}/activate",
     resource: "accounting-codes",
     operation: "action",
@@ -3662,7 +3662,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-codes/:acId/deactivate",
+    fastifyPath: "/v1/accounting-codes/:acId/deactivate",
     stripePath: "/v1/accounting-codes/{ac-id}/deactivate",
     resource: "accounting-codes",
     operation: "action",
@@ -3673,7 +3673,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounting-periods",
+    fastifyPath: "/v1/accounting-periods",
     stripePath: "/v1/accounting-periods",
     resource: "accounting-periods",
     operation: "list",
@@ -3683,7 +3683,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/accounting-periods",
+    fastifyPath: "/v1/accounting-periods",
     stripePath: "/v1/accounting-periods",
     resource: "accounting-periods",
     operation: "create",
@@ -3693,7 +3693,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/accounting-periods/:apId",
+    fastifyPath: "/v1/accounting-periods/:apId",
     stripePath: "/v1/accounting-periods/{ap-id}",
     resource: "accounting-periods",
     operation: "retrieve",
@@ -3704,7 +3704,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-periods/:apId",
+    fastifyPath: "/v1/accounting-periods/:apId",
     stripePath: "/v1/accounting-periods/{ap-id}",
     resource: "accounting-periods",
     operation: "update",
@@ -3715,7 +3715,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/accounting-periods/:apId",
+    fastifyPath: "/v1/accounting-periods/:apId",
     stripePath: "/v1/accounting-periods/{ap-id}",
     resource: "accounting-periods",
     operation: "delete",
@@ -3726,7 +3726,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-periods/:apId/close",
+    fastifyPath: "/v1/accounting-periods/:apId/close",
     stripePath: "/v1/accounting-periods/{ap-id}/close",
     resource: "accounting-periods",
     operation: "action",
@@ -3737,7 +3737,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-periods/:apId/pending-close",
+    fastifyPath: "/v1/accounting-periods/:apId/pending-close",
     stripePath: "/v1/accounting-periods/{ap-id}/pending-close",
     resource: "accounting-periods",
     operation: "action",
@@ -3748,7 +3748,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-periods/:apId/reopen",
+    fastifyPath: "/v1/accounting-periods/:apId/reopen",
     stripePath: "/v1/accounting-periods/{ap-id}/reopen",
     resource: "accounting-periods",
     operation: "action",
@@ -3759,7 +3759,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/accounting-periods/:apId/run-trial-balance",
+    fastifyPath: "/v1/accounting-periods/:apId/run-trial-balance",
     stripePath: "/v1/accounting-periods/{ap-id}/run-trial-balance",
     resource: "accounting-periods",
     operation: "action",
@@ -3770,7 +3770,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/journal-entries",
+    fastifyPath: "/v1/journal-entries",
     stripePath: "/v1/journal-entries",
     resource: "journal-entries",
     operation: "create",
@@ -3780,7 +3780,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/journal-entries/journal-runs/:jrNumber",
+    fastifyPath: "/v1/journal-entries/journal-runs/:jrNumber",
     stripePath: "/v1/journal-entries/journal-runs/{jr-number}",
     resource: "journal-entries",
     operation: "retrieve",
@@ -3791,7 +3791,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/journal-entries/:jeNumber",
+    fastifyPath: "/v1/journal-entries/:jeNumber",
     stripePath: "/v1/journal-entries/{je-number}",
     resource: "journal-entries",
     operation: "retrieve",
@@ -3802,7 +3802,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/journal-entries/:jeNumber",
+    fastifyPath: "/v1/journal-entries/:jeNumber",
     stripePath: "/v1/journal-entries/{je-number}",
     resource: "journal-entries",
     operation: "delete",
@@ -3813,7 +3813,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/journal-entries/:jeNumber/basic-information",
+    fastifyPath: "/v1/journal-entries/:jeNumber/basic-information",
     stripePath: "/v1/journal-entries/{je-number}/basic-information",
     resource: "journal-entries",
     operation: "action",
@@ -3824,7 +3824,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/journal-entries/:jeNumber/cancel",
+    fastifyPath: "/v1/journal-entries/:jeNumber/cancel",
     stripePath: "/v1/journal-entries/{je-number}/cancel",
     resource: "journal-entries",
     operation: "action",
@@ -3835,7 +3835,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/journal-runs",
+    fastifyPath: "/v1/journal-runs",
     stripePath: "/v1/journal-runs",
     resource: "journal-runs",
     operation: "create",
@@ -3844,7 +3844,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/journal-runs/:jrNumber",
+    fastifyPath: "/v1/journal-runs/:jrNumber",
     stripePath: "/v1/journal-runs/{jr-number}",
     resource: "journal-runs",
     operation: "retrieve",
@@ -3854,7 +3854,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/journal-runs/:jrNumber",
+    fastifyPath: "/v1/journal-runs/:jrNumber",
     stripePath: "/v1/journal-runs/{jr-number}",
     resource: "journal-runs",
     operation: "delete",
@@ -3864,7 +3864,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/journal-runs/:jrNumber/cancel",
+    fastifyPath: "/v1/journal-runs/:jrNumber/cancel",
     stripePath: "/v1/journal-runs/{jr-number}/cancel",
     resource: "journal-runs",
     operation: "action",
@@ -3874,7 +3874,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/bulk",
+    fastifyPath: "/v1/bulk",
     stripePath: "/v1/bulk",
     resource: "bulk",
     operation: "action",
@@ -3883,7 +3883,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/bulk/:bulkKey",
+    fastifyPath: "/v1/bulk/:bulkKey",
     stripePath: "/v1/bulk/{bulk-key}",
     resource: "bulk",
     operation: "retrieve",
@@ -3893,7 +3893,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/bulk/:bulkKey/stop",
+    fastifyPath: "/v1/bulk/:bulkKey/stop",
     stripePath: "/v1/bulk/{bulk-key}/stop",
     resource: "bulk",
     operation: "action",
@@ -3903,7 +3903,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/notification-history/callout",
+    fastifyPath: "/v1/notification-history/callout",
     stripePath: "/v1/notification-history/callout",
     resource: "notification-history",
     operation: "list",
@@ -3912,7 +3912,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/notification-history/email",
+    fastifyPath: "/v1/notification-history/email",
     stripePath: "/v1/notification-history/email",
     resource: "notification-history",
     operation: "action",
@@ -3921,7 +3921,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/batch-query",
+    fastifyPath: "/v1/batch-query",
     stripePath: "/v1/batch-query",
     resource: "batch-query",
     operation: "create",
@@ -3930,7 +3930,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/batch-query/jobs/partner/:partner/project/:project",
+    fastifyPath: "/v1/batch-query/jobs/partner/:partner/project/:project",
     stripePath: "/v1/batch-query/jobs/partner/{partner}/project/{project}",
     resource: "batch-query",
     operation: "retrieve",
@@ -3940,7 +3940,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/batch-query/jobs/:jobid",
+    fastifyPath: "/v1/batch-query/jobs/:jobid",
     stripePath: "/v1/batch-query/jobs/{jobid}",
     resource: "batch-query",
     operation: "retrieve",
@@ -3950,7 +3950,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/batch-query/jobs/:jobid",
+    fastifyPath: "/v1/batch-query/jobs/:jobid",
     stripePath: "/v1/batch-query/jobs/{jobid}",
     resource: "batch-query",
     operation: "delete",
@@ -3960,7 +3960,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/multi-organizations/data-labeling-job",
+    fastifyPath: "/v1/multi-organizations/data-labeling-job",
     stripePath: "/v1/multi-organizations/data-labeling-job",
     resource: "multi-organizations",
     operation: "create",
@@ -3969,7 +3969,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/multi-organizations/data-labeling-job/:jobId",
+    fastifyPath: "/v1/multi-organizations/data-labeling-job/:jobId",
     stripePath: "/v1/multi-organizations/data-labeling-job/{job-id}",
     resource: "multi-organizations",
     operation: "retrieve",
@@ -3979,7 +3979,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/uno-regenerate/booking-transaction",
+    fastifyPath: "/v1/uno-regenerate/booking-transaction",
     stripePath: "/v1/uno-regenerate/booking-transaction",
     resource: "uno-regenerate",
     operation: "create",
@@ -3988,7 +3988,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/uno-regenerate/billing-transaction",
+    fastifyPath: "/v1/uno-regenerate/billing-transaction",
     stripePath: "/v1/uno-regenerate/billing-transaction",
     resource: "uno-regenerate",
     operation: "create",
@@ -3997,7 +3997,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/uno-regenerate/rev-rec-events",
+    fastifyPath: "/v1/uno-regenerate/rev-rec-events",
     stripePath: "/v1/uno-regenerate/rev-rec-events",
     resource: "uno-regenerate",
     operation: "create",
@@ -4006,7 +4006,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/uno-regenerate/rev-rec-events/daily-consumption",
+    fastifyPath: "/v1/uno-regenerate/rev-rec-events/daily-consumption",
     stripePath: "/v1/uno-regenerate/rev-rec-events/daily-consumption",
     resource: "uno-regenerate",
     operation: "create",
@@ -4015,7 +4015,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/uno/data-backfill/bookingdate/jobs",
+    fastifyPath: "/v1/uno/data-backfill/bookingdate/jobs",
     stripePath: "/v1/uno/data-backfill/bookingdate/jobs",
     resource: "uno",
     operation: "list",
@@ -4024,7 +4024,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/uno/data-backfill/bookingdate/jobs",
+    fastifyPath: "/v1/uno/data-backfill/bookingdate/jobs",
     stripePath: "/v1/uno/data-backfill/bookingdate/jobs",
     resource: "uno",
     operation: "create",
@@ -4033,7 +4033,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/uno/data-backfill/bookingdate/jobs/:jobId",
+    fastifyPath: "/v1/uno/data-backfill/bookingdate/jobs/:jobId",
     stripePath: "/v1/uno/data-backfill/bookingdate/jobs/{jobId}",
     resource: "uno",
     operation: "retrieve",
@@ -4043,7 +4043,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/uno/data-backfill/bookingdate/jobs/:jobId",
+    fastifyPath: "/v1/uno/data-backfill/bookingdate/jobs/:jobId",
     stripePath: "/v1/uno/data-backfill/bookingdate/jobs/{jobId}",
     resource: "uno",
     operation: "update",
@@ -4053,7 +4053,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/uno/data-backfill/jobs",
+    fastifyPath: "/v1/uno/data-backfill/jobs",
     stripePath: "/v1/uno/data-backfill/jobs",
     resource: "uno",
     operation: "create",
@@ -4062,7 +4062,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/uno/data-backfill/jobs/:jobId",
+    fastifyPath: "/v1/uno/data-backfill/jobs/:jobId",
     stripePath: "/v1/uno/data-backfill/jobs/{jobId}",
     resource: "uno",
     operation: "retrieve",
@@ -4072,7 +4072,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/uno/data-backfill/jobs/:jobId",
+    fastifyPath: "/v1/uno/data-backfill/jobs/:jobId",
     stripePath: "/v1/uno/data-backfill/jobs/{jobId}",
     resource: "uno",
     operation: "update",
@@ -4082,7 +4082,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/uno/data-backfill/listjobs",
+    fastifyPath: "/v1/uno/data-backfill/listjobs",
     stripePath: "/v1/uno/data-backfill/listjobs",
     resource: "uno",
     operation: "list",
@@ -4091,7 +4091,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/uno/data-backfill/jobs/:type/template",
+    fastifyPath: "/v1/uno/data-backfill/jobs/:type/template",
     stripePath: "/v1/uno/data-backfill/jobs/{type}/template",
     resource: "uno",
     operation: "list",
@@ -4101,7 +4101,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/uno/data-backfill/propagation/jobs",
+    fastifyPath: "/v1/uno/data-backfill/propagation/jobs",
     stripePath: "/v1/uno/data-backfill/propagation/jobs",
     resource: "uno",
     operation: "list",
@@ -4110,7 +4110,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/uno/data-backfill/propagation/jobs",
+    fastifyPath: "/v1/uno/data-backfill/propagation/jobs",
     stripePath: "/v1/uno/data-backfill/propagation/jobs",
     resource: "uno",
     operation: "create",
@@ -4119,7 +4119,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/uno/data-backfill/propagation/jobs/:jobId",
+    fastifyPath: "/v1/uno/data-backfill/propagation/jobs/:jobId",
     stripePath: "/v1/uno/data-backfill/propagation/jobs/{jobId}",
     resource: "uno",
     operation: "retrieve",
@@ -4129,7 +4129,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/uno/data-backfill/propagation/jobs/:jobId",
+    fastifyPath: "/v1/uno/data-backfill/propagation/jobs/:jobId",
     stripePath: "/v1/uno/data-backfill/propagation/jobs/{jobId}",
     resource: "uno",
     operation: "update",
@@ -4139,7 +4139,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/action/create",
+    fastifyPath: "/v1/action/create",
     stripePath: "/v1/action/create",
     resource: "action",
     operation: "create",
@@ -4148,7 +4148,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/action/delete",
+    fastifyPath: "/v1/action/delete",
     stripePath: "/v1/action/delete",
     resource: "action",
     operation: "action",
@@ -4157,7 +4157,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/action/query",
+    fastifyPath: "/v1/action/query",
     stripePath: "/v1/action/query",
     resource: "action",
     operation: "create",
@@ -4166,7 +4166,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/action/queryMore",
+    fastifyPath: "/v1/action/queryMore",
     stripePath: "/v1/action/queryMore",
     resource: "action",
     operation: "create",
@@ -4175,7 +4175,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/action/update",
+    fastifyPath: "/v1/action/update",
     stripePath: "/v1/action/update",
     resource: "action",
     operation: "create",
@@ -4184,7 +4184,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/files/:fileId",
+    fastifyPath: "/v1/files/:fileId",
     stripePath: "/v1/files/{file-id}",
     resource: "files",
     operation: "retrieve",
@@ -4194,7 +4194,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/files/:fileId/restore",
+    fastifyPath: "/v1/files/:fileId/restore",
     stripePath: "/v1/files/{file-id}/restore",
     resource: "files",
     operation: "action",
@@ -4204,7 +4204,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/files/:fileId/status",
+    fastifyPath: "/v1/files/:fileId/status",
     stripePath: "/v1/files/{file-id}/status",
     resource: "files",
     operation: "list",
@@ -4214,7 +4214,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/object/import",
+    fastifyPath: "/v1/object/import",
     stripePath: "/v1/object/import",
     resource: "object",
     operation: "create",
@@ -4223,7 +4223,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/object/import/:id",
+    fastifyPath: "/v1/object/import/:id",
     stripePath: "/v1/object/import/{id}",
     resource: "object",
     operation: "retrieve",
@@ -4233,7 +4233,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/custom-exchange-rates/:currency",
+    fastifyPath: "/v1/custom-exchange-rates/:currency",
     stripePath: "/v1/custom-exchange-rates/{currency}",
     resource: "custom-exchange-rates",
     operation: "retrieve",
@@ -4243,7 +4243,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/zuora/v1/attachments",
+    fastifyPath: "/v1/attachments",
     stripePath: "/v1/attachments",
     resource: "attachments",
     operation: "create",
@@ -4252,7 +4252,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/attachments/:attachmentId",
+    fastifyPath: "/v1/attachments/:attachmentId",
     stripePath: "/v1/attachments/{attachment-id}",
     resource: "attachments",
     operation: "retrieve",
@@ -4262,7 +4262,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/zuora/v1/attachments/:attachmentId",
+    fastifyPath: "/v1/attachments/:attachmentId",
     stripePath: "/v1/attachments/{attachment-id}",
     resource: "attachments",
     operation: "update",
@@ -4272,7 +4272,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/zuora/v1/attachments/:attachmentId",
+    fastifyPath: "/v1/attachments/:attachmentId",
     stripePath: "/v1/attachments/{attachment-id}",
     resource: "attachments",
     operation: "delete",
@@ -4282,7 +4282,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/attachments/:objectType/:objectKey",
+    fastifyPath: "/v1/attachments/:objectType/:objectKey",
     stripePath: "/v1/attachments/{object-type}/{object-key}",
     resource: "attachments",
     operation: "retrieve",
@@ -4292,7 +4292,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/zuora/v1/describe/:object",
+    fastifyPath: "/v1/describe/:object",
     stripePath: "/v1/describe/{object}",
     resource: "describe",
     operation: "retrieve",

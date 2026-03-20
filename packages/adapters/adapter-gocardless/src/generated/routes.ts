@@ -19,7 +19,7 @@ export interface GeneratedRoute {
 export const GENERATED_ROUTES: GeneratedRoute[] = [
   {
     method: "GET",
-    fastifyPath: "/gocardless/balances",
+    fastifyPath: "/balances",
     stripePath: "/balances",
     resource: "balances",
     operation: "list",
@@ -28,7 +28,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/bank_account_details/:customer_bank_account_id",
+    fastifyPath: "/bank_account_details/:customer_bank_account_id",
     stripePath: "/bank_account_details/{customer_bank_account_id}",
     resource: "bank_account_details",
     operation: "retrieve",
@@ -38,7 +38,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/bank_account_holder_verifications",
+    fastifyPath: "/bank_account_holder_verifications",
     stripePath: "/bank_account_holder_verifications",
     resource: "bank_account_holder_verifications",
     operation: "create",
@@ -47,7 +47,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/bank_account_holder_verifications/:bank_account_holder_verification_id",
+    fastifyPath: "/bank_account_holder_verifications/:bank_account_holder_verification_id",
     stripePath: "/bank_account_holder_verifications/{bank_account_holder_verification_id}",
     resource: "bank_account_holder_verifications",
     operation: "retrieve",
@@ -57,7 +57,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/bank_authorisations",
+    fastifyPath: "/bank_authorisations",
     stripePath: "/bank_authorisations",
     resource: "bank_authorisations",
     operation: "create",
@@ -66,7 +66,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/bank_authorisations/:bank_authorisation_id",
+    fastifyPath: "/bank_authorisations/:bank_authorisation_id",
     stripePath: "/bank_authorisations/{bank_authorisation_id}",
     resource: "bank_authorisations",
     operation: "retrieve",
@@ -76,7 +76,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/bank_details_lookups",
+    fastifyPath: "/bank_details_lookups",
     stripePath: "/bank_details_lookups",
     resource: "bank_details_lookups",
     operation: "create",
@@ -85,7 +85,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/billing_requests",
+    fastifyPath: "/billing_requests",
     stripePath: "/billing_requests",
     resource: "billing_requests",
     operation: "list",
@@ -95,7 +95,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests",
+    fastifyPath: "/billing_requests",
     stripePath: "/billing_requests",
     resource: "billing_requests",
     operation: "create",
@@ -105,7 +105,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/collect_customer_details",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/collect_customer_details",
     stripePath: "/billing_requests/{billing_request_id}/actions/collect_customer_details",
     resource: "billing_requests",
     operation: "action",
@@ -116,7 +116,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/collect_bank_account",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/collect_bank_account",
     stripePath: "/billing_requests/{billing_request_id}/actions/collect_bank_account",
     resource: "billing_requests",
     operation: "action",
@@ -127,7 +127,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/confirm_payer_details",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/confirm_payer_details",
     stripePath: "/billing_requests/{billing_request_id}/actions/confirm_payer_details",
     resource: "billing_requests",
     operation: "action",
@@ -138,7 +138,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/fulfil",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/fulfil",
     stripePath: "/billing_requests/{billing_request_id}/actions/fulfil",
     resource: "billing_requests",
     operation: "action",
@@ -149,7 +149,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/cancel",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/cancel",
     stripePath: "/billing_requests/{billing_request_id}/actions/cancel",
     resource: "billing_requests",
     operation: "action",
@@ -160,7 +160,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id",
+    fastifyPath: "/billing_requests/:billing_request_id",
     stripePath: "/billing_requests/{billing_request_id}",
     resource: "billing_requests",
     operation: "retrieve",
@@ -171,7 +171,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/notify",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/notify",
     stripePath: "/billing_requests/{billing_request_id}/actions/notify",
     resource: "billing_requests",
     operation: "action",
@@ -182,7 +182,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/fallback",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/fallback",
     stripePath: "/billing_requests/{billing_request_id}/actions/fallback",
     resource: "billing_requests",
     operation: "action",
@@ -193,7 +193,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/choose_currency",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/choose_currency",
     stripePath: "/billing_requests/{billing_request_id}/actions/choose_currency",
     resource: "billing_requests",
     operation: "action",
@@ -204,7 +204,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/actions/select_institution",
+    fastifyPath: "/billing_requests/:billing_request_id/actions/select_institution",
     stripePath: "/billing_requests/{billing_request_id}/actions/select_institution",
     resource: "billing_requests",
     operation: "action",
@@ -215,7 +215,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_request_flows",
+    fastifyPath: "/billing_request_flows",
     stripePath: "/billing_request_flows",
     resource: "billing_request_flows",
     operation: "create",
@@ -224,7 +224,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_request_flows/:billing_request_flow_id/actions/initialise",
+    fastifyPath: "/billing_request_flows/:billing_request_flow_id/actions/initialise",
     stripePath: "/billing_request_flows/{billing_request_flow_id}/actions/initialise",
     resource: "billing_request_flows",
     operation: "action",
@@ -234,7 +234,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/billing_request_templates",
+    fastifyPath: "/billing_request_templates",
     stripePath: "/billing_request_templates",
     resource: "billing_request_templates",
     operation: "list",
@@ -243,7 +243,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_request_templates",
+    fastifyPath: "/billing_request_templates",
     stripePath: "/billing_request_templates",
     resource: "billing_request_templates",
     operation: "create",
@@ -252,7 +252,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/billing_request_templates/:billing_request_template_id",
+    fastifyPath: "/billing_request_templates/:billing_request_template_id",
     stripePath: "/billing_request_templates/{billing_request_template_id}",
     resource: "billing_request_templates",
     operation: "retrieve",
@@ -262,7 +262,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/billing_request_templates/:billing_request_template_id",
+    fastifyPath: "/billing_request_templates/:billing_request_template_id",
     stripePath: "/billing_request_templates/{billing_request_template_id}",
     resource: "billing_request_templates",
     operation: "update",
@@ -272,7 +272,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/billing_requests/create_with_actions",
+    fastifyPath: "/billing_requests/create_with_actions",
     stripePath: "/billing_requests/create_with_actions",
     resource: "billing_requests",
     operation: "action",
@@ -282,7 +282,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/blocks",
+    fastifyPath: "/blocks",
     stripePath: "/blocks",
     resource: "blocks",
     operation: "list",
@@ -291,7 +291,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/blocks",
+    fastifyPath: "/blocks",
     stripePath: "/blocks",
     resource: "blocks",
     operation: "create",
@@ -300,7 +300,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/blocks/:block_id",
+    fastifyPath: "/blocks/:block_id",
     stripePath: "/blocks/{block_id}",
     resource: "blocks",
     operation: "retrieve",
@@ -310,7 +310,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/blocks/:block_id/actions/disable",
+    fastifyPath: "/blocks/:block_id/actions/disable",
     stripePath: "/blocks/{block_id}/actions/disable",
     resource: "blocks",
     operation: "action",
@@ -320,7 +320,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/blocks/:block_id/actions/enable",
+    fastifyPath: "/blocks/:block_id/actions/enable",
     stripePath: "/blocks/{block_id}/actions/enable",
     resource: "blocks",
     operation: "action",
@@ -330,7 +330,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/blocks/block_by_ref",
+    fastifyPath: "/blocks/block_by_ref",
     stripePath: "/blocks/block_by_ref",
     resource: "blocks",
     operation: "action",
@@ -339,7 +339,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/creditors",
+    fastifyPath: "/creditors",
     stripePath: "/creditors",
     resource: "creditors",
     operation: "list",
@@ -349,7 +349,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/creditors",
+    fastifyPath: "/creditors",
     stripePath: "/creditors",
     resource: "creditors",
     operation: "create",
@@ -359,7 +359,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/creditors/:creditor_id",
+    fastifyPath: "/creditors/:creditor_id",
     stripePath: "/creditors/{creditor_id}",
     resource: "creditors",
     operation: "retrieve",
@@ -370,7 +370,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/creditors/:creditor_id",
+    fastifyPath: "/creditors/:creditor_id",
     stripePath: "/creditors/{creditor_id}",
     resource: "creditors",
     operation: "update",
@@ -381,7 +381,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/creditor_bank_accounts",
+    fastifyPath: "/creditor_bank_accounts",
     stripePath: "/creditor_bank_accounts",
     resource: "creditor_bank_accounts",
     operation: "list",
@@ -391,7 +391,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/creditor_bank_accounts",
+    fastifyPath: "/creditor_bank_accounts",
     stripePath: "/creditor_bank_accounts",
     resource: "creditor_bank_accounts",
     operation: "create",
@@ -401,7 +401,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/creditor_bank_accounts/:creditor_bank_account_id",
+    fastifyPath: "/creditor_bank_accounts/:creditor_bank_account_id",
     stripePath: "/creditor_bank_accounts/{creditor_bank_account_id}",
     resource: "creditor_bank_accounts",
     operation: "retrieve",
@@ -412,7 +412,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/creditor_bank_accounts/:creditor_bank_account_id/actions/disable",
+    fastifyPath: "/creditor_bank_accounts/:creditor_bank_account_id/actions/disable",
     stripePath: "/creditor_bank_accounts/{creditor_bank_account_id}/actions/disable",
     resource: "creditor_bank_accounts",
     operation: "action",
@@ -423,7 +423,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/currency_exchange_rates",
+    fastifyPath: "/currency_exchange_rates",
     stripePath: "/currency_exchange_rates",
     resource: "currency_exchange_rates",
     operation: "list",
@@ -432,7 +432,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/customers",
+    fastifyPath: "/customers",
     stripePath: "/customers",
     resource: "customers",
     operation: "list",
@@ -442,7 +442,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/customers",
+    fastifyPath: "/customers",
     stripePath: "/customers",
     resource: "customers",
     operation: "create",
@@ -452,7 +452,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/customers/:customer_id",
+    fastifyPath: "/customers/:customer_id",
     stripePath: "/customers/{customer_id}",
     resource: "customers",
     operation: "retrieve",
@@ -463,7 +463,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/customers/:customer_id",
+    fastifyPath: "/customers/:customer_id",
     stripePath: "/customers/{customer_id}",
     resource: "customers",
     operation: "update",
@@ -474,7 +474,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "DELETE",
-    fastifyPath: "/gocardless/customers/:customer_id",
+    fastifyPath: "/customers/:customer_id",
     stripePath: "/customers/{customer_id}",
     resource: "customers",
     operation: "delete",
@@ -485,7 +485,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/customer_bank_accounts",
+    fastifyPath: "/customer_bank_accounts",
     stripePath: "/customer_bank_accounts",
     resource: "customer_bank_accounts",
     operation: "list",
@@ -495,7 +495,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/customer_bank_accounts",
+    fastifyPath: "/customer_bank_accounts",
     stripePath: "/customer_bank_accounts",
     resource: "customer_bank_accounts",
     operation: "create",
@@ -505,7 +505,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/customer_bank_accounts/:customer_bank_account_id",
+    fastifyPath: "/customer_bank_accounts/:customer_bank_account_id",
     stripePath: "/customer_bank_accounts/{customer_bank_account_id}",
     resource: "customer_bank_accounts",
     operation: "retrieve",
@@ -516,7 +516,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/customer_bank_accounts/:customer_bank_account_id",
+    fastifyPath: "/customer_bank_accounts/:customer_bank_account_id",
     stripePath: "/customer_bank_accounts/{customer_bank_account_id}",
     resource: "customer_bank_accounts",
     operation: "update",
@@ -527,7 +527,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/customer_bank_accounts/:customer_bank_account_id/actions/disable",
+    fastifyPath: "/customer_bank_accounts/:customer_bank_account_id/actions/disable",
     stripePath: "/customer_bank_accounts/{customer_bank_account_id}/actions/disable",
     resource: "customer_bank_accounts",
     operation: "action",
@@ -538,7 +538,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/customer_notifications/:customer_notification_id/actions/handle",
+    fastifyPath: "/customer_notifications/:customer_notification_id/actions/handle",
     stripePath: "/customer_notifications/{customer_notification_id}/actions/handle",
     resource: "customer_notifications",
     operation: "action",
@@ -548,7 +548,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/events",
+    fastifyPath: "/events",
     stripePath: "/events",
     resource: "events",
     operation: "list",
@@ -558,7 +558,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/events/:event_id",
+    fastifyPath: "/events/:event_id",
     stripePath: "/events/{event_id}",
     resource: "events",
     operation: "retrieve",
@@ -569,7 +569,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/exports/:export_id",
+    fastifyPath: "/exports/:export_id",
     stripePath: "/exports/{export_id}",
     resource: "exports",
     operation: "retrieve",
@@ -579,7 +579,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/exports",
+    fastifyPath: "/exports",
     stripePath: "/exports",
     resource: "exports",
     operation: "list",
@@ -588,7 +588,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/funds_availability/:mandate_id",
+    fastifyPath: "/funds_availability/:mandate_id",
     stripePath: "/funds_availability/{mandate_id}",
     resource: "funds_availability",
     operation: "retrieve",
@@ -598,7 +598,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/instalment_schedules",
+    fastifyPath: "/instalment_schedules",
     stripePath: "/instalment_schedules",
     resource: "instalment_schedules",
     operation: "list",
@@ -608,7 +608,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/instalment_schedules",
+    fastifyPath: "/instalment_schedules",
     stripePath: "/instalment_schedules",
     resource: "instalment_schedules",
     operation: "create",
@@ -618,7 +618,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/instalment_schedules/:instalment_schedule_id",
+    fastifyPath: "/instalment_schedules/:instalment_schedule_id",
     stripePath: "/instalment_schedules/{instalment_schedule_id}",
     resource: "instalment_schedules",
     operation: "retrieve",
@@ -629,7 +629,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/instalment_schedules/:instalment_schedule_id",
+    fastifyPath: "/instalment_schedules/:instalment_schedule_id",
     stripePath: "/instalment_schedules/{instalment_schedule_id}",
     resource: "instalment_schedules",
     operation: "update",
@@ -640,7 +640,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/instalment_schedules/:instalment_schedule_id/actions/cancel",
+    fastifyPath: "/instalment_schedules/:instalment_schedule_id/actions/cancel",
     stripePath: "/instalment_schedules/{instalment_schedule_id}/actions/cancel",
     resource: "instalment_schedules",
     operation: "action",
@@ -651,7 +651,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/institutions",
+    fastifyPath: "/institutions",
     stripePath: "/institutions",
     resource: "institutions",
     operation: "action",
@@ -660,7 +660,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/billing_requests/:billing_request_id/institutions",
+    fastifyPath: "/billing_requests/:billing_request_id/institutions",
     stripePath: "/billing_requests/{billing_request_id}/institutions",
     resource: "billing_requests",
     operation: "action",
@@ -671,7 +671,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/branding/logos",
+    fastifyPath: "/branding/logos",
     stripePath: "/branding/logos",
     resource: "branding",
     operation: "create",
@@ -680,7 +680,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/mandates",
+    fastifyPath: "/mandates",
     stripePath: "/mandates",
     resource: "mandates",
     operation: "list",
@@ -690,7 +690,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandates",
+    fastifyPath: "/mandates",
     stripePath: "/mandates",
     resource: "mandates",
     operation: "create",
@@ -700,7 +700,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/mandates/:mandate_id",
+    fastifyPath: "/mandates/:mandate_id",
     stripePath: "/mandates/{mandate_id}",
     resource: "mandates",
     operation: "retrieve",
@@ -711,7 +711,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/mandates/:mandate_id",
+    fastifyPath: "/mandates/:mandate_id",
     stripePath: "/mandates/{mandate_id}",
     resource: "mandates",
     operation: "update",
@@ -722,7 +722,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandates/:mandate_id/actions/cancel",
+    fastifyPath: "/mandates/:mandate_id/actions/cancel",
     stripePath: "/mandates/{mandate_id}/actions/cancel",
     resource: "mandates",
     operation: "action",
@@ -733,7 +733,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandates/:mandate_id/actions/reinstate",
+    fastifyPath: "/mandates/:mandate_id/actions/reinstate",
     stripePath: "/mandates/{mandate_id}/actions/reinstate",
     resource: "mandates",
     operation: "action",
@@ -744,7 +744,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandate_imports",
+    fastifyPath: "/mandate_imports",
     stripePath: "/mandate_imports",
     resource: "mandate_imports",
     operation: "create",
@@ -753,7 +753,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/mandate_imports/:mandate_import_id",
+    fastifyPath: "/mandate_imports/:mandate_import_id",
     stripePath: "/mandate_imports/{mandate_import_id}",
     resource: "mandate_imports",
     operation: "retrieve",
@@ -763,7 +763,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandate_imports/:mandate_import_id/actions/submit",
+    fastifyPath: "/mandate_imports/:mandate_import_id/actions/submit",
     stripePath: "/mandate_imports/{mandate_import_id}/actions/submit",
     resource: "mandate_imports",
     operation: "action",
@@ -773,7 +773,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandate_imports/:mandate_import_id/actions/cancel",
+    fastifyPath: "/mandate_imports/:mandate_import_id/actions/cancel",
     stripePath: "/mandate_imports/{mandate_import_id}/actions/cancel",
     resource: "mandate_imports",
     operation: "action",
@@ -783,7 +783,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/mandate_import_entries",
+    fastifyPath: "/mandate_import_entries",
     stripePath: "/mandate_import_entries",
     resource: "mandate_import_entries",
     operation: "list",
@@ -792,7 +792,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandate_import_entries",
+    fastifyPath: "/mandate_import_entries",
     stripePath: "/mandate_import_entries",
     resource: "mandate_import_entries",
     operation: "create",
@@ -801,7 +801,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/mandate_pdfs",
+    fastifyPath: "/mandate_pdfs",
     stripePath: "/mandate_pdfs",
     resource: "mandate_pdfs",
     operation: "create",
@@ -810,7 +810,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/negative_balance_limits",
+    fastifyPath: "/negative_balance_limits",
     stripePath: "/negative_balance_limits",
     resource: "negative_balance_limits",
     operation: "list",
@@ -819,7 +819,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/outbound_payments",
+    fastifyPath: "/outbound_payments",
     stripePath: "/outbound_payments",
     resource: "outbound_payments",
     operation: "list",
@@ -828,7 +828,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/outbound_payments",
+    fastifyPath: "/outbound_payments",
     stripePath: "/outbound_payments",
     resource: "outbound_payments",
     operation: "create",
@@ -837,7 +837,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/outbound_payments/withdrawal",
+    fastifyPath: "/outbound_payments/withdrawal",
     stripePath: "/outbound_payments/withdrawal",
     resource: "outbound_payments",
     operation: "create",
@@ -846,7 +846,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/outbound_payments/:outbound_payment_id/actions/cancel",
+    fastifyPath: "/outbound_payments/:outbound_payment_id/actions/cancel",
     stripePath: "/outbound_payments/{outbound_payment_id}/actions/cancel",
     resource: "outbound_payments",
     operation: "action",
@@ -856,7 +856,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/outbound_payments/:outbound_payment_id/actions/approve",
+    fastifyPath: "/outbound_payments/:outbound_payment_id/actions/approve",
     stripePath: "/outbound_payments/{outbound_payment_id}/actions/approve",
     resource: "outbound_payments",
     operation: "action",
@@ -866,7 +866,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/outbound_payments/:outbound_payment_id",
+    fastifyPath: "/outbound_payments/:outbound_payment_id",
     stripePath: "/outbound_payments/{outbound_payment_id}",
     resource: "outbound_payments",
     operation: "retrieve",
@@ -876,7 +876,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/outbound_payments/:outbound_payment_id",
+    fastifyPath: "/outbound_payments/:outbound_payment_id",
     stripePath: "/outbound_payments/{outbound_payment_id}",
     resource: "outbound_payments",
     operation: "update",
@@ -886,7 +886,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/outbound_payments/stats",
+    fastifyPath: "/outbound_payments/stats",
     stripePath: "/outbound_payments/stats",
     resource: "outbound_payments",
     operation: "action",
@@ -895,7 +895,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payer_authorisations/:payer_authorisation_id",
+    fastifyPath: "/payer_authorisations/:payer_authorisation_id",
     stripePath: "/payer_authorisations/{payer_authorisation_id}",
     resource: "payer_authorisations",
     operation: "retrieve",
@@ -905,7 +905,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/payer_authorisations/:payer_authorisation_id",
+    fastifyPath: "/payer_authorisations/:payer_authorisation_id",
     stripePath: "/payer_authorisations/{payer_authorisation_id}",
     resource: "payer_authorisations",
     operation: "update",
@@ -915,7 +915,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/payer_authorisations",
+    fastifyPath: "/payer_authorisations",
     stripePath: "/payer_authorisations",
     resource: "payer_authorisations",
     operation: "create",
@@ -924,7 +924,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/payer_authorisations/:payer_authorisation_id/actions/submit",
+    fastifyPath: "/payer_authorisations/:payer_authorisation_id/actions/submit",
     stripePath: "/payer_authorisations/{payer_authorisation_id}/actions/submit",
     resource: "payer_authorisations",
     operation: "action",
@@ -934,7 +934,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/payer_authorisations/:payer_authorisation_id/actions/confirm",
+    fastifyPath: "/payer_authorisations/:payer_authorisation_id/actions/confirm",
     stripePath: "/payer_authorisations/{payer_authorisation_id}/actions/confirm",
     resource: "payer_authorisations",
     operation: "action",
@@ -944,7 +944,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/branding/payer_themes",
+    fastifyPath: "/branding/payer_themes",
     stripePath: "/branding/payer_themes",
     resource: "branding",
     operation: "create",
@@ -953,7 +953,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payments",
+    fastifyPath: "/payments",
     stripePath: "/payments",
     resource: "payments",
     operation: "list",
@@ -963,7 +963,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/payments",
+    fastifyPath: "/payments",
     stripePath: "/payments",
     resource: "payments",
     operation: "create",
@@ -973,7 +973,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payments/:payment_id",
+    fastifyPath: "/payments/:payment_id",
     stripePath: "/payments/{payment_id}",
     resource: "payments",
     operation: "retrieve",
@@ -984,7 +984,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/payments/:payment_id",
+    fastifyPath: "/payments/:payment_id",
     stripePath: "/payments/{payment_id}",
     resource: "payments",
     operation: "update",
@@ -995,7 +995,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/payments/:payment_id/actions/cancel",
+    fastifyPath: "/payments/:payment_id/actions/cancel",
     stripePath: "/payments/{payment_id}/actions/cancel",
     resource: "payments",
     operation: "action",
@@ -1006,7 +1006,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/payments/:payment_id/actions/retry",
+    fastifyPath: "/payments/:payment_id/actions/retry",
     stripePath: "/payments/{payment_id}/actions/retry",
     resource: "payments",
     operation: "action",
@@ -1017,7 +1017,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payment_accounts/:payment_account_id",
+    fastifyPath: "/payment_accounts/:payment_account_id",
     stripePath: "/payment_accounts/{payment_account_id}",
     resource: "payment_accounts",
     operation: "retrieve",
@@ -1027,7 +1027,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payment_accounts",
+    fastifyPath: "/payment_accounts",
     stripePath: "/payment_accounts",
     resource: "payment_accounts",
     operation: "list",
@@ -1036,7 +1036,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payment_account_transactions/:payment_account_transaction_id",
+    fastifyPath: "/payment_account_transactions/:payment_account_transaction_id",
     stripePath: "/payment_account_transactions/{payment_account_transaction_id}",
     resource: "payment_account_transactions",
     operation: "retrieve",
@@ -1046,7 +1046,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payment_accounts/:payment_account_transaction_id/transactions",
+    fastifyPath: "/payment_accounts/:payment_account_transaction_id/transactions",
     stripePath: "/payment_accounts/{payment_account_transaction_id}/transactions",
     resource: "payment_accounts",
     operation: "action",
@@ -1056,7 +1056,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payouts",
+    fastifyPath: "/payouts",
     stripePath: "/payouts",
     resource: "payouts",
     operation: "list",
@@ -1066,7 +1066,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payouts/:payout_id",
+    fastifyPath: "/payouts/:payout_id",
     stripePath: "/payouts/{payout_id}",
     resource: "payouts",
     operation: "retrieve",
@@ -1077,7 +1077,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/payouts/:payout_id",
+    fastifyPath: "/payouts/:payout_id",
     stripePath: "/payouts/{payout_id}",
     resource: "payouts",
     operation: "update",
@@ -1088,7 +1088,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/payout_items",
+    fastifyPath: "/payout_items",
     stripePath: "/payout_items",
     resource: "payout_items",
     operation: "list",
@@ -1098,7 +1098,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/redirect_flows",
+    fastifyPath: "/redirect_flows",
     stripePath: "/redirect_flows",
     resource: "redirect_flows",
     operation: "create",
@@ -1108,7 +1108,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/redirect_flows/:redirect_flow_id",
+    fastifyPath: "/redirect_flows/:redirect_flow_id",
     stripePath: "/redirect_flows/{redirect_flow_id}",
     resource: "redirect_flows",
     operation: "retrieve",
@@ -1119,7 +1119,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/redirect_flows/:redirect_flow_id/actions/complete",
+    fastifyPath: "/redirect_flows/:redirect_flow_id/actions/complete",
     stripePath: "/redirect_flows/{redirect_flow_id}/actions/complete",
     resource: "redirect_flows",
     operation: "action",
@@ -1130,7 +1130,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/refunds",
+    fastifyPath: "/refunds",
     stripePath: "/refunds",
     resource: "refunds",
     operation: "list",
@@ -1140,7 +1140,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/refunds",
+    fastifyPath: "/refunds",
     stripePath: "/refunds",
     resource: "refunds",
     operation: "create",
@@ -1150,7 +1150,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/refunds/:refund_id",
+    fastifyPath: "/refunds/:refund_id",
     stripePath: "/refunds/{refund_id}",
     resource: "refunds",
     operation: "retrieve",
@@ -1161,7 +1161,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/refunds/:refund_id",
+    fastifyPath: "/refunds/:refund_id",
     stripePath: "/refunds/{refund_id}",
     resource: "refunds",
     operation: "update",
@@ -1172,7 +1172,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/scenario_simulators/:scenario_simulator_id/actions/run",
+    fastifyPath: "/scenario_simulators/:scenario_simulator_id/actions/run",
     stripePath: "/scenario_simulators/{scenario_simulator_id}/actions/run",
     resource: "scenario_simulators",
     operation: "action",
@@ -1182,7 +1182,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/scheme_identifiers",
+    fastifyPath: "/scheme_identifiers",
     stripePath: "/scheme_identifiers",
     resource: "scheme_identifiers",
     operation: "list",
@@ -1192,7 +1192,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/scheme_identifiers",
+    fastifyPath: "/scheme_identifiers",
     stripePath: "/scheme_identifiers",
     resource: "scheme_identifiers",
     operation: "create",
@@ -1202,7 +1202,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/scheme_identifiers/:scheme_identifier_id",
+    fastifyPath: "/scheme_identifiers/:scheme_identifier_id",
     stripePath: "/scheme_identifiers/{scheme_identifier_id}",
     resource: "scheme_identifiers",
     operation: "retrieve",
@@ -1213,7 +1213,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/subscriptions",
+    fastifyPath: "/subscriptions",
     stripePath: "/subscriptions",
     resource: "subscriptions",
     operation: "list",
@@ -1223,7 +1223,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/subscriptions",
+    fastifyPath: "/subscriptions",
     stripePath: "/subscriptions",
     resource: "subscriptions",
     operation: "create",
@@ -1233,7 +1233,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/subscriptions/:subscription_id",
+    fastifyPath: "/subscriptions/:subscription_id",
     stripePath: "/subscriptions/{subscription_id}",
     resource: "subscriptions",
     operation: "retrieve",
@@ -1244,7 +1244,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "PUT",
-    fastifyPath: "/gocardless/subscriptions/:subscription_id",
+    fastifyPath: "/subscriptions/:subscription_id",
     stripePath: "/subscriptions/{subscription_id}",
     resource: "subscriptions",
     operation: "update",
@@ -1255,7 +1255,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/subscriptions/:subscription_id/actions/pause",
+    fastifyPath: "/subscriptions/:subscription_id/actions/pause",
     stripePath: "/subscriptions/{subscription_id}/actions/pause",
     resource: "subscriptions",
     operation: "action",
@@ -1266,7 +1266,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/subscriptions/:subscription_id/actions/resume",
+    fastifyPath: "/subscriptions/:subscription_id/actions/resume",
     stripePath: "/subscriptions/{subscription_id}/actions/resume",
     resource: "subscriptions",
     operation: "action",
@@ -1277,7 +1277,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/subscriptions/:subscription_id/actions/cancel",
+    fastifyPath: "/subscriptions/:subscription_id/actions/cancel",
     stripePath: "/subscriptions/{subscription_id}/actions/cancel",
     resource: "subscriptions",
     operation: "action",
@@ -1288,7 +1288,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/tax_rates",
+    fastifyPath: "/tax_rates",
     stripePath: "/tax_rates",
     resource: "tax_rates",
     operation: "list",
@@ -1297,7 +1297,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/tax_rates/:tax_rate_id",
+    fastifyPath: "/tax_rates/:tax_rate_id",
     stripePath: "/tax_rates/{tax_rate_id}",
     resource: "tax_rates",
     operation: "retrieve",
@@ -1307,7 +1307,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/transferred_mandates/:mandate_id",
+    fastifyPath: "/transferred_mandates/:mandate_id",
     stripePath: "/transferred_mandates/{mandate_id}",
     resource: "transferred_mandates",
     operation: "retrieve",
@@ -1317,7 +1317,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/verification_details",
+    fastifyPath: "/verification_details",
     stripePath: "/verification_details",
     resource: "verification_details",
     operation: "list",
@@ -1326,7 +1326,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/verification_details",
+    fastifyPath: "/verification_details",
     stripePath: "/verification_details",
     resource: "verification_details",
     operation: "create",
@@ -1335,7 +1335,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/webhooks",
+    fastifyPath: "/webhooks",
     stripePath: "/webhooks",
     resource: "webhooks",
     operation: "list",
@@ -1344,7 +1344,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "GET",
-    fastifyPath: "/gocardless/webhooks/:webhook_id",
+    fastifyPath: "/webhooks/:webhook_id",
     stripePath: "/webhooks/{webhook_id}",
     resource: "webhooks",
     operation: "retrieve",
@@ -1354,7 +1354,7 @@ export const GENERATED_ROUTES: GeneratedRoute[] = [
   },
   {
     method: "POST",
-    fastifyPath: "/gocardless/webhooks/:webhook_id/actions/retry",
+    fastifyPath: "/webhooks/:webhook_id/actions/retry",
     stripePath: "/webhooks/{webhook_id}/actions/retry",
     resource: "webhooks",
     operation: "action",

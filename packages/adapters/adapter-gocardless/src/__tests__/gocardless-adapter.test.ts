@@ -18,7 +18,7 @@ describe('GoCardlessAdapter', () => {
   // ── Metadata ────────────────────────────────────────────────────────────────
   it('should have correct metadata', () => {
     expect(adapter.id).toBe('gocardless');
-    expect(adapter.basePath).toBe('/gocardless');
+    expect(adapter.basePath).toBe('');
   });
 
   it('should return endpoint definitions', () => {
@@ -34,7 +34,7 @@ describe('GoCardlessAdapter', () => {
   it('should create a customer', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ email: 'test@example.com', given_name: 'Test', family_name: 'User' }),
     });
@@ -49,7 +49,7 @@ describe('GoCardlessAdapter', () => {
   it('should list customers', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/gocardless/customers',
+      url: '/customers',
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -63,7 +63,7 @@ describe('GoCardlessAdapter', () => {
   it('should retrieve a customer', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ email: 'retrieve@example.com', given_name: 'Retrieve' }),
     });
@@ -71,7 +71,7 @@ describe('GoCardlessAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'GET',
-      url: `/gocardless/customers/${customerId}`,
+      url: `/customers/${customerId}`,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json();
@@ -82,7 +82,7 @@ describe('GoCardlessAdapter', () => {
   it('should update a customer', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ email: 'update@example.com', given_name: 'Before' }),
     });
@@ -90,7 +90,7 @@ describe('GoCardlessAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'PUT',
-      url: `/gocardless/customers/${customerId}`,
+      url: `/customers/${customerId}`,
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ given_name: 'After' }),
     });
@@ -101,7 +101,7 @@ describe('GoCardlessAdapter', () => {
   it('should delete a customer', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/customers',
+      url: '/customers',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ email: 'delete@example.com' }),
     });
@@ -109,7 +109,7 @@ describe('GoCardlessAdapter', () => {
 
     const res = await ts.server.inject({
       method: 'DELETE',
-      url: `/gocardless/customers/${customerId}`,
+      url: `/customers/${customerId}`,
     });
     expect(res.statusCode).toBe(200);
   });
@@ -117,7 +117,7 @@ describe('GoCardlessAdapter', () => {
   it('should return 404 for non-existent customer', async () => {
     const res = await ts.server.inject({
       method: 'GET',
-      url: '/gocardless/customers/CU_nonexistent',
+      url: '/customers/CU_nonexistent',
     });
     expect(res.statusCode).toBe(404);
     const body = res.json();
@@ -128,7 +128,7 @@ describe('GoCardlessAdapter', () => {
   it('should create and list payments', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/payments',
+      url: '/payments',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         amount: 5000,
@@ -144,7 +144,7 @@ describe('GoCardlessAdapter', () => {
 
     const listRes = await ts.server.inject({
       method: 'GET',
-      url: '/gocardless/payments',
+      url: '/payments',
     });
     expect(listRes.json().payments.length).toBeGreaterThan(0);
   });
@@ -153,7 +153,7 @@ describe('GoCardlessAdapter', () => {
   it('should create a mandate and cancel it', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/mandates',
+      url: '/mandates',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({ scheme: 'bacs' }),
     });
@@ -163,7 +163,7 @@ describe('GoCardlessAdapter', () => {
     // Cancel
     const cancelRes = await ts.server.inject({
       method: 'POST',
-      url: `/gocardless/mandates/${mandateId}/actions/cancel`,
+      url: `/mandates/${mandateId}/actions/cancel`,
     });
     expect(cancelRes.statusCode).toBe(200);
     expect(cancelRes.json().mandates.status).toBe('cancelled');
@@ -171,7 +171,7 @@ describe('GoCardlessAdapter', () => {
     // Reinstate
     const reinstateRes = await ts.server.inject({
       method: 'POST',
-      url: `/gocardless/mandates/${mandateId}/actions/reinstate`,
+      url: `/mandates/${mandateId}/actions/reinstate`,
     });
     expect(reinstateRes.statusCode).toBe(200);
     expect(reinstateRes.json().mandates.status).toBe('active');
@@ -181,7 +181,7 @@ describe('GoCardlessAdapter', () => {
   it('should create and cancel a subscription', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         amount: 1000,
@@ -196,7 +196,7 @@ describe('GoCardlessAdapter', () => {
     // Cancel
     const cancelRes = await ts.server.inject({
       method: 'POST',
-      url: `/gocardless/subscriptions/${subId}/actions/cancel`,
+      url: `/subscriptions/${subId}/actions/cancel`,
     });
     expect(cancelRes.statusCode).toBe(200);
     expect(cancelRes.json().subscriptions.status).toBe('cancelled');
@@ -205,7 +205,7 @@ describe('GoCardlessAdapter', () => {
   it('should pause and resume a subscription', async () => {
     const createRes = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/subscriptions',
+      url: '/subscriptions',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         amount: 2000,
@@ -219,7 +219,7 @@ describe('GoCardlessAdapter', () => {
     // Pause
     const pauseRes = await ts.server.inject({
       method: 'POST',
-      url: `/gocardless/subscriptions/${subId}/actions/pause`,
+      url: `/subscriptions/${subId}/actions/pause`,
     });
     expect(pauseRes.statusCode).toBe(200);
     expect(pauseRes.json().subscriptions.status).toBe('paused');
@@ -227,7 +227,7 @@ describe('GoCardlessAdapter', () => {
     // Resume
     const resumeRes = await ts.server.inject({
       method: 'POST',
-      url: `/gocardless/subscriptions/${subId}/actions/resume`,
+      url: `/subscriptions/${subId}/actions/resume`,
     });
     expect(resumeRes.statusCode).toBe(200);
     expect(resumeRes.json().subscriptions.status).toBe('active');
@@ -237,7 +237,7 @@ describe('GoCardlessAdapter', () => {
   it('should create a refund', async () => {
     const res = await ts.server.inject({
       method: 'POST',
-      url: '/gocardless/refunds',
+      url: '/refunds',
       headers: { 'content-type': 'application/json' },
       payload: JSON.stringify({
         amount: 500,
@@ -265,7 +265,7 @@ describe('GoCardlessAdapter', () => {
     }]]) as any;
 
     const seededTs = await buildTestServer(adapter, seedData);
-    const res = await seededTs.server.inject({ method: 'GET', url: '/gocardless/customers' });
+    const res = await seededTs.server.inject({ method: 'GET', url: '/customers' });
     const customers = res.json().customers;
     expect(customers).toContainEqual(expect.objectContaining({ id: 'CU_seed1' }));
     await seededTs.close();
