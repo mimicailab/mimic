@@ -968,11 +968,11 @@ mimic host (separate terminal)
 <span class="prompt">$</span> npx prisma generate && npx prisma migrate dev --name init
 &#8203;
 <span class="cm"># 4. Generate and seed</span>
-<span class="prompt">$</span> pnpm exec mimic run
-<span class="prompt">$</span> pnpm exec mimic seed --verbose
+<span class="prompt">$</span> npx mimic run
+<span class="prompt">$</span> npx mimic seed --verbose
 &#8203;
 <span class="cm"># 5. Start mimic host (new terminal) — brings up all 9 MCP servers</span>
-<span class="prompt">$</span> export $(cat .env | xargs) && pnpm exec mimic host
+<span class="prompt">$</span> export $(cat .env | xargs) && npx mimic host
 &#8203;
 <span class="cm"># 6. Start the agent (new terminal)</span>
 <span class="prompt">$</span> cd agent && npm install && export $(cat ../.env | xargs) && npm start
