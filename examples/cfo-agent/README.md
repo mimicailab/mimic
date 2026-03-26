@@ -49,11 +49,10 @@ For a deeper architecture walkthrough, see `ARCHITECTURE.md`.
 ## Prerequisites
 
 - Node.js `>=22`
-- `pnpm` for rebuilding workspace packages
 - Docker for PostgreSQL
 - One model provider key:
-  - `OPENAI_API_KEY` for OpenAI models (default: gpt-5.4), or
-  - `ANTHROPIC_API_KEY` for Claude models
+  - `ANTHROPIC_API_KEY` for Claude models (default: claude-sonnet-4-6), or
+  - `OPENAI_API_KEY` for OpenAI models
 
 ## Quick Start
 
@@ -73,25 +72,28 @@ This starts PostgreSQL 17 on port `5435` with:
 
 ```bash
 cp .env.example .env
-# Add OPENAI_API_KEY (required for data generation with gpt-5.4)
-# Optionally add ANTHROPIC_API_KEY for the agent
+# Add ANTHROPIC_API_KEY (required for data generation and the agent)
+# Optionally add OPENAI_API_KEY if you prefer OpenAI models
 ```
 
-### 3. Generate Prisma client and run the schema
+### 3. Install dependencies and set up the database
 
 ```bash
+npm install
 export $(cat .env | xargs)
 npx prisma generate
 npx prisma migrate dev --name init
 ```
+
+> **Note:** This example uses Prisma 7, which requires a `prisma.config.ts` file for the datasource URL (already included). The Prisma schema itself does not contain a `url` property.
 
 ### 4. Generate synthetic data and seed PostgreSQL
 
 From the `examples/cfo-agent` root:
 
 ```bash
-pnpm exec mimic run -g        # generate blueprints + expand + generate facts
-pnpm exec mimic seed --verbose # push DB tables into PostgreSQL
+npx mimic run -g        # generate blueprints + expand + generate facts
+npx mimic seed --verbose # push DB tables into PostgreSQL
 ```
 
 The `-g` flag forces fresh blueprint generation. Without it, cached blueprints under `.mimic/blueprints/` are reused and only expansion runs.
@@ -109,7 +111,7 @@ Generated artifacts are written under:
 ### 5. Explore the data (optional)
 
 ```bash
-pnpm exec mimic explore
+npx mimic explore
 ```
 
 Opens an interactive UI at `http://localhost:7879` showing all adapters, endpoint counts, persona data, and facts.
@@ -120,7 +122,7 @@ In a new terminal, from the `examples/cfo-agent` root:
 
 ```bash
 export $(cat .env | xargs)
-pnpm exec mimic host
+npx mimic host
 ```
 
 You should see all 9 MCP servers come up:
@@ -173,22 +175,6 @@ If Turbopack cache errors appear after switching branches or rebuilding packages
 ```bash
 rm -rf ui/.next
 ```
-
-## Local Development After Package Changes
-
-If you edit code under `packages/` such as an adapter or the CLI, rebuild the affected workspace packages before restarting the example:
-
-```bash
-pnpm --filter @mimicai/adapter-revenuecat build
-pnpm --filter @mimicai/cli build
-```
-
-In general, after changing adapter or CLI source:
-
-1. rebuild the changed packages with `pnpm`
-2. restart `mimic host`
-3. restart the agent
-4. restart the UI if needed
 
 ## Demo Questions
 
@@ -269,6 +255,6 @@ curl -H "Authorization: Bearer sk_test_growth-saas_demo" \
 
 ```bash
 docker compose down -v
-pnpm exec mimic clean --yes
+npx mimic clean --yes
 rm -rf ui/.next
 ```
