@@ -1,0 +1,16 @@
+{
+  "id": "attio",
+  "name": "Attio API",
+  "description": "Attio CRM mock adapter — records, lists, notes, tasks, meetings, comments, threads, files and SCIM",
+  "type": "api-mock",
+  "basePath": "",
+  "versions": ["v2"],
+  "documentationUrl": "https://developers.attio.com/reference",
+  "specUrl": "https://api.attio.com/openapi/api",
+  "specFile": "attio-spec.json",
+  "mcp": {
+    "serverName": "mimic-attio",
+    "serverVersion": "0.11.1",
+    "description": "Mimic MCP server for Attio — find contacts, fetch deal records, list notes/tasks/meetings against mock data"
+  }
+}
