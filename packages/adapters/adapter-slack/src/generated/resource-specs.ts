@@ -1,0 +1,95 @@
+// !! AUTO-GENERATED — do not edit. Run: pnpm --filter @mimicai/adapter-slack generate
+import type { AdapterResourceSpecs } from '@mimicai/core';
+
+export const slackResourceSpecs: AdapterResourceSpecs = {
+  platform: {
+    timestampFormat: 'unix_seconds',
+    amountFormat: 'decimal_string',
+  },
+  resources: {
+    "channel": {
+      objectType: "channel",
+      volumeHint: "entity",
+      refs: ["user"],
+      fields: {
+      "id": { type: "string", required: true, default: "" },
+      "name": { type: "string", required: true, default: "general" },
+      "is_channel": { type: "boolean", required: true, default: true },
+      "is_group": { type: "boolean", required: false, default: false },
+      "is_im": { type: "boolean", required: false, default: false },
+      "is_mpim": { type: "boolean", required: false, default: false },
+      "is_private": { type: "boolean", required: false, default: false },
+      "is_archived": { type: "boolean", required: false, default: false },
+      "is_general": { type: "boolean", required: false, default: false },
+      "created": { type: "integer", required: true, default: 0, timestamp: "unix_seconds" },
+      "creator": { type: "string", required: false, default: "" },
+      "num_members": { type: "integer", required: false, default: 0 },
+      "topic": { type: "object", required: false, default: null, description: "Topic value/creator/last_set" },
+      "purpose": { type: "object", required: false, default: null, description: "Purpose value/creator/last_set" },
+      },
+    },
+    "message": {
+      objectType: "message",
+      volumeHint: "entity",
+      refs: ["user","channel"],
+      fields: {
+      "type": { type: "string", required: true, default: "message" },
+      "user": { type: "string", required: false, default: "", description: "User id of the author" },
+      "text": { type: "string", required: true, default: "" },
+      "ts": { type: "string", required: true, default: "", description: "Slack message timestamp (epoch.seq)" },
+      "thread_ts": { type: "string", required: false, default: "", description: "Parent ts if this is a thread reply" },
+      "channel": { type: "string", required: false, default: "" },
+      "reply_count": { type: "integer", required: false, default: 0 },
+      "reactions": { type: "array", required: false, default: [] },
+      "blocks": { type: "array", required: false, default: [], description: "Block Kit content" },
+      "attachments": { type: "array", required: false, default: [] },
+      },
+    },
+    "user": {
+      objectType: "user",
+      volumeHint: "entity",
+      refs: [],
+      fields: {
+      "id": { type: "string", required: true, default: "" },
+      "team_id": { type: "string", required: true, default: "" },
+      "name": { type: "string", required: true, default: "" },
+      "real_name": { type: "string", required: false, default: "" },
+      "profile": { type: "object", required: false, default: null, description: "Display name, status, email, image URLs" },
+      "is_admin": { type: "boolean", required: false, default: false },
+      "is_owner": { type: "boolean", required: false, default: false },
+      "is_bot": { type: "boolean", required: false, default: false },
+      "deleted": { type: "boolean", required: false, default: false },
+      "tz": { type: "string", required: false, default: "America/Los_Angeles" },
+      },
+    },
+    "team": {
+      objectType: "team",
+      volumeHint: "reference",
+      refs: [],
+      fields: {
+      "id": { type: "string", required: true, default: "" },
+      "name": { type: "string", required: true, default: "Acme Workspace" },
+      "domain": { type: "string", required: true, default: "acme", semanticType: "slug" },
+      "email_domain": { type: "string", required: false, default: "" },
+      "icon": { type: "object", required: false, default: null },
+      },
+    },
+    "file": {
+      objectType: "file",
+      volumeHint: "entity",
+      refs: ["user","channel"],
+      fields: {
+      "id": { type: "string", required: true, default: "" },
+      "created": { type: "integer", required: true, default: 0, timestamp: "unix_seconds" },
+      "timestamp": { type: "integer", required: false, default: 0, timestamp: "unix_seconds" },
+      "name": { type: "string", required: true, default: "" },
+      "title": { type: "string", required: false, default: "" },
+      "mimetype": { type: "string", required: false, default: "application/octet-stream" },
+      "filetype": { type: "string", required: false, default: "binary" },
+      "size": { type: "integer", required: false, default: 0 },
+      "user": { type: "string", required: false, default: "" },
+      "channels": { type: "array", required: false, default: [] },
+      },
+    }
+  },
+};

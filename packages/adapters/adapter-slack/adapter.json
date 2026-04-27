@@ -1,0 +1,16 @@
+{
+  "id": "slack",
+  "name": "Slack Web API",
+  "description": "Slack channels, messages, users, threads, search and reactions mock adapter",
+  "type": "api-mock",
+  "basePath": "/api",
+  "versions": ["v2"],
+  "documentationUrl": "https://api.slack.com/methods",
+  "specUrl": "https://raw.githubusercontent.com/slackapi/slack-api-specs/master/web-api/slack_web_openapi_v2.json",
+  "specFile": "slack-spec.json",
+  "mcp": {
+    "serverName": "mimic-slack",
+    "serverVersion": "0.11.1",
+    "description": "Mimic MCP server for Slack — channels, messages, users, search against mock data"
+  }
+}

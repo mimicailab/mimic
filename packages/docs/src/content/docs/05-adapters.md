@@ -9,7 +9,7 @@ next: { slug: "mcp", title: "MCP Servers" }
 
 <h2 id="adapter-list">Adapter Catalog</h2>
 
-Mimic ships **10 API mock adapters** and **4 database adapters** today, with 100+ more on the roadmap. Every adapter is open source (Apache 2.0) and community-contributable.
+Mimic ships **11 API mock adapters** and **4 database adapters** today, with 100+ more on the roadmap. Every adapter is open source (Apache 2.0) and community-contributable.
 
 <h3 id="adapter-databases">Database Adapters</h3>
 
@@ -31,7 +31,7 @@ Mimic ships **10 API mock adapters** and **4 database adapters** today, with 100
 
 <div class="callout tip">
   <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
-  <div><p><strong>10 adapters shipped:</strong> All adapters below are published packages with full mock route coverage, MCP server support, and a standalone MCP binary (<code>src/bin/mcp.ts</code>). Each is built on <code>@mimicai/adapter-sdk</code>.</p></div>
+  <div><p><strong>11 adapters shipped:</strong> All adapters below are published packages with full mock route coverage, MCP server support, and a standalone MCP binary (<code>src/bin/mcp.ts</code>). Each is built on <code>@mimicai/adapter-sdk</code>.</p></div>
 </div>
 
 <div class="doc-table-wrap">
@@ -48,6 +48,7 @@ Mimic ships **10 API mock adapters** and **4 database adapters** today, with 100
       <tr><td><strong>RevenueCat</strong></td><td><code>@mimicai/adapter-revenuecat</code></td><td>42</td><td style="color: var(--green);">Shipped</td><td>Subscribers, entitlements, offerings, products, purchases, receipts</td></tr>
       <tr><td><strong>Zuora</strong></td><td><code>@mimicai/adapter-zuora</code></td><td>54</td><td style="color: var(--green);">Shipped</td><td>Accounts, subscriptions, invoices, payments, products, rate plans, usage records</td></tr>
       <tr><td><strong>Gmail</strong></td><td><code>@mimicai/adapter-gmail</code></td><td>34</td><td style="color: var(--green);">Shipped</td><td>Messages, threads, labels, drafts, profile, history (incremental sync); Google JSON error envelope; system labels pre-seeded</td></tr>
+      <tr><td><strong>Slack</strong></td><td><code>@mimicai/adapter-slack</code></td><td>27</td><td style="color: var(--green);">Shipped</td><td>Channels, messages, threads, users, search, reactions, pins, files; Slack <code>{ok}</code> envelope; cursor pagination</td></tr>
     </tbody>
   </table>
 </div>
@@ -86,12 +87,13 @@ Mimic ships **10 API mock adapters** and **4 database adapters** today, with 100
 
 <div class="adapter-doc-grid">
   <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Gmail</span><span class="adapter-doc-routes">34 routes</span></div>
+  <div class="adapter-doc-item" style="border-color: var(--green);"><span class="adapter-doc-name" style="color: var(--green);">Slack</span><span class="adapter-doc-routes">27 routes</span></div>
 </div>
 
 #### Communication — Roadmap
 
 <div class="adapter-doc-grid">
-  <div class="adapter-doc-item"><span class="adapter-doc-name">Slack</span><span class="adapter-doc-routes">planned</span></div>
+  <div class="adapter-doc-item"><span class="adapter-doc-name">Twilio</span><span class="adapter-doc-routes">planned</span></div>
   <div class="adapter-doc-item"><span class="adapter-doc-name">Twilio</span><span class="adapter-doc-routes">planned</span></div>
   <div class="adapter-doc-item"><span class="adapter-doc-name">SendGrid</span><span class="adapter-doc-routes">11 routes</span></div>
   <div class="adapter-doc-item"><span class="adapter-doc-name">Discord</span><span class="adapter-doc-routes">13 routes</span></div>

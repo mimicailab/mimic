@@ -63,6 +63,7 @@ packages/
     adapter-revenuecat/   # RevenueCat API mock adapter (with MCP server)
     adapter-zuora/        # Zuora API mock adapter (with MCP server)
     adapter-gmail/        # Gmail API mock adapter (with MCP server)
+    adapter-slack/        # Slack Web API mock adapter (with MCP server)
   docs/                   # Astro documentation site
 examples/                 # Example projects using Mimic
 docs/                     # Architecture and guide documents

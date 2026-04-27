@@ -1,0 +1,1 @@
+# @mimicai/adapter-slack
