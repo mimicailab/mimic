@@ -1,0 +1,16 @@
+{
+  "id": "granola",
+  "name": "Granola API",
+  "description": "Granola meeting-notes mock adapter — list notes, retrieve transcripts, browse folders",
+  "type": "api-mock",
+  "basePath": "",
+  "versions": ["v1"],
+  "documentationUrl": "https://docs.granola.ai/introduction",
+  "specUrl": "https://docs.granola.ai/api-reference/openapi.json",
+  "specFile": "granola-spec.json",
+  "mcp": {
+    "serverName": "mimic-granola",
+    "serverVersion": "0.11.1",
+    "description": "Mimic MCP server for Granola — list meeting notes, fetch transcripts, browse workspace folders against mock data"
+  }
+}
