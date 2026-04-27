@@ -28,6 +28,9 @@
       "esbuild",
       "@esbuild/*",
       "better-sqlite3"
-    ]
+    ],
+    "overrides": {
+      "chevrotain": "^10.5.0"
+    }
   }
 }

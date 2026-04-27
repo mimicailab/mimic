@@ -93,6 +93,7 @@ All 9 shipped adapters include a full MCP server. Each can be run standalone via
       <tr><td><strong>Recurly</strong></td><td><code>@mimicai/adapter-recurly</code></td><td><code>npx @mimicai/adapter-recurly mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
       <tr><td><strong>RevenueCat</strong></td><td><code>@mimicai/adapter-revenuecat</code></td><td><code>npx @mimicai/adapter-revenuecat mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
       <tr><td><strong>Zuora</strong></td><td><code>@mimicai/adapter-zuora</code></td><td><code>npx @mimicai/adapter-zuora mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
+      <tr><td><strong>Gmail</strong></td><td><code>@mimicai/adapter-gmail</code></td><td><code>npx @mimicai/adapter-gmail mcp</code></td><td style="color: var(--green);">Shipped</td></tr>
     </tbody>
   </table>
 </div>
