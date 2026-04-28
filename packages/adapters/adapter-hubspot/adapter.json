@@ -1,0 +1,16 @@
+{
+  "id": "hubspot",
+  "name": "HubSpot API",
+  "description": "HubSpot mock adapter — full coverage of CRM, CMS, Marketing, Conversations, Events, Files, Auth, Settings and more (105 specs, 1219 routes)",
+  "type": "api-mock",
+  "basePath": "",
+  "versions": ["2026-03"],
+  "documentationUrl": "https://developers.hubspot.com/docs/api-reference/latest/overview",
+  "specUrl": "https://github.com/HubSpot/HubSpot-public-api-spec-collection",
+  "specFile": "specs/",
+  "mcp": {
+    "serverName": "mimic-hubspot",
+    "serverVersion": "0.11.1",
+    "description": "Mimic MCP server for HubSpot — find contacts, fetch deals, list activity (notes/tasks/calls/meetings/emails) against mock data"
+  }
+}
