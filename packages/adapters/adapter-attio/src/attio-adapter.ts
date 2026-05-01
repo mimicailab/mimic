@@ -32,6 +32,7 @@ import * as webhookHandlers from './overrides/webhooks.js';
 import * as workspaceMemberHandlers from './overrides/workspace_members.js';
 import * as scimHandlers from './overrides/scim.js';
 import { seedDefaultFixtures } from './overrides/fixtures.js';
+import { seedAttioRecords } from './overrides/seed_records.js';
 
 /**
  * StateStore namespace conventions for Attio. Most resources are namespaced
@@ -99,6 +100,12 @@ export class AttioAdapter extends OpenApiMockAdapter<AttioConfig> {
     store: StateStore,
   ): Promise<void> {
     seedDefaultFixtures(store, this.config);
+
+    // The base SDK seeder writes generic resources (notes, tasks, etc.) into
+    // their namespaces. But Attio records are polymorphic — see
+    // overrides/seed_records.ts — and need a custom wrap into Attio's record
+    // envelope before they land in `attio:records:{object}`.
+    seedAttioRecords(data, store, this.config?.workspaceId);
 
     this.mountOverrides(store);
 

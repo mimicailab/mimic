@@ -270,94 +270,119 @@ interface ResourceSpec {
   fields: Record<string, ResourceSpecField>;
 }
 
-interface ResourceDef {
-  schemaName: string;
-  objectType: string;
-  volumeHint: 'reference' | 'entity';
-  refs: string[];
-  /** Optional: override factory body shape (handled inline in renderSchemas). */
-}
 
-const RESOURCES_TO_SPEC: ResourceDef[] = [
-  { schemaName: 'Message', objectType: 'message', volumeHint: 'entity', refs: ['thread', 'label'] },
-  { schemaName: 'Thread', objectType: 'thread', volumeHint: 'entity', refs: ['message'] },
-  { schemaName: 'Label', objectType: 'label', volumeHint: 'reference', refs: [] },
-  { schemaName: 'Draft', objectType: 'draft', volumeHint: 'entity', refs: ['message'] },
-  { schemaName: 'Profile', objectType: 'profile', volumeHint: 'reference', refs: [] },
-];
+// ---------------------------------------------------------------------------
+// Hand-curated resource specs.
+//
+// Gmail's Discovery doc declares every property of every schema as optional
+// (Google's API permissiveness — `format=` query controls what's actually
+// returned). Auto-deriving `required: false` for everything leaves the LLM
+// with no content fields to populate, so all 47 generated messages came back
+// as empty shells (id="", snippet="", payload=null).
+//
+// Instead, we hand-curate the wire-shape resources mirroring what real Gmail
+// returns when callers fetch with `format=full`, and add a `message_email`
+// pseudo-resource that flattens email content (from / to / subject / body)
+// into fields the LLM can populate. A custom seeder in
+// `overrides/seed_messages.ts` wraps those flat entities into proper Gmail
+// message + thread envelopes (compound payload with headers, body parts).
+// Same trick we use for Attio's polymorphic `record` → record_person/etc.
+// ---------------------------------------------------------------------------
 
-/** Map a Discovery property to a ResourceSpecField (best-effort). */
-function fieldSpec(name: string, prop: DiscoverySchema, requiredSet: Set<string>): ResourceSpecField {
-  const type = mapDiscoveryType(prop);
-  const isRequired = requiredSet.has(name);
-
-  const out: ResourceSpecField = {
-    type,
-    required: isRequired,
-    description: prop.description,
-  };
-
-  if (prop.enum && prop.enum.length > 0) {
-    out.enum = prop.enum.slice();
-    if (prop.enum[0] !== undefined) out.default = prop.enum[0];
-  }
-
-  // Timestamp heuristic: int64-format strings whose name ends in "Date" or is "internalDate".
-  if (prop.format === 'int64' && (name === 'internalDate' || name.endsWith('Date'))) {
-    out.timestamp = 'unix_ms';
-  }
-
-  if (name === 'emailAddress' || name.endsWith('Email')) out.semanticType = 'email';
-  if (name === 'historyId') out.semanticType = 'platform_id';
-
-  // Defaults
-  if (out.default === undefined) {
-    if (type === 'string') out.default = '';
-    else if (type === 'integer' || type === 'number') out.default = 0;
-    else if (type === 'boolean') out.default = false;
-    else if (type === 'array') out.default = [];
-    else if (type === 'object') out.default = null;
-  }
-
-  return out;
-}
-
-function mapDiscoveryType(prop: DiscoverySchema): ResourceSpecField['type'] {
-  if (prop.$ref) return 'object';
-  switch (prop.type) {
-    case 'integer':
-      return 'integer';
-    case 'number':
-      return 'number';
-    case 'boolean':
-      return 'boolean';
-    case 'array':
-      return 'array';
-    case 'object':
-      return 'object';
-    case 'string':
-    default:
-      return 'string';
-  }
-}
-
-function buildResourceSpec(def: ResourceDef, schemas: Record<string, DiscoverySchema>): ResourceSpec {
-  const schema = schemas[def.schemaName];
-  if (!schema || !schema.properties) {
-    throw new Error(`Schema ${def.schemaName} missing or has no properties`);
-  }
-  const requiredSet = new Set<string>(); // Discovery doesn't mark required at field level for these
-  const fields: Record<string, ResourceSpecField> = {};
-  for (const [pName, pVal] of Object.entries(schema.properties)) {
-    fields[pName] = fieldSpec(pName, pVal, requiredSet);
-  }
-  return {
-    objectType: def.objectType,
-    volumeHint: def.volumeHint,
-    refs: def.refs,
-    fields,
-  };
-}
+const RESOURCE_SPECS: Record<string, ResourceSpec> = {
+  // Wire-shape `message` — kept here so the runtime override and the
+  // mcp tool surface stay aligned with Gmail's actual response shape.
+  // Demoted to `reference` because content generation flows through the
+  // `message_email` pseudo-resource below.
+  message: {
+    objectType: 'message',
+    volumeHint: 'reference',
+    refs: ['thread', 'label'],
+    fields: {
+      id: { type: 'string', required: true, default: '' },
+      threadId: { type: 'string', required: true, default: '' },
+      labelIds: { type: 'array', required: false, default: [] },
+      snippet: { type: 'string', required: false, default: '' },
+      historyId: { type: 'string', required: false, default: '', semanticType: 'platform_id' },
+      internalDate: { type: 'string', required: false, default: '', timestamp: 'unix_ms' },
+      sizeEstimate: { type: 'integer', required: false, default: 0 },
+      payload: { type: 'object', required: false, default: null },
+      raw: { type: 'string', required: false, default: '' },
+    },
+  },
+  // Pseudo-resource: flat email content the LLM populates from persona
+  // narrative (Sarah → Priya thread about SOC 2, etc.). The seeder wraps
+  // these into Gmail's MIME-shaped payload at storage time.
+  message_email: {
+    objectType: 'message_email',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      from_name: { type: 'string', required: true, default: '' },
+      from_email: { type: 'string', required: true, default: '', semanticType: 'email' },
+      to_email: { type: 'string', required: true, default: '', semanticType: 'email' },
+      cc_emails: { type: 'array', required: false, default: [] },
+      subject: { type: 'string', required: true, default: '' },
+      body_text: { type: 'string', required: true, default: '' },
+      thread_subject: { type: 'string', required: true, default: '' },
+      label_ids: { type: 'array', required: false, default: [] },
+      sent_at: { type: 'string', required: true, default: '', timestamp: 'unix_ms' },
+    },
+  },
+  thread: {
+    objectType: 'thread',
+    volumeHint: 'reference',
+    refs: ['message'],
+    fields: {
+      id: { type: 'string', required: true, default: '' },
+      snippet: { type: 'string', required: false, default: '' },
+      historyId: { type: 'string', required: false, default: '', semanticType: 'platform_id' },
+      messages: { type: 'array', required: false, default: [] },
+    },
+  },
+  label: {
+    objectType: 'label',
+    volumeHint: 'reference',
+    refs: [],
+    fields: {
+      id: { type: 'string', required: true, default: '' },
+      name: { type: 'string', required: true, default: '' },
+      type: { type: 'string', required: false, default: 'system', enum: ['system', 'user'] },
+      labelListVisibility: {
+        type: 'string',
+        required: false,
+        default: 'labelShow',
+        enum: ['labelShow', 'labelShowIfUnread', 'labelHide'],
+      },
+      messageListVisibility: { type: 'string', required: false, default: 'show', enum: ['show', 'hide'] },
+      threadsTotal: { type: 'integer', required: false, default: 0 },
+      messagesTotal: { type: 'integer', required: false, default: 0 },
+      messagesUnread: { type: 'integer', required: false, default: 0 },
+      threadsUnread: { type: 'integer', required: false, default: 0 },
+      color: { type: 'object', required: false, default: null },
+    },
+  },
+  draft: {
+    objectType: 'draft',
+    volumeHint: 'entity',
+    refs: ['message'],
+    fields: {
+      id: { type: 'string', required: true, default: '' },
+      message: { type: 'object', required: false, default: null },
+    },
+  },
+  profile: {
+    objectType: 'profile',
+    volumeHint: 'reference',
+    refs: [],
+    fields: {
+      emailAddress: { type: 'string', required: true, default: '', semanticType: 'email' },
+      messagesTotal: { type: 'integer', required: false, default: 0 },
+      threadsTotal: { type: 'integer', required: false, default: 0 },
+      historyId: { type: 'string', required: false, default: '', semanticType: 'platform_id' },
+    },
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Default factories — hand-tuned per resource so seeded data is realistic.
@@ -601,12 +626,8 @@ function main(): void {
   );
   writeFileSync(resolve(OUT_DIR, 'routes.ts'), renderRoutes(routes), 'utf-8');
 
-  // 2. Resource specs
-  const specs: Record<string, ResourceSpec> = {};
-  for (const def of RESOURCES_TO_SPEC) {
-    specs[def.objectType] = buildResourceSpec(def, doc.schemas);
-  }
-  writeFileSync(resolve(OUT_DIR, 'resource-specs.ts'), renderResourceSpecs(specs), 'utf-8');
+  // 2. Resource specs (hand-curated; see RESOURCE_SPECS above)
+  writeFileSync(resolve(OUT_DIR, 'resource-specs.ts'), renderResourceSpecs(RESOURCE_SPECS), 'utf-8');
 
   // 3. Schemas (factories)
   writeFileSync(resolve(OUT_DIR, 'schemas.ts'), renderSchemas(), 'utf-8');
@@ -614,9 +635,10 @@ function main(): void {
   // 4. Meta
   writeFileSync(resolve(OUT_DIR, 'meta.ts'), renderMeta(doc.revision), 'utf-8');
 
-  console.log(`✓ Wrote ${routes.length} routes for ${RESOURCES_TO_SPEC.length} resources`);
+  const specCount = Object.keys(RESOURCE_SPECS).length;
+  console.log(`✓ Wrote ${routes.length} routes for ${specCount} resources`);
   console.log(`  routes.ts          — ${routes.length} entries`);
-  console.log(`  resource-specs.ts  — ${RESOURCES_TO_SPEC.length} resource specs`);
+  console.log(`  resource-specs.ts  — ${specCount} resource specs`);
   console.log(`  schemas.ts         — ${Object.keys(FACTORY_TEMPLATES).length} factories`);
   console.log(`  meta.ts            — revision ${doc.revision}`);
 }

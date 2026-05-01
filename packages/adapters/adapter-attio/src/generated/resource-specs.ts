@@ -9,13 +9,56 @@ export const attioResourceSpecs: AdapterResourceSpecs = {
   resources: {
     "record": {
       objectType: "record",
-      volumeHint: "entity",
+      volumeHint: "reference",
       refs: ["workspace_member"],
       fields: {
       "id": { type: "object", required: true, default: null, description: "Compound { workspace_id, object_id, record_id }" },
       "created_at": { type: "string", required: true, default: "", timestamp: "iso8601" },
       "web_url": { type: "string", required: false, default: "", semanticType: "url" },
       "values": { type: "object", required: true, default: {}, description: "Attribute slug → array of typed values" },
+      },
+    },
+    "record_person": {
+      objectType: "record_person",
+      volumeHint: "entity",
+      refs: ["workspace_member"],
+      fields: {
+      "full_name": { type: "string", required: true, default: "" },
+      "first_name": { type: "string", required: true, default: "" },
+      "last_name": { type: "string", required: true, default: "" },
+      "primary_email": { type: "string", required: true, default: "", semanticType: "email" },
+      "job_title": { type: "string", required: true, default: "" },
+      "company_domain": { type: "string", required: true, default: "" },
+      "description": { type: "string", required: false, default: "" },
+      "created_at": { type: "string", required: true, default: "", timestamp: "iso8601" },
+      },
+    },
+    "record_company": {
+      objectType: "record_company",
+      volumeHint: "entity",
+      refs: [],
+      fields: {
+      "name": { type: "string", required: true, default: "" },
+      "domain": { type: "string", required: true, default: "" },
+      "industry": { type: "string", required: true, default: "" },
+      "employee_count": { type: "integer", required: false, default: 0 },
+      "description": { type: "string", required: false, default: "" },
+      "created_at": { type: "string", required: true, default: "", timestamp: "iso8601" },
+      },
+    },
+    "record_deal": {
+      objectType: "record_deal",
+      volumeHint: "entity",
+      refs: [],
+      fields: {
+      "name": { type: "string", required: true, default: "" },
+      "value_amount": { type: "integer", required: true, default: 0 },
+      "value_currency": { type: "string", required: true, default: "", semanticType: "currency_code" },
+      "stage": { type: "string", required: true, default: "Lead", enum: ["Lead","Qualifying","Demo","Negotiation","Procurement","Closed Won","Closed Lost"] },
+      "primary_contact_email": { type: "string", required: true, default: "", semanticType: "email" },
+      "associated_company_domain": { type: "string", required: true, default: "" },
+      "expected_close_date": { type: "string", required: true, default: "", timestamp: "iso8601" },
+      "created_at": { type: "string", required: true, default: "", timestamp: "iso8601" },
       },
     },
     "list": {

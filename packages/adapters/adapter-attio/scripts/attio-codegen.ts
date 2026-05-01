@@ -327,6 +327,7 @@ interface ResourceSpecField {
   semanticType?: string;
   description?: string;
   timestamp?: 'unix_seconds' | 'unix_ms' | 'epoch_ms' | 'iso8601';
+  isAmount?: boolean;
 }
 
 interface ResourceSpec {
@@ -337,15 +338,82 @@ interface ResourceSpec {
 }
 
 const RESOURCE_SPECS: Record<string, ResourceSpec> = {
+  // ---------------------------------------------------------------------------
+  // `record` is a structural placeholder: in Attio's API, every record (person,
+  // company, deal, …) is served from /v2/objects/{object}/records, but the
+  // *content* is polymorphic. The persona generator can't fill a generic
+  // `values: {}` map, so we declare three pseudo-resources below — record_person,
+  // record_company, record_deal — with explicit content fields the LLM can
+  // populate. A custom seeder in `attio-adapter.ts` wraps those into Attio's
+  // record envelope (compound id + values map) and writes them under
+  // `attio:records:{people|companies|deals}` so the runtime query handler finds
+  // them. `record` itself is kept here as a `reference` so other resources'
+  // refs (note → record, list_entry → record) still resolve.
+  // ---------------------------------------------------------------------------
   record: {
     objectType: 'record',
-    volumeHint: 'entity',
+    volumeHint: 'reference',
     refs: ['workspace_member'],
     fields: {
       id: { type: 'object', required: true, default: null, description: 'Compound { workspace_id, object_id, record_id }' },
       created_at: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
       web_url: { type: 'string', required: false, default: '', semanticType: 'url' },
       values: { type: 'object', required: true, default: {}, description: 'Attribute slug → array of typed values' },
+    },
+  },
+  record_person: {
+    objectType: 'record_person',
+    volumeHint: 'entity',
+    refs: ['workspace_member'],
+    fields: {
+      full_name: { type: 'string', required: true, default: '' },
+      first_name: { type: 'string', required: true, default: '' },
+      last_name: { type: 'string', required: true, default: '' },
+      primary_email: { type: 'string', required: true, default: '', semanticType: 'email' },
+      job_title: { type: 'string', required: true, default: '' },
+      // company_domain pins the person to their employer's company record. Required so
+      // the briefing skill can navigate person → company without relying on email parsing.
+      company_domain: { type: 'string', required: true, default: '' },
+      description: { type: 'string', required: false, default: '' },
+      created_at: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+    },
+  },
+  record_company: {
+    objectType: 'record_company',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      name: { type: 'string', required: true, default: '' },
+      domain: { type: 'string', required: true, default: '' },
+      industry: { type: 'string', required: true, default: '' },
+      employee_count: { type: 'integer', required: false, default: 0 },
+      description: { type: 'string', required: false, default: '' },
+      created_at: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+    },
+  },
+  record_deal: {
+    objectType: 'record_deal',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      name: { type: 'string', required: true, default: '' },
+      value_amount: { type: 'integer', required: true, default: 0, isAmount: true },
+      // Currency-code without a default forces the LLM to pick from persona context
+      // (e.g. "£240k" → 'gbp'). With a default like 'usd' the LLM tends to keep it.
+      value_currency: { type: 'string', required: true, default: '', semanticType: 'currency_code' },
+      stage: {
+        type: 'string',
+        required: true,
+        default: 'Lead',
+        enum: ['Lead', 'Qualifying', 'Demo', 'Negotiation', 'Procurement', 'Closed Won', 'Closed Lost'],
+      },
+      // Required cross-references to the deal's primary contact and company.
+      // Marking optional made the LLM hallucinate generic values (e.g. derrick@gmail.com)
+      // because it still sees the field in the spec; required pushes it to use persona content.
+      primary_contact_email: { type: 'string', required: true, default: '', semanticType: 'email' },
+      associated_company_domain: { type: 'string', required: true, default: '' },
+      expected_close_date: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+      created_at: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
     },
   },
   list: {

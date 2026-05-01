@@ -39,6 +39,36 @@ const PRISMA_TYPE_MAP: Record<string, { columnType: ColumnType; pgType: string }
   Bytes: { columnType: 'bytea', pgType: 'bytea' },
 };
 
+/**
+ * Prisma `@db.<Type>` native type override → Postgres column type.
+ * Without this, `id String @db.Uuid` parses as `text`, the LLM produces
+ * non-UUID IDs, and the seed fails on insert.
+ *
+ * Covers the common Postgres-flavoured natives. Decimals/numerics are left
+ * as `numeric` since Prisma treats `Decimal` that way already.
+ */
+const PRISMA_DB_NATIVE_MAP: Record<string, { columnType: ColumnType; pgType: string }> = {
+  Uuid: { columnType: 'uuid', pgType: 'uuid' },
+  VarChar: { columnType: 'varchar', pgType: 'varchar' },
+  Char: { columnType: 'char', pgType: 'char' },
+  Text: { columnType: 'text', pgType: 'text' },
+  Citext: { columnType: 'text', pgType: 'citext' },
+  SmallInt: { columnType: 'smallint', pgType: 'int2' },
+  Integer: { columnType: 'integer', pgType: 'int4' },
+  BigInt: { columnType: 'bigint', pgType: 'int8' },
+  Real: { columnType: 'float', pgType: 'float4' },
+  DoublePrecision: { columnType: 'double', pgType: 'float8' },
+  Date: { columnType: 'date', pgType: 'date' },
+  Time: { columnType: 'time', pgType: 'time' },
+  Timestamp: { columnType: 'timestamp', pgType: 'timestamp' },
+  Timestamptz: { columnType: 'timestamptz', pgType: 'timestamptz' },
+  Json: { columnType: 'json', pgType: 'json' },
+  JsonB: { columnType: 'jsonb', pgType: 'jsonb' },
+  ByteA: { columnType: 'bytea', pgType: 'bytea' },
+  Inet: { columnType: 'text', pgType: 'inet' },
+  Money: { columnType: 'decimal', pgType: 'money' },
+};
+
 // ─── Naming helpers ──────────────────────────────────────────────────────────
 
 /**
@@ -184,6 +214,15 @@ function getAttribute(field: any, name: string): any | undefined {
 }
 
 /**
+ * Find a Prisma `@db.<Type>` native-type override on a field.
+ * The AST emits these as `{ type:'attribute', name:'Uuid', group:'db', args? }`.
+ */
+function getDbNativeAttribute(field: any): any | undefined {
+  if (!field.attributes) return undefined;
+  return field.attributes.find((a: any) => a.group === 'db');
+}
+
+/**
  * Determine if a Prisma field is a relation field (references another model).
  * Relation fields have type = another model name and typically carry `@relation`.
  */
@@ -310,6 +349,25 @@ function mapPrismaField(
     }
   }
 
+  // Honour Prisma `@db.<Type>` native overrides (e.g. @db.Uuid, @db.VarChar(n)).
+  // Without this, `id String @db.Uuid` parses as `text` and the LLM produces
+  // non-UUID IDs that fail to insert into the actual `uuid` column.
+  const dbAttr = getDbNativeAttribute(field);
+  let dbMaxLength: number | undefined;
+  if (dbAttr && !isList) {
+    const native = PRISMA_DB_NATIVE_MAP[dbAttr.name];
+    if (native) {
+      columnType = native.columnType;
+      pgType = native.pgType;
+    }
+    // VarChar(n) / Char(n) — pull out the length so prompts and validators see it.
+    if ((dbAttr.name === 'VarChar' || dbAttr.name === 'Char') && Array.isArray(dbAttr.args) && dbAttr.args.length > 0) {
+      const raw = dbAttr.args[0]?.value ?? dbAttr.args[0];
+      const n = typeof raw === 'string' ? parseInt(raw, 10) : typeof raw === 'number' ? raw : NaN;
+      if (Number.isFinite(n)) dbMaxLength = n;
+    }
+  }
+
   // Check for @id with autoincrement
   const isId = hasAttribute(field, 'id');
   const defaultAttr = getAttribute(field, 'default');
@@ -382,6 +440,7 @@ function mapPrismaField(
     isAutoIncrement,
     isGenerated: false,
     enumValues,
+    maxLength: dbMaxLength,
   };
 }
 

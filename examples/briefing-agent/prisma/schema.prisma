@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Customer or prospect organisation. Domain is the join key against email-derived identity.
+model accounts {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(255)
+  domain      String   @unique @db.VarChar(255)
+  /// Lifecycle: prospect | trial | customer | churned
+  status      String   @db.VarChar(50)
+  created_at  DateTime @default(now())
+
+  users users[]
+}
+
+/// Product user — represents a real signed-up account in the Cumulus app.
+/// Trial users at a prospect domain are the strongest product signal an AE can quote on a call.
+model users {
+  id            String    @id @default(uuid()) @db.Uuid
+  account_id    String    @db.Uuid
+  email         String    @unique @db.VarChar(255)
+  name          String    @db.VarChar(255)
+  /// Plan gate: trial | starter | pro | enterprise
+  plan          String    @db.VarChar(50)
+  /// Lifecycle: invited | active | inactive | churned
+  status        String    @db.VarChar(50)
+  created_at    DateTime  @default(now())
+  last_login_at DateTime?
+  trial_ends_at DateTime?
+
+  account  accounts @relation(fields: [account_id], references: [id])
+  events   events[]
+
+  @@index([account_id])
+}
+
+/// Product event stream — login, dashboard_view, query_run, alert_created, integration_added, invite_sent.
+/// Used to derive recent-activity, teammate-signups, and feature-adoption signals.
+model events {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  event_type String   @db.VarChar(100)
+  /// Free-form payload (feature name, dashboard id, query type, etc.)
+  properties Json?
+  created_at DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, created_at])
+  @@index([event_type, created_at])
+}

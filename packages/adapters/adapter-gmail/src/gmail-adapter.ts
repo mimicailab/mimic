@@ -22,6 +22,7 @@ import * as threadOverrides from './overrides/threads.js';
 import * as draftOverrides from './overrides/drafts.js';
 import * as historyOverrides from './overrides/history.js';
 import { seedSystemLabels } from './overrides/labels.js';
+import { seedGmailMessages } from './overrides/seed_messages.js';
 
 const BASE = '/gmail/v1/users/:userId';
 
@@ -53,7 +54,11 @@ export class GmailAdapter extends OpenApiMockAdapter<GmailConfig> {
     // 1. Custom overrides FIRST — Gmail has many non-CRUD verbs (modify/trash/send/...).
     this.mountOverrides(store);
 
-    // 2. CRUD scaffolding for the rest.
+    // 2. Wrap LLM-generated `message_email` flat entries into Gmail's
+    // MIME-shaped message + thread envelopes. See overrides/seed_messages.ts.
+    seedGmailMessages(data, store);
+
+    // 3. CRUD scaffolding for the rest.
     await this.registerGeneratedRoutes(server, data, store, ns);
   }
 
