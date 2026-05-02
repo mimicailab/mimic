@@ -38,7 +38,7 @@ export const slackResourceSpecs: AdapterResourceSpecs = {
       "text": { type: "string", required: true, default: "" },
       "ts": { type: "string", required: true, default: "", description: "Slack message timestamp (epoch.seq)" },
       "thread_ts": { type: "string", required: false, default: "", description: "Parent ts if this is a thread reply" },
-      "channel": { type: "string", required: false, default: "" },
+      "channel": { type: "string", required: true, default: "" },
       "reply_count": { type: "integer", required: false, default: 0 },
       "reactions": { type: "array", required: false, default: [] },
       "blocks": { type: "array", required: false, default: [], description: "Block Kit content" },

@@ -3,7 +3,7 @@ import type { OverrideHandler } from '@mimicai/adapter-sdk';
 import { slackError, SLACK_ERROR_CODES } from '../slack-errors.js';
 import { parseQuery } from './paginate.js';
 
-const NS_MESSAGES = 'slack:messages';
+const NS_MESSAGES = 'slack:message';
 
 /**
  * `search.messages` — naive substring search on `text`. Real Slack supports

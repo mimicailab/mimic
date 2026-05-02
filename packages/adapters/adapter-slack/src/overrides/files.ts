@@ -3,7 +3,7 @@ import type { OverrideHandler } from '@mimicai/adapter-sdk';
 import { slackError, SLACK_ERROR_CODES } from '../slack-errors.js';
 import { parseQuery } from './paginate.js';
 
-const NS_FILES = 'slack:files';
+const NS_FILES = 'slack:file';
 
 export function buildListHandler(store: StateStore): OverrideHandler {
   return async (req, reply) => {

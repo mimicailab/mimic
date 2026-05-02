@@ -344,29 +344,121 @@ const HUBSPOT_OBJECT_FIELDS: Record<string, ResourceSpecField> = {
 };
 
 const RESOURCE_SPECS: Record<string, ResourceSpec> = {
+  // ---------------------------------------------------------------------------
+  // CRM "object" resources (contact / company / deal / ticket) are kept here as
+  // *references*, not entities — their wire shape is `{id, properties: {…}, …}`
+  // and the polymorphic `properties` map can't be filled by the persona LLM
+  // without slug guidance. Persona-rich content lives in the four pseudo-
+  // resources below (`crm_contact`, `crm_company`, `crm_deal`, `crm_ticket`)
+  // with explicit flat fields. A custom seeder in `overrides/seed_objects.ts`
+  // wraps those into the HubSpot envelope and writes them under
+  // `hubspot:crm_objects:{contacts|companies|deals|tickets}` so the runtime
+  // crm_objects override finds them.
+  // ---------------------------------------------------------------------------
   contact: {
     objectType: 'contact',
-    volumeHint: 'entity',
-    refs: ['company', 'deal'],
+    volumeHint: 'reference',
+    refs: ['crm_company', 'crm_deal'],
     fields: HUBSPOT_OBJECT_FIELDS,
   },
   company: {
     objectType: 'company',
-    volumeHint: 'entity',
-    refs: ['contact', 'deal'],
+    volumeHint: 'reference',
+    refs: ['crm_contact', 'crm_deal'],
     fields: HUBSPOT_OBJECT_FIELDS,
   },
   deal: {
     objectType: 'deal',
-    volumeHint: 'entity',
-    refs: ['contact', 'company'],
+    volumeHint: 'reference',
+    refs: ['crm_contact', 'crm_company'],
     fields: HUBSPOT_OBJECT_FIELDS,
   },
   ticket: {
     objectType: 'ticket',
-    volumeHint: 'entity',
-    refs: ['contact', 'company'],
+    volumeHint: 'reference',
+    refs: ['crm_contact', 'crm_company'],
     fields: HUBSPOT_OBJECT_FIELDS,
+  },
+  crm_contact: {
+    objectType: 'crm_contact',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      firstname: { type: 'string', required: true, default: '' },
+      lastname: { type: 'string', required: true, default: '' },
+      email: { type: 'string', required: true, default: '', semanticType: 'email' },
+      jobtitle: { type: 'string', required: true, default: '' },
+      // company_domain ties a contact to their employer's company record. Required so
+      // briefing-style joins (contact → company) don't depend on email parsing.
+      company_domain: { type: 'string', required: true, default: '' },
+      phone: { type: 'string', required: false, default: '' },
+      lifecyclestage: {
+        type: 'string',
+        required: true,
+        default: 'lead',
+        enum: ['subscriber', 'lead', 'marketingqualifiedlead', 'salesqualifiedlead', 'opportunity', 'customer', 'evangelist', 'other'],
+      },
+      hs_lead_status: { type: 'string', required: false, default: 'NEW' },
+      createdAt: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+    },
+  },
+  crm_company: {
+    objectType: 'crm_company',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      name: { type: 'string', required: true, default: '' },
+      domain: { type: 'string', required: true, default: '' },
+      industry: { type: 'string', required: true, default: '' },
+      numberofemployees: { type: 'integer', required: false, default: 0 },
+      annualrevenue: { type: 'integer', required: false, default: 0, isAmount: true },
+      description: { type: 'string', required: false, default: '' },
+      lifecyclestage: { type: 'string', required: false, default: 'lead' },
+      createdAt: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+    },
+  },
+  crm_deal: {
+    objectType: 'crm_deal',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      dealname: { type: 'string', required: true, default: '' },
+      amount: { type: 'integer', required: true, default: 0, isAmount: true },
+      // Currency-code without a default forces the LLM to pick from persona context
+      // (e.g. "£220k" → 'GBP'). With a default like 'USD' the LLM tends to keep it.
+      deal_currency_code: { type: 'string', required: true, default: '', semanticType: 'currency_code' },
+      // HubSpot's standard deal stages — same enum as the seeded default pipeline.
+      dealstage: {
+        type: 'string',
+        required: true,
+        default: 'qualifiedtobuy',
+        enum: ['appointmentscheduled', 'qualifiedtobuy', 'presentationscheduled', 'decisionmakerboughtin', 'contractsent', 'closedwon', 'closedlost'],
+      },
+      pipeline: { type: 'string', required: false, default: 'default' },
+      closedate: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+      // Required cross-references to the deal's primary contact and company.
+      // Marking optional made the LLM hallucinate generic values; required pushes
+      // it to use persona content.
+      primary_contact_email: { type: 'string', required: true, default: '', semanticType: 'email' },
+      associated_company_domain: { type: 'string', required: true, default: '' },
+      description: { type: 'string', required: false, default: '' },
+      createdAt: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+    },
+  },
+  crm_ticket: {
+    objectType: 'crm_ticket',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      subject: { type: 'string', required: true, default: '' },
+      content: { type: 'string', required: true, default: '' },
+      hs_pipeline: { type: 'string', required: false, default: '0' },
+      hs_pipeline_stage: { type: 'string', required: true, default: '1', enum: ['1', '2', '3', '4'] },
+      hs_ticket_priority: { type: 'string', required: false, default: 'MEDIUM', enum: ['LOW', 'MEDIUM', 'HIGH'] },
+      primary_contact_email: { type: 'string', required: false, default: '', semanticType: 'email' },
+      associated_company_domain: { type: 'string', required: false, default: '' },
+      createdAt: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+    },
   },
   note: {
     objectType: 'note',

@@ -128,6 +128,28 @@ export class SlackAdapter extends OpenApiMockAdapter<SlackConfig> {
     return slackError(SLACK_ERROR_CODES.METHOD_NOT_IMPLEMENTED) as unknown as NotFoundError;
   }
 
+  /**
+   * Slack messages don't have a top-level `id` field — they're keyed by the
+   * composite `${channel}:${ts}` (a single channel may have many messages,
+   * and `ts` alone collides across channels). Compose the same key the
+   * runtime overrides use (`messageKey` in conversations.ts) so seeded
+   * messages are reachable via conversations.history / chat.update / etc.
+   */
+  protected override resourceKey(
+    resourceType: string,
+    body: Record<string, unknown>,
+  ): string | null {
+    if (resourceType === 'message') {
+      const channel = body.channel;
+      const ts = body.ts;
+      if (typeof channel === 'string' && channel.length > 0 && typeof ts === 'string' && ts.length > 0) {
+        return `${channel}:${ts}`;
+      }
+      return null;
+    }
+    return super.resourceKey(resourceType, body);
+  }
+
   // ---------------------------------------------------------------------------
   // Override registration
   // ---------------------------------------------------------------------------

@@ -6,8 +6,8 @@ import { messageKey } from './conversations.js';
 import { parseQuery } from './paginate.js';
 import { getBotIdentity } from './fixtures.js';
 
-const NS_CHANNELS = 'slack:channels';
-const NS_MESSAGES = 'slack:messages';
+const NS_CHANNELS = 'slack:channel';
+const NS_MESSAGES = 'slack:message';
 
 function nextTs(): string {
   // Slack ts format: <unix_seconds>.<6-digit sequence>. Using nanoseconds

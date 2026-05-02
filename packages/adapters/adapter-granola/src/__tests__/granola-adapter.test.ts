@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildTestServer } from '@mimicai/adapter-sdk';
 import type { TestServer } from '@mimicai/adapter-sdk';
+import type { ExpandedData } from '@mimicai/core';
 import { GranolaAdapter } from '../granola-adapter.js';
 import { defaultNote, defaultFolder } from '../generated/schemas.js';
+import { seedGranolaNotes } from '../overrides/seed_notes.js';
 
 describe('GranolaAdapter', () => {
   let ts: TestServer;
@@ -339,4 +341,120 @@ describe('GranolaAdapter', () => {
     const t = tRes.json();
     expect(t.transcript[0].text).toContain('SOC 2');
   });
+
+  // ── Pseudo-resource seeder ─────────────────────────────────────────────────
+
+  describe('seedGranolaNotes', () => {
+    it('wraps note_content into Granola nested envelope and resolves folder by name', async () => {
+      const data = makeFakeData('p1', {
+        note_content: [
+          {
+            id: 'not_priya_soc2',
+            title: 'Priya x SOC 2 — pre-kickoff',
+            summary: 'Priya raised SOC 2 as the procurement gate.',
+            owner_name: 'Sarah Lee',
+            owner_email: 'sarah@us.example',
+            meeting_title: 'Northwind / SOC 2 deep-dive',
+            meeting_start_time: '2026-04-22T15:00:00Z',
+            meeting_end_time: '2026-04-22T15:30:00Z',
+            attendee_emails: 'priya@northwind.com (Priya Shah); sarah@us.example',
+            folder_name: 'My notes',
+            created_at: '2026-04-22T15:30:00Z',
+          },
+        ],
+      });
+      seedGranolaNotes(data, ts.stateStore);
+
+      const res = await ts.server.inject({ method: 'GET', url: '/v1/notes/not_priya_soc2' });
+      expect(res.statusCode).toBe(200);
+      const body = res.json() as {
+        title: string;
+        summary: string;
+        owner: { name: string; email: string } | null;
+        calendar_event: { title: string; invitees: Array<{ name: string; email: string }> } | null;
+        folder_id: string;
+      };
+      expect(body.title).toBe('Priya x SOC 2 — pre-kickoff');
+      expect(body.summary).toContain('procurement gate');
+      expect(body.owner).toEqual(expect.objectContaining({ name: 'Sarah Lee', email: 'sarah@us.example' }));
+      expect(body.calendar_event!.title).toBe('Northwind / SOC 2 deep-dive');
+      expect(body.calendar_event!.invitees).toHaveLength(2);
+      expect(body.calendar_event!.invitees[0]).toEqual({ name: 'Priya Shah', email: 'priya@northwind.com' });
+      expect(body.calendar_event!.invitees[1]).toEqual({ name: '', email: 'sarah@us.example' });
+      // Folder name "My notes" resolves to the seeded default folder
+      expect(body.folder_id).toBe('fol_default00000');
+    });
+
+    it('attaches transcript_entry_content to its parent note with named speakers', async () => {
+      const data = makeFakeData('p1', {
+        note_content: [{
+          id: 'not_demo',
+          title: 'Demo call',
+          summary: 'First demo',
+          owner_name: 'Sarah',
+          owner_email: 'sarah@us.example',
+          meeting_title: 'Demo',
+          meeting_start_time: '2026-04-22T15:00:00Z',
+          meeting_end_time: '2026-04-22T15:30:00Z',
+          created_at: '2026-04-22T15:30:00Z',
+        }],
+        transcript_entry_content: [
+          {
+            note_id: 'not_demo', speaker_name: 'Priya Shah', speaker_email: 'priya@northwind.com',
+            text: 'SOC 2 is the procurement gate for us.',
+            start_time: '2026-04-22T15:05:00Z', end_time: '2026-04-22T15:05:04Z',
+          },
+          {
+            note_id: 'not_demo', speaker_name: 'Sarah Lee', speaker_email: 'sarah@us.example',
+            text: 'We can have the report ready in 4 weeks.',
+            start_time: '2026-04-22T15:00:30Z', end_time: '2026-04-22T15:00:35Z',
+          },
+        ],
+      });
+      seedGranolaNotes(data, ts.stateStore);
+
+      const res = await ts.server.inject({ method: 'GET', url: '/v1/notes/not_demo?include=transcript' });
+      expect(res.statusCode).toBe(200);
+      const body = res.json() as {
+        transcript: Array<{ speaker: { name: string; email: string }; text: string; start_time: string }>;
+      };
+      expect(body.transcript).toHaveLength(2);
+      // Sorted chronologically — Sarah's earlier line comes first
+      expect(body.transcript[0]!.speaker.name).toBe('Sarah Lee');
+      expect(body.transcript[0]!.text).toContain('4 weeks');
+      // Priya is named — not "null" — so dialogue is attributable
+      expect(body.transcript[1]!.speaker.name).toBe('Priya Shah');
+      expect(body.transcript[1]!.speaker.email).toBe('priya@northwind.com');
+      expect(body.transcript[1]!.text).toContain('SOC 2');
+    });
+
+    it('skips transcript entries with unknown note_id (orphan-safe)', async () => {
+      const data = makeFakeData('p1', {
+        transcript_entry_content: [{
+          note_id: 'not_does_not_exist', speaker_name: 'X', speaker_email: 'x@x.com',
+          text: 'orphan', start_time: '2026-04-22T15:00:00Z', end_time: '2026-04-22T15:00:01Z',
+        }],
+      });
+      expect(() => seedGranolaNotes(data, ts.stateStore)).not.toThrow();
+    });
+  });
 });
+
+function makeFakeData(personaId: string, responses: Record<string, Array<Record<string, unknown>>>): Map<string, ExpandedData> {
+  const wrapped: Record<string, Array<{ statusCode: number; headers: Record<string, string>; personaId: string; body: unknown }>> = {};
+  for (const [k, v] of Object.entries(responses)) {
+    wrapped[k] = v.map((body) => ({ statusCode: 200, headers: {}, personaId, body }));
+  }
+  return new Map([
+    [personaId, {
+      personaId,
+      blueprint: { id: 'test', personas: [], facts: [] } as unknown as ExpandedData['blueprint'],
+      tables: {},
+      documents: {},
+      apiResponses: { granola: { adapterId: 'granola', responses: wrapped } },
+      files: [],
+      events: [],
+      facts: [],
+    }],
+  ]);
+}

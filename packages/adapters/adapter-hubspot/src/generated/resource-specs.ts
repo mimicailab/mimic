@@ -9,8 +9,8 @@ export const hubspotResourceSpecs: AdapterResourceSpecs = {
   resources: {
     "contact": {
       objectType: "contact",
-      volumeHint: "entity",
-      refs: ["company","deal"],
+      volumeHint: "reference",
+      refs: ["crm_company","crm_deal"],
       fields: {
       "id": { type: "string", required: true, default: "" },
       "properties": { type: "object", required: true, default: {}, description: "HubSpot property bag (e.g. firstname, lastname, email, dealname, dealstage)" },
@@ -21,8 +21,8 @@ export const hubspotResourceSpecs: AdapterResourceSpecs = {
     },
     "company": {
       objectType: "company",
-      volumeHint: "entity",
-      refs: ["contact","deal"],
+      volumeHint: "reference",
+      refs: ["crm_contact","crm_deal"],
       fields: {
       "id": { type: "string", required: true, default: "" },
       "properties": { type: "object", required: true, default: {}, description: "HubSpot property bag (e.g. firstname, lastname, email, dealname, dealstage)" },
@@ -33,8 +33,8 @@ export const hubspotResourceSpecs: AdapterResourceSpecs = {
     },
     "deal": {
       objectType: "deal",
-      volumeHint: "entity",
-      refs: ["contact","company"],
+      volumeHint: "reference",
+      refs: ["crm_contact","crm_company"],
       fields: {
       "id": { type: "string", required: true, default: "" },
       "properties": { type: "object", required: true, default: {}, description: "HubSpot property bag (e.g. firstname, lastname, email, dealname, dealstage)" },
@@ -45,14 +45,77 @@ export const hubspotResourceSpecs: AdapterResourceSpecs = {
     },
     "ticket": {
       objectType: "ticket",
-      volumeHint: "entity",
-      refs: ["contact","company"],
+      volumeHint: "reference",
+      refs: ["crm_contact","crm_company"],
       fields: {
       "id": { type: "string", required: true, default: "" },
       "properties": { type: "object", required: true, default: {}, description: "HubSpot property bag (e.g. firstname, lastname, email, dealname, dealstage)" },
       "createdAt": { type: "string", required: true, default: "", timestamp: "iso8601" },
       "updatedAt": { type: "string", required: true, default: "", timestamp: "iso8601" },
       "archived": { type: "boolean", required: false, default: false },
+      },
+    },
+    "crm_contact": {
+      objectType: "crm_contact",
+      volumeHint: "entity",
+      refs: [],
+      fields: {
+      "firstname": { type: "string", required: true, default: "" },
+      "lastname": { type: "string", required: true, default: "" },
+      "email": { type: "string", required: true, default: "", semanticType: "email" },
+      "jobtitle": { type: "string", required: true, default: "" },
+      "company_domain": { type: "string", required: true, default: "" },
+      "phone": { type: "string", required: false, default: "" },
+      "lifecyclestage": { type: "string", required: true, default: "lead", enum: ["subscriber","lead","marketingqualifiedlead","salesqualifiedlead","opportunity","customer","evangelist","other"] },
+      "hs_lead_status": { type: "string", required: false, default: "NEW" },
+      "createdAt": { type: "string", required: true, default: "", timestamp: "iso8601" },
+      },
+    },
+    "crm_company": {
+      objectType: "crm_company",
+      volumeHint: "entity",
+      refs: [],
+      fields: {
+      "name": { type: "string", required: true, default: "" },
+      "domain": { type: "string", required: true, default: "" },
+      "industry": { type: "string", required: true, default: "" },
+      "numberofemployees": { type: "integer", required: false, default: 0 },
+      "annualrevenue": { type: "integer", required: false, default: 0 },
+      "description": { type: "string", required: false, default: "" },
+      "lifecyclestage": { type: "string", required: false, default: "lead" },
+      "createdAt": { type: "string", required: true, default: "", timestamp: "iso8601" },
+      },
+    },
+    "crm_deal": {
+      objectType: "crm_deal",
+      volumeHint: "entity",
+      refs: [],
+      fields: {
+      "dealname": { type: "string", required: true, default: "" },
+      "amount": { type: "integer", required: true, default: 0 },
+      "deal_currency_code": { type: "string", required: true, default: "", semanticType: "currency_code" },
+      "dealstage": { type: "string", required: true, default: "qualifiedtobuy", enum: ["appointmentscheduled","qualifiedtobuy","presentationscheduled","decisionmakerboughtin","contractsent","closedwon","closedlost"] },
+      "pipeline": { type: "string", required: false, default: "default" },
+      "closedate": { type: "string", required: true, default: "", timestamp: "iso8601" },
+      "primary_contact_email": { type: "string", required: true, default: "", semanticType: "email" },
+      "associated_company_domain": { type: "string", required: true, default: "" },
+      "description": { type: "string", required: false, default: "" },
+      "createdAt": { type: "string", required: true, default: "", timestamp: "iso8601" },
+      },
+    },
+    "crm_ticket": {
+      objectType: "crm_ticket",
+      volumeHint: "entity",
+      refs: [],
+      fields: {
+      "subject": { type: "string", required: true, default: "" },
+      "content": { type: "string", required: true, default: "" },
+      "hs_pipeline": { type: "string", required: false, default: "0" },
+      "hs_pipeline_stage": { type: "string", required: true, default: "1", enum: ["1","2","3","4"] },
+      "hs_ticket_priority": { type: "string", required: false, default: "MEDIUM", enum: ["LOW","MEDIUM","HIGH"] },
+      "primary_contact_email": { type: "string", required: false, default: "", semanticType: "email" },
+      "associated_company_domain": { type: "string", required: false, default: "" },
+      "createdAt": { type: "string", required: true, default: "", timestamp: "iso8601" },
       },
     },
     "note": {

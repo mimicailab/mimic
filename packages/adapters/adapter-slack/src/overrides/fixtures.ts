@@ -2,7 +2,7 @@ import type { StateStore } from '@mimicai/core';
 import { defaultTeam, defaultUser } from '../generated/schemas.js';
 
 const NS_TEAM = 'slack:team';
-const NS_USERS = 'slack:users';
+const NS_USERS = 'slack:user';
 const NS_BOT = 'slack:bot';
 
 /**

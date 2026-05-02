@@ -379,7 +379,36 @@ The persona description contains specific numeric claims about the data (e.g., "
 \`\`\`
 Here weight 0.06 × count 50 = 3 overdue invoices. The amount 413333 × 3 ≈ £12,400.
 
-**CRITICAL:** Do NOT generate random distributions and hope they match the persona. The persona description IS your specification — treat every specific number as a requirement.`;
+**CRITICAL:** Do NOT generate random distributions and hope they match the persona. The persona description IS your specification — treat every specific number as a requirement.
+
+**RULE I — DATE-DRIVEN ARCHETYPES (MANDATORY):**
+The persona description contains specific date references for events ("on Apr 22 the SOC 2 package arrived from Sarah", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp/date field you generate (\`sent_at\`, \`created_at\`, \`closed_at\`, \`paid_at\`, \`occurred_at\`, etc.).
+
+**How to honour date claims:**
+1. **Parse every date reference** in the persona description — explicit ("Apr 22", "March 6th", "2026-04-22"), relative ("last week", "two weeks ago", "yesterday morning", "this morning"), and event anchors ("during the kickoff", "after the contract was sent", "the day SOC 2 came back").
+2. **Resolve relative dates against the Current date** in the user prompt. "last week" = today − 7d; "two weeks ago" = today − 14d; "yesterday" = today − 1d; "this morning" = today.
+3. **Anchor the corresponding archetype's timestamp/date field to that date** — either as a literal Unix-seconds value (for fields the spec marks \`timestamp: 'unix_seconds'\` / \`'unix_ms'\`), or as a \`vary\` of \`type: 'range'\` with min/max within ±1 day of the anchor.
+4. **Cluster events that share a narrative anchor.** A "47-message SOC 2 thread on Apr 22" should produce 47 timestamps within ~1 day of Apr 22 — NOT scattered across the full date range. Use a dedicated archetype with a tight date \`vary\` range, not the catch-all archetype.
+5. **Every entity in a cluster must get a DISTINCT timestamp** (offset by minutes/hours within the cluster window). 14 distinct timestamps across 47 entities is too few — use a \`range\` vary so every entity gets its own value.
+6. **The DATE RANGE is the OUTER bound** — anchored events must satisfy the persona narrative AND fall within the configured range. If a narrative anchor falls outside the range, the persona-volume combination is wrong; do NOT silently round the timestamp into range.
+
+**Example — encoding "47-message SOC 2 thread on Apr 22, 2026":**
+\`\`\`json
+{
+  "gmail": {
+    "message_email": {
+      "count": 60,
+      "archetypes": [
+        { "label": "soc2-apr22-cluster", "weight": 0.78, "fields": { "subject": "SOC 2 review — Northwind" }, "vary": { "sent_at": { "type": "range", "min": 1745280000, "max": 1745366400 } } },
+        { "label": "other", "weight": 0.22, "fields": {}, "vary": { "sent_at": { "type": "timestamp" } } }
+      ]
+    }
+  }
+}
+\`\`\`
+Here weight 0.78 × count 60 = 47 emails clustered into the Apr 22 → Apr 23 window (1745280000 = 2026-04-22 00:00 UTC, 1745366400 = 2026-04-23 00:00 UTC). The remaining 13 emails are scattered across the broader range.
+
+**CRITICAL:** Do NOT pick mid-range "safe" dates and hope the persona doesn't notice. Every dated event in the narrative must show up at its narrative date in the data.`;
 
 
 // ---------------------------------------------------------------------------
@@ -495,6 +524,14 @@ The persona description contains specific numeric claims (e.g., "3 overdue invoi
 - Create dedicated small archetypes for specific claims (e.g., an overdue archetype with weight producing exactly 3 entities)
 - For amount totals, set amounts so count × amount = claimed total
 - Do NOT rely on random distributions matching the persona — encode claims directly into archetype weights and field values
+
+**RULE G — DATE-DRIVEN ARCHETYPES (MANDATORY):**
+The persona description also contains specific date references for events ("on Apr 22 the SOC 2 package arrived", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp/date field (\`sent_at\`, \`created_at\`, \`closed_at\`, \`paid_at\`, etc.).
+- Parse every explicit date ("Apr 22"), relative date ("last week", "two weeks ago"), and event anchor ("during the kickoff") in the persona description.
+- Resolve relative dates against the Current date in this prompt. "last week" = today − 7d; "yesterday" = today − 1d.
+- For each anchored event, create a dedicated archetype whose timestamp field (\`vary\` of \`type: 'range'\`) clusters within ±1 day of the anchor — NOT a random timestamp across the full date range.
+- Every entity in a cluster must get a DISTINCT timestamp (use \`range\` so the expander assigns unique values within the window).
+- Mid-range "safe" dates are wrong. If the persona narrative anchors an event to a specific date, the data MUST land at that date.
 
 ##############################################################################
 # ARCHETYPE FORMAT
@@ -1027,6 +1064,14 @@ These are HARD CONSTRAINTS — your archetype distributions MUST produce those e
 - "8% churn rate" → canceled archetype weight = 0.08
 - Do NOT generate random distributions and hope they match. Encode every persona claim directly into archetype weights, counts, and field values.
 - Do NOT include a "facts" array — facts are generated automatically after expansion from actual data.
+
+## CRITICAL — DATE-DRIVEN DISTRIBUTIONS
+The persona description ALSO contains specific date references for events ("on Apr 22 the SOC 2 package arrived", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp field on entities created by the expander.
+- Parse every explicit date, relative date ("last week" = today − 7d, "two weeks ago" = today − 14d, "yesterday" = today − 1d), and event anchor in the persona description.
+- For each anchored event, create a dedicated archetype with a tight timestamp window (e.g. \`vary\` field \`{ type: 'range', min: <anchor 00:00 UTC unix>, max: <anchor + 24h unix> }\`) — NOT a generic random timestamp.
+- A "47-message thread on Apr 22" should produce 47 timestamps clustered within ~1 day of Apr 22, not scattered across the full date range.
+- Every entity in a cluster must get a DISTINCT timestamp; the \`range\` vary type guarantees this.
+- Mid-range "safe" dates are wrong if the narrative anchors elsewhere — the data must match the persona's stated timeline.
 
 ## Rules
 - Archetype weights must sum to ~1.0 per resource type

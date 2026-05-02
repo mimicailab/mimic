@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mimic-postgres": { "type": "http", "url": "http://localhost:4201/mcp" },
+    "mimic-attio":    { "type": "http", "url": "http://localhost:4202/mcp" },
+    "mimic-hubspot":  { "type": "http", "url": "http://localhost:4203/mcp" },
+    "mimic-granola":  { "type": "http", "url": "http://localhost:4204/mcp" },
+    "mimic-gmail":    { "type": "http", "url": "http://localhost:4205/mcp" },
+    "mimic-slack":    { "type": "http", "url": "http://localhost:4206/mcp" }
+  }
+}

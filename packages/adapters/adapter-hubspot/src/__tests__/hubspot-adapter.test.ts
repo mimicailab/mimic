@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildTestServer } from '@mimicai/adapter-sdk';
 import type { TestServer } from '@mimicai/adapter-sdk';
+import type { ExpandedData } from '@mimicai/core';
 import { HubSpotAdapter } from '../hubspot-adapter.js';
 import { defaultContact, defaultDeal, defaultCompany, defaultOwner, defaultPipeline } from '../generated/schemas.js';
+import { seedHubSpotCrmObjects } from '../overrides/seed_objects.js';
 
 const VERSION = '2026-03';
 
@@ -580,4 +582,166 @@ describe('HubSpotAdapter', () => {
     const contactsList = await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/contacts` });
     expect((contactsList.json() as { results: unknown[] }).results).toHaveLength(0);
   });
+
+  // ── v3 path aliases ────────────────────────────────────────────────────────
+
+  describe('v3 route aliases (real HubSpot exposes both /crm/objects/<dated> and /crm/v3/objects)', () => {
+    it('GET /crm/v3/objects/contacts hits the same handler as the dated path', async () => {
+      // Seed via the dated path
+      await ts.server.inject({
+        method: 'POST',
+        url: `/crm/objects/${VERSION}/contacts`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ properties: { email: 'priya@northwind.com', firstname: 'Priya' } }),
+      });
+      // Read via the v3 alias
+      const v3 = await ts.server.inject({ method: 'GET', url: `/crm/v3/objects/contacts` });
+      expect(v3.statusCode).toBe(200);
+      const body = v3.json() as { results: Array<{ properties: { email: string } }> };
+      expect(body.results).toHaveLength(1);
+      expect(body.results[0]!.properties.email).toBe('priya@northwind.com');
+    });
+
+    it('POST /crm/v3/objects/deals/search filters records seeded via dated paths', async () => {
+      await ts.server.inject({
+        method: 'POST',
+        url: `/crm/objects/${VERSION}/deals`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({ properties: { dealname: 'Northwind Robotics', amount: '220000' } }),
+      });
+      const res = await ts.server.inject({
+        method: 'POST',
+        url: `/crm/v3/objects/deals/search`,
+        headers: { 'content-type': 'application/json' },
+        payload: JSON.stringify({
+          filterGroups: [{ filters: [{ propertyName: 'dealname', operator: 'CONTAINS_TOKEN', value: 'Northwind' }] }],
+        }),
+      });
+      expect(res.statusCode).toBe(200);
+      expect((res.json() as { results: unknown[] }).results).toHaveLength(1);
+    });
+
+    it('GET /crm/v3/pipelines/deals returns the seeded sales pipeline', async () => {
+      const res = await ts.server.inject({ method: 'GET', url: `/crm/v3/pipelines/deals` });
+      expect(res.statusCode).toBe(200);
+      const body = res.json() as { results: Array<{ id: string; label: string }> };
+      const sales = body.results.find((p) => p.id === 'default');
+      expect(sales).toBeDefined();
+      expect(sales!.label).toBe('Sales Pipeline');
+    });
+
+    it('GET /crm/v3/owners returns the seeded bot owner', async () => {
+      const res = await ts.server.inject({ method: 'GET', url: `/crm/v3/owners` });
+      expect(res.statusCode).toBe(200);
+      const body = res.json() as { results: Array<{ email: string }> };
+      expect(body.results.length).toBeGreaterThanOrEqual(1);
+      expect(body.results[0]!.email).toBeDefined();
+    });
+  });
+
+  // ── Pseudo-resource seeder + objectType aliasing ───────────────────────────
+
+  describe('seedHubSpotCrmObjects + objectType aliasing', () => {
+    it('wraps crm_deal pseudo entries into HubSpot envelope and writes to hubspot:crm_objects:deals', async () => {
+      const data = new Map<string, ExpandedData>([
+        ['p1', fakeExpanded('p1', {
+          crm_deal: [{
+            statusCode: 200,
+            headers: {},
+            personaId: 'p1',
+            body: {
+              id: 'deal-001',
+              dealname: 'Northwind Robotics — Procurement',
+              amount: 220000,
+              deal_currency_code: 'gbp',
+              dealstage: 'contractsent',
+              pipeline: 'default',
+              closedate: '2026-05-30T00:00:00Z',
+              primary_contact_email: 'priya@northwind.com',
+              associated_company_domain: 'northwind.com',
+              createdAt: '2026-04-15T10:00:00Z',
+            },
+          }],
+        })],
+      ]);
+
+      seedHubSpotCrmObjects(data, ts.stateStore);
+
+      // Slug name resolves
+      const bySlug = await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/deals` });
+      expect(bySlug.statusCode).toBe(200);
+      const slugBody = bySlug.json() as { results: Array<{ id: string; properties: Record<string, string> }> };
+      expect(slugBody.results).toHaveLength(1);
+      expect(slugBody.results[0]!.properties.dealname).toBe('Northwind Robotics — Procurement');
+      expect(slugBody.results[0]!.properties.amount).toBe('220000');
+      // Currency uppercased
+      expect(slugBody.results[0]!.properties.deal_currency_code).toBe('GBP');
+      expect(slugBody.results[0]!.properties.dealstage).toBe('contractsent');
+      expect(slugBody.results[0]!.properties.primary_contact_email).toBe('priya@northwind.com');
+
+      // Numeric type id `0-3` resolves to the same record (objectType alias)
+      const byTypeId = await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/0-3` });
+      expect(byTypeId.statusCode).toBe(200);
+      expect((byTypeId.json() as { results: unknown[] }).results).toHaveLength(1);
+
+      // And direct record fetch by id works under either alias
+      const retrieve = await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/0-3/deal-001` });
+      expect(retrieve.statusCode).toBe(200);
+      expect((retrieve.json() as { properties: { dealname: string } }).properties.dealname).toBe('Northwind Robotics — Procurement');
+    });
+
+    it('seeds contacts/companies/tickets with their respective property slugs', async () => {
+      const data = new Map<string, ExpandedData>([
+        ['p1', fakeExpanded('p1', {
+          crm_contact: [{
+            statusCode: 200, headers: {}, personaId: 'p1',
+            body: { id: 'c-1', firstname: 'Priya', lastname: 'Shah', email: 'priya@northwind.com', jobtitle: 'Head of Engineering', company_domain: 'northwind.com', lifecyclestage: 'opportunity' },
+          }],
+          crm_company: [{
+            statusCode: 200, headers: {}, personaId: 'p1',
+            body: { id: 'co-1', name: 'Northwind Robotics', domain: 'northwind.com', industry: 'Robotics', numberofemployees: 480 },
+          }],
+          crm_ticket: [{
+            statusCode: 200, headers: {}, personaId: 'p1',
+            body: { id: 't-1', subject: 'SSO failure', content: 'SAML callback fails', hs_pipeline: '0', hs_pipeline_stage: '2', hs_ticket_priority: 'HIGH' },
+          }],
+        })],
+      ]);
+
+      seedHubSpotCrmObjects(data, ts.stateStore);
+
+      const contact = (await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/contacts/c-1` })).json() as { properties: Record<string, string> };
+      expect(contact.properties.firstname).toBe('Priya');
+      expect(contact.properties.email).toBe('priya@northwind.com');
+      expect(contact.properties.company).toBe('northwind.com');
+
+      const company = (await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/companies/co-1` })).json() as { properties: Record<string, string> };
+      expect(company.properties.name).toBe('Northwind Robotics');
+      expect(company.properties.numberofemployees).toBe('480');
+
+      const ticket = (await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/tickets/t-1` })).json() as { properties: Record<string, string> };
+      expect(ticket.properties.subject).toBe('SSO failure');
+      expect(ticket.properties.hs_ticket_priority).toBe('HIGH');
+    });
+
+    it('skips empty pseudo-resource entries without crashing', () => {
+      const data = new Map<string, ExpandedData>([
+        ['p1', fakeExpanded('p1', { crm_deal: [] })],
+      ]);
+      expect(() => seedHubSpotCrmObjects(data, ts.stateStore)).not.toThrow();
+    });
+  });
 });
+
+function fakeExpanded(personaId: string, responses: Record<string, Array<{ statusCode: number; headers: Record<string, string>; personaId: string; body: unknown }>>): ExpandedData {
+  return {
+    personaId,
+    blueprint: { id: 'test', personas: [], facts: [] } as unknown as ExpandedData['blueprint'],
+    tables: {},
+    documents: {},
+    apiResponses: { hubspot: { adapterId: 'hubspot', responses } },
+    files: [],
+    events: [],
+    facts: [],
+  };
+}

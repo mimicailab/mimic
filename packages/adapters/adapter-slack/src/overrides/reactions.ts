@@ -5,7 +5,7 @@ import { messageKey } from './conversations.js';
 import { paginateByCursor, parseQuery } from './paginate.js';
 import { getBotIdentity } from './fixtures.js';
 
-const NS_MESSAGES = 'slack:messages';
+const NS_MESSAGES = 'slack:message';
 
 interface Reaction {
   name: string;

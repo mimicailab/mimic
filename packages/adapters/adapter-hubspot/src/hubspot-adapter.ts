@@ -15,7 +15,51 @@ import { SCHEMA_DEFAULTS, GENERIC_FACTORY } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute, RouteMethod } from './generated/routes.js';
 
+/**
+ * Real HubSpot exposes the same CRM-resource APIs under two version schemes:
+ *   - dated:   /crm/<noun>/2026-03/...   (the spec collection we ship)
+ *   - v3:      /crm/v3/<noun>/...        (the older but still-supported surface)
+ *
+ * Any client that targets the documented v3 surface (briefing-skill curl
+ * examples, older SDKs) would otherwise 404 against the mock. Mirror real
+ * HubSpot by aliasing the major CRM resources so both shapes resolve.
+ *
+ * Note the path-shape flip: dated puts version AFTER the noun
+ * (`/crm/objects/2026-03/...`), v3 puts it BEFORE (`/crm/v3/objects/...`).
+ */
+const V3_ALIASED_NOUNS = ['objects', 'properties', 'pipelines', 'owners', 'associations', 'lists'];
+
+function buildV3Aliases(routes: readonly GeneratedRoute[]): GeneratedRoute[] {
+  const aliases: GeneratedRoute[] = [];
+  for (const r of routes) {
+    for (const noun of V3_ALIASED_NOUNS) {
+      const datedPrefix = `/crm/${noun}/2026-03/`;
+      const datedExact = `/crm/${noun}/2026-03`;
+      const v3Prefix = `/crm/v3/${noun}/`;
+      const v3Exact = `/crm/v3/${noun}`;
+      let v3Fastify: string | null = null;
+      let v3Spec: string | null = null;
+      if (r.fastifyPath.startsWith(datedPrefix)) {
+        v3Fastify = r.fastifyPath.replace(datedPrefix, v3Prefix);
+        v3Spec = r.stripePath.replace(`/crm/${noun}/2026-03/`, `/crm/v3/${noun}/`);
+      } else if (r.fastifyPath === datedExact) {
+        v3Fastify = v3Exact;
+        v3Spec = r.stripePath.replace(`/crm/${noun}/2026-03`, `/crm/v3/${noun}`);
+      }
+      if (v3Fastify && v3Spec) {
+        aliases.push({ ...r, fastifyPath: v3Fastify, stripePath: v3Spec });
+        break;
+      }
+    }
+  }
+  return aliases;
+}
+
+const V3_ALIAS_ROUTES = buildV3Aliases(GENERATED_ROUTES);
+const ALL_ROUTES: GeneratedRoute[] = [...GENERATED_ROUTES, ...V3_ALIAS_ROUTES];
+
 import { seedDefaultFixtures } from './overrides/fixtures.js';
+import { seedHubSpotCrmObjects } from './overrides/seed_objects.js';
 import * as crmObjects from './overrides/crm_objects.js';
 import * as searchOverrides from './overrides/search.js';
 import * as batch from './overrides/batch.js';
@@ -45,7 +89,7 @@ export class HubSpotAdapter extends OpenApiMockAdapter<HubSpotConfig> {
   /** @deprecated Required by base class — use resourceSpecs instead. */
   readonly dataSpec: DataSpec = deriveDataSpec(hubspotResourceSpecs);
 
-  protected readonly generatedRoutes: GeneratedRoute[] = GENERATED_ROUTES;
+  protected readonly generatedRoutes: GeneratedRoute[] = ALL_ROUTES;
   protected readonly defaultFactories: Record<string, DefaultFactory> = SCHEMA_DEFAULTS;
 
   /**
@@ -62,6 +106,16 @@ export class HubSpotAdapter extends OpenApiMockAdapter<HubSpotConfig> {
     store: StateStore,
   ): Promise<void> {
     seedDefaultFixtures(store, this.config);
+
+    // The base SDK seeder writes generic resources into their default
+    // namespaces. But HubSpot CRM objects (contacts, companies, deals,
+    // tickets) use a polymorphic `properties: {}` map that the persona LLM
+    // can't fill — see `overrides/seed_objects.ts`. Pseudo-resources with
+    // explicit content fields (crm_contact, crm_company, crm_deal, crm_ticket)
+    // get wrapped into HubSpot's CRM-object envelope here and written to
+    // `hubspot:crm_objects:{contacts|companies|deals|tickets}` so the runtime
+    // override at /crm/objects/<v>/<type> finds them.
+    seedHubSpotCrmObjects(data, store);
 
     // 1. Unified CRM Objects API — dynamic per-objectType namespacing
     this.mountCrmObjectsOverrides(store);
@@ -86,11 +140,20 @@ export class HubSpotAdapter extends OpenApiMockAdapter<HubSpotConfig> {
 
     // 5. Pipelines — codegen mis-classifies `/crm/pipelines/<v>/:objectType` as
     //    retrieve (trailing param). Override to return pipelines filtered by
-    //    objectType, plus the deeper stages routes.
+    //    objectType, plus the deeper stages routes. Handles both dated
+    //    (/crm/pipelines/<version>/...) and v3 (/crm/v3/pipelines/...) forms.
     for (const route of this.generatedRoutes) {
-      if (!route.fastifyPath.startsWith('/crm/pipelines/')) continue;
       const segs = route.fastifyPath.split('/').filter(Boolean);
-      const tail = segs.slice(3); // after /crm/pipelines/<version>
+      let tail: string[] | null = null;
+      // Dated:  segs = ['crm','pipelines','<version>', ...rest]   → tail = rest
+      if (segs[0] === 'crm' && segs[1] === 'pipelines' && segs.length >= 3) {
+        tail = segs.slice(3);
+      }
+      // v3:     segs = ['crm','v3','pipelines', ...rest]          → tail = rest
+      else if (segs[0] === 'crm' && segs[1] === 'v3' && segs[2] === 'pipelines' && segs.length >= 3) {
+        tail = segs.slice(3);
+      }
+      if (!tail) continue;
       if (route.method === 'GET' && tail.length === 1 && tail[0] === ':objectType') {
         this.registerOverride('GET', route.fastifyPath, pipelines.buildListByObjectTypeHandler(store));
       } else if (route.method === 'GET' && tail.length === 2 && tail[0] === ':objectType' && tail[1] === ':pipelineId') {
@@ -207,15 +270,19 @@ export class HubSpotAdapter extends OpenApiMockAdapter<HubSpotConfig> {
     const reg = (method: RouteMethod, path: string, fn: OverrideHandler) =>
       this.registerOverride(method, path, fn);
 
-    // Match every route under /crm/objects/<version>/... — both the unified
-    // form (`:objectType` placeholder, from CRM/Objects spec) AND the typed
-    // forms (`tickets`, `contacts`, etc., from per-type CRM specs). The
-    // override handlers extract the object type from path params OR by
-    // parsing the URL, so the same handler works for both.
+    // Match every route under the CRM Objects API in either version scheme:
+    //   - dated:  /crm/objects/<version>/...   (e.g. /crm/objects/2026-03/...)
+    //   - v3:     /crm/v3/objects/...
+    // Plus typed-per-resource forms (`tickets`, `contacts`, etc., from the
+    // per-type CRM specs). Override handlers extract the object type from
+    // path params OR by parsing the URL, so the same handler works for both.
     for (const route of this.generatedRoutes) {
-      if (!route.fastifyPath.startsWith('/crm/objects/')) continue;
       const segs = route.fastifyPath.split('/').filter(Boolean);
-      if (segs.length < 4) continue;
+      // Dated form:  ['crm', 'objects', '<version>', '<objectType>', ...]   → tail starts at index 4
+      // v3 form:     ['crm', 'v3', 'objects', '<objectType>', ...]          → tail starts at index 4 too
+      const isDated = segs[0] === 'crm' && segs[1] === 'objects' && segs.length >= 4;
+      const isV3 = segs[0] === 'crm' && segs[1] === 'v3' && segs[2] === 'objects' && segs.length >= 4;
+      if (!isDated && !isV3) continue;
 
       const tail = segs.slice(4);
       // List + create (collection root)
@@ -267,8 +334,9 @@ export class HubSpotAdapter extends OpenApiMockAdapter<HubSpotConfig> {
       this.registerOverride(method, path, fn);
 
     for (const route of this.generatedRoutes) {
-      // Skip CRM Objects routes — already handled above
+      // Skip CRM Objects routes (both dated + v3 alias forms) — already handled above
       if (route.fastifyPath.startsWith('/crm/objects/')) continue;
+      if (route.fastifyPath.startsWith('/crm/v3/objects/')) continue;
 
       const segs = route.fastifyPath.split('/').filter(Boolean);
       const last = segs[segs.length - 1] ?? '';

@@ -361,7 +361,8 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
           const factory = this.defaultFactories[resourceType] ?? this.defaultFactories[routeKey];
           for (const response of responses) {
             const body = response.body as Record<string, unknown> | null | undefined;
-            const id = body?.id as string | undefined;
+            if (!body) continue;
+            const id = this.resourceKey(resourceType, body);
             if (id) {
               const enriched = factory
                 ? factory(body as Record<string, unknown>)
@@ -381,6 +382,21 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
   // merges updates, and constructs errors. Override them in subclasses to match
   // the target API's conventions.
   // ---------------------------------------------------------------------------
+
+  /**
+   * Derive the StateStore key for a seeded response body. Default reads the
+   * `id` field. Override for resources with composite or computed keys —
+   * e.g. Slack messages keyed by `${channel}:${ts}`, Stripe usage records
+   * keyed by `${subscription_item}:${period}`. Returning `null` skips the
+   * response (the body has no usable identity).
+   */
+  protected resourceKey(
+    _resourceType: string,
+    body: Record<string, unknown>,
+  ): string | null {
+    const id = body.id;
+    return typeof id === 'string' && id.length > 0 ? id : null;
+  }
 
   /**
    * Wrap an array of items in the platform's list response envelope.

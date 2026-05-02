@@ -1,0 +1,36 @@
+---
+title: "CFO Agent — A conversational financial assistant that reasons across 8 billing platforms and a product database to deliver real-time revenue insights"
+---
+graph TD
+    UI["Next.js Chat UI"]
+    SUP["LangGraph Supervisor"]
+
+    UI -->|stream| SUP
+
+    SUP --> DB_AGENT["query_postgres"]
+    SUP --> BILLING["8 Billing Sub-Agents"]
+
+    DB_AGENT -->|MCP| PG[("PostgreSQL")]
+
+    BILLING -->|MCP| S["Stripe"]
+    BILLING -->|MCP| P["Paddle"]
+    BILLING -->|MCP| C["Chargebee"]
+    BILLING -->|MCP| G["GoCardless"]
+    BILLING -->|MCP| R["RevenueCat"]
+    BILLING -->|MCP| L["Lemon Squeezy"]
+    BILLING -->|MCP| Z["Zuora"]
+    BILLING -->|MCP| RE["Recurly"]
+
+    style UI fill:#89b4fa,stroke:#89b4fa,color:#1e1e2e
+    style SUP fill:#f5c2e7,stroke:#f5c2e7,color:#1e1e2e
+    style DB_AGENT fill:#a6e3a1,stroke:#a6e3a1,color:#1e1e2e
+    style BILLING fill:#a6e3a1,stroke:#a6e3a1,color:#1e1e2e
+    style PG fill:#f9e2af,stroke:#f9e2af,color:#1e1e2e
+    style S fill:#fab387,stroke:#fab387,color:#1e1e2e
+    style P fill:#fab387,stroke:#fab387,color:#1e1e2e
+    style C fill:#fab387,stroke:#fab387,color:#1e1e2e
+    style G fill:#fab387,stroke:#fab387,color:#1e1e2e
+    style R fill:#fab387,stroke:#fab387,color:#1e1e2e
+    style L fill:#fab387,stroke:#fab387,color:#1e1e2e
+    style Z fill:#fab387,stroke:#fab387,color:#1e1e2e
+    style RE fill:#fab387,stroke:#fab387,color:#1e1e2e

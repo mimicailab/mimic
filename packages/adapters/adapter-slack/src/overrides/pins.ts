@@ -4,7 +4,7 @@ import { slackError, SLACK_ERROR_CODES } from '../slack-errors.js';
 import { messageKey } from './conversations.js';
 import { parseQuery } from './paginate.js';
 
-const NS_MESSAGES = 'slack:messages';
+const NS_MESSAGES = 'slack:message';
 const NS_PINS = 'slack:pins';
 
 interface PinRecord {

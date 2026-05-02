@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { buildTestServer } from '@mimicai/adapter-sdk';
 import type { TestServer } from '@mimicai/adapter-sdk';
+import type { ExpandedData } from '@mimicai/core';
 import { SlackAdapter } from '../slack-adapter.js';
 
 const BASE = '/api';
@@ -207,6 +208,74 @@ describe('SlackAdapter', () => {
     expect(res.json().error).toBe('users_not_found');
   });
 
+  // ── Seed-from-apiResponses path (the briefing-flow regression) ──────────
+
+  describe('seedExpandedData → conversations.list / conversations.history', () => {
+    it('channels emitted under apiResponses.slack.responses.channel are reachable via /conversations.list', async () => {
+      // Re-build the adapter, this time with seeded apiResponses, to mimic
+      // the `mimic seed` → `mimic host` path. The SDK seeder runs inside
+      // registerGeneratedRoutes, so we need it to see this data at startup.
+      await ts.close();
+      adapter = new SlackAdapter();
+      const data = makeData('p1', {
+        channel: [
+          { id: 'C_DEALS', name: 'deals', is_channel: true, is_private: false, created: 1700000000 },
+          { id: 'C_GENERAL', name: 'general', is_channel: true, is_private: false, is_general: true, created: 1700000000 },
+        ],
+      });
+      ts = await buildTestServer(adapter, data);
+
+      const res = await form(ts, 'GET', '/conversations.list');
+      const body = res.json() as { ok: boolean; channels: Array<{ id: string; name: string }> };
+      expect(body.ok).toBe(true);
+      expect(body.channels).toHaveLength(2);
+      const names = body.channels.map((c) => c.name).sort();
+      expect(names).toEqual(['deals', 'general']);
+    });
+
+    it('messages with composite key (channel:ts) are reachable via /conversations.history', async () => {
+      await ts.close();
+      adapter = new SlackAdapter();
+      const data = makeData('p1', {
+        channel: [{ id: 'C_DEALS', name: 'deals', is_channel: true, created: 1700000000 }],
+        message: [
+          { type: 'message', user: 'U1', text: 'Northwind Robotics — Sarah following up', ts: '1714000000.000100', channel: 'C_DEALS' },
+          { type: 'message', user: 'U2', text: 'SOC 2 timeline confirmed for May.', ts: '1714000050.000200', channel: 'C_DEALS' },
+          // Missing channel — should be silently skipped (resourceKey returns null)
+          { type: 'message', user: 'U3', text: 'orphan', ts: '1714000099.000300' },
+        ],
+      });
+      ts = await buildTestServer(adapter, data);
+
+      const res = await form(ts, 'GET', '/conversations.history', { channel: 'C_DEALS' });
+      const body = res.json() as { ok: boolean; messages: Array<{ text: string; ts: string }> };
+      expect(body.ok).toBe(true);
+      expect(body.messages).toHaveLength(2);
+      const texts = body.messages.map((m) => m.text);
+      expect(texts).toContain('Northwind Robotics — Sarah following up');
+      expect(texts).toContain('SOC 2 timeline confirmed for May.');
+    });
+
+    it('users emitted under apiResponses.slack.responses.user are reachable via /users.list and /users.info', async () => {
+      await ts.close();
+      adapter = new SlackAdapter();
+      const data = makeData('p1', {
+        user: [
+          { id: 'U_PRIYA', team_id: 'T1', name: 'priya', real_name: 'Priya Shah' },
+          { id: 'U_SARAH', team_id: 'T1', name: 'sarah', real_name: 'Sarah Lee' },
+        ],
+      });
+      ts = await buildTestServer(adapter, data);
+
+      const list = (await form(ts, 'GET', '/users.list')).json() as { members: Array<{ id: string }> };
+      // 2 seeded users + 1 default bot = 3
+      expect(list.members.length).toBeGreaterThanOrEqual(3);
+      const priya = (await form(ts, 'GET', '/users.info', { user: 'U_PRIYA' })).json() as { ok: boolean; user: { real_name: string } };
+      expect(priya.ok).toBe(true);
+      expect(priya.user.real_name).toBe('Priya Shah');
+    });
+  });
+
   // ── method_not_implemented fallback ─────────────────────────────────────
 
   it('an unmounted route would fall through to method_not_implemented (sanity check)', async () => {
@@ -223,3 +292,22 @@ describe('SlackAdapter', () => {
     }
   });
 });
+
+function makeData(personaId: string, responses: Record<string, Array<Record<string, unknown>>>): Map<string, ExpandedData> {
+  const wrapped: Record<string, Array<{ statusCode: number; headers: Record<string, string>; personaId: string; body: unknown }>> = {};
+  for (const [k, v] of Object.entries(responses)) {
+    wrapped[k] = v.map((body) => ({ statusCode: 200, headers: {}, personaId, body }));
+  }
+  return new Map([
+    [personaId, {
+      personaId,
+      blueprint: { id: 'test', personas: [], facts: [] } as unknown as ExpandedData['blueprint'],
+      tables: {},
+      documents: {},
+      apiResponses: { slack: { adapterId: 'slack', responses: wrapped } },
+      files: [],
+      events: [],
+      facts: [],
+    }],
+  ]);
+}

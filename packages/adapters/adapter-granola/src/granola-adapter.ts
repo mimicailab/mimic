@@ -18,6 +18,7 @@ import type { GeneratedRoute, RouteMethod } from './generated/routes.js';
 import * as noteHandlers from './overrides/notes.js';
 import * as folderHandlers from './overrides/folders.js';
 import { seedDefaultFixtures } from './overrides/fixtures.js';
+import { seedGranolaNotes } from './overrides/seed_notes.js';
 
 /**
  * StateStore namespaces:
@@ -57,6 +58,12 @@ export class GranolaAdapter extends OpenApiMockAdapter<GranolaConfig> {
     store: StateStore,
   ): Promise<void> {
     seedDefaultFixtures(store, this.config);
+    // Granola's note + transcript shapes contain polymorphic objects (owner,
+    // calendar_event, speaker) that the persona LLM can't fill — see
+    // overrides/seed_notes.ts. Pseudo-resources `note_content` and
+    // `transcript_entry_content` carry flat fields; this seeder wraps them
+    // into Granola's nested envelope and writes to `granola:notes`.
+    seedGranolaNotes(data, store);
     this.mountOverrides(store);
     await this.registerGeneratedRoutes(server, data, store, ns);
   }

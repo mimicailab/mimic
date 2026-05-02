@@ -167,9 +167,20 @@ interface ResourceSpec {
 }
 
 const RESOURCE_SPECS: Record<string, ResourceSpec> = {
+  // ---------------------------------------------------------------------------
+  // `note` and `transcript_entry` are kept as *references* — their wire shapes
+  // contain polymorphic objects (`owner`, `calendar_event`, `speaker`) that
+  // the persona LLM can't fill without slug guidance, plus optional/nullable
+  // content fields (`title`, `summary`) which the LLM tends to skip. Persona-
+  // rich content lives in the two pseudo-resources below (`note_content`,
+  // `transcript_entry_content`) with explicit flat fields. A custom seeder
+  // in `overrides/seed_notes.ts` wraps those into Granola's nested envelope
+  // and writes them to `granola:notes`, attaching transcript entries to their
+  // parent note's `transcript` array.
+  // ---------------------------------------------------------------------------
   note: {
     objectType: 'note',
-    volumeHint: 'entity',
+    volumeHint: 'reference',
     refs: ['user', 'folder', 'calendar_event'],
     fields: {
       id: { type: 'string', required: true, default: '' },
@@ -183,6 +194,32 @@ const RESOURCE_SPECS: Record<string, ResourceSpec> = {
       summary: { type: 'string', required: false, nullable: true, default: null },
       transcript: { type: 'array', required: false, default: [], description: 'Only present when ?include=transcript' },
       folder_id: { type: 'string', required: false, nullable: true, default: null },
+    },
+  },
+  note_content: {
+    objectType: 'note_content',
+    volumeHint: 'entity',
+    refs: [],
+    fields: {
+      id: { type: 'string', required: true, default: '' },
+      title: { type: 'string', required: true, default: '' },
+      summary: { type: 'string', required: true, default: '' },
+      body_markdown: { type: 'string', required: false, default: '' },
+      // Owner is broken out into flat fields so the persona LLM can populate
+      // them; the seeder reassembles into Granola's `{id, name, email}` envelope.
+      owner_name: { type: 'string', required: true, default: '' },
+      owner_email: { type: 'string', required: true, default: '', semanticType: 'email' },
+      // Calendar event likewise — flat fields here, nested envelope in the seeder.
+      meeting_title: { type: 'string', required: true, default: '' },
+      meeting_start_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+      meeting_end_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+      // Attendees as a comma- or semicolon-separated string of emails. The seeder
+      // splits and pairs each with a name where possible. Persona content might
+      // mention names alongside (e.g. "priya@northwind.com (Priya Shah)"); we
+      // accept that too.
+      attendee_emails: { type: 'string', required: false, default: '' },
+      folder_name: { type: 'string', required: false, default: 'My notes' },
+      created_at: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
     },
   },
   folder: {
@@ -209,7 +246,7 @@ const RESOURCE_SPECS: Record<string, ResourceSpec> = {
   },
   calendar_event: {
     objectType: 'calendar_event',
-    volumeHint: 'entity',
+    volumeHint: 'reference',
     refs: ['user'],
     fields: {
       id: { type: 'string', required: false, default: '' },
@@ -221,10 +258,30 @@ const RESOURCE_SPECS: Record<string, ResourceSpec> = {
   },
   transcript_entry: {
     objectType: 'transcript_entry',
-    volumeHint: 'entity',
+    volumeHint: 'reference',
     refs: [],
     fields: {
       speaker: { type: 'object', required: true, default: null },
+      text: { type: 'string', required: true, default: '' },
+      start_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+      end_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
+    },
+  },
+  transcript_entry_content: {
+    objectType: 'transcript_entry_content',
+    volumeHint: 'entity',
+    refs: ['note_content'],
+    fields: {
+      // Required link to the parent note. Without it, transcript entries
+      // become orphaned and there's no way to navigate from "show me last
+      // week's call" to the dialogue.
+      note_id: { type: 'string', required: true, default: '' },
+      // Speaker is broken into flat fields. The seeder wraps into
+      // `{ id, name, email, source }` — Granola's actual speaker shape.
+      // Required so persona dialogue can be attributed ("Priya said X" vs
+      // "someone said X").
+      speaker_name: { type: 'string', required: true, default: '' },
+      speaker_email: { type: 'string', required: true, default: '', semanticType: 'email' },
       text: { type: 'string', required: true, default: '' },
       start_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
       end_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },

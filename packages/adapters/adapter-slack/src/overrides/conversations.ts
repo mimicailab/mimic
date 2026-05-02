@@ -5,8 +5,11 @@ import { defaultChannel } from '../generated/schemas.js';
 import { slackError, SLACK_ERROR_CODES } from '../slack-errors.js';
 import { paginateByCursor, parseQuery } from './paginate.js';
 
-const NS_CHANNELS = 'slack:channels';
-const NS_MESSAGES = 'slack:messages';
+// Namespaces match the spec resource names (singular) so the SDK seeder's
+// default fallback (`<adapter>:<resourceType>`) writes data to the same
+// place the override reads from. See OpenApiMockAdapter.seedExpandedData.
+const NS_CHANNELS = 'slack:channel';
+const NS_MESSAGES = 'slack:message';
 
 /** Compose a stable storage key for a message: `${channelId}:${ts}`. */
 export function messageKey(channel: string, ts: string): string {

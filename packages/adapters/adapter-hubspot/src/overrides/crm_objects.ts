@@ -19,22 +19,62 @@ import type { SearchBody } from './_shared.js';
 
 import type { FastifyRequest } from 'fastify';
 
+/**
+ * HubSpot accepts both the slug name (`deals`) and the numeric type id
+ * (`0-3`) for any object-type-bearing endpoint. Normalise both forms onto a
+ * single canonical slug so a record seeded as `deals` is also reachable via
+ * `/crm/objects/<v>/0-3`. The mapping covers the 9 standard CRM object types.
+ */
+const OBJECT_TYPE_ALIASES: Record<string, string> = {
+  '0-1': 'contacts',
+  contact: 'contacts',
+  '0-2': 'companies',
+  company: 'companies',
+  '0-3': 'deals',
+  deal: 'deals',
+  '0-5': 'tickets',
+  ticket: 'tickets',
+  '0-27': 'tasks',
+  task: 'tasks',
+  '0-46': 'notes',
+  note: 'notes',
+  '0-48': 'calls',
+  call: 'calls',
+  '0-47': 'meetings',
+  meeting: 'meetings',
+  '0-49': 'emails',
+  email: 'emails',
+  '0-14': 'line_items',
+  line_item: 'line_items',
+  '0-7': 'products',
+  product: 'products',
+};
+
+function canonicalObjectType(objectType: string): string {
+  return OBJECT_TYPE_ALIASES[objectType] ?? objectType;
+}
+
 function nsForObjectType(objectType: string): string {
-  return `hubspot:crm_objects:${objectType}`;
+  return `hubspot:crm_objects:${canonicalObjectType(objectType)}`;
 }
 
 /**
  * Object type extraction. For routes that use the `:objectType` placeholder
  * we read from `req.params.objectType`. For routes with a literal type (e.g.
- * `/crm/objects/2026-03/contacts/search` from the typed Contacts spec) we
- * fall back to parsing it out of the URL.
+ * `/crm/objects/2026-03/contacts/search` from the typed Contacts spec, or
+ * `/crm/v3/objects/contacts` from the v3 alias of that typed spec) we fall
+ * back to parsing the type out of the URL.
  */
 function readObjectType(req: FastifyRequest): string {
   const fromParam = ((req.params ?? {}) as Record<string, unknown>).objectType;
   if (typeof fromParam === 'string' && fromParam.length > 0) return fromParam;
   const url = req.url ?? '';
-  const m = url.match(/^\/crm\/objects\/[^/]+\/([^/?]+)/);
-  return m?.[1] ?? '';
+  // Dated form:   /crm/objects/<version>/<type>/...
+  // v3 form:      /crm/v3/objects/<type>/...
+  const datedMatch = url.match(/^\/crm\/objects\/[^/]+\/([^/?]+)/);
+  if (datedMatch?.[1]) return datedMatch[1];
+  const v3Match = url.match(/^\/crm\/v3\/objects\/([^/?]+)/);
+  return v3Match?.[1] ?? '';
 }
 
 /**
@@ -50,10 +90,14 @@ function readObjectId(req: FastifyRequest): string {
   for (const k of Object.keys(params)) {
     if (k.endsWith('Id') && k !== 'objectType' && typeof params[k] === 'string') return params[k] as string;
   }
-  // Last resort: parse from URL — `/crm/objects/<version>/<type>/<id>`
+  // Last resort: parse from URL.
+  //   Dated:  /crm/objects/<version>/<type>/<id>
+  //   v3:     /crm/v3/objects/<type>/<id>
   const url = (req.url ?? '').split('?')[0]!;
-  const m = url.match(/^\/crm\/objects\/[^/]+\/[^/]+\/([^/]+)/);
-  return m?.[1] ?? '';
+  const datedM = url.match(/^\/crm\/objects\/[^/]+\/[^/]+\/([^/]+)/);
+  if (datedM?.[1]) return datedM[1];
+  const v3M = url.match(/^\/crm\/v3\/objects\/[^/]+\/([^/]+)/);
+  return v3M?.[1] ?? '';
 }
 
 /** GET /crm/objects/<version>/:objectType — list records of a dynamic type */
