@@ -1,5 +1,19 @@
 # @mimicai/docs
 
+## 0.4.0
+
+### Minor Changes
+
+- [#155](https://github.com/mimicailab/mimic/pull/155) [`51d587c`](https://github.com/mimicailab/mimic/commit/51d587c169a8d5149d93dc3ed48f69f3e28ad0b9) Thanks [@ada-raj](https://github.com/ada-raj)! - docs: add briefing-agent example to the docs site
+
+  Documents the new `briefing-agent` example as the structural sibling of the
+  `cfo-agent` — same Mimic underneath, Claude Skills instead of LangGraph.
+  Adds a row to the examples summary table, a full `example-briefing-agent`
+  section (architecture diagram, `mimic.json`, skills table, quick-start, and
+  "Skills, not graphs" callout), and a sidebar entry. Reflects the actual
+  five-surface setup shipped in `examples/briefing-agent/`: Attio, HubSpot,
+  Granola, Gmail, Slack, plus a Postgres product DB.
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,12 +1,12 @@
 {
   "name": "briefing-agent-example",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "dependencies": {
-    "@mimicai/adapter-attio": "^0.11.1",
+    "@mimicai/adapter-attio": "^0.12.0",
     "@mimicai/adapter-gmail": "^0.11.1",
-    "@mimicai/adapter-granola": "^0.11.1",
-    "@mimicai/adapter-hubspot": "^0.11.1",
+    "@mimicai/adapter-granola": "^0.12.0",
+    "@mimicai/adapter-hubspot": "^0.12.0",
     "@mimicai/adapter-postgres": "^0.11.1",
     "@mimicai/adapter-slack": "^0.11.1",
     "@mimicai/cli": "^0.11.1"
