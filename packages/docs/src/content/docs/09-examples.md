@@ -1,7 +1,7 @@
 ---
 title: "Examples"
 eyebrow: "Examples"
-description: "Ten working examples demonstrating different database backends, API mock adapters, and agent architectures."
+description: "Eleven working examples demonstrating different database backends, API mock adapters, and agent architectures."
 order: 10
 slug: "examples"
 prev: { slug: "guides", title: "Guides" }
@@ -17,7 +17,7 @@ prev: { slug: "guides", title: "Guides" }
   Clone, seed, and chat &mdash; each example works end-to-end out of the box.
 </p>
 
-<p>Mimic ships with ten working examples that demonstrate different database backends, API mock adapters, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
+<p>Mimic ships with eleven working examples that demonstrate different database backends, API mock adapters, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
 
 <ol>
   <li><strong>Define personas</strong> in <code>mimic.json</code> &mdash; describe who generates the data</li>
@@ -40,6 +40,7 @@ prev: { slug: "guides", title: "Guides" }
       <tr><td><code>payments-monitor</code></td><td>PostgreSQL (Prisma)</td><td>Stripe</td><td>Payment operations</td><td>OpenAI Agents SDK</td><td>Revenue metrics, failure analysis, dunning</td></tr>
       <tr><td><code>meeting-notes</code></td><td>PostgreSQL (Prisma)</td><td>Slack</td><td>Team meetings</td><td>OpenAI Agents SDK</td><td>Meeting summaries posted to Slack channels</td></tr>
       <tr><td><code>cfo-agent</code></td><td>PostgreSQL (Prisma)</td><td>Stripe + Paddle + Chargebee + GoCardless + RevenueCat + Lemon Squeezy + Zuora + Recurly</td><td>SaaS CFO / billing intelligence</td><td>LangChain + LangGraph</td><td>8 billing platforms, supervisor + sub-agent, Next.js UI</td></tr>
+      <tr><td><code>briefing-agent</code></td><td>PostgreSQL (Prisma)</td><td>Attio + HubSpot + Granola + Gmail + Slack</td><td>B2B sales pre-call briefing</td><td>Claude Skills</td><td>Cross-surface synthesis, no orchestration code &mdash; markdown SKILL.md files only</td></tr>
     </tbody>
   </table>
 </div>
@@ -1002,4 +1003,105 @@ mimic host (separate terminal)
 <div class="callout tip">
   <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
   <div><p><strong>The flagship example:</strong> This is Mimic at full scale — one persona, 8 billing platforms, 9 simultaneous MCP servers, a supervisor agent that routes across all of them, and a polished chat UI. Use it to see what end-to-end agent testing looks like when your product touches multiple billing providers.</p></div>
+</div>
+
+<h3 id="example-briefing-agent">Briefing Agent &mdash; PostgreSQL + 5 Sales Surfaces</h3>
+
+<p>The structural sibling of the CFO agent, in a different domain and a different paradigm. A pre-call briefing assistant for B2B AEs that reads <strong>five sales platforms in parallel</strong> (Attio, HubSpot, Granola, Gmail, Slack) plus a PostgreSQL product database, and produces a one-screen brief 5 minutes before any external meeting. <strong>Strictly read-only</strong> &mdash; never writes to any system.</p>
+
+<p>The agent has <strong>no orchestration code</strong>. It is a set of <strong>Claude Skills</strong> (markdown <code>SKILL.md</code> files) that Claude Code reads at runtime to decide which MCP tools to call and in what order. Adding a new platform is a new skill, not a graph refactor.</p>
+
+<p><strong>Persona:</strong> A single richly-detailed <strong>northwind-priya</strong> persona — Priya Shah, VP Engineering at Northwind Robotics, late-stage £240k evaluation of an observability platform. The persona is deliberately causally consistent across every surface: the same SOC 2 conversation surfaces in the Granola transcript, the Gmail thread, and the Slack <code>#deals</code> channel; Attio is the source of truth while HubSpot is a stale mirror with a value mismatch (£220k vs £240k); two trial accounts at <code>northwind.com</code> in the product DB show login activity matching the call timeline; Priya's recent Director&rarr;VP promotion appears in only one surface. This is the kind of multi-surface, causally-linked universe that's impossible to fake by hand and trivial to regenerate with Mimic.</p>
+
+<h4>Architecture</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">text</span><span>briefing-agent architecture</span><button class="code-copy">Copy</button></div>
+  <pre><code>Claude Code
+  └─ reads skills/briefing-prep/SKILL.md  (orchestrator)
+       ├─ skills/deal-context/SKILL.md
+       ├─ skills/conversation-history/SKILL.md
+       └─ skills/communication-state/SKILL.md
+  └─ connects via MCP to mimic host
+
+mimic host (separate terminal)
+  ├─ postgres MCP   (product DB — trial accounts, logins)
+  ├─ attio    MCP   (CRM source of truth — deal, stage, contacts)
+  ├─ hubspot  MCP   (legacy CRM mirror — pre-migration)
+  ├─ granola  MCP   (recent meeting notes &amp; transcripts)
+  ├─ gmail    MCP   (thread state, opens, follow-ups)
+  └─ slack    MCP   (#deals mentions, internal context)</code></pre>
+</div>
+
+<h4>Config</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/briefing-agent/mimic.json</span><button class="code-copy">Copy</button></div>
+  <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"B2B SaaS sales pre-call briefing — Cumulus selling observability to engineering leaders, modern stack (Attio + Granola + Gmail + Slack) with HubSpot still around from pre-migration days"</span>,
+  <span class="yk">"llm"</span>: { <span class="yk">"provider"</span>: <span class="str">"anthropic"</span>, <span class="yk">"model"</span>: <span class="str">"claude-sonnet-4-6"</span> },
+  <span class="yk">"personas"</span>: [{ <span class="yk">"name"</span>: <span class="str">"northwind-priya"</span>, <span class="yk">"description"</span>: <span class="str">"Priya Shah, VP Eng at Northwind, £240k late-stage deal, SOC 2 concern raised on last call, two teammates trialing the product..."</span> }],
+  <span class="yk">"generate"</span>: { <span class="yk">"volume"</span>: <span class="str">"8 weeks"</span>, <span class="yk">"seed"</span>: <span class="ty">42</span> },
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: { <span class="yk">"type"</span>: <span class="str">"postgres"</span>, <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>, <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"prisma"</span>, <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span> } }
+  },
+  <span class="yk">"apis"</span>: {
+    <span class="yk">"attio"</span>:   { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"hubspot"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"granola"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"gmail"</span>:   { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> },
+    <span class="yk">"slack"</span>:   { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> }
+  }
+}</code></pre>
+</div>
+
+<h4>Skills</h4>
+
+<p>Four composable skills under <code>examples/briefing-agent/skills/</code>. <code>briefing-prep</code> is the entry point that fans out to the others. Each skill is a single <code>SKILL.md</code> file &mdash; no Python, no LangGraph, no orchestration framework.</p>
+
+<div class="doc-table-wrap">
+  <table class="doc-table">
+    <thead><tr><th>Skill</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>briefing-prep</code></td><td>Orchestrator &mdash; fan-out across all platforms in parallel, synthesize the one-screen brief</td></tr>
+      <tr><td><code>deal-context</code></td><td>Resolve the deal across Attio + HubSpot, flag dual-CRM mismatches (stage, value)</td></tr>
+      <tr><td><code>conversation-history</code></td><td>Pull last 2-3 Granola call notes, extract objections, commitments, and blockers</td></tr>
+      <tr><td><code>communication-state</code></td><td>Last 5 Gmail messages + Slack <code>#deals</code> mentions, derive thread state and unanswered questions</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Quick start</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="cm"># 1. Start PostgreSQL</span>
+<span class="prompt">$</span> cd examples/briefing-agent
+<span class="prompt">$</span> docker compose up -d
+&#8203;
+<span class="cm"># 2. Configure environment</span>
+<span class="prompt">$</span> cp .env.example .env
+<span class="cm"># Add ANTHROPIC_API_KEY</span>
+&#8203;
+<span class="cm"># 3. Install + Prisma</span>
+<span class="prompt">$</span> npm install
+<span class="prompt">$</span> export $(cat .env | xargs)
+<span class="prompt">$</span> npx prisma generate && npx prisma migrate dev --name init
+&#8203;
+<span class="cm"># 4. Generate and seed across all 6 surfaces</span>
+<span class="prompt">$</span> npx mimic run -g
+<span class="prompt">$</span> npx mimic seed --verbose
+&#8203;
+<span class="cm"># 5. Host the MCP servers</span>
+<span class="prompt">$</span> npx mimic host
+&#8203;
+<span class="cm"># 6. Point Claude Code at the printed MCP endpoints, then chat:</span>
+<span class="cm">#    "I have a call with priya@northwind.com in 5 minutes"</span></code></pre>
+</div>
+
+<p>Claude Code picks up <code>skills/briefing-prep/SKILL.md</code>, fans out across the MCP servers, and produces a one-screen brief covering: who's on the call (role, recent moves), deal context (stage, value, slip history), last call highlights (Granola), email thread state (Gmail), product signals (Postgres), internal context (Slack), three suggested questions, and two flags to watch.</p>
+
+<div class="callout tip">
+  <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+  <div><p><strong>Skills, not graphs:</strong> The CFO agent uses a LangGraph supervisor &mdash; the 2024 paradigm. The Briefing Agent uses Claude Skills &mdash; orchestration becomes markdown the model interprets at runtime. Same Mimic underneath, two different agent paradigms on top. Use this example when you want to see what end-to-end testing looks like for a Skills-based agent across a multi-surface sales stack.</p></div>
 </div>
