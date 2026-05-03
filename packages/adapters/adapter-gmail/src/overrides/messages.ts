@@ -22,6 +22,42 @@ function applyLabelMods(
   return [...set];
 }
 
+/**
+ * Substring-match `needle` against a stored Gmail message — snippet, every
+ * `payload.headers` value (From/To/Cc/Subject/Date/...), and the decoded
+ * body. Approximates real Gmail's `q=` semantics for the common bare-keyword
+ * and bare-email cases. Operator syntax (`from:`, `to:`, `subject:`) is not
+ * yet parsed; the operator literals fall through as substring matches.
+ */
+function matchesQuery(message: Record<string, unknown>, needle: string): boolean {
+  if (String(message.snippet ?? '').toLowerCase().includes(needle)) return true;
+
+  const payload = message.payload as
+    | { headers?: Array<{ name: string; value: string }>; body?: { data?: string } }
+    | null
+    | undefined;
+  if (!payload) return false;
+
+  for (const h of payload.headers ?? []) {
+    if (typeof h.value === 'string' && h.value.toLowerCase().includes(needle)) return true;
+  }
+
+  // Decode base64url body once and substring-match.
+  const data = payload.body?.data;
+  if (typeof data === 'string' && data.length > 0) {
+    try {
+      const b64 = data.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+      const decoded = Buffer.from(padded, 'base64').toString('utf-8').toLowerCase();
+      if (decoded.includes(needle)) return true;
+    } catch {
+      // Malformed base64 — skip body match.
+    }
+  }
+
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // users.messages.send — POST /gmail/v1/users/:userId/messages/send
 // ---------------------------------------------------------------------------
@@ -175,10 +211,14 @@ export function buildListHandler(store: StateStore): OverrideHandler {
       });
     }
 
-    // q — naive substring match on snippet (subset of Gmail search syntax)
+    // q — substring match across snippet, header values, and decoded body. Real
+    // Gmail's `q=` searches all of these (plus operator syntax like `from:` /
+    // `to:` / `subject:` we don't yet parse). Snippet-only matched too few
+    // messages — `q=<email>` rarely appears in the snippet text but always in
+    // From/To headers.
     if (typeof query.q === 'string' && query.q.trim() !== '') {
       const needle = query.q.toLowerCase();
-      filtered = filtered.filter((m) => String(m.snippet ?? '').toLowerCase().includes(needle));
+      filtered = filtered.filter((m) => matchesQuery(m, needle));
     }
 
     // includeSpamTrash — default is false (exclude SPAM/TRASH)

@@ -10,6 +10,17 @@ export type {
   StripeNotFoundError,
 } from './openapi-mock-adapter.js';
 
+// ── Marshalling ──────────────────────────────────────────────────────────────
+export { runMarshallers } from './marshalling.js';
+export type {
+  Body,
+  MarshalContext,
+  Marshaller,
+  StandaloneMarshaller,
+  EmbeddedMarshaller,
+  PrecomputeMarshalContext,
+} from './marshalling.js';
+
 // ── Shared OpenAPI types (used by codegen + runtime) ─────────────────────────
 export type { GeneratedRoute, RouteMethod, RouteOperation } from './openapi-types.js';
 

@@ -201,22 +201,27 @@ const RESOURCE_SPECS: Record<string, ResourceSpec> = {
     volumeHint: 'entity',
     refs: [],
     fields: {
-      id: { type: 'string', required: true, default: '' },
+      // The SDK assigns the real id during marshalling. `label` is the
+      // LLM-stable cross-resource reference key — every transcript_entry
+      // points at its parent via the parent's label. Labels must be unique
+      // within a persona's note_content responses (collision throws at
+      // marshal time).
+      label: { type: 'string', required: true, default: '' },
       title: { type: 'string', required: true, default: '' },
       summary: { type: 'string', required: true, default: '' },
       body_markdown: { type: 'string', required: false, default: '' },
       // Owner is broken out into flat fields so the persona LLM can populate
-      // them; the seeder reassembles into Granola's `{id, name, email}` envelope.
+      // them; the marshaller reassembles into Granola's `{id, name, email}` envelope.
       owner_name: { type: 'string', required: true, default: '' },
       owner_email: { type: 'string', required: true, default: '', semanticType: 'email' },
-      // Calendar event likewise — flat fields here, nested envelope in the seeder.
+      // Calendar event likewise — flat fields here, nested envelope in the marshaller.
       meeting_title: { type: 'string', required: true, default: '' },
       meeting_start_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
       meeting_end_time: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
-      // Attendees as a comma- or semicolon-separated string of emails. The seeder
-      // splits and pairs each with a name where possible. Persona content might
-      // mention names alongside (e.g. "priya@northwind.com (Priya Shah)"); we
-      // accept that too.
+      // Attendees as a comma- or semicolon-separated string of emails. The
+      // marshaller splits and pairs each with a name where possible. Persona
+      // content might mention names alongside (e.g. "priya@northwind.com
+      // (Priya Shah)"); we accept that too.
       attendee_emails: { type: 'string', required: false, default: '' },
       folder_name: { type: 'string', required: false, default: 'My notes' },
       created_at: { type: 'string', required: true, default: '', timestamp: 'iso8601' },
@@ -272,11 +277,12 @@ const RESOURCE_SPECS: Record<string, ResourceSpec> = {
     volumeHint: 'entity',
     refs: ['note_content'],
     fields: {
-      // Required link to the parent note. Without it, transcript entries
-      // become orphaned and there's no way to navigate from "show me last
-      // week's call" to the dialogue.
-      note_id: { type: 'string', required: true, default: '' },
-      // Speaker is broken into flat fields. The seeder wraps into
+      // Required link to the parent note BY LABEL (not id — see marshall.md).
+      // The SDK resolves note_label → assigned note id during marshalling.
+      // Without this, transcript entries are orphaned and can't be navigated
+      // from "show me last week's call" to the dialogue.
+      note_label: { type: 'string', required: true, default: '' },
+      // Speaker is broken into flat fields. The marshaller wraps into
       // `{ id, name, email, source }` — Granola's actual speaker shape.
       // Required so persona dialogue can be attributed ("Priya said X" vs
       // "someone said X").

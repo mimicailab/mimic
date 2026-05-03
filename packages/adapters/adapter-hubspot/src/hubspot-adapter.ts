@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext, StateStore } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
-import type { DefaultFactory, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
+import type { DefaultFactory, Marshaller, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
 
 import meta from './adapter-meta.js';
 import type { HubSpotConfig } from './config.js';
@@ -59,7 +59,7 @@ const V3_ALIAS_ROUTES = buildV3Aliases(GENERATED_ROUTES);
 const ALL_ROUTES: GeneratedRoute[] = [...GENERATED_ROUTES, ...V3_ALIAS_ROUTES];
 
 import { seedDefaultFixtures } from './overrides/fixtures.js';
-import { seedHubSpotCrmObjects } from './overrides/seed_objects.js';
+import { buildHubSpotCrmMarshallers } from './overrides/marshallers.js';
 import * as crmObjects from './overrides/crm_objects.js';
 import * as searchOverrides from './overrides/search.js';
 import * as batch from './overrides/batch.js';
@@ -93,6 +93,15 @@ export class HubSpotAdapter extends OpenApiMockAdapter<HubSpotConfig> {
   protected readonly defaultFactories: Record<string, DefaultFactory> = SCHEMA_DEFAULTS;
 
   /**
+   * Polymorphic CRM-object envelope is wrapped declaratively. See
+   * `overrides/marshallers.ts` for the per-type property builders.
+   */
+  private readonly _marshallers: readonly Marshaller[] = buildHubSpotCrmMarshallers();
+  protected override get marshallers(): readonly Marshaller[] {
+    return this._marshallers;
+  }
+
+  /**
    * 1056 routes is a lot. We rely on the base class's CRUD scaffolding for
    * 80%+ of them and selectively override:
    *   - The unified CRM Objects API (dynamic :objectType namespacing)
@@ -106,16 +115,6 @@ export class HubSpotAdapter extends OpenApiMockAdapter<HubSpotConfig> {
     store: StateStore,
   ): Promise<void> {
     seedDefaultFixtures(store, this.config);
-
-    // The base SDK seeder writes generic resources into their default
-    // namespaces. But HubSpot CRM objects (contacts, companies, deals,
-    // tickets) use a polymorphic `properties: {}` map that the persona LLM
-    // can't fill — see `overrides/seed_objects.ts`. Pseudo-resources with
-    // explicit content fields (crm_contact, crm_company, crm_deal, crm_ticket)
-    // get wrapped into HubSpot's CRM-object envelope here and written to
-    // `hubspot:crm_objects:{contacts|companies|deals|tickets}` so the runtime
-    // override at /crm/objects/<v>/<type> finds them.
-    seedHubSpotCrmObjects(data, store);
 
     // 1. Unified CRM Objects API — dynamic per-objectType namespacing
     this.mountCrmObjectsOverrides(store);

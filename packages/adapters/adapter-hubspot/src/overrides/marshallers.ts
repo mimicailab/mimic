@@ -1,81 +1,65 @@
 /**
- * Custom seeder for HubSpot CRM objects.
+ * Marshallers for HubSpot's polymorphic CRM-object envelope.
  *
  * HubSpot's CRM-object wire shape is `{id, properties: {...}, createdAt,
  * updatedAt, archived}` — every property (firstname, dealname, amount,
- * dealstage, ...) lives inside the polymorphic `properties` map, whose
- * keys depend on the object type. The persona generator can't fill an
- * opaque `properties: {}`, so the codegen declares four pseudo-resources
- * — `crm_contact`, `crm_company`, `crm_deal`, `crm_ticket` — with explicit
+ * dealstage, ...) lives inside a polymorphic `properties` map whose keys
+ * depend on the object type. The persona generator can't fill an opaque
+ * `properties: {}`, so the codegen declares four pseudo-resources —
+ * `crm_contact`, `crm_company`, `crm_deal`, `crm_ticket` — with explicit
  * content fields the LLM populates.
  *
- * This seeder takes those flat entities, wraps each in HubSpot's CRM-object
- * envelope (id + property bag with the right slug names + standard
- * timestamps), and writes them under `hubspot:crm_objects:{contacts|
- * companies|deals|tickets}` so the runtime crm_objects override at
- * `overrides/crm_objects.ts` finds them.
- *
- * Without this step, generated CRM-object content lands in a namespace
- * the runtime never reads, and `GET /crm/objects/{version}/{type}` returns [].
+ * Each marshaller wraps one pseudo-type into HubSpot's CRM-object envelope
+ * and writes the result to `hubspot:crm_objects:{contacts|companies|deals|
+ * tickets}` so the runtime crm_objects override finds it.
  */
 
-import type { ExpandedData, StateStore } from '@mimicai/core';
+import type { Body, Marshaller } from '@mimicai/adapter-sdk';
 import { generateId } from '@mimicai/adapter-sdk';
 import { defaultHubSpotObject } from '../generated/schemas.js';
 
-/** Maps each pseudo-resource key to the canonical CRM object slug used in URLs. */
-const PSEUDO_TO_CANONICAL: Record<string, 'contacts' | 'companies' | 'deals' | 'tickets'> = {
-  crm_contact: 'contacts',
-  crm_company: 'companies',
-  crm_deal: 'deals',
-  crm_ticket: 'tickets',
-};
-
-type Body = Record<string, unknown>;
-
-export function seedHubSpotCrmObjects(
-  data: Map<string, ExpandedData>,
-  store: StateStore,
-): void {
-  for (const [, expanded] of data) {
-    const responses = expanded.apiResponses?.hubspot?.responses;
-    if (!responses) continue;
-
-    for (const [pseudoType, canonical] of Object.entries(PSEUDO_TO_CANONICAL)) {
-      const entries = responses[pseudoType];
-      if (!entries) continue;
-
-      for (const resp of entries) {
-        const body = (resp.body ?? {}) as Body;
-        const id = (body.id as string) ?? generateId('', 18);
-        const createdAt = (body.createdAt as string) ?? new Date().toISOString();
-        const properties = buildProperties(pseudoType, body);
-        const obj = defaultHubSpotObject({
-          id,
-          properties,
-          createdAt,
-          updatedAt: createdAt,
-          archived: false,
-        });
-        store.set(`hubspot:crm_objects:${canonical}`, id, obj);
-      }
-    }
-  }
+export function buildHubSpotCrmMarshallers(): Marshaller[] {
+  return [
+    {
+      kind: 'standalone',
+      contentResource: 'crm_contact',
+      namespace: 'hubspot:crm_objects:contacts',
+      generateId: (body) => (body.id as string | undefined) ?? generateId('', 18),
+      wrap: (body, id) => wrapCrmObject(id, body, contactProperties(body)),
+    },
+    {
+      kind: 'standalone',
+      contentResource: 'crm_company',
+      namespace: 'hubspot:crm_objects:companies',
+      generateId: (body) => (body.id as string | undefined) ?? generateId('', 18),
+      wrap: (body, id) => wrapCrmObject(id, body, companyProperties(body)),
+    },
+    {
+      kind: 'standalone',
+      contentResource: 'crm_deal',
+      namespace: 'hubspot:crm_objects:deals',
+      generateId: (body) => (body.id as string | undefined) ?? generateId('', 18),
+      wrap: (body, id) => wrapCrmObject(id, body, dealProperties(body)),
+    },
+    {
+      kind: 'standalone',
+      contentResource: 'crm_ticket',
+      namespace: 'hubspot:crm_objects:tickets',
+      generateId: (body) => (body.id as string | undefined) ?? generateId('', 18),
+      wrap: (body, id) => wrapCrmObject(id, body, ticketProperties(body)),
+    },
+  ];
 }
 
-function buildProperties(pseudoType: string, body: Body): Record<string, string> {
-  switch (pseudoType) {
-    case 'crm_contact':
-      return contactProperties(body);
-    case 'crm_company':
-      return companyProperties(body);
-    case 'crm_deal':
-      return dealProperties(body);
-    case 'crm_ticket':
-      return ticketProperties(body);
-    default:
-      return {};
-  }
+function wrapCrmObject(id: string, body: Body, properties: Record<string, string>): Body {
+  const createdAt = (body.createdAt as string) ?? new Date().toISOString();
+  return defaultHubSpotObject({
+    id,
+    properties,
+    createdAt,
+    updatedAt: createdAt,
+    archived: false,
+  });
 }
 
 /** HubSpot serializes every property value as a string — even numbers and dates. */
@@ -119,9 +103,10 @@ function dealProperties(b: Body): Record<string, string> {
   if (s(b.dealstage)) p.dealstage = s(b.dealstage)!;
   if (s(b.pipeline)) p.pipeline = s(b.pipeline)!;
   if (s(b.closedate)) p.closedate = s(b.closedate)!;
-  // primary_contact_email and associated_company_domain are persona-side join keys —
-  // HubSpot stores associations in a separate Associations API, but for read-only
-  // briefing flows it's helpful to have the values on the deal record itself.
+  // primary_contact_email + associated_company_domain are persona-side join
+  // keys. HubSpot stores associations in a separate Associations API, but
+  // for read-only briefing flows it's helpful to have the values on the
+  // deal record itself.
   if (s(b.primary_contact_email)) p.primary_contact_email = s(b.primary_contact_email)!;
   if (s(b.associated_company_domain)) p.associated_company_domain = s(b.associated_company_domain)!;
   if (s(b.description)) p.description = s(b.description)!;

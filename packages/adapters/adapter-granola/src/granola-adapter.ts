@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext, StateStore } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
-import type { DefaultFactory, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
+import type { DefaultFactory, Marshaller, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
 
 import meta from './adapter-meta.js';
 import type { GranolaConfig } from './config.js';
@@ -18,7 +18,7 @@ import type { GeneratedRoute, RouteMethod } from './generated/routes.js';
 import * as noteHandlers from './overrides/notes.js';
 import * as folderHandlers from './overrides/folders.js';
 import { seedDefaultFixtures } from './overrides/fixtures.js';
-import { seedGranolaNotes } from './overrides/seed_notes.js';
+import { buildGranolaMarshallers } from './overrides/marshallers.js';
 
 /**
  * StateStore namespaces:
@@ -46,6 +46,16 @@ export class GranolaAdapter extends OpenApiMockAdapter<GranolaConfig> {
   protected readonly defaultFactories: Record<string, DefaultFactory> = SCHEMA_DEFAULTS;
 
   /**
+   * Note + transcript-entry envelopes are wrapped declaratively. Transcript
+   * entries cross-reference their parent note by `note_label` (not id) —
+   * the SDK resolves label → assigned id during marshalling.
+   */
+  private readonly _marshallers: readonly Marshaller[] = buildGranolaMarshallers();
+  protected override get marshallers(): readonly Marshaller[] {
+    return this._marshallers;
+  }
+
+  /**
    * Granola has 3 read-only routes; all are implemented as explicit
    * overrides because (a) the list response has its own envelope shape
    * (`{ notes|folders, hasMore, cursor }`) that doesn't match the base
@@ -58,12 +68,6 @@ export class GranolaAdapter extends OpenApiMockAdapter<GranolaConfig> {
     store: StateStore,
   ): Promise<void> {
     seedDefaultFixtures(store, this.config);
-    // Granola's note + transcript shapes contain polymorphic objects (owner,
-    // calendar_event, speaker) that the persona LLM can't fill — see
-    // overrides/seed_notes.ts. Pseudo-resources `note_content` and
-    // `transcript_entry_content` carry flat fields; this seeder wraps them
-    // into Granola's nested envelope and writes to `granola:notes`.
-    seedGranolaNotes(data, store);
     this.mountOverrides(store);
     await this.registerGeneratedRoutes(server, data, store, ns);
   }

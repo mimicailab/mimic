@@ -266,11 +266,13 @@ const RESOURCE_SPECS: Record<string, ResourceSpec> = {
       text: { type: 'string', required: true, default: '' },
       ts: { type: 'string', required: true, default: '', description: 'Slack message timestamp (epoch.seq)' },
       thread_ts: { type: 'string', required: false, default: '', description: 'Parent ts if this is a thread reply' },
-      // `channel` is required because Slack messages are stored under the composite key
-      // `${channel}:${ts}` (a single channel can host many messages, and `ts` alone collides
-      // across channels). The Slack adapter overrides `resourceKey` to compose this key,
-      // and a missing `channel` would silently drop the message at seed time.
-      channel: { type: 'string', required: true, default: '' },
+      // `channel_name` is the LLM-stable cross-resource reference (the
+      // channel's name, e.g. "deals"). The marshaller resolves it to the
+      // channel's id via `lookupId('channel', body.channel_name)`. `channel`
+      // is optional because the marshaller fills it; when both are provided
+      // the resolved name takes precedence.
+      channel_name: { type: 'string', required: true, default: '' },
+      channel: { type: 'string', required: false, default: '' },
       reply_count: { type: 'integer', required: false, default: 0 },
       reactions: { type: 'array', required: false, default: [] },
       blocks: { type: 'array', required: false, default: [], description: 'Block Kit content' },

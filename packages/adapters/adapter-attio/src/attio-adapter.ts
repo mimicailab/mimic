@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext, StateStore } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
-import type { DefaultFactory, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
+import type { DefaultFactory, Marshaller, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
 
 import meta from './adapter-meta.js';
 import type { AttioConfig } from './config.js';
@@ -32,7 +32,7 @@ import * as webhookHandlers from './overrides/webhooks.js';
 import * as workspaceMemberHandlers from './overrides/workspace_members.js';
 import * as scimHandlers from './overrides/scim.js';
 import { seedDefaultFixtures } from './overrides/fixtures.js';
-import { seedAttioRecords } from './overrides/seed_records.js';
+import { buildAttioRecordMarshallers } from './overrides/marshallers.js';
 
 /**
  * StateStore namespace conventions for Attio. Most resources are namespaced
@@ -83,6 +83,14 @@ export class AttioAdapter extends OpenApiMockAdapter<AttioConfig> {
   protected readonly defaultFactories: Record<string, DefaultFactory> = SCHEMA_DEFAULTS;
 
   /**
+   * Polymorphic record envelope is wrapped declaratively. See
+   * `overrides/marshallers.ts` for the per-type value builders.
+   */
+  protected override get marshallers(): readonly Marshaller[] {
+    return buildAttioRecordMarshallers(this.config?.workspaceId);
+  }
+
+  /**
    * Attio responses use one of three shapes depending on the endpoint:
    *
    *   - Resource endpoints:  `{ data: {...} }` (single) or `{ data: [...] }` (list)
@@ -100,15 +108,7 @@ export class AttioAdapter extends OpenApiMockAdapter<AttioConfig> {
     store: StateStore,
   ): Promise<void> {
     seedDefaultFixtures(store, this.config);
-
-    // The base SDK seeder writes generic resources (notes, tasks, etc.) into
-    // their namespaces. But Attio records are polymorphic — see
-    // overrides/seed_records.ts — and need a custom wrap into Attio's record
-    // envelope before they land in `attio:records:{object}`.
-    seedAttioRecords(data, store, this.config?.workspaceId);
-
     this.mountOverrides(store);
-
     await this.registerGeneratedRoutes(server, data, store, ns);
   }
 

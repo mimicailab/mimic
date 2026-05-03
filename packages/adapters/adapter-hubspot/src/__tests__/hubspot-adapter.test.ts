@@ -1,10 +1,19 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { buildTestServer } from '@mimicai/adapter-sdk';
+import { buildTestServer, runMarshallers } from '@mimicai/adapter-sdk';
 import type { TestServer } from '@mimicai/adapter-sdk';
 import type { ExpandedData } from '@mimicai/core';
 import { HubSpotAdapter } from '../hubspot-adapter.js';
 import { defaultContact, defaultDeal, defaultCompany, defaultOwner, defaultPipeline } from '../generated/schemas.js';
-import { seedHubSpotCrmObjects } from '../overrides/seed_objects.js';
+import { buildHubSpotCrmMarshallers } from '../overrides/marshallers.js';
+
+async function seedHubSpotCrmObjects(data: Map<string, ExpandedData>, store: import('@mimicai/core').StateStore): Promise<void> {
+  await runMarshallers({
+    marshallers: buildHubSpotCrmMarshallers(),
+    data,
+    store,
+    adapterId: 'hubspot',
+  });
+}
 
 const VERSION = '2026-03';
 
@@ -665,7 +674,7 @@ describe('HubSpotAdapter', () => {
         })],
       ]);
 
-      seedHubSpotCrmObjects(data, ts.stateStore);
+      await seedHubSpotCrmObjects(data, ts.stateStore);
 
       // Slug name resolves
       const bySlug = await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/deals` });
@@ -708,7 +717,7 @@ describe('HubSpotAdapter', () => {
         })],
       ]);
 
-      seedHubSpotCrmObjects(data, ts.stateStore);
+      await seedHubSpotCrmObjects(data, ts.stateStore);
 
       const contact = (await ts.server.inject({ method: 'GET', url: `/crm/objects/${VERSION}/contacts/c-1` })).json() as { properties: Record<string, string> };
       expect(contact.properties.firstname).toBe('Priya');
@@ -724,11 +733,11 @@ describe('HubSpotAdapter', () => {
       expect(ticket.properties.hs_ticket_priority).toBe('HIGH');
     });
 
-    it('skips empty pseudo-resource entries without crashing', () => {
+    it('skips empty pseudo-resource entries without crashing', async () => {
       const data = new Map<string, ExpandedData>([
         ['p1', fakeExpanded('p1', { crm_deal: [] })],
       ]);
-      expect(() => seedHubSpotCrmObjects(data, ts.stateStore)).not.toThrow();
+      await expect(seedHubSpotCrmObjects(data, ts.stateStore)).resolves.toBeUndefined();
     });
   });
 });

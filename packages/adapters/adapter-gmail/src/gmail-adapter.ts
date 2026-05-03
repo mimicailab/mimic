@@ -4,7 +4,7 @@ import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext } from '
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
 import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
-import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
+import type { DefaultFactory, Marshaller, NotFoundError, PrecomputeMarshalContext } from '@mimicai/adapter-sdk';
 
 import meta from './adapter-meta.js';
 import type { GmailConfig } from './config.js';
@@ -22,7 +22,7 @@ import * as threadOverrides from './overrides/threads.js';
 import * as draftOverrides from './overrides/drafts.js';
 import * as historyOverrides from './overrides/history.js';
 import { seedSystemLabels } from './overrides/labels.js';
-import { seedGmailMessages } from './overrides/seed_messages.js';
+import { buildGmailMessageMarshallers, gmailPrecompute } from './overrides/marshallers.js';
 
 const BASE = '/gmail/v1/users/:userId';
 
@@ -46,6 +46,17 @@ export class GmailAdapter extends OpenApiMockAdapter<GmailConfig> {
   protected readonly generatedRoutes: GeneratedRoute[] = GENERATED_ROUTES;
   protected readonly defaultFactories: Record<string, DefaultFactory> = SCHEMA_DEFAULTS;
 
+  /**
+   * `message_email` is wrapped declaratively. Threading lives in the
+   * adapter-level precompute hook below, which groups bodies by normalised
+   * subject and synthesises thread entities. See `overrides/marshallers.ts`.
+   */
+  private readonly _marshallers: readonly Marshaller[] = buildGmailMessageMarshallers();
+  protected override get marshallers(): readonly Marshaller[] {
+    return this._marshallers;
+  }
+  protected override precomputeMarshalContext: PrecomputeMarshalContext = gmailPrecompute;
+
   async registerRoutes(
     server: FastifyInstance,
     data: Map<string, ExpandedData>,
@@ -54,11 +65,8 @@ export class GmailAdapter extends OpenApiMockAdapter<GmailConfig> {
     // 1. Custom overrides FIRST — Gmail has many non-CRUD verbs (modify/trash/send/...).
     this.mountOverrides(store);
 
-    // 2. Wrap LLM-generated `message_email` flat entries into Gmail's
-    // MIME-shaped message + thread envelopes. See overrides/seed_messages.ts.
-    seedGmailMessages(data, store);
-
-    // 3. CRUD scaffolding for the rest.
+    // 2. CRUD scaffolding + marshalling. The marshaller wraps message_email
+    // into Gmail's MIME envelope and synthesises thread entities.
     await this.registerGeneratedRoutes(server, data, store, ns);
   }
 

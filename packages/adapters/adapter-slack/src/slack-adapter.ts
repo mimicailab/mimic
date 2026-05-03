@@ -4,7 +4,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext, StateStore } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
-import type { DefaultFactory, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
+import type { DefaultFactory, Marshaller, NotFoundError, OverrideHandler } from '@mimicai/adapter-sdk';
 
 import meta from './adapter-meta.js';
 import type { SlackConfig } from './config.js';
@@ -26,6 +26,7 @@ import * as pinHandlers from './overrides/pins.js';
 import * as fileHandlers from './overrides/files.js';
 import * as searchHandlers from './overrides/search.js';
 import { seedDefaultFixtures } from './overrides/fixtures.js';
+import { buildSlackMarshallers } from './overrides/marshallers.js';
 
 const BASE = '/api';
 
@@ -54,6 +55,17 @@ export class SlackAdapter extends OpenApiMockAdapter<SlackConfig> {
 
   protected readonly generatedRoutes: GeneratedRoute[] = GENERATED_ROUTES;
   protected readonly defaultFactories: Record<string, DefaultFactory> = SCHEMA_DEFAULTS;
+
+  /**
+   * Slack identity entities + composite-keyed messages, declared declaratively.
+   * Channels register their `name` as a label so messages can resolve
+   * `channel_name` → channel id without ever trusting an LLM-emitted id.
+   * See `overrides/marshallers.ts`.
+   */
+  private readonly _marshallers: readonly Marshaller[] = buildSlackMarshallers();
+  protected override get marshallers(): readonly Marshaller[] {
+    return this._marshallers;
+  }
 
   /**
    * Slack's REST shape doesn't fit the base CRUD scaffolding — every method
@@ -126,28 +138,6 @@ export class SlackAdapter extends OpenApiMockAdapter<SlackConfig> {
 
   protected override notFoundError(_resource: string, _id: string): NotFoundError {
     return slackError(SLACK_ERROR_CODES.METHOD_NOT_IMPLEMENTED) as unknown as NotFoundError;
-  }
-
-  /**
-   * Slack messages don't have a top-level `id` field — they're keyed by the
-   * composite `${channel}:${ts}` (a single channel may have many messages,
-   * and `ts` alone collides across channels). Compose the same key the
-   * runtime overrides use (`messageKey` in conversations.ts) so seeded
-   * messages are reachable via conversations.history / chat.update / etc.
-   */
-  protected override resourceKey(
-    resourceType: string,
-    body: Record<string, unknown>,
-  ): string | null {
-    if (resourceType === 'message') {
-      const channel = body.channel;
-      const ts = body.ts;
-      if (typeof channel === 'string' && channel.length > 0 && typeof ts === 'string' && ts.length > 0) {
-        return `${channel}:${ts}`;
-      }
-      return null;
-    }
-    return super.resourceKey(resourceType, body);
   }
 
   // ---------------------------------------------------------------------------

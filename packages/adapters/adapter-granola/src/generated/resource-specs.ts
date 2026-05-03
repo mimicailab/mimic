@@ -30,7 +30,7 @@ export const granolaResourceSpecs: AdapterResourceSpecs = {
       volumeHint: "entity",
       refs: [],
       fields: {
-      "id": { type: "string", required: true, default: "" },
+      "label": { type: "string", required: true, default: "" },
       "title": { type: "string", required: true, default: "" },
       "summary": { type: "string", required: true, default: "" },
       "body_markdown": { type: "string", required: false, default: "" },
@@ -94,7 +94,7 @@ export const granolaResourceSpecs: AdapterResourceSpecs = {
       volumeHint: "entity",
       refs: ["note_content"],
       fields: {
-      "note_id": { type: "string", required: true, default: "" },
+      "note_label": { type: "string", required: true, default: "" },
       "speaker_name": { type: "string", required: true, default: "" },
       "speaker_email": { type: "string", required: true, default: "", semanticType: "email" },
       "text": { type: "string", required: true, default: "" },

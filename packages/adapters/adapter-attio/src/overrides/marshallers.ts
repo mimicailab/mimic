@@ -1,86 +1,90 @@
 /**
- * Custom seeder for Attio records.
+ * Marshallers for Attio's polymorphic record envelope.
  *
- * Attio's `record` resource is polymorphic: every record (person, company,
- * deal, …) is served from `/v2/objects/{object}/records`, but its content
- * lives inside a `values: { <attribute_slug>: [...] }` map whose slugs
- * depend on the object type. The persona generator can't fill an opaque
+ * Attio records are served from `/v2/objects/{object}/records`, but their
+ * content lives in a `values: { <attribute_slug>: [...] }` map whose slugs
+ * vary by object type. The persona generator can't fill an opaque
  * `values: {}`, so the codegen declares three flat pseudo-resources —
  * `record_person`, `record_company`, `record_deal` — with explicit content
  * fields the LLM populates.
  *
- * This seeder takes those flat entities, wraps each in Attio's record
- * envelope (compound id + values map keyed by the right slugs + web_url),
- * and writes them under `attio:records:{people|companies|deals}` so the
- * runtime query handler at `overrides/records.ts` finds them.
- *
- * Without this step, generated record content lands in a namespace the
- * runtime never reads, and `attio_find_contact` returns nothing.
+ * Each marshaller wraps one pseudo-type into Attio's record envelope
+ * (compound id + values map keyed by the right slugs + web_url) and writes
+ * the result to `attio:records:{people|companies|deals}` so the runtime
+ * query handler at `overrides/records.ts` finds it.
  */
 
-import type { ExpandedData, StateStore } from '@mimicai/core';
-import { DEFAULT_WORKSPACE_ID, defaultRecord } from '../generated/schemas.js';
-import { NS, nowIso, uuid } from './_shared.js';
+import type { Marshaller, Body } from '@mimicai/adapter-sdk';
+import { defaultRecord, DEFAULT_WORKSPACE_ID } from '../generated/schemas.js';
+import { uuid, nowIso } from './_shared.js';
 
-const OBJECT_ID_FOR_SLUG: Record<string, string> = {
+const OBJECT_ID_FOR_SLUG = {
   people: '97052eb9-e65e-443f-a297-f2d9a4a7f795',
   companies: '4f5b3adf-bf28-4d3f-9e6e-aaaaaaaaaaaa',
   deals: '8b3e0be4-0a0a-4d1e-9b3f-bbbbbbbbbbbb',
-};
+} as const;
 
-const PSEUDO_TO_SLUG: Record<string, keyof typeof OBJECT_ID_FOR_SLUG> = {
-  record_person: 'people',
-  record_company: 'companies',
-  record_deal: 'deals',
-};
-
-type Body = Record<string, unknown>;
-
-export function seedAttioRecords(
-  data: Map<string, ExpandedData>,
-  store: StateStore,
+export function buildAttioRecordMarshallers(
   workspaceId: string = DEFAULT_WORKSPACE_ID,
-): void {
-  for (const [, expanded] of data) {
-    const responses = expanded.apiResponses?.attio?.responses;
-    if (!responses) continue;
-
-    for (const [pseudoType, slug] of Object.entries(PSEUDO_TO_SLUG)) {
-      const entries = responses[pseudoType];
-      if (!entries) continue;
-
-      for (const resp of entries) {
-        const body = (resp.body ?? {}) as Body;
-        const recordId = uuid();
-        const values = buildValues(pseudoType, body);
-        const record = defaultRecord({
-          id: {
-            workspace_id: workspaceId,
-            object_id: OBJECT_ID_FOR_SLUG[slug],
-            record_id: recordId,
-          },
-          created_at: (body.created_at as string) ?? nowIso(),
-          web_url: `https://app.attio.com/mimic/${slug}/${recordId}`,
-          values,
-        });
-        store.set(NS.records(slug), recordId, record);
-      }
-    }
-  }
+): Marshaller[] {
+  return [
+    {
+      kind: 'standalone',
+      contentResource: 'record_person',
+      namespace: 'attio:records:people',
+      generateId: () => uuid(),
+      wrap: (body, recordId) =>
+        wrapRecord(body, recordId, 'people', personValues(body), workspaceId),
+      storageKey: extractRecordId,
+    },
+    {
+      kind: 'standalone',
+      contentResource: 'record_company',
+      namespace: 'attio:records:companies',
+      generateId: () => uuid(),
+      wrap: (body, recordId) =>
+        wrapRecord(body, recordId, 'companies', companyValues(body), workspaceId),
+      storageKey: extractRecordId,
+    },
+    {
+      kind: 'standalone',
+      contentResource: 'record_deal',
+      namespace: 'attio:records:deals',
+      generateId: () => uuid(),
+      wrap: (body, recordId) =>
+        wrapRecord(body, recordId, 'deals', dealValues(body), workspaceId),
+      storageKey: extractRecordId,
+    },
+  ];
 }
 
-function buildValues(pseudoType: string, body: Body): Record<string, unknown[]> {
-  switch (pseudoType) {
-    case 'record_person':
-      return personValues(body);
-    case 'record_company':
-      return companyValues(body);
-    case 'record_deal':
-      return dealValues(body);
-    default:
-      return {};
-  }
+function wrapRecord(
+  body: Body,
+  recordId: string,
+  slug: keyof typeof OBJECT_ID_FOR_SLUG,
+  values: Record<string, unknown[]>,
+  workspaceId: string,
+): Body {
+  return defaultRecord({
+    id: {
+      workspace_id: workspaceId,
+      object_id: OBJECT_ID_FOR_SLUG[slug],
+      record_id: recordId,
+    },
+    created_at: (body.created_at as string) ?? nowIso(),
+    web_url: `https://app.attio.com/mimic/${slug}/${recordId}`,
+    values,
+  });
 }
+
+function extractRecordId(wrapped: Body): string {
+  const id = wrapped.id as Record<string, string> | undefined;
+  return id?.record_id ?? '';
+}
+
+// ---------------------------------------------------------------------------
+// Per-type value builders — produce the `values: { <slug>: [...] }` map.
+// ---------------------------------------------------------------------------
 
 function personValues(b: Body): Record<string, unknown[]> {
   const fullName = (b.full_name as string) ?? '';
@@ -93,11 +97,13 @@ function personValues(b: Body): Record<string, unknown[]> {
 
   const v: Record<string, unknown[]> = {};
   if (fullName || firstName || lastName) {
-    v.name = [{
-      full_name: fullName || `${firstName} ${lastName}`.trim(),
-      first_name: firstName || fullName.split(' ')[0] || '',
-      last_name: lastName || fullName.split(' ').slice(1).join(' ') || '',
-    }];
+    v.name = [
+      {
+        full_name: fullName || `${firstName} ${lastName}`.trim(),
+        first_name: firstName || fullName.split(' ')[0] || '',
+        last_name: lastName || fullName.split(' ').slice(1).join(' ') || '',
+      },
+    ];
   }
   if (email) v.email_addresses = [{ email_address: email }];
   if (jobTitle) v.job_title = [{ value: jobTitle }];
