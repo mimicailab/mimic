@@ -202,6 +202,8 @@ Execute test scenarios against your mock environment with optional AI-powered ev
 | RevenueCat | `@mimicai/adapter-revenuecat` | Stable |
 | Lemon Squeezy | `@mimicai/adapter-lemonsqueezy` | Stable |
 | Zuora | `@mimicai/adapter-zuora` | Stable |
+| Gmail | `@mimicai/adapter-gmail` | Stable |
+| Slack | `@mimicai/adapter-slack` | Stable |
 
 100+ more adapters are on the roadmap across fintech, communication, CRM, ticketing, project management, and more. See the [full roadmap on our website](https://mimicai.co/#adapters).
 

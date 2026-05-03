@@ -1,0 +1,40 @@
+{
+  "domain": "B2B SaaS sales pre-call briefing. A Series-B observability platform (Cumulus) selling to engineering leaders at mid-market and enterprise companies. Sales team uses a modern stack — Attio CRM (primary) with HubSpot still around from the pre-migration days, Granola for AI meeting notes, Gmail for outbound, Slack for internal #deals coordination, and a Postgres product DB tracking trial usage. AEs need a one-screen brief 5 minutes before every external call.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6"
+  },
+
+  "personas": [
+    {
+      "name": "northwind-priya",
+      "description": "Priya Shah, VP Engineering at Northwind Robotics, late-stage evaluation of Cumulus's observability platform. £240k annual deal, currently in Procurement stage in Attio (also mirrored in HubSpot from a pre-migration era — same stage, but HubSpot says £220k because it wasn't updated when the deal was uplifted). Deal slipped 3 weeks past original close date. Three Granola call recordings spanning 8 weeks (intro, technical deep-dive, exec alignment) plus 2 older Gong calls from before the team migrated to Granola. Most recent Granola call (Tuesday 2026-04-21) raised a SOC 2 concern — Priya said legal review starts Monday 2026-04-27. 47-message Gmail thread with Priya and her colleague Sarah; AE Sarah sent the SOC 2 package on Wednesday 2026-04-22 but Priya hasn't opened it. 18 mentions of Northwind in #deals on Slack, including one from Mike on Friday saying 'Priya is the deciding vote, get her comfortable on SOC 2.' In the product DB, 2 trial accounts at northwind.com (raj@northwind.com signed up 8 days ago, aisha@northwind.com signed up 5 days ago) with 14 combined logins last week. Priya was promoted from Director to VP Engineering 3 weeks ago — visible on LinkedIn. Same SOC 2 conversation must surface causally consistent across the call transcript, the email thread, and the Slack channel."
+    }
+  ],
+
+  "generate": {
+    "volume": "8 weeks",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "prisma",
+        "path": "./prisma/schema.prisma"
+      },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "attio":   { "enabled": true, "mcp": true },
+    "hubspot": { "enabled": true, "mcp": true },
+    "granola": { "enabled": true, "mcp": true },
+    "gmail":   { "enabled": true, "mcp": true },
+    "slack":   { "enabled": true, "mcp": true }
+  }
+}

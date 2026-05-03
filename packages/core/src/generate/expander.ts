@@ -377,6 +377,12 @@ export class BlueprintExpander {
       }
     }
 
+    // The LLM sometimes emits UUID-shaped strings that aren't valid hex
+    // (e.g. "u1b2c3d4-..." starting with 'u') for `uuid` columns. Postgres
+    // rejects those on insert. Coerce any non-conforming PK values to real
+    // UUIDs and propagate the swap through every FK that points to them.
+    coerceUuidColumns(tables, schema);
+
     // ==================================================================
     // PHASE F: Cross-reference API ↔ DB (bidirectional sync)
     // ==================================================================
@@ -2794,4 +2800,107 @@ function isClientSideUuidDefault(col: ColumnInfo): boolean {
   if (col.defaultValue === 'gen_random_uuid()') return true;
   if (col.pgType === 'uuid') return true;
   return false;
+}
+
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+function isValidUuid(s: unknown): s is string {
+  return typeof s === 'string' && UUID_REGEX.test(s);
+}
+
+/**
+ * For every `uuid` PK column, replace any non-UUID values with crypto-generated
+ * UUIDs and propagate the swap to every FK column pointing at it. Also catches
+ * non-PK uuid columns (defensive).
+ *
+ * The LLM sometimes emits UUID-shaped strings with non-hex characters
+ * (e.g. "u1b2c3d4-...") for memorability. Postgres rejects those — this fixes
+ * them before insert without losing FK consistency.
+ */
+function coerceUuidColumns(
+  tables: Record<string, Row[]>,
+  schema: SchemaModel,
+): void {
+  // tableName.colName → (oldValue → newUuid)
+  const remap = new Map<string, Map<string, string>>();
+
+  // Phase 1: replace invalid UUIDs in PK columns only and remember the swap.
+  // Touching FK columns here would break the PK→FK chain in phase 2 (a fresh
+  // random UUID on the FK side wouldn't match the PK's remapped value).
+  for (const tableInfo of schema.tables) {
+    const rows = tables[tableInfo.name];
+    if (!rows || rows.length === 0) continue;
+    const pkSet = new Set(tableInfo.primaryKey);
+
+    for (const col of tableInfo.columns) {
+      if (col.pgType !== 'uuid') continue;
+      if (!pkSet.has(col.name)) continue;
+      const colMap = new Map<string, string>();
+
+      for (const row of rows) {
+        const v = row[col.name];
+        if (v === null || v === undefined) continue;
+        if (isValidUuid(v)) continue;
+        const key = String(v);
+        let next = colMap.get(key);
+        if (!next) {
+          next = crypto.randomUUID();
+          colMap.set(key, next);
+        }
+        row[col.name] = next;
+      }
+
+      if (colMap.size > 0) {
+        remap.set(`${tableInfo.name}.${col.name}`, colMap);
+      }
+    }
+  }
+
+  if (remap.size === 0) return;
+
+  // Phase 2: rewrite FK columns that point at remapped PKs.
+  for (const tableInfo of schema.tables) {
+    const rows = tables[tableInfo.name];
+    if (!rows || rows.length === 0) continue;
+
+    for (const fk of tableInfo.foreignKeys) {
+      for (let i = 0; i < fk.columns.length; i++) {
+        const fkCol = fk.columns[i];
+        const refCol = fk.referencedColumns[i];
+        if (!fkCol || !refCol) continue;
+        const colMap = remap.get(`${fk.referencedTable}.${refCol}`);
+        if (!colMap) continue;
+
+        for (const row of rows) {
+          const v = row[fkCol];
+          if (typeof v !== 'string') continue;
+          const next = colMap.get(v);
+          if (next) row[fkCol] = next;
+        }
+      }
+    }
+  }
+
+  // Phase 3: any remaining non-UUID values in non-PK uuid columns must be
+  // bogus FK references that didn't match a remapped PK. Replace them with
+  // crypto UUIDs — they'll fail FK constraints downstream, but at least
+  // they pass the column-type check so postgres surfaces the FK violation
+  // rather than the cryptic "invalid input syntax for type uuid" error.
+  for (const tableInfo of schema.tables) {
+    const rows = tables[tableInfo.name];
+    if (!rows || rows.length === 0) continue;
+    const pkSet = new Set(tableInfo.primaryKey);
+
+    for (const col of tableInfo.columns) {
+      if (col.pgType !== 'uuid') continue;
+      if (pkSet.has(col.name)) continue;
+
+      for (const row of rows) {
+        const v = row[col.name];
+        if (v === null || v === undefined) continue;
+        if (isValidUuid(v)) continue;
+        row[col.name] = crypto.randomUUID();
+      }
+    }
+  }
 }

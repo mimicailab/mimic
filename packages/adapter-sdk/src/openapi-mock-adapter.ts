@@ -10,6 +10,8 @@ import type { StateStore } from '@mimicai/core';
 import { generateId } from '@mimicai/core';
 import { BaseApiMockAdapter } from './base-api-mock-adapter.js';
 import { unixNow } from './format-helpers.js';
+import { runMarshallers } from './marshalling.js';
+import type { Marshaller, PrecomputeMarshalContext } from './marshalling.js';
 import type { GeneratedRoute, RouteMethod } from './openapi-types.js';
 
 // ---------------------------------------------------------------------------
@@ -94,6 +96,27 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
   /** Override handlers registered by subclass before route registration */
   private readonly overrides: OverrideMap = new Map();
 
+  /**
+   * Declarative marshallers — transform LLM-generated flat content into wire
+   * envelopes and write to the StateStore. Resources named here are skipped
+   * by the auto-seeder. See `marshalling.ts` for the design.
+   *
+   * Declared as a getter so subclasses can override with either a getter
+   * (config-aware, recomputed each call) or a plain readonly field.
+   */
+  protected get marshallers(): readonly Marshaller[] {
+    return [];
+  }
+
+  /**
+   * Optional adapter-level hook. Runs once per persona between pass 1 and
+   * pass 2 of marshalling — labels are already registered, no body has been
+   * wrapped yet. Populate `ctx.extras` with derived data your `wrap` fns
+   * read; write synthesised entities (e.g. Gmail threads) directly to the
+   * store from here.
+   */
+  protected precomputeMarshalContext?: PrecomputeMarshalContext;
+
   // ---------------------------------------------------------------------------
   // Override registration
   // ---------------------------------------------------------------------------
@@ -131,6 +154,13 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
     namespace: (resource: string) => string,
   ): Promise<void> {
     this.seedExpandedData(data, store, namespace);
+    await runMarshallers({
+      marshallers: this.marshallers,
+      data,
+      store,
+      adapterId: this.id,
+      precompute: this.precomputeMarshalContext?.bind(this),
+    });
 
     for (const route of this.generatedRoutes) {
       const key = `${route.method}:${route.fastifyPath}`;
@@ -348,6 +378,10 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
       }
     }
 
+    // ContentResources owned by a marshaller are wrapped + stored by the
+    // marshaller runner; the auto-seeder ignores them.
+    const marshalledKeys = new Set(this.marshallers.map((m) => m.contentResource));
+
     for (const [, expandedData] of data) {
       const apiResponses = expandedData.apiResponses;
       if (!apiResponses) continue;
@@ -356,13 +390,15 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
         if (adapterId !== this.id) continue;
 
         for (const [resourceType, responses] of Object.entries(responseSet.responses)) {
+          if (marshalledKeys.has(resourceType)) continue;
           const routeKey = objectTypeToRoute.get(resourceType) ?? resourceType;
           const ns = namespace(routeKey);
           const factory = this.defaultFactories[resourceType] ?? this.defaultFactories[routeKey];
           for (const response of responses) {
             const body = response.body as Record<string, unknown> | null | undefined;
-            const id = body?.id as string | undefined;
-            if (id) {
+            if (!body) continue;
+            const id = body.id;
+            if (typeof id === 'string' && id.length > 0) {
               const enriched = factory
                 ? factory(body as Record<string, unknown>)
                 : (body as Record<string, unknown>);

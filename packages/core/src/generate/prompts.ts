@@ -379,7 +379,138 @@ The persona description contains specific numeric claims about the data (e.g., "
 \`\`\`
 Here weight 0.06 × count 50 = 3 overdue invoices. The amount 413333 × 3 ≈ £12,400.
 
-**CRITICAL:** Do NOT generate random distributions and hope they match the persona. The persona description IS your specification — treat every specific number as a requirement.`;
+**CRITICAL:** Do NOT generate random distributions and hope they match the persona. The persona description IS your specification — treat every specific number as a requirement.
+
+**RULE I — DATE-DRIVEN ARCHETYPES (MANDATORY):**
+The persona description contains specific date references for events ("on Apr 22 the SOC 2 package arrived from Sarah", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp/date field you generate (\`sent_at\`, \`created_at\`, \`closed_at\`, \`paid_at\`, \`occurred_at\`, etc.).
+
+**How to honour date claims:**
+1. **Parse every date reference** in the persona description — explicit ("Apr 22", "March 6th", "2026-04-22"), relative ("last week", "two weeks ago", "yesterday morning", "this morning"), and event anchors ("during the kickoff", "after the contract was sent", "the day SOC 2 came back").
+2. **Resolve relative dates against the Current date** in the user prompt. "last week" = today − 7d; "two weeks ago" = today − 14d; "yesterday" = today − 1d; "this morning" = today.
+3. **Anchor the corresponding archetype's timestamp/date field to that date** — either as a literal Unix-seconds value (for fields the spec marks \`timestamp: 'unix_seconds'\` / \`'unix_ms'\`), or as a \`vary\` of \`type: 'range'\` with min/max within ±1 day of the anchor.
+4. **Cluster events that share a narrative anchor.** A "47-message SOC 2 thread on Apr 22" should produce 47 timestamps within ~1 day of Apr 22 — NOT scattered across the full date range. Use a dedicated archetype with a tight date \`vary\` range, not the catch-all archetype.
+5. **Every entity in a cluster must get a DISTINCT timestamp** (offset by minutes/hours within the cluster window). 14 distinct timestamps across 47 entities is too few — use a \`range\` vary so every entity gets its own value.
+6. **The DATE RANGE is the OUTER bound** — anchored events must satisfy the persona narrative AND fall within the configured range. If a narrative anchor falls outside the range, the persona-volume combination is wrong; do NOT silently round the timestamp into range.
+
+**Example — encoding "47-message SOC 2 thread on Apr 22, 2026":**
+\`\`\`json
+{
+  "gmail": {
+    "message_email": {
+      "count": 60,
+      "archetypes": [
+        { "label": "soc2-apr22-cluster", "weight": 0.78, "fields": { "subject": "SOC 2 review — Northwind" }, "vary": { "sent_at": { "type": "range", "min": 1745280000, "max": 1745366400 } } },
+        { "label": "other", "weight": 0.22, "fields": {}, "vary": { "sent_at": { "type": "timestamp" } } }
+      ]
+    }
+  }
+}
+\`\`\`
+Here weight 0.78 × count 60 = 47 emails clustered into the Apr 22 → Apr 23 window (1745280000 = 2026-04-22 00:00 UTC, 1745366400 = 2026-04-23 00:00 UTC). The remaining 13 emails are scattered across the broader range.
+
+**CRITICAL:** Do NOT pick mid-range "safe" dates and hope the persona doesn't notice. Every dated event in the narrative must show up at its narrative date in the data.
+
+**RULE J — NARRATIVE-NAMED-ENTITY ARCHETYPES (MANDATORY):**
+The persona description names specific entities — channels (\`#deals\`, \`#engineering\`), thread topics ("the SOC 2 review thread", "the intro outreach"), records ("Northwind deal", "Priya Shah"), proper nouns, kebab-case identifiers, quoted titles. These are HARD CONSTRAINTS for any field that names an entity (\`name\`, \`title\`, \`subject\`, \`thread_subject\`, \`channel_name\`, \`dealname\`, \`label\`, etc.).
+
+**How to honour named-entity claims:**
+1. **Extract every named entity** from the persona description: proper nouns, kebab-case ids, hash-prefixed channel names (\`#deals\` → \`deals\`), quoted titles, named threads ("the SOC 2 thread"), named records ("Northwind contract").
+2. **Resolve each one to its EXACT string** as written in the persona — preserve case, hyphens, spaces; strip only routing punctuation (\`#\`, \`@\`).
+3. **Create one dedicated archetype per named instance**, with the relevant field PINNED to the exact persona string. For multi-instance fields (3 named threads, 4 named channels), produce N archetypes with weights distributing the count across narrative clusters.
+4. **Distinct narrative clusters MUST get distinct field values.** Marshallers group entities by these strings (Gmail groups by normalised \`thread_subject\`; Slack groups channels by \`name\`); collisions cause unwanted merges. A "47-message SOC 2 thread plus 3 intro emails plus 7 contract emails" produces THREE archetypes with three distinct \`thread_subject\` values, NOT one archetype with one collapsed subject.
+5. **NEVER substitute a generic placeholder** when the persona has named the entity. "Conversation", "general", "sample-channel", a corporate name when persona said \`deals\` — all wrong.
+6. **Cross-resource label fields are non-negotiable.** When persona names a channel \`deals\` and says "Priya posts there about SOC 2", BOTH \`channel.name = "deals"\` AND \`message.channel_name = "deals"\` must use the SAME exact string. The marshaller resolves cross-references by exact label match — a mismatch leaves the message orphaned.
+
+**Example — encoding "Priya posts in #deals about SOC 2; the #engineering channel discusses the audit":**
+\`\`\`json
+{
+  "slack": {
+    "channel": {
+      "count": 2,
+      "archetypes": [
+        { "label": "deals-ch", "weight": 0.5, "fields": { "name": "deals" } },
+        { "label": "eng-ch", "weight": 0.5, "fields": { "name": "engineering" } }
+      ]
+    },
+    "message": {
+      "count": 60,
+      "archetypes": [
+        { "label": "soc2-deals", "weight": 0.7, "fields": { "channel_name": "deals", "text": "SOC 2 Type II — Priya needs the report by Apr 25" } },
+        { "label": "audit-eng", "weight": 0.3, "fields": { "channel_name": "engineering", "text": "Audit findings to triage" } }
+      ]
+    }
+  }
+}
+\`\`\`
+Two channels named EXACTLY as the persona wrote them. 60 messages split 42/18 across the two channels. The marshaller registers \`deals\` and \`engineering\` as channel labels, then resolves every message's \`channel_name\` to those labels — no orphans, no invented channel names.
+
+**Example — three distinct Gmail threads from one persona narrative:**
+\`\`\`json
+{
+  "gmail": {
+    "message_email": {
+      "count": 57,
+      "archetypes": [
+        { "label": "soc2-thread", "weight": 0.82, "fields": { "thread_subject": "SOC 2 Type II — Northwind procurement" } },
+        { "label": "intro-thread", "weight": 0.05, "fields": { "thread_subject": "Introduction — VP Engineering" } },
+        { "label": "contract-thread", "weight": 0.13, "fields": { "thread_subject": "Northwind master agreement" } }
+      ]
+    }
+  }
+}
+\`\`\`
+0.82 × 57 ≈ 47 messages in the SOC 2 thread, 0.05 × 57 ≈ 3 intros, 0.13 × 57 ≈ 7 contract emails. Three distinct \`thread_subject\` values → Gmail's marshaller creates three threads, NOT one collapsed mega-thread.
+
+**CRITICAL:** Every named entity in the persona MUST appear in the data with its EXACT name, and every distinct narrative cluster MUST get its own archetype with its own field value. Generic placeholders and single-archetype collapse are the failure modes this rule exists to prevent.
+
+**RULE K — NARRATIVE-NAMED-IDENTITY CONSISTENCY (MANDATORY):**
+The persona description names specific PEOPLE (proper nouns: "Priya Shah", named roles: "the AE Sarah", "VP Engineering Priya"). These persons frequently appear across multiple adapter surfaces — same Priya in Attio's \`record_person\`, Gmail's \`message_email.from_email\`, HubSpot's \`crm_contact\`, Granola's transcript speaker, Slack messages, etc. **Identity fields (\`email\`, \`full_name\`, \`firstname\`/\`lastname\`, handle, employee_id) are JOIN KEYS — agents navigate from one surface to another by matching them.** If Priya's email is \`priya@northwind.com\` in Attio but \`priya.shah@northwind.com\` in Gmail, the briefing pipeline's CRM→email join silently breaks.
+
+**How to honour identity consistency:**
+1. **Extract every named person** from the persona description: proper nouns, named roles ("the AE Sarah", "CFO Mike"), explicit emails (\`raj@northwind.com\`).
+2. **Decide canonical (\`full_name\`, \`email\`) ONCE per person** at the start of generation. Persist this decision across every adapter's archetype.
+3. **When persona pins an email**, use it verbatim everywhere that person appears.
+4. **When persona names a person but does NOT pin an email**, derive a canonical email and reuse it across all surfaces. Email format MUST match the convention used for any OTHER person in the same domain (if persona writes \`raj@northwind.com\`, use \`priya@northwind.com\` — NOT \`priya.shah@northwind.com\`). Default to bare-localpart \`firstname@domain\` when no other person at the same domain appears.
+5. **Same person → identical strings everywhere.** \`record_person.primary_email\` in Attio = \`crm_contact.email\` in HubSpot = \`message_email.from_email\` (when sender is Priya) in Gmail = \`speaker.email\` in Granola transcript. Byte-for-byte equal.
+6. **Full names match too.** \`record_person.full_name = "Priya Shah"\` everywhere — never \`P. Shah\` here, \`Priya S.\` there.
+7. **NEVER let the LLM "improve" the format per resource.** Corporate-style \`firstname.lastname@\` looks plausible in Gmail but breaks the join if other surfaces use bare-localpart. Pick one form and stick.
+
+**Example — encoding "Priya Shah, VP Engineering at Northwind. Sarah is the AE":**
+The persona pins \`raj@northwind.com\` and \`aisha@northwind.com\` for trial users. Priya's email is unpinned but lives in the same domain → canonical = \`priya@northwind.com\` (matches the bare-localpart convention). Sarah's domain is Cumulus (the AE side) → \`sarah@cumulus.io\`.
+
+\`\`\`json
+{
+  "attio": {
+    "record_person": {
+      "count": 5,
+      "archetypes": [
+        { "label": "priya", "weight": 0.25, "fields": { "full_name": "Priya Shah", "primary_email": "priya@northwind.com" } },
+        { "label": "raj",   "weight": 0.20, "fields": { "full_name": "Raj Patel",  "primary_email": "raj@northwind.com" } }
+      ]
+    }
+  },
+  "hubspot": {
+    "crm_contact": {
+      "count": 5,
+      "archetypes": [
+        { "label": "priya", "weight": 0.25, "fields": { "firstname": "Priya", "lastname": "Shah", "email": "priya@northwind.com" } }
+      ]
+    }
+  },
+  "gmail": {
+    "message_email": {
+      "count": 47,
+      "archetypes": [
+        { "label": "soc2-from-sarah", "weight": 0.5, "fields": { "from_name": "Sarah Chen", "from_email": "sarah@cumulus.io", "to_email": "priya@northwind.com" } },
+        { "label": "soc2-from-priya", "weight": 0.5, "fields": { "from_name": "Priya Shah", "from_email": "priya@northwind.com", "to_email": "sarah@cumulus.io" } }
+      ]
+    }
+  }
+}
+\`\`\`
+\`priya@northwind.com\` appears identically in Attio's \`primary_email\`, HubSpot's \`email\`, and Gmail's \`from_email\`/\`to_email\`. The briefing skill's "find Priya in CRM, then look up her Gmail thread" join works because the joiner column matches across surfaces.
+
+**CRITICAL:** Cross-platform identity divergence is silent. Tests pass, individual responses look right, then agents fail because they can't navigate between surfaces. Pin the canonical (\`name\`, \`email\`) per person ONCE, before generating any adapter, and reuse those strings byte-for-byte.`;
 
 
 // ---------------------------------------------------------------------------
@@ -496,6 +627,30 @@ The persona description contains specific numeric claims (e.g., "3 overdue invoi
 - For amount totals, set amounts so count × amount = claimed total
 - Do NOT rely on random distributions matching the persona — encode claims directly into archetype weights and field values
 
+**RULE G — DATE-DRIVEN ARCHETYPES (MANDATORY):**
+The persona description also contains specific date references for events ("on Apr 22 the SOC 2 package arrived", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp/date field (\`sent_at\`, \`created_at\`, \`closed_at\`, \`paid_at\`, etc.).
+- Parse every explicit date ("Apr 22"), relative date ("last week", "two weeks ago"), and event anchor ("during the kickoff") in the persona description.
+- Resolve relative dates against the Current date in this prompt. "last week" = today − 7d; "yesterday" = today − 1d.
+- For each anchored event, create a dedicated archetype whose timestamp field (\`vary\` of \`type: 'range'\`) clusters within ±1 day of the anchor — NOT a random timestamp across the full date range.
+- Every entity in a cluster must get a DISTINCT timestamp (use \`range\` so the expander assigns unique values within the window).
+- Mid-range "safe" dates are wrong. If the persona narrative anchors an event to a specific date, the data MUST land at that date.
+
+**RULE H — NARRATIVE-NAMED-ENTITY ARCHETYPES (MANDATORY):**
+The persona description also names specific entities — channels (\`#deals\`, \`#engineering\`), thread topics ("the SOC 2 review", "the intro outreach"), records ("Northwind deal", "Priya Shah"), proper nouns, kebab-case ids, quoted titles. These are HARD CONSTRAINTS for fields that name an entity (\`name\`, \`title\`, \`subject\`, \`thread_subject\`, \`channel_name\`, \`label\`, \`dealname\`, etc.).
+- Extract every named entity from the persona — proper nouns, kebab-case ids, hash-prefixed channel names (\`#deals\` → \`deals\`), quoted titles, named threads.
+- Create ONE dedicated archetype per named instance, with the relevant field PINNED to the EXACT persona string (preserve case, hyphens, spaces; strip only \`#\` / \`@\` routing punctuation). Two named channels → two archetypes; three named threads → three archetypes.
+- Distinct narrative clusters MUST get distinct field values. Marshallers group by these strings (Gmail by \`thread_subject\`, Slack by channel \`name\`); collisions cause unwanted merges (47 emails collapsing into one thread, two channels merging into one).
+- Cross-resource label fields are non-negotiable: when persona names a channel \`deals\`, BOTH \`channel.name = "deals"\` AND \`message.channel_name = "deals"\` must use the SAME exact string. The marshaller resolves cross-references by exact label match.
+- NEVER substitute a generic placeholder ("Conversation", "general", "sample-channel", a corporate name when persona said \`deals\`) when the persona has named the entity.
+
+**RULE I — NARRATIVE-NAMED-IDENTITY CONSISTENCY (MANDATORY):**
+Named PEOPLE (proper nouns, named roles like "the AE Sarah") frequently span multiple adapter surfaces. Identity fields (\`email\`, \`full_name\`, \`firstname\`/\`lastname\`) are JOIN KEYS — agents navigate from one surface to another by matching them. Divergence is silent and breaks downstream joins.
+- Decide canonical (\`full_name\`, \`email\`) ONCE per named person, BEFORE generating any adapter's content. Reuse byte-for-byte across every surface that person appears in.
+- When persona pins an email (\`raj@northwind.com\`), use it verbatim everywhere.
+- When persona names a person but does NOT pin an email, derive a canonical and reuse it. Match the format convention of any OTHER person in the same domain — if persona writes \`raj@northwind.com\`, use \`priya@northwind.com\` (NOT \`priya.shah@northwind.com\`). Default to bare-localpart \`firstname@domain\` when no other person at the same domain appears.
+- Same person → identical strings everywhere: \`record_person.primary_email\` (Attio) = \`crm_contact.email\` (HubSpot) = \`message_email.from_email\` (Gmail, when sender is that person) = \`speaker.email\` (Granola transcript).
+- NEVER let the LLM "improve" the format per resource. Corporate-style \`firstname.lastname@\` looks realistic in Gmail but breaks the CRM→email join if other surfaces use bare-localpart.
+
 ##############################################################################
 # ARCHETYPE FORMAT
 ##############################################################################
@@ -546,6 +701,8 @@ export function buildAdapterBatchPrompt(
     ? `⚠ DATE RANGE: ${startDate} → ${today}. ALL generated dates MUST fall within this range.`
     : `⚠ Current date: ${today}. ALL generated dates must be relative to this date.`;
 
+  const identityRegistry = buildIdentityRegistry(persona.description);
+
   const user = [
     `Domain: ${domain}`,
     '',
@@ -561,6 +718,7 @@ export function buildAdapterBatchPrompt(
           '',
         ]
       : []),
+    ...(identityRegistry ? [identityRegistry, ''] : []),
     ...(dbContext ? [dbContext, ''] : []),
     apiSection,
     '',
@@ -569,6 +727,99 @@ export function buildAdapterBatchPrompt(
   ].join('\n');
 
   return { system: BATCH_SYSTEM_PROMPT, user };
+}
+
+/**
+ * Build a "REGISTERED IDENTITIES" block that pre-extracts every named person
+ * from the persona description and pins their canonical (full_name, email).
+ * Pinned emails come straight from the persona text; unpinned named persons
+ * get a derived `firstname@<dominant-domain>` email so identity fields remain
+ * identical across every parallel adapter generation call.
+ *
+ * Without this, parallel adapter LLM calls each pick their own format
+ * (Attio settles on `priya@`, Gmail drifts to `priya.shah@`) and downstream
+ * cross-surface joins silently break.
+ */
+function buildIdentityRegistry(personaDescription: string): string {
+  // 1. Pinned emails: anything that looks like `<localpart>@<domain>` in prose.
+  const emailRe = /\b([a-zA-Z][\w.-]*?)@([a-zA-Z][\w.-]*?\.[a-zA-Z]{2,})\b/g;
+  const pinned = new Map<string, string>(); // localpart-lower → full email
+  for (const m of personaDescription.matchAll(emailRe)) {
+    const local = (m[1] ?? '').toLowerCase();
+    const full = `${m[1]}@${m[2]}`.toLowerCase();
+    if (!pinned.has(local)) pinned.set(local, full);
+  }
+
+  // 2. Dominant domain among pinned emails — used to derive unpinned ones.
+  const domainCounts = new Map<string, number>();
+  for (const full of pinned.values()) {
+    const dom = full.split('@')[1]!;
+    domainCounts.set(dom, (domainCounts.get(dom) ?? 0) + 1);
+  }
+  const dominantDomain =
+    [...domainCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+
+  // 3. Named persons by FirstName-LastName proper-noun pairs in the prose.
+  // Skip pairs that are clearly company/place names by ignoring those that
+  // are followed by a comma + lowercase word ("Northwind Robotics, late-stage…")
+  // — heuristic, not perfect, but fine for the common case.
+  const personNameRe = /\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/g;
+  const namedPersons = new Map<string, { fullName: string; firstName: string }>();
+  for (const m of personaDescription.matchAll(personNameRe)) {
+    const first = m[1]!;
+    const last = m[2]!;
+    const fullName = `${first} ${last}`;
+    // Exclude common org/place tail-words and the words that immediately follow
+    // a person-name in business prose (e.g. "Northwind Robotics" — Robotics).
+    const orgTails = new Set([
+      'Robotics', 'Inc', 'Ltd', 'LLC', 'Corp', 'Corporation', 'Co', 'Holdings',
+      'Solutions', 'Systems', 'Technologies', 'Tech', 'Labs', 'Group', 'Capital',
+      'Partners', 'Ventures', 'Software', 'Networks', 'Bank', 'Industries',
+    ]);
+    if (orgTails.has(last)) continue;
+    if (!namedPersons.has(fullName.toLowerCase())) {
+      namedPersons.set(fullName.toLowerCase(), { fullName, firstName: first });
+    }
+  }
+
+  // 4. Build entries: prefer pinned email; otherwise derive bare-localpart at
+  // dominant domain.
+  const entries: string[] = [];
+  for (const [, { fullName, firstName }] of namedPersons) {
+    const local = firstName.toLowerCase();
+    const email =
+      pinned.get(local) ??
+      (dominantDomain ? `${local}@${dominantDomain}` : null);
+    if (!email) continue;
+    entries.push(`  - ${fullName}: email=${email}, full_name="${fullName}"`);
+  }
+  // Also surface any pinned email whose localpart didn't match a FirstName-Last
+  // pair (e.g. `raj@northwind.com` mentioned without "Raj Patel" alongside).
+  for (const [local, full] of pinned) {
+    const seen = entries.some((e) => e.includes(`email=${full}`));
+    if (!seen) {
+      const display = local.charAt(0).toUpperCase() + local.slice(1);
+      entries.push(`  - ${display}: email=${full}`);
+    }
+  }
+
+  if (entries.length === 0) return '';
+
+  return [
+    '⚠ REGISTERED IDENTITIES — USE THESE EXACT STRINGS:',
+    'Every adapter generation call runs in parallel without shared state. To keep',
+    'cross-surface identity joins working, the values below are pre-canonicalised.',
+    'When the persona-named person below appears in ANY resource (Attio',
+    'record_person, Gmail message_email, HubSpot crm_contact, Granola transcript',
+    'speaker, Slack messages, Postgres users), use their email and full_name',
+    'BYTE-FOR-BYTE as listed:',
+    '',
+    ...entries,
+    '',
+    'NEVER substitute a different format (e.g. firstname.lastname@) — the registry',
+    'is the source of truth for identity. Adding an extra dot or rewriting the',
+    'format silently breaks downstream agent joins.',
+  ].join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -1027,6 +1278,22 @@ These are HARD CONSTRAINTS — your archetype distributions MUST produce those e
 - "8% churn rate" → canceled archetype weight = 0.08
 - Do NOT generate random distributions and hope they match. Encode every persona claim directly into archetype weights, counts, and field values.
 - Do NOT include a "facts" array — facts are generated automatically after expansion from actual data.
+
+## CRITICAL — DATE-DRIVEN DISTRIBUTIONS
+The persona description ALSO contains specific date references for events ("on Apr 22 the SOC 2 package arrived", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp field on entities created by the expander.
+- Parse every explicit date, relative date ("last week" = today − 7d, "two weeks ago" = today − 14d, "yesterday" = today − 1d), and event anchor in the persona description.
+- For each anchored event, create a dedicated archetype with a tight timestamp window (e.g. \`vary\` field \`{ type: 'range', min: <anchor 00:00 UTC unix>, max: <anchor + 24h unix> }\`) — NOT a generic random timestamp.
+- A "47-message thread on Apr 22" should produce 47 timestamps clustered within ~1 day of Apr 22, not scattered across the full date range.
+- Every entity in a cluster must get a DISTINCT timestamp; the \`range\` vary type guarantees this.
+- Mid-range "safe" dates are wrong if the narrative anchors elsewhere — the data must match the persona's stated timeline.
+
+## CRITICAL — NARRATIVE-NAMED-ENTITY DISTRIBUTIONS
+The persona description ALSO names specific entities — channels (\`#deals\`), thread topics ("the SOC 2 review thread", "intro outreach"), records ("Northwind deal", "Priya Shah"), kebab-case ids, quoted titles. These are HARD CONSTRAINTS for fields like \`name\`, \`title\`, \`subject\`, \`thread_subject\`, \`channel_name\`, \`label\`, \`dealname\`.
+- Extract every named entity from the persona and pin it as an archetype field value, EXACT case and spelling preserved (strip only \`#\` / \`@\` routing punctuation).
+- Create ONE dedicated archetype per named instance — three named threads → three archetypes weighted by message count, NOT one archetype with one generic subject.
+- Distinct narrative threads MUST get distinct field values. Marshallers group entities by these strings; identical strings cause unwanted merges (e.g. all 47 emails collapsing into one Gmail thread, two channels merging into one).
+- Cross-resource label fields are non-negotiable. When persona names a channel \`deals\`, BOTH \`channel.name = "deals"\` AND \`message.channel_name = "deals"\` must match exactly. The marshaller resolves cross-refs by exact label match.
+- NEVER substitute a generic placeholder ("Conversation", "general", "sample-channel", a corporate name when persona said \`deals\`) when the persona has named the entity.
 
 ## Rules
 - Archetype weights must sum to ~1.0 per resource type
