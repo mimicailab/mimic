@@ -3,6 +3,9 @@
 "@mimicai/core": patch
 "@mimicai/adapter-attio": patch
 "@mimicai/adapter-hubspot": patch
+"@mimicai/adapter-granola": patch
+"@mimicai/adapter-gmail": patch
+"@mimicai/adapter-slack": patch
 ---
 
 fix: data-integrity bugs surfaced by briefing-agent eval
