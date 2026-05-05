@@ -25,7 +25,13 @@
       "@mimicai/adapter-lemonsqueezy",
       "@mimicai/adapter-zuora",
       "@mimicai/adapter-recurly",
-      "@mimicai/explorer"
+      "@mimicai/explorer",
+
+      "@mimicai/adapter-attio",
+      "@mimicai/adapter-hubspot",
+      "@mimicai/adapter-granola",
+      "@mimicai/adapter-gmail",
+      "@mimicai/adapter-slack"
     ]
   ],
   "linked": [],
