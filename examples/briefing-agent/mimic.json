@@ -36,5 +36,12 @@
     "granola": { "enabled": true, "mcp": true },
     "gmail":   { "enabled": true, "mcp": true },
     "slack":   { "enabled": true, "mcp": true }
+  },
+
+  "test": {
+    "agent": "http://localhost:9999/unused-by-skill-runner",
+    "evaluator": "both",
+    "auto_scenarios": true,
+    "export": "mimic"
   }
 }

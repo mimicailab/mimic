@@ -255,15 +255,39 @@ export class DataValidator {
         ...(spec?.timestampFields ?? []),
       ]);
 
-      // Build ID index per resource for FK resolution
+      // Build ID index per resource AND repair duplicate ids in place.
+      //
+      // Within a single resource type, every body.id must be unique — at
+      // seed time, two records sharing an id silently overwrite each other
+      // in the StateStore (the second write wins, the first is lost). LLMs
+      // sometimes emit the same id for distinct records: small token
+      // spaces, deterministic generation across siblings, the model copying
+      // a placeholder verbatim, etc. When that happens, rename the
+      // duplicate to a fresh unique id so both records reach the store and
+      // surface a warning so the data-quality issue is visible to whoever
+      // ran `mimic generate`.
       const idIndex: Record<string, Set<string>> = {};
       for (const [resource, responses] of Object.entries(
         responseSet.responses,
       )) {
         const ids = new Set<string>();
         for (const resp of responses) {
-          const body = resp.body as Record<string, unknown>;
-          if (typeof body.id === 'string') ids.add(body.id);
+          const body = resp.body as Record<string, unknown> | null | undefined;
+          if (!body || typeof body.id !== 'string' || body.id.length === 0) continue;
+          let id: string = body.id;
+          if (ids.has(id)) {
+            const original = id;
+            id = this.allocateUniqueId(original, ids);
+            body.id = id;
+            this.stats.idsRepaired++;
+            logger.warn(
+              `DataValidator: duplicate id "${original}" in ${adapterId}.${resource} ` +
+              `— renamed to "${id}". The LLM emitted the same id for two distinct ` +
+              `records of the same resource type; without this repair the second would ` +
+              `silently overwrite the first at seed time.`,
+            );
+          }
+          ids.add(id);
         }
         idIndex[resource] = ids;
       }
@@ -578,6 +602,18 @@ export class DataValidator {
       body.id = `id_${Date.now().toString(36)}_${this.variationCounter++}`;
       this.stats.idsRepaired++;
     }
+  }
+
+  /**
+   * Mint a fresh unique id by suffixing the original until the result
+   * doesn't collide with any id already in `taken`. Cheap, deterministic,
+   * preserves the original token as a recognisable prefix so logs and
+   * downstream cross-references stay debuggable.
+   */
+  private allocateUniqueId(base: string, taken: Set<string>): string {
+    let i = 2;
+    while (taken.has(`${base}_${i}`)) i++;
+    return `${base}_${i}`;
   }
 
   private validateStatus(

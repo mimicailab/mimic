@@ -110,6 +110,7 @@ export class AttioAdapter extends OpenApiMockAdapter<AttioConfig> {
     seedDefaultFixtures(store, this.config);
     this.mountOverrides(store);
     await this.registerGeneratedRoutes(server, data, store, ns);
+    commentHandlers.hydrateThreadComments(store);
   }
 
   getEndpoints(): EndpointDefinition[] {

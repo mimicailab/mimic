@@ -12,6 +12,15 @@
  * Each marshaller wraps one pseudo-type into HubSpot's CRM-object envelope
  * and writes the result to `hubspot:crm_objects:{contacts|companies|deals|
  * tickets}` so the runtime crm_objects override finds it.
+ *
+ * For engagement / inventory CRM objects (calls, meetings, emails, notes,
+ * tasks, line_items, products) the persona generator emits records already
+ * in wire shape (the `properties` map for these types is small enough that
+ * the LLM can populate it directly). Without a marshaller, the generic
+ * auto-seeder would store them under `hubspot:<resource>` (e.g.
+ * `hubspot:call`), but the unified CRM-objects list endpoint reads from
+ * `hubspot:crm_objects:<plural>` (e.g. `hubspot:crm_objects:calls`). The
+ * passthrough marshallers below route them to the correct namespace.
  */
 
 import type { Body, Marshaller } from '@mimicai/adapter-sdk';
@@ -48,7 +57,38 @@ export function buildHubSpotCrmMarshallers(): Marshaller[] {
       generateId: (body) => (body.id as string | undefined) ?? generateId('', 18),
       wrap: (body, id) => wrapCrmObject(id, body, ticketProperties(body)),
     },
+    passthroughCrmObject('call', 'calls'),
+    passthroughCrmObject('meeting', 'meetings'),
+    passthroughCrmObject('email', 'emails'),
+    passthroughCrmObject('note', 'notes'),
+    passthroughCrmObject('task', 'tasks'),
+    passthroughCrmObject('line_item', 'line_items'),
+    passthroughCrmObject('product', 'products'),
   ];
+}
+
+/**
+ * Routes already-wire-shaped CRM objects (calls, meetings, line_items, etc.)
+ * to `hubspot:crm_objects:<plural>` so the unified list endpoint can find
+ * them. The body's `properties` map is preserved as-is.
+ */
+function passthroughCrmObject(contentResource: string, plural: string): Marshaller {
+  return {
+    kind: 'standalone',
+    contentResource,
+    namespace: `hubspot:crm_objects:${plural}`,
+    generateId: (body) => (body.id as string | undefined) ?? generateId('', 18),
+    wrap: (body, id) => {
+      const createdAt = (body.createdAt as string) ?? new Date().toISOString();
+      return defaultHubSpotObject({
+        id,
+        properties: (body.properties as Record<string, unknown>) ?? {},
+        createdAt,
+        updatedAt: (body.updatedAt as string) ?? createdAt,
+        archived: Boolean(body.archived),
+      });
+    },
+  };
 }
 
 function wrapCrmObject(id: string, body: Body, properties: Record<string, string>): Body {

@@ -15,6 +15,28 @@ import type { Marshaller, PrecomputeMarshalContext } from './marshalling.js';
 import type { GeneratedRoute, RouteMethod } from './openapi-types.js';
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Query keys that are pagination/control parameters across the major API
+ * styles, NOT structural filters. The base list handler skips these so it
+ * doesn't try to match each item against `item[key] === value` (which would
+ * always be false, since pagination keys aren't fields on resource records).
+ *
+ * Add new keys here when adopting an adapter whose list endpoints use a
+ * pagination convention not already covered.
+ */
+const PAGINATION_QUERY_KEYS = new Set<string>([
+  // Stripe
+  'limit', 'starting_after', 'ending_before', 'expand', 'page', 'page_size',
+  // Google APIs (Gmail, Calendar, Drive)
+  'maxResults', 'pageToken',
+  // Common cursor / offset conventions (HubSpot `after`, Slack/REST cursor, etc.)
+  'cursor', 'offset', 'after',
+]);
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -255,7 +277,7 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
       for (const filterKey of route.queryFilters) {
         const filterVal = query[filterKey];
         if (filterVal === undefined) continue;
-        if (['limit', 'starting_after', 'ending_before', 'expand', 'page', 'page_size'].includes(filterKey)) continue;
+        if (PAGINATION_QUERY_KEYS.has(filterKey)) continue;
         items = items.filter(item => String(item[filterKey]) === filterVal);
       }
 
