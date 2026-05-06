@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { DataValidator } from '../../generate/data-validator.js';
-import type { ExpandedData } from '../../types/dataset.js';
+import type { ExpandedData, ApiResponse } from '../../types/dataset.js';
 import type { PromptContext } from '../../types/adapter.js';
 
 function makeCtx(overrides: Partial<PromptContext> = {}): PromptContext {
   return {
-    resources: {},
+    resources: [],
     amountFormat: 'integer cents',
     relationships: [],
     requiredFields: {},
@@ -15,26 +15,39 @@ function makeCtx(overrides: Partial<PromptContext> = {}): PromptContext {
 }
 
 function makeData(adapterId: string, responsesByResource: Record<string, Array<Record<string, unknown>>>): ExpandedData {
-  const responses: Record<string, Array<{ statusCode: number; headers: Record<string, string>; body: Record<string, unknown> }>> = {};
+  const responses: Record<string, ApiResponse[]> = {};
   for (const [resource, bodies] of Object.entries(responsesByResource)) {
     responses[resource] = bodies.map((body) => ({
       statusCode: 200,
       headers: { 'content-type': 'application/json' },
       body,
+      personaId: 'test-persona',
     }));
   }
   return {
     personaId: 'test-persona',
     blueprint: {} as never,
     tables: {},
-    documents: [],
+    documents: {},
     apiResponses: {
       [adapterId]: { adapterId, responses },
     },
     files: [],
     events: [],
     facts: [],
-  } as unknown as ExpandedData;
+  };
+}
+
+function bodyOf(resp: ApiResponse): Record<string, unknown> {
+  return resp.body as Record<string, unknown>;
+}
+
+function responsesOf(data: ExpandedData, adapterId: string, resource: string): ApiResponse[] {
+  const set = data.apiResponses[adapterId];
+  if (!set) throw new Error(`adapter ${adapterId} not in test data`);
+  const arr = set.responses[resource];
+  if (!arr) throw new Error(`resource ${resource} not in test data`);
+  return arr;
 }
 
 describe('DataValidator — duplicate id repair', () => {
@@ -49,8 +62,8 @@ describe('DataValidator — duplicate id repair', () => {
     const validator = new DataValidator({ slack: makeCtx() });
     const stats = validator.validateAndRepair(data);
 
-    const channels = data.apiResponses.slack!.responses.channel!;
-    const ids = channels.map((r) => r.body.id);
+    const channels = responsesOf(data, 'slack', 'channel');
+    const ids = channels.map((r) => bodyOf(r).id);
 
     expect(ids[0]).toBe('C123');
     expect(ids[1]).not.toBe('C123');
@@ -70,11 +83,11 @@ describe('DataValidator — duplicate id repair', () => {
     const validator = new DataValidator({ attio: makeCtx() });
     validator.validateAndRepair(data);
 
-    const tasks = data.apiResponses.attio!.responses.task!;
+    const tasks = responsesOf(data, 'attio', 'task');
     for (const t of tasks) {
-      expect(String(t.body.id)).toMatch(/^gen_x5ojsnps/);
+      expect(String(bodyOf(t).id)).toMatch(/^gen_x5ojsnps/);
     }
-    expect(new Set(tasks.map((t) => t.body.id)).size).toBe(3);
+    expect(new Set(tasks.map((t) => bodyOf(t).id)).size).toBe(3);
   });
 
   it('does not rename when ids are already unique', () => {
@@ -88,7 +101,7 @@ describe('DataValidator — duplicate id repair', () => {
     const validator = new DataValidator({ hubspot: makeCtx() });
     const stats = validator.validateAndRepair(data);
 
-    const ids = data.apiResponses.hubspot!.responses.contact!.map((r) => r.body.id);
+    const ids = responsesOf(data, 'hubspot', 'contact').map((r) => bodyOf(r).id);
     expect(ids).toEqual(['c_1', 'c_2']);
     expect(stats.idsRepaired).toBe(0);
   });
@@ -115,8 +128,8 @@ describe('DataValidator — duplicate id repair', () => {
     const validator = new DataValidator({ attio: makeCtx() });
     const stats = validator.validateAndRepair(data);
 
-    expect(data.apiResponses.attio!.responses.task![0]!.body.id).toBe('X');
-    expect(data.apiResponses.attio!.responses.note![0]!.body.id).toBe('X');
+    expect(bodyOf(responsesOf(data, 'attio', 'task')[0]!).id).toBe('X');
+    expect(bodyOf(responsesOf(data, 'attio', 'note')[0]!).id).toBe('X');
     expect(stats.idsRepaired).toBe(0);
   });
 });
