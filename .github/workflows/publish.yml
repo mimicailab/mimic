@@ -34,7 +34,11 @@ jobs:
       - name: Create release PR or publish
         uses: changesets/action@v1
         with:
-          version: pnpm changeset version
+          # `pnpm install --lockfile-only` after the version bump refreshes
+          # pnpm-lock.yaml so the resulting "version packages" PR doesn't
+          # leave the lockfile out of date with the bumped package.jsons —
+          # otherwise CI on main fails next push with ERR_PNPM_OUTDATED_LOCKFILE.
+          version: pnpm changeset version && pnpm install --lockfile-only
           publish: pnpm release
           title: 'chore: version packages'
           commit: 'chore: version packages'

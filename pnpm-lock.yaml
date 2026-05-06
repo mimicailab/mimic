@@ -48,7 +48,7 @@ importers:
         specifier: ^0.12.0
         version: link:../../packages/adapters/adapter-attio
       '@mimicai/adapter-gmail':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-gmail
       '@mimicai/adapter-granola':
         specifier: ^0.12.0
@@ -57,13 +57,13 @@ importers:
         specifier: ^0.12.0
         version: link:../../packages/adapters/adapter-hubspot
       '@mimicai/adapter-postgres':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-postgres
       '@mimicai/adapter-slack':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-slack
       '@mimicai/cli':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/cli
     devDependencies:
       '@prisma/client':
@@ -76,34 +76,34 @@ importers:
   examples/cfo-agent:
     dependencies:
       '@mimicai/adapter-chargebee':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-chargebee
       '@mimicai/adapter-gocardless':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-gocardless
       '@mimicai/adapter-lemonsqueezy':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-lemonsqueezy
       '@mimicai/adapter-paddle':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-paddle
       '@mimicai/adapter-postgres':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-postgres
       '@mimicai/adapter-recurly':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-recurly
       '@mimicai/adapter-revenuecat':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-revenuecat
       '@mimicai/adapter-stripe':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-stripe
       '@mimicai/adapter-zuora':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/adapters/adapter-zuora
       '@mimicai/cli':
-        specifier: ^0.11.1
+        specifier: ^0.12.1
         version: link:../../packages/cli
     devDependencies:
       '@prisma/client':
