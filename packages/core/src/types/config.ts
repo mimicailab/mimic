@@ -229,8 +229,16 @@ export const MimicConfigSchema = z.object({
         .array(z.enum(['smoke', 'functional', 'adversarial']))
         .optional(),
       export: z
-        .enum(['mimic', 'promptfoo', 'braintrust', 'langsmith', 'inspect'])
+        .enum([
+          'mimic',
+          'promptfoo',
+          'braintrust',
+          'langsmith',
+          'inspect',
+          'claude-skill',
+        ])
         .optional(),
+      target_skill: z.string().optional(),
     })
     .optional(),
 });

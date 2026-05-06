@@ -4,3 +4,7 @@ export { BraintrustExporter } from './braintrust.exporter.js';
 export { LangSmithExporter } from './langsmith.exporter.js';
 export { InspectExporter } from './inspect.exporter.js';
 export { MimicExporter } from './mimic.exporter.js';
+export {
+  ClaudeSkillExporter,
+  type ClaudeSkillExporterOptions,
+} from './claude-skill.exporter.js';
