@@ -1,5 +1,13 @@
 # @mimicai/adapter-gocardless
 
+## 0.12.1
+
+### Patch Changes
+
+- Updated dependencies [[`47ae6fe`](https://github.com/mimicailab/mimic/commit/47ae6fef913c8b7881038911434d2c1c01093519)]:
+  - @mimicai/adapter-sdk@0.12.1
+  - @mimicai/core@0.12.1
+
 ## 0.11.1
 
 ### Patch Changes
