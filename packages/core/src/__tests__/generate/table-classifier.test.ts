@@ -157,3 +157,106 @@ describe('classifyTables', () => {
     expect(result.length).toBe(3);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Schema-mapping-driven classification (IDENTITY CONTRACT pattern)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('classifyTables (schema-mapping primary)', () => {
+  // Schema shape: customers + subscriptions table with `stripe_<resource>_id`
+  // columns. NO `billing_platform` or `external_id` columns. NO conventional
+  // table names beyond `customers`. The LLM's schema mapping is the only
+  // source of truth.
+  const stripeFkSchema = makeSchema([
+    {
+      name: 'customers',
+      columns: [{ name: 'id' }, { name: 'name' }, { name: 'stripe_customer_id' }],
+    },
+    {
+      name: 'subscriptions',
+      columns: [{ name: 'id' }, { name: 'customer_id' }, { name: 'stripe_subscription_id' }],
+      foreignKeys: [{ columns: ['customer_id'], referencedTable: 'customers', referencedColumns: ['id'] }],
+    },
+    {
+      name: 'invoices',
+      columns: [{ name: 'id' }, { name: 'customer_id' }, { name: 'stripe_invoice_id' }],
+      foreignKeys: [{ columns: ['customer_id'], referencedTable: 'customers', referencedColumns: ['id'] }],
+    },
+  ]);
+
+  const stripeMapping: SchemaMapping = {
+    bridgeTables: [],
+    mappings: [
+      { dbTable: 'customers',     dbColumn: 'stripe_customer_id',     adapterId: 'stripe', apiResource: 'customer',     apiField: 'id', isBridgeTable: false },
+      { dbTable: 'subscriptions', dbColumn: 'stripe_subscription_id', adapterId: 'stripe', apiResource: 'subscription', apiField: 'id', isBridgeTable: false },
+      { dbTable: 'invoices',      dbColumn: 'stripe_invoice_id',      adapterId: 'stripe', apiResource: 'invoice',      apiField: 'id', isBridgeTable: false },
+    ],
+  };
+
+  it('classifies customers as identity (cross-surface mapping + 2+ incoming FKs)', () => {
+    const result = classifyTables({ schema: stripeFkSchema, schemaMapping: stripeMapping, adapterIds: ['stripe'] });
+    const customers = result.find(c => c.table === 'customers')!;
+    expect(customers.role).toBe('identity');
+    expect(customers.sources).toEqual([
+      expect.objectContaining({ adapter: 'stripe', resource: 'customer' }),
+    ]);
+  });
+
+  it('classifies subscriptions/invoices as external-mirrored (cross-surface mapping, not the canonical identity)', () => {
+    const result = classifyTables({ schema: stripeFkSchema, schemaMapping: stripeMapping, adapterIds: ['stripe'] });
+    const subs = result.find(c => c.table === 'subscriptions')!;
+    const inv = result.find(c => c.table === 'invoices')!;
+    expect(subs.role).toBe('external-mirrored');
+    expect(inv.role).toBe('external-mirrored');
+    expect(subs.sources).toEqual([
+      expect.objectContaining({ adapter: 'stripe', resource: 'subscription' }),
+    ]);
+  });
+
+  it('builds identityFks for mirrored tables using the mapping\'s dbColumn as externalIdColumn', () => {
+    const result = classifyTables({ schema: stripeFkSchema, schemaMapping: stripeMapping, adapterIds: ['stripe'] });
+    const subs = result.find(c => c.table === 'subscriptions')!;
+    expect(subs.identityFks).toEqual([
+      expect.objectContaining({
+        column: 'customer_id',
+        identityTable: 'customers',
+        matchOn: { platformColumn: 'billing_platform', externalIdColumn: 'stripe_customer_id' },
+        apiField: 'customer',
+      }),
+    ]);
+  });
+
+  it('works with non-conventional table names (e.g. "subscribers" instead of "customers")', () => {
+    const schema = makeSchema([
+      {
+        name: 'subscribers',  // not in IDENTITY_TABLE_NAMES
+        columns: [{ name: 'id' }, { name: 'name' }, { name: 'acme_account_token' }],
+      },
+      {
+        name: 'orders',
+        columns: [{ name: 'id' }, { name: 'subscriber_id' }],
+        foreignKeys: [{ columns: ['subscriber_id'], referencedTable: 'subscribers', referencedColumns: ['id'] }],
+      },
+      {
+        name: 'tickets',
+        columns: [{ name: 'id' }, { name: 'subscriber_id' }],
+        foreignKeys: [{ columns: ['subscriber_id'], referencedTable: 'subscribers', referencedColumns: ['id'] }],
+      },
+    ]);
+    const mapping: SchemaMapping = {
+      bridgeTables: [],
+      mappings: [
+        { dbTable: 'subscribers', dbColumn: 'acme_account_token', adapterId: 'acme', apiResource: 'account', apiField: 'id', isBridgeTable: false },
+      ],
+    };
+    const result = classifyTables({ schema, schemaMapping: mapping, adapterIds: ['acme'] });
+    expect(result.find(c => c.table === 'subscribers')!.role).toBe('identity');
+  });
+
+  it('falls back to heuristics when no schemaMapping is provided', () => {
+    // No mapping → existing IDENTITY_TABLE_NAMES heuristic still classifies
+    // `customers` as identity, even without platform cols.
+    const result = classifyTables({ schema: stripeFkSchema, adapterIds: [] });
+    expect(result.find(c => c.table === 'customers')!.role).toBe('identity');
+  });
+});

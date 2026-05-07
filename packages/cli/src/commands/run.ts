@@ -251,6 +251,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
           promptContexts,
           resourceSpecs,
           tableClassifications,
+          schemaMapping,
         );
 
         if (!opts.dryRun) {

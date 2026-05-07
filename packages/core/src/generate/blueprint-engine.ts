@@ -21,8 +21,17 @@ import {
   buildAdapterBatchPrompt,
   buildSchemaMappingPrompt,
   buildDistributionPrompt,
+  collectIdentityContract,
   type Phase1Summary,
 } from './prompts.js';
+import {
+  validatePhase1IdentityContract,
+  validatePhase2IdentityContract,
+} from './validate-identity-contract.js';
+import {
+  injectPhase1IdentityContract,
+  injectPhase2IdentityContract,
+} from './inject-identity-contract.js';
 import { assembleResourceArchetypes } from './resource-assembler.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
@@ -106,6 +115,8 @@ export class BlueprintEngine {
     options: GenerateOptions = {},
     apis?: Record<string, { adapter?: string; config?: Record<string, unknown> }>,
     promptContexts?: Record<string, PromptContext>,
+    schemaMapping?: SchemaMapping,
+    resourceSpecs?: Record<string, AdapterResourceSpecs>,
   ): Promise<Blueprint> {
     const cacheKey = this.computeCacheKey(schema, persona, domain, apis);
 
@@ -140,6 +151,8 @@ export class BlueprintEngine {
       personaIndex: options.personaIndex,
       totalPersonas: options.totalPersonas,
       apiPlatformNames: options.apiPlatformNames,
+      schemaMapping,
+      resourceSpecs,
     });
 
     // Use the API-aware schema when APIs are configured — this makes
@@ -180,6 +193,27 @@ export class BlueprintEngine {
     // ------------------------------------------------------------------
     normalizeBlueprintData(llmOutput.data);
     validateBlueprintCoverage(llmOutput.data, schema);
+
+    // Identity contract: deterministically inject the contracted prefix into
+    // every archetype's vary[<field>], then validate as a defensive net. The
+    // injection makes the LLM's choice of vary type irrelevant for ID fields
+    // it has no useful judgment over — see inject-identity-contract.ts.
+    //
+    // When apiEntityArchetypes is empty (Phase-1-only call from generateBatched)
+    // the Phase 2 inject/validate is a no-op; the contract gets enforced again
+    // on the merged blueprint inside generateBatched().
+    const contract = collectIdentityContract({
+      schemaMapping,
+      personaIndex: options.personaIndex,
+      promptContexts,
+      resourceSpecs,
+    });
+    if (contract.length > 0) {
+      injectPhase1IdentityContract(llmOutput.data, contract);
+      injectPhase2IdentityContract(llmOutput.data, contract);
+      validatePhase1IdentityContract(llmOutput.data, contract);
+      validatePhase2IdentityContract(llmOutput.data, contract);
+    }
 
     const now = new Date().toISOString();
     const blueprint: Blueprint = {
@@ -242,13 +276,14 @@ export class BlueprintEngine {
     promptContexts?: Record<string, PromptContext>,
     resourceSpecs?: Record<string, AdapterResourceSpecs>,
     tableClassifications?: TableClassification[],
+    schemaMapping?: SchemaMapping,
   ): Promise<Blueprint> {
     const batchSize = options.adapterBatchSize ?? 5;
     const adapterKeys = apis ? Object.keys(apis) : [];
 
     // ── Fast path: few adapters → single-call generation ─────────────
     if (adapterKeys.length <= batchSize && !resourceSpecs) {
-      return this.generate(schema, persona, domain, options, apis, promptContexts);
+      return this.generate(schema, persona, domain, options, apis, promptContexts, schemaMapping, resourceSpecs);
     }
 
     // ── Check cache first (same key as single-call) ──────────────────
@@ -282,6 +317,8 @@ export class BlueprintEngine {
       { ...options, force: true, apiPlatformNames: adapterKeys },
       undefined, // no full API schemas — Phase 2 handles that
       promptContexts, // passed so formatPlatformHint can read adapter idPrefix values
+      schemaMapping, // drives the IDENTITY CONTRACT block on the DB side
+      resourceSpecs, // per-resource idPrefix lookup for the contract
     );
 
     // ------------------------------------------------------------------
@@ -393,7 +430,7 @@ export class BlueprintEngine {
 
         if (Object.keys(legacyApis).length > 0) {
           const legacyBatchResult = await this.generateLegacyBatches(
-            legacyApis, persona, domain, options, promptContexts, phase1Summary,
+            legacyApis, persona, domain, options, promptContexts, phase1Summary, schemaMapping, resourceSpecs,
           );
 
           if (legacyBatchResult) {
@@ -414,6 +451,20 @@ export class BlueprintEngine {
       }
 
       normalizeBlueprintData(mergedData);
+
+      // Inject + validate Phase 2 of the merged blueprint against the identity
+      // contract. Phase 1 was injected/validated inside the inner generate().
+      const contract = collectIdentityContract({
+        schemaMapping,
+        personaIndex: options.personaIndex,
+        promptContexts,
+        resourceSpecs,
+      });
+      if (contract.length > 0) {
+        injectPhase2IdentityContract(mergedData, contract);
+        validatePhase2IdentityContract(mergedData, contract);
+      }
+
       const mergedBlueprint: Blueprint = {
         ...phase1Blueprint,
         data: mergedData,
@@ -435,7 +486,7 @@ export class BlueprintEngine {
     // Legacy path: full adapter batch prompts
     // ==================================================================
     const legacyBatchResult = await this.generateLegacyBatches(
-      apis!, persona, domain, options, promptContexts, phase1Summary,
+      apis!, persona, domain, options, promptContexts, phase1Summary, schemaMapping, resourceSpecs,
     );
 
     const mergedData = { ...phase1Blueprint.data };
@@ -456,6 +507,19 @@ export class BlueprintEngine {
     }
 
     normalizeBlueprintData(mergedData);
+
+    // Inject + validate Phase 2 of the merged blueprint against the identity
+    // contract. Phase 1 was injected/validated inside the inner generate().
+    const legacyContract = collectIdentityContract({
+      schemaMapping,
+      personaIndex: options.personaIndex,
+      promptContexts,
+      resourceSpecs,
+    });
+    if (legacyContract.length > 0) {
+      injectPhase2IdentityContract(mergedData, legacyContract);
+      validatePhase2IdentityContract(mergedData, legacyContract);
+    }
 
     const mergedBlueprint: Blueprint = {
       ...phase1Blueprint,
@@ -485,6 +549,8 @@ export class BlueprintEngine {
     options: GenerateOptions,
     promptContexts?: Record<string, PromptContext>,
     phase1Summary?: Phase1Summary,
+    schemaMapping?: SchemaMapping,
+    resourceSpecs?: Record<string, AdapterResourceSpecs>,
   ): Promise<AdapterBatchOutput | null> {
     const batchSize = options.adapterBatchSize ?? 5;
     const adapterKeys = Object.keys(apis);
@@ -525,6 +591,8 @@ export class BlueprintEngine {
           personaIndex: options.personaIndex,
           totalPersonas: options.totalPersonas,
           phase1Summary,
+          schemaMapping,
+          resourceSpecs,
         });
 
         try {
@@ -960,13 +1028,17 @@ function extractIdentityEntityCounts(
 
     const tableName = classification.table;
     const dbArchetypes = blueprint.data.entityArchetypes?.[tableName];
-    if (!dbArchetypes) continue;
+    const staticRows = blueprint.data.entities?.[tableName] ?? [];
+    if (!dbArchetypes && staticRows.length === 0) continue;
 
-    const totalCount = dbArchetypes.count;
+    // Total identity-table count = archetype-driven rows + narrative-named
+    // static entities. Without the static count, Phase 2 generates too few
+    // API entities and DB↔API overlap is short by the narrative count.
+    const totalCount = (dbArchetypes?.count ?? 0) + staticRows.length;
 
     // Determine per-platform distribution from archetype billing_platform weights
     const platformWeights: Record<string, number> = {};
-    for (const arch of dbArchetypes.archetypes) {
+    for (const arch of dbArchetypes?.archetypes ?? []) {
       const platform = arch.fields.billing_platform as string | undefined;
       if (platform) {
         platformWeights[platform] = (platformWeights[platform] ?? 0) + arch.weight;

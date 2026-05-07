@@ -25,8 +25,18 @@ export interface ClassifyTablesOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Column name heuristics
+// Column name heuristics — fallback only
 // ---------------------------------------------------------------------------
+//
+// These sets are heuristic fallbacks used WHEN no schema mapping is available
+// (e.g. DB-only runs with no API adapters configured). When a schema mapping
+// IS present, the LLM-derived mapping entries are authoritative — these
+// hardcoded names are not consulted.
+//
+// Why a fallback matters: classifyTables can be called from contexts that
+// don't run the schema-mapping LLM call (some tests, future no-API flows),
+// and the older bridge-table pattern (billing_platform + external_id) is
+// recognisable structurally without help from a mapper.
 
 const PLATFORM_DISCRIMINATOR_COLUMNS = new Set([
   'billing_platform', 'provider', 'platform', 'source_platform',
@@ -83,8 +93,34 @@ export function classifyTables(options: ClassifyTablesOptions): TableClassificat
     }
   }
 
-  // Step 3: Build bridge table set from schema mapping
+  // Step 3: Read LLM-derived signals from the schema mapping.
+  //   - bridgeTables: tables the LLM flagged as bridge tables.
+  //   - tablesWithCrossSurfaceMappings: tables that have at least one non-bridge
+  //     ID mapping pointing at an API resource (the "IDENTITY CONTRACT" pattern,
+  //     where a column like `stripe_customer_id` stores the API's id values).
+  //
+  // These signals are authoritative when present: they're the LLM's answer to
+  // "which tables coordinate with which API resources." We only fall back to
+  // the heuristic name sets above when the schema mapping is absent.
   const bridgeTableSet = new Set<string>(schemaMapping?.bridgeTables ?? []);
+
+  const tablesWithCrossSurfaceMappings = new Set<string>();
+  if (schemaMapping) {
+    for (const entry of schemaMapping.mappings) {
+      if (entry.isBridgeTable) continue;
+      if (entry.apiField !== 'id') continue;
+      tablesWithCrossSurfaceMappings.add(entry.dbTable);
+    }
+  }
+
+  // Treat an empty schema mapping as "no mapping" — falls through to the
+  // heuristic-based path. This happens when the schema-mapping LLM call
+  // failed and the engine returned `{ mappings: [], bridgeTables: [] }` as a
+  // safe default; without this, every table would be misclassified as
+  // internal-only.
+  const hasUsableSchemaMapping = !!schemaMapping && (
+    tablesWithCrossSurfaceMappings.size > 0 || bridgeTableSet.size > 0
+  );
 
   // Step 4: Classify each table
   const classifications: TableClassification[] = [];
@@ -94,16 +130,29 @@ export function classifyTables(options: ClassifyTablesOptions): TableClassificat
     const refs = incomingFkCount.get(tableName) ?? 0;
     const hasPlatformCols = tablesWithPlatformColumns.has(tableName);
     const isBridgeCandidate = bridgeTableSet.has(tableName);
+    const hasCrossSurfaceMapping = tablesWithCrossSurfaceMappings.has(tableName);
 
     let role: TableRole;
     let sources: MirrorSource[] | undefined;
     let identityFks: TableClassification['identityFks'] | undefined;
 
-    // Identity: referenced by 2+ tables AND (has platform cols OR is a known identity table name)
-    const isIdentity = (refs >= 2 && hasPlatformCols) || IDENTITY_TABLE_NAMES.has(tableName);
+    // Identity: a cross-surface entity referenced by 2+ tables. We treat it as
+    // the "noun" everything else points at. The schema mapping flags it via a
+    // non-bridge id mapping; structural FK count tells us it's referenced
+    // enough to be a true identity table (vs. a one-off mirrored table).
+    //
+    // Heuristic-fallback tier (no usable schema mapping): the older bridge
+    // pattern (refs >= 2 with platform cols) plus the conventional-name set.
+    const isIdentity = hasUsableSchemaMapping
+      ? (hasCrossSurfaceMapping && refs >= 2)
+      : ((refs >= 2 && hasPlatformCols) || IDENTITY_TABLE_NAMES.has(tableName));
 
-    // External-mirrored: bridge candidate that is NOT identity, OR has platform columns but few incoming refs
+    // External-mirrored: a table whose rows mirror API entities. Either it has
+    // a non-bridge cross-surface mapping (and isn't the canonical identity),
+    // or it's a bridge table flagged by the LLM, or it has the legacy bridge
+    // pattern and few incoming refs.
     const isMirrored = !isIdentity && (
+      hasCrossSurfaceMapping ||
       isBridgeCandidate ||
       (hasPlatformCols && refs < 2)
     );
@@ -126,7 +175,7 @@ export function classifyTables(options: ClassifyTablesOptions): TableClassificat
 
       // Build identity FK resolution rules
       identityFks = buildIdentityFks(
-        tableName, table, tableIndex, tablesWithPlatformColumns,
+        tableName, table, tableIndex, tablesWithPlatformColumns, schemaMapping,
       );
     } else {
       role = 'internal-only';
@@ -197,13 +246,30 @@ function buildMirrorSources(
   const sources: MirrorSource[] = [];
   const platCols = platformCols.get(tableName);
 
-  // From schema mapping: find all adapter+resource pairs that map to this table
+  // From schema mapping: find all adapter+resource pairs that map to this table.
+  // Two patterns produce sources:
+  //   - Bridge-table entries (existing pattern): the table mirrors API rows by
+  //     `external_id` + `billing_platform`.
+  //   - Non-bridge cross-surface ID entries (the IDENTITY CONTRACT pattern):
+  //     a string column on this table stores values of `<adapter>.<resource>.id`
+  //     and joins to that resource. Same coordination story, different schema
+  //     shape — the expander still derives DB rows from API entities.
   if (schemaMapping) {
     const mappedAdapters = new Map<string, string>();
     for (const entry of schemaMapping.mappings) {
-      if (entry.dbTable === tableName && entry.isBridgeTable) {
+      if (entry.dbTable !== tableName) continue;
+      if (entry.isBridgeTable) {
         mappedAdapters.set(entry.adapterId, entry.apiResource);
       }
+    }
+    // Pick up non-bridge id-mapping entries for adapters not already covered
+    // by a bridge entry (bridge wins when both shapes exist for the same adapter).
+    for (const entry of schemaMapping.mappings) {
+      if (entry.dbTable !== tableName) continue;
+      if (entry.isBridgeTable) continue;
+      if (entry.apiField !== 'id') continue;
+      if (mappedAdapters.has(entry.adapterId)) continue;
+      mappedAdapters.set(entry.adapterId, entry.apiResource);
     }
 
     for (const [adapterId, resource] of mappedAdapters) {
@@ -234,6 +300,7 @@ function buildIdentityFks(
   table: TableInfo,
   tableIndex: Map<string, TableInfo>,
   platformCols: Map<string, { discriminatorCol: string; externalIdCol: string }>,
+  schemaMapping?: SchemaMapping,
 ): TableClassification['identityFks'] {
   const fkRules: NonNullable<TableClassification['identityFks']> = [];
 
@@ -241,20 +308,50 @@ function buildIdentityFks(
     const refTable = tableIndex.get(fk.referencedTable);
     if (!refTable) continue;
 
-    // Check if the referenced table has platform columns (making it an identity table candidate)
+    // Tier 1: legacy bridge pattern — referenced table has billing_platform +
+    // external_id columns. Match on those.
     const refPlatCols = platformCols.get(fk.referencedTable);
-    if (!refPlatCols) continue;
+    if (refPlatCols) {
+      for (let i = 0; i < fk.columns.length; i++) {
+        fkRules.push({
+          column: fk.columns[i]!,
+          identityTable: fk.referencedTable,
+          matchOn: {
+            platformColumn: refPlatCols.discriminatorCol,
+            externalIdColumn: refPlatCols.externalIdCol,
+          },
+          apiField: inferApiFieldForFk(fk.referencedTable),
+        });
+      }
+      continue;
+    }
 
-    for (let i = 0; i < fk.columns.length; i++) {
-      fkRules.push({
-        column: fk.columns[i]!,
-        identityTable: fk.referencedTable,
-        matchOn: {
-          platformColumn: refPlatCols.discriminatorCol,
-          externalIdColumn: refPlatCols.externalIdCol,
-        },
-        apiField: inferApiFieldForFk(fk.referencedTable),
-      });
+    // Tier 2: IDENTITY CONTRACT pattern — referenced table has a non-bridge
+    // cross-surface ID mapping (e.g. `customers.stripe_customer_id` →
+    // `stripe.customer.id`). Use the mapping's `dbColumn` as the join column.
+    // No platform discriminator column exists in this schema shape; the FK
+    // resolver's bare-extId fallback handles single-source lookups, and
+    // multi-adapter cases would need explicit modeling.identityLinks.
+    if (schemaMapping) {
+      const refMapping = schemaMapping.mappings.find(
+        e => e.dbTable === fk.referencedTable && !e.isBridgeTable && e.apiField === 'id',
+      );
+      if (refMapping) {
+        for (let i = 0; i < fk.columns.length; i++) {
+          fkRules.push({
+            column: fk.columns[i]!,
+            identityTable: fk.referencedTable,
+            matchOn: {
+              // No real platform column in this schema; the resolver falls
+              // through to bare-extId lookup, which is correct for single-source
+              // identity tables.
+              platformColumn: 'billing_platform',
+              externalIdColumn: refMapping.dbColumn,
+            },
+            apiField: inferApiFieldForFk(fk.referencedTable),
+          });
+        }
+      }
     }
   }
 

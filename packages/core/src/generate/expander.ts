@@ -239,7 +239,7 @@ export class BlueprintExpander {
 
         this.deriveIdentityTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          blueprint, schema,
+          blueprint, schema, schemaMapping,
         );
       }
 
@@ -251,7 +251,7 @@ export class BlueprintExpander {
 
         this.deriveIdentityTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          blueprint, schema,
+          blueprint, schema, schemaMapping,
         );
       }
 
@@ -277,7 +277,7 @@ export class BlueprintExpander {
 
         this.deriveMirroredTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          schema, schemaMapping, modelingConfig,
+          schema, blueprint, schemaMapping, modelingConfig,
         );
       }
 
@@ -947,12 +947,21 @@ export class BlueprintExpander {
   // -----------------------------------------------------------------------
 
   /**
-   * Replace `gen_*` placeholder IDs in API response bodies with real IDs
-   * from sibling resources in the same adapter.
+   * Resolve cross-resource ID references within each adapter to real IDs.
    *
-   * Uses a convention-based FK map: field name → parent resource type.
-   * For each FK field with a `gen_*` value, picks a random real ID from
-   * the parent resource's ID pool.
+   * Walks every API response body and for each FK-style field rewrites the
+   * value to a real ID from the parent resource's pool when the current
+   * value isn't already a member of that pool. This covers two failure
+   * modes:
+   *
+   *   1. `gen_*` placeholder values the LLM was told to emit when it didn't
+   *      know the real ID at generation time.
+   *   2. LLM-invented semantic strings (e.g. `cus_klein_records`) that look
+   *      shaped like a real Stripe ID but reference nothing.
+   *
+   * Without this, both classes of value flow through to the expander's FK
+   * resolver and break downstream joins. The pool-membership check ensures
+   * legitimate refs are preserved unchanged.
    */
   private resolveApiCrossReferences(
     apiResponses: Record<string, ApiResponseSet>,
@@ -1011,7 +1020,9 @@ export class BlueprintExpander {
       // Build ID pools per resource type within this adapter.
       // Register under both singular and plural forms so lookups
       // work regardless of whether the adapter uses "customer" or "customers".
+      // Each pool also gets a Set for O(1) membership checks.
       const idPools = new Map<string, string[]>();
+      const idPoolSets = new Map<string, Set<string>>();
       for (const [resourceType, responses] of Object.entries(responseSet.responses)) {
         const ids: string[] = [];
         for (const r of responses) {
@@ -1019,16 +1030,23 @@ export class BlueprintExpander {
           if (typeof body.id === 'string') ids.push(body.id);
         }
         if (ids.length > 0) {
+          const set = new Set(ids);
           idPools.set(resourceType, ids);
+          idPoolSets.set(resourceType, set);
           const plural = resourceType.endsWith('s') ? resourceType : resourceType + 's';
           const singular = resourceType.endsWith('s') ? resourceType.slice(0, -1) : resourceType;
-          if (!idPools.has(plural)) idPools.set(plural, ids);
-          if (!idPools.has(singular)) idPools.set(singular, ids);
+          if (!idPools.has(plural)) { idPools.set(plural, ids); idPoolSets.set(plural, set); }
+          if (!idPools.has(singular)) { idPools.set(singular, ids); idPoolSets.set(singular, set); }
         }
       }
 
       if (idPools.size === 0) continue;
 
+      // Rewrite any FK-style field whose value isn't in the resolved id pool.
+      // This catches both `gen_xyz` placeholders (LLM was told to use them)
+      // AND LLM-invented semantic ids ("cus_klein_records") that don't match
+      // the actual entity ids the system generated. Out-of-pool values would
+      // otherwise break cross-surface joins downstream.
       let resolvedCount = 0;
       let nulledCount = 0;
       for (const responses of Object.values(responseSet.responses)) {
@@ -1037,15 +1055,20 @@ export class BlueprintExpander {
           for (const [field, parentResource] of fkMap) {
             const val = body[field];
             if (typeof val !== 'string') continue;
-            if (!val.startsWith('gen_')) continue;
             const pool = idPools.get(parentResource);
-            if (pool && pool.length > 0) {
-              body[field] = this.rng.pick(pool);
-              resolvedCount++;
-            } else {
-              body[field] = null;
-              nulledCount++;
+            const poolSet = idPoolSets.get(parentResource);
+            if (!pool || pool.length === 0) {
+              // No pool to rewrite to. Only null out `gen_` placeholders so
+              // we don't clobber values that might be meaningful elsewhere.
+              if (val.startsWith('gen_')) {
+                body[field] = null;
+                nulledCount++;
+              }
+              continue;
             }
+            if (poolSet!.has(val)) continue;  // valid ref, leave it
+            body[field] = this.rng.pick(pool);
+            resolvedCount++;
           }
         }
       }
@@ -1206,6 +1229,7 @@ export class BlueprintExpander {
     tableIndex: Map<string, TableInfo>,
     idTracker: IdTracker,
     schema: SchemaModel,
+    blueprint: Blueprint,
     schemaMapping?: SchemaMapping,
     modelingConfig?: {
       fieldMappings?: Record<string, Record<string, Record<string, string>>>;
@@ -1220,24 +1244,67 @@ export class BlueprintExpander {
   ): void {
     const tableName = classification.table;
     const tableInfo = tableIndex.get(tableName);
-    const allRows: Row[] = [];
+    let allRows: Row[] = [];
 
     if (!classification.sources || classification.sources.length === 0) return;
 
-    // Build field mappings from schema mapping + config overrides
-    const bridgeMappings = new Map<string, SchemaMappingEntry[]>();
+    // Build field mappings from schema mapping + config overrides.
+    // Both bridge-table entries (legacy) and non-bridge id entries (IDENTITY
+    // CONTRACT pattern) contribute. For non-bridge entries, the LLM only
+    // produced one mapping per cross-surface column (apiField === 'id'); other
+    // body fields fall through to API_TO_DB_MAP / configFieldMap below.
+    const fieldMappings = new Map<string, SchemaMappingEntry[]>();
     if (schemaMapping) {
       for (const entry of schemaMapping.mappings) {
-        if (entry.dbTable !== tableName || !entry.isBridgeTable) continue;
+        if (entry.dbTable !== tableName) continue;
         const key = `${entry.adapterId}:${entry.apiResource}`;
-        const group = bridgeMappings.get(key) ?? [];
+        const group = fieldMappings.get(key) ?? [];
         group.push(entry);
-        bridgeMappings.set(key, group);
+        fieldMappings.set(key, group);
       }
     }
 
     const hasBillingPlatformCol = tableInfo?.columns.some(c => c.name === 'billing_platform');
     const hasExternalIdCol = tableInfo?.columns.some(c => c.name === 'external_id');
+
+    // Cross-surface FK columns this table uses (driven by schema mapping).
+    // We use these to:
+    //   1. Skip derivation for IDs already claimed by a static narrative entity.
+    //   2. Dedup statics + derived in deduplicateByUniqueConstraints below.
+    const fkColumnsForTable = new Set<string>();
+    if (schemaMapping && tableInfo) {
+      const tableColumnNames = new Set(tableInfo.columns.map(c => c.name));
+      for (const entry of schemaMapping.mappings) {
+        if (entry.dbTable !== tableName) continue;
+        if (entry.isBridgeTable) continue;
+        if (entry.apiField !== 'id') continue;
+        if (!tableColumnNames.has(entry.dbColumn)) continue;
+        fkColumnsForTable.add(entry.dbColumn);
+      }
+    }
+
+    // Process narrative-named static entities FIRST so their hand-coded
+    // auto-increment ids land before derived rows take adjacent ids.
+    // assignAutoIncrementIds bumps the counter to max(current, hand-coded id),
+    // so subsequent derive-loop ids skip past the static-claimed range.
+    const staticRows = blueprint.data.entities?.[tableName] ?? [];
+    const staticClaimedCrossSurfaceIds = new Set<string>();
+    for (const ent of staticRows) {
+      for (const fkCol of fkColumnsForTable) {
+        const v = (ent as Row)[fkCol];
+        if (typeof v === 'string') staticClaimedCrossSurfaceIds.add(v);
+      }
+    }
+    if (staticRows.length > 0) {
+      for (let i = 0; i < staticRows.length; i++) {
+        const row = { ...staticRows[i]! } as Row;
+        resolveInlineVariations(row, tableName, this.fieldGen, i);
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        resolveReferences(row, idTracker);
+        allRows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+    }
 
     for (const source of classification.sources) {
       const sourceKey = `${source.adapter}.${source.resource}`;
@@ -1247,8 +1314,8 @@ export class BlueprintExpander {
       const responses = responseSet.responses[source.resource];
       if (!responses || responses.length === 0) continue;
 
-      // Get field mappings for this source
-      const mappings = bridgeMappings.get(`${source.adapter}:${source.resource}`) ?? [];
+      // Get field mappings for this source (both bridge and non-bridge entries)
+      const mappings = fieldMappings.get(`${source.adapter}:${source.resource}`) ?? [];
 
       // Get config-level field mapping overrides
       const configFieldMap = modelingConfig?.fieldMappings?.[tableName];
@@ -1258,6 +1325,11 @@ export class BlueprintExpander {
 
       for (const apiResponse of responses) {
         const body = apiResponse.body as Record<string, unknown>;
+
+        // Skip derivation for IDs already claimed by a static narrative entity
+        // (the static row carries persona content this generic row would lose).
+        if (typeof body.id === 'string' && staticClaimedCrossSurfaceIds.has(body.id)) continue;
+
         const row: Row = {};
 
         // Set discriminator column
@@ -1277,6 +1349,36 @@ export class BlueprintExpander {
           const apiValue = body[mapping.apiField];
           if (apiValue !== undefined && apiValue !== null) {
             row[mapping.dbColumn] = apiValue;
+          }
+        }
+
+        // Secondary cross-surface FK columns: a single DB table may have
+        // multiple cross-surface ID columns pointing at DIFFERENT API resources
+        // — e.g. payments.stripe_payment_id ← stripe.charge.id AND
+        // payments.stripe_payment_intent_id ← stripe.payment_intent.id. The
+        // current source covers only one of them; the other resource's ID is
+        // typically present on the body as a ref field named after the
+        // resource (Stripe convention: charge.payment_intent = "pi_..."). Use
+        // that to populate the secondary FK column without needing to derive
+        // a second set of rows.
+        if (schemaMapping) {
+          for (const entry of schemaMapping.mappings) {
+            if (entry.dbTable !== tableName) continue;
+            if (entry.isBridgeTable) continue;
+            if (entry.apiField !== 'id') continue;
+            if (entry.adapterId !== source.adapter) continue;
+            if (entry.apiResource === source.resource) continue;
+            if (row[entry.dbColumn] !== undefined) continue;
+            const refValue = body[entry.apiResource];
+            if (typeof refValue === 'string') {
+              row[entry.dbColumn] = refValue;
+            } else if (
+              typeof refValue === 'object' && refValue !== null &&
+              'id' in (refValue as Record<string, unknown>)
+            ) {
+              const id = (refValue as Record<string, unknown>).id;
+              if (typeof id === 'string') row[entry.dbColumn] = id;
+            }
           }
         }
 
@@ -1345,6 +1447,8 @@ export class BlueprintExpander {
       allRows.push(...sourceRows);
     }
 
+    // (Static entities were already processed before the source loop above.)
+
     if (allRows.length > 0) {
       tables[tableName] = [...(tables[tableName] ?? []), ...allRows];
 
@@ -1385,6 +1489,7 @@ export class BlueprintExpander {
     idTracker: IdTracker,
     blueprint: Blueprint,
     schema: SchemaModel,
+    schemaMapping?: SchemaMapping,
   ): void {
     const tableName = classification.table;
     const tableInfo = tableIndex.get(tableName);
@@ -1404,6 +1509,54 @@ export class BlueprintExpander {
 
     const hasBillingPlatformCol = tableInfo?.columns.some(c => c.name === 'billing_platform');
     const hasExternalIdCol = tableInfo?.columns.some(c => c.name === 'external_id');
+
+    // Per-source cross-surface FK column lookup (the IDENTITY CONTRACT pattern).
+    // For tables that DON'T have `external_id` but DO have a column like
+    // `stripe_customer_id` mapping to `stripe.customer.id`, we derive the FK
+    // column from the schema mapping and populate it with `body.id`. Without
+    // this, derived rows would have NULL in that column and DB↔API joins fail.
+    const fkColumnByAdapterResource = new Map<string, string>();
+    if (schemaMapping && tableInfo) {
+      const tableColumnNames = new Set(tableInfo.columns.map(c => c.name));
+      for (const entry of schemaMapping.mappings) {
+        if (entry.dbTable !== tableName) continue;
+        if (entry.isBridgeTable) continue;
+        if (entry.apiField !== 'id') continue;
+        if (!tableColumnNames.has(entry.dbColumn)) continue;
+        fkColumnByAdapterResource.set(`${entry.adapterId}.${entry.apiResource}`, entry.dbColumn);
+      }
+    }
+
+    // Collect IDs claimed by narrative-named static entities so we can skip
+    // those during API derivation. The static entity wins because it carries
+    // persona-specific content (name, plan, mrr_cents, support narrative)
+    // that the generic derived row would lose.
+    const staticClaimedIds = new Set<string>();
+    const fkColumns = Array.from(new Set(fkColumnByAdapterResource.values()));
+    const staticEntityRows = blueprint.data.entities[tableName] ?? [];
+    for (const ent of staticEntityRows) {
+      const ext = (ent as Row).external_id;
+      if (typeof ext === 'string') staticClaimedIds.add(ext);
+      for (const fkCol of fkColumns) {
+        const v = (ent as Row)[fkCol];
+        if (typeof v === 'string') staticClaimedIds.add(v);
+      }
+    }
+
+    // Process static narrative-named entities FIRST so their hand-coded auto-
+    // increment ids (e.g. `id: 1` for Klein Records) land cleanly. The
+    // counter-bumping in `assignAutoIncrementIds` ensures derived rows in the
+    // loop below skip past these ids and don't collide on the PK.
+    if (staticEntityRows.length > 0) {
+      for (let i = 0; i < staticEntityRows.length; i++) {
+        const row = { ...staticEntityRows[i]! } as Row;
+        resolveInlineVariations(row, tableName, this.fieldGen, i);
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        resolveReferences(row, idTracker);
+        allRows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+    }
 
     // Common API → DB field mappings for identity tables.
     // Only map fields that actually exist in the target table schema.
@@ -1441,6 +1594,12 @@ export class BlueprintExpander {
       for (let i = 0; i < responses.length; i++) {
         const apiResponse = responses[i]!;
         const body = apiResponse.body as Record<string, unknown>;
+
+        // Skip derivation for IDs already claimed by a static narrative-named
+        // entity — the static entity carries persona content this generic row
+        // would lose.
+        if (typeof body.id === 'string' && staticClaimedIds.has(body.id)) continue;
+
         const row: Row = {};
 
         // 1. Set billing_platform
@@ -1452,9 +1611,17 @@ export class BlueprintExpander {
           }
         }
 
-        // 2. Set external_id from API entity ID
+        // 2. Set external_id from API entity ID (bridge-table pattern)
         if (hasExternalIdCol && typeof body.id === 'string') {
           row.external_id = body.id;
+        }
+
+        // 2b. Set cross-surface FK column from API entity ID (IDENTITY CONTRACT
+        // pattern: tables without `external_id` use a column like
+        // `stripe_customer_id` to store the API ID).
+        const fkColumn = fkColumnByAdapterResource.get(`${source.adapter}.${source.resource}`);
+        if (fkColumn && typeof body.id === 'string') {
+          row[fkColumn] = body.id;
         }
 
         // 3. Map common fields from API → DB
@@ -1493,22 +1660,8 @@ export class BlueprintExpander {
       }
     }
 
-    // Also include any static entities from the blueprint
-    const entityRows = blueprint.data.entities[tableName];
-    if (entityRows && entityRows.length > 0) {
-      for (let i = 0; i < entityRows.length; i++) {
-        const row = { ...entityRows[i]! } as Row;
-        // Only include static entities that aren't already covered by API derivation
-        const extId = row.external_id as string | undefined;
-        if (extId && allRows.some(r => r.external_id === extId)) continue;
-
-        resolveInlineVariations(row, tableName, this.fieldGen, i);
-        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
-        resolveReferences(row, idTracker);
-        allRows.push(row);
-        trackRow(row, tableInfo, idTracker, tableName);
-      }
-    }
+    // (Static entities were already prepended above so their hand-coded
+    // auto-increment ids land cleanly before derived rows take their slots.)
 
     // Expand DB archetypes for non-API-linked entities (e.g., free-tier users
     // with no billing_platform). In 3-role flow, identity rows are derived from
@@ -1872,12 +2025,22 @@ function assignAutoIncrementIds(
   if (!tableInfo) return;
 
   for (const col of tableInfo.columns) {
-    if (col.isAutoIncrement && row[col.name] === undefined) {
-      const counterKey = `${tableName}.${col.name}`;
+    if (!col.isAutoIncrement) continue;
+    const counterKey = `${tableName}.${col.name}`;
+    if (row[col.name] === undefined) {
       const current = idTracker.counters.get(counterKey) ?? 0;
       const next = current + 1;
       idTracker.counters.set(counterKey, next);
       row[col.name] = next;
+    } else {
+      // Pre-set (e.g. a hand-coded static entity with `id: 5`). Bump the
+      // counter to max(current, this id) so subsequent auto-assigns don't
+      // collide with values the static rows already claimed.
+      const v = row[col.name];
+      if (typeof v === 'number') {
+        const current = idTracker.counters.get(counterKey) ?? 0;
+        if (v > current) idTracker.counters.set(counterKey, v);
+      }
     }
   }
 
@@ -2532,7 +2695,13 @@ function deduplicateByUniqueConstraints(
   const result = rows.filter((row) => {
     for (let i = 0; i < uniqueKeySets.length; i++) {
       const cols = uniqueKeySets[i]!;
-      const key = cols.map((c) => String(row[c] ?? '')).join('\x00');
+      // SQL semantics: NULL doesn't equal NULL, so a row with any NULL in the
+      // unique key doesn't conflict with anything (Postgres, MySQL, SQLite all
+      // behave this way). Without this, e.g. 100 rows with NULL `stripe_pi_id`
+      // would collapse to 1 here even though Postgres would happily accept all.
+      const hasNull = cols.some(c => row[c] === undefined || row[c] === null);
+      if (hasNull) continue;
+      const key = cols.map((c) => String(row[c])).join('\x00');
       if (seenSets[i]!.has(key)) return false;
       seenSets[i]!.add(key);
     }

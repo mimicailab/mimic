@@ -1,4 +1,6 @@
 import type { SchemaModel, TableInfo, ColumnInfo, PromptContext, AdapterResourceSpecs } from '../types/index.js';
+import type { SchemaMapping } from '../types/blueprint.js';
+import { getPersonaIdPrefix, getResourceIdPrefix } from './identity-prefix.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,6 +33,18 @@ export interface BuildPromptOptions {
    * (e.g. billing_platform, external_id columns) without generating full API data.
    */
   apiPlatformNames?: string[];
+  /**
+   * LLM-derived DB↔API field correspondence. When provided, non-bridge entries
+   * with apiField=='id' drive the IDENTITY CONTRACT block, pinning the DB-side
+   * value prefix to the same string the API side will use.
+   */
+  schemaMapping?: SchemaMapping;
+  /**
+   * Adapter ResourceSpecs (when available). Used to look up per-resource
+   * idPrefix when rendering the IDENTITY CONTRACT — preferred over
+   * promptContext.idPrefix because it's per-resource, not per-platform.
+   */
+  resourceSpecs?: Record<string, AdapterResourceSpecs>;
 }
 
 /**
@@ -63,6 +77,17 @@ export interface BuildAdapterBatchPromptOptions {
   totalPersonas?: number;
   /** Summary of Phase 1 DB generation results for cross-surface ID consistency */
   phase1Summary?: Phase1Summary;
+  /**
+   * LLM-derived DB↔API field correspondence. When provided, non-bridge entries
+   * with apiField=='id' drive the IDENTITY CONTRACT block, pinning the API-side
+   * archetype prefix to the same string the DB side already uses.
+   */
+  schemaMapping?: SchemaMapping;
+  /**
+   * Adapter ResourceSpecs (when available). Used to look up per-resource
+   * idPrefix when rendering the IDENTITY CONTRACT.
+   */
+  resourceSpecs?: Record<string, AdapterResourceSpecs>;
 }
 
 // ---------------------------------------------------------------------------
@@ -521,7 +546,7 @@ The persona pins \`raj@northwind.com\` and \`aisha@northwind.com\` for trial use
  * Build the system + user prompts for blueprint generation.
  */
 export function buildPrompt(options: BuildPromptOptions): PromptPair {
-  const { schema, persona, domain, apis, promptContexts, currentDate, volume, personaIndex, totalPersonas, apiPlatformNames } = options;
+  const { schema, persona, domain, apis, promptContexts, currentDate, volume, personaIndex, totalPersonas, apiPlatformNames, schemaMapping, resourceSpecs } = options;
 
   const today = currentDate ?? new Date().toISOString().split('T')[0];
   const startDate = volume ? computeStartDate(today, volume) : undefined;
@@ -541,6 +566,11 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
   const platformHint = !hasApis && apiPlatformNames && apiPlatformNames.length > 0
     ? formatPlatformHint(apiPlatformNames, personaIndex, promptContexts)
     : '';
+
+  const identityContract = formatIdentityContract(
+    collectIdentityContract({ schemaMapping, personaIndex, promptContexts, resourceSpecs }),
+    'phase1',
+  );
 
   const dateRange = startDate
     ? `⚠ DATE RANGE: ${startDate} → ${today}. ALL generated dates MUST fall within this range. No exceptions.`
@@ -568,6 +598,7 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
     ...(requiredSummary ? [requiredSummary, ''] : []),
     ...(apiSection ? [apiSection, ''] : []),
     ...(platformHint ? [platformHint, ''] : []),
+    ...(identityContract ? [identityContract, ''] : []),
     ...(apiOnlyMode
       ? [
           '⚠ API-ONLY MODE: There is NO database schema. Do NOT generate `entities`, `entityArchetypes`, or `patterns`. ' +
@@ -689,6 +720,8 @@ export function buildAdapterBatchPrompt(
     personaIndex,
     totalPersonas,
     phase1Summary,
+    schemaMapping,
+    resourceSpecs,
   } = options;
 
   const today = currentDate ?? new Date().toISOString().split('T')[0];
@@ -696,6 +729,17 @@ export function buildAdapterBatchPrompt(
   const apiSection = formatApis(apis, promptContexts);
   const batchAdapterKeys = Object.keys(apis).map(k => (apis[k] as { adapter?: string }).adapter ?? k);
   const dbContext = phase1Summary ? formatPhase1Summary(phase1Summary, batchAdapterKeys) : '';
+
+  const identityContract = formatIdentityContract(
+    collectIdentityContract({
+      schemaMapping,
+      personaIndex,
+      promptContexts,
+      resourceSpecs,
+      filterAdapters: batchAdapterKeys,
+    }),
+    'phase2',
+  );
 
   const dateRange = startDate
     ? `⚠ DATE RANGE: ${startDate} → ${today}. ALL generated dates MUST fall within this range.`
@@ -720,6 +764,7 @@ export function buildAdapterBatchPrompt(
       : []),
     ...(identityRegistry ? [identityRegistry, ''] : []),
     ...(dbContext ? [dbContext, ''] : []),
+    ...(identityContract ? [identityContract, ''] : []),
     apiSection,
     '',
     'Generate apiEntities and apiEntityArchetypes for ALL platforms listed above.',
@@ -1138,6 +1183,128 @@ function formatPhase1Summary(summary: Phase1Summary, batchAdapterKeys?: string[]
 }
 
 // ---------------------------------------------------------------------------
+// Identity contract block (cross-surface ID prefix pinning)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolved identity-contract row: a single (DB column ⇄ API id) pin with the
+ * exact prefix both sides must use. The output of `collectIdentityContract`
+ * is consumed by both prompt rendering (Phase 1 + Phase 2) and the post-hoc
+ * validator, so they all see the same set of constraints.
+ */
+export interface IdentityContractEntry {
+  dbTable: string;
+  dbColumn: string;
+  adapterId: string;
+  apiResource: string;
+  apiField: string;
+  /** Persona-namespaced prefix, e.g. "cus_p1_" */
+  prefix: string;
+}
+
+/**
+ * Resolve `schemaMapping` + per-adapter prefix lookups into the concrete set
+ * of cross-surface ID constraints that apply for a given persona/run.
+ *
+ * Returns an empty array (and *not* an error) when:
+ *   - schemaMapping is undefined
+ *   - personaIndex is undefined (no namespacing yet → contract underdefined)
+ *   - no non-bridge id-mapping entries exist
+ *   - no adapter-side prefix can be resolved (caller decides if that's OK)
+ */
+export function collectIdentityContract(
+  options: {
+    schemaMapping?: SchemaMapping;
+    personaIndex?: number;
+    promptContexts?: Record<string, PromptContext>;
+    resourceSpecs?: Record<string, AdapterResourceSpecs>;
+    /** Restrict to a subset of adapter IDs (e.g. one Phase 2 batch). */
+    filterAdapters?: string[];
+  },
+): IdentityContractEntry[] {
+  const { schemaMapping, personaIndex, promptContexts, resourceSpecs, filterAdapters } = options;
+  if (!schemaMapping || personaIndex === undefined) return [];
+
+  const out: IdentityContractEntry[] = [];
+  for (const e of schemaMapping.mappings) {
+    if (e.isBridgeTable) continue;
+    if (e.apiField !== 'id') continue;
+    if (filterAdapters && !filterAdapters.includes(e.adapterId)) continue;
+
+    const rawPrefix = getResourceIdPrefix(e.adapterId, e.apiResource, promptContexts, resourceSpecs);
+    if (!rawPrefix) continue;
+
+    out.push({
+      dbTable: e.dbTable,
+      dbColumn: e.dbColumn,
+      adapterId: e.adapterId,
+      apiResource: e.apiResource,
+      apiField: e.apiField,
+      prefix: getPersonaIdPrefix(rawPrefix, personaIndex),
+    });
+  }
+  return out;
+}
+
+/**
+ * Render the IDENTITY CONTRACT block — same constraints, two framings.
+ *
+ *   phase: 'phase1'  →  framed for DB archetype generation (vary[<column>])
+ *   phase: 'phase2'  →  framed for API archetype generation (vary.id)
+ *
+ * Returns an empty string when there are no constraints to render — callers
+ * splice that conditionally so the no-cross-surface-FK case is a clean no-op.
+ */
+export function formatIdentityContract(
+  entries: IdentityContractEntry[],
+  phase: 'phase1' | 'phase2',
+): string {
+  if (entries.length === 0) return '';
+
+  if (phase === 'phase1') {
+    const lines = [
+      '--- IDENTITY CONTRACT (DB side, informational) ---',
+      'The following DB columns are cross-surface join keys with the API mock.',
+      'The system will pin them to the prefixes below after generation, so you',
+      'do not need to set `vary` on these columns yourself. The values are',
+      'shown here so any archetype that REFERENCES these IDs by name (in',
+      'narrative fields, FKs from related tables, etc.) uses matching strings.',
+      '',
+    ];
+    for (const e of entries) {
+      lines.push(
+        `  ${e.dbTable}.${e.dbColumn}  →  prefix "${e.prefix}"  ` +
+        `(joins ${e.adapterId}.${e.apiResource}.${e.apiField})  ` +
+        `e.g. "${e.prefix}001", "${e.prefix}002", …`,
+      );
+    }
+    lines.push('--- END IDENTITY CONTRACT ---');
+    return lines.join('\n');
+  }
+
+  // phase 2 — API side
+  const lines = [
+    '--- IDENTITY CONTRACT (API side, informational) ---',
+    'The following API resource IDs are cross-surface join keys with DB',
+    'columns. The system will pin `vary.id` for these resources after',
+    'generation, so you do not need to set it yourself. Use the prefixes',
+    'below when referencing these IDs in OTHER fields — e.g. when emitting',
+    '`subscription.customer` or `charge.customer`, those reference fields',
+    'should use the same prefix so they resolve correctly.',
+    '',
+  ];
+  for (const e of entries) {
+    lines.push(
+      `  ${e.adapterId}.${e.apiResource}.${e.apiField}  →  prefix "${e.prefix}"  ` +
+      `(matches ${e.dbTable}.${e.dbColumn})  ` +
+      `e.g. "${e.prefix}001", "${e.prefix}002", …`,
+    );
+  }
+  lines.push('--- END IDENTITY CONTRACT ---');
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // Schema mapping prompt (DB↔API field correspondence)
 // ---------------------------------------------------------------------------
 
@@ -1171,7 +1338,25 @@ rather than generated independently. This ensures the DB and API are always cons
 
 1. For each DB table, determine if it is a bridge table (has platform identifier + external ID columns)
 2. For each bridge table, map its columns to the corresponding API resource fields
-3. Also map non-bridge tables that have FK references to API platform IDs (e.g. an orders table with a stripe_customer_id column)
+3. Identify cross-surface identity columns on non-bridge tables (see below) and map them too
+
+## Cross-Surface Identity Columns
+
+A "cross-surface identity column" is a string column on a non-bridge DB table whose
+NAME suggests it stores an external API platform's ID (a known platform prefix
+combined with a resource hint, usually ending in \`_id\`). Examples:
+
+- customers.stripe_customer_id     →  stripe.customer.id
+- orders.paddle_subscription_id    →  paddle.subscription.id
+- accounts.chargebee_id            →  chargebee.customer.id
+
+For every such column you find, you MUST emit a SchemaMappingEntry with
+\`isBridgeTable: false\`, mapping the DB column to that API resource's primary
+\`id\` field. This entry is what tells the generator that the DB-side values and
+the API-side IDs MUST be the same string sequence — without it, the DB and the
+mock API will silently produce two universes of IDs that never join.
+
+Apply this even when the DB table itself is internal-only (not a bridge table).
 
 ## Rules
 

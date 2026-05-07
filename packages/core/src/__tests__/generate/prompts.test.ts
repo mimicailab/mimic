@@ -3,6 +3,7 @@ import {
   buildPrompt,
   buildAdapterBatchPrompt,
   buildDistributionPrompt,
+  buildSchemaMappingPrompt,
 } from '../../generate/prompts.js';
 import type { SchemaModel } from '../../types/schema.js';
 
@@ -195,5 +196,146 @@ describe('prompts: narrative-named-entity rules', () => {
     expect(blueprintSys).toContain('RULE I — DATE-DRIVEN ARCHETYPES');
     expect(batchSys).toContain('RULE G — DATE-DRIVEN ARCHETYPES');
     expect(distSys).toContain('CRITICAL — DATE-DRIVEN DISTRIBUTIONS');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDENTITY CONTRACT (cross-surface ID prefix pinning, derived from schema map)
+// ─────────────────────────────────────────────────────────────────────────────
+
+import type { SchemaMapping } from '../../types/blueprint.js';
+import type { PromptContext } from '../../types/index.js';
+
+const STRIPE_PROMPT_CTX: Record<string, PromptContext> = {
+  stripe: {
+    resources: ['customer'],
+    amountFormat: 'integer cents',
+    relationships: [],
+    requiredFields: { customer: ['id', 'email'] },
+    idPrefix: 'cus_',
+  },
+};
+
+const STRIPE_FK_MAPPING: SchemaMapping = {
+  bridgeTables: [],
+  mappings: [
+    {
+      dbTable: 'customers',
+      dbColumn: 'stripe_customer_id',
+      adapterId: 'stripe',
+      apiResource: 'customer',
+      apiField: 'id',
+      isBridgeTable: false,
+    },
+  ],
+};
+
+describe('IDENTITY CONTRACT — Phase 1 (DB) prompt', () => {
+  it('renders a DB-side contract block when schemaMapping has cross-surface FKs', () => {
+    const { user } = buildPrompt({
+      schema: EMPTY_SCHEMA,
+      persona: PERSONA,
+      domain: 'sales-operations',
+      personaIndex: 1,
+      promptContexts: STRIPE_PROMPT_CTX,
+      schemaMapping: STRIPE_FK_MAPPING,
+    });
+    expect(user).toContain('IDENTITY CONTRACT (DB side');
+    expect(user).toContain('informational');
+    expect(user).toContain('customers.stripe_customer_id');
+    expect(user).toContain('"cus_p1_"');
+    expect(user).toContain('joins stripe.customer.id');
+  });
+
+  it('does NOT render when no schemaMapping is provided (briefing-agent case)', () => {
+    const { user } = buildPrompt({
+      schema: EMPTY_SCHEMA,
+      persona: PERSONA,
+      domain: 'sales-operations',
+      personaIndex: 1,
+    });
+    expect(user).not.toContain('IDENTITY CONTRACT');
+  });
+
+  it('does NOT render when mapping has only bridge-table entries (existing path)', () => {
+    const bridgeOnly: SchemaMapping = {
+      bridgeTables: ['customers'],
+      mappings: [
+        {
+          dbTable: 'customers', dbColumn: 'external_id', adapterId: 'stripe',
+          apiResource: 'customer', apiField: 'id', isBridgeTable: true,
+        },
+      ],
+    };
+    const { user } = buildPrompt({
+      schema: EMPTY_SCHEMA,
+      persona: PERSONA,
+      domain: 'sales-operations',
+      personaIndex: 1,
+      promptContexts: STRIPE_PROMPT_CTX,
+      schemaMapping: bridgeOnly,
+    });
+    expect(user).not.toContain('IDENTITY CONTRACT');
+  });
+});
+
+describe('IDENTITY CONTRACT — Phase 2 (API) prompt', () => {
+  it('renders an informational API-side contract block', () => {
+    const { user } = buildAdapterBatchPrompt({
+      persona: PERSONA,
+      domain: 'sales-operations',
+      apis: { stripe: { adapter: 'stripe' } },
+      promptContexts: STRIPE_PROMPT_CTX,
+      personaIndex: 1,
+      schemaMapping: STRIPE_FK_MAPPING,
+    });
+    expect(user).toContain('IDENTITY CONTRACT (API side');
+    expect(user).toContain('informational');
+    expect(user).toContain('stripe.customer.id');
+    expect(user).toContain('"cus_p1_"');
+    expect(user).toContain('matches customers.stripe_customer_id');
+  });
+
+  it('filters entries to the current batch — does not leak other adapters in', () => {
+    const multi: SchemaMapping = {
+      bridgeTables: [],
+      mappings: [
+        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false },
+        { dbTable: 'orders', dbColumn: 'paddle_subscription_id', adapterId: 'paddle', apiResource: 'subscription', apiField: 'id', isBridgeTable: false },
+      ],
+    };
+    const { user } = buildAdapterBatchPrompt({
+      persona: PERSONA,
+      domain: 'sales-operations',
+      apis: { stripe: { adapter: 'stripe' } },
+      promptContexts: STRIPE_PROMPT_CTX,
+      personaIndex: 1,
+      schemaMapping: multi,
+    });
+    expect(user).toContain('stripe.customer.id');
+    expect(user).not.toContain('paddle.subscription.id');
+  });
+
+  it('is a no-op when schemaMapping is undefined', () => {
+    const { user } = buildAdapterBatchPrompt({
+      persona: PERSONA,
+      domain: 'sales-operations',
+      apis: { stripe: { adapter: 'stripe' } },
+      promptContexts: STRIPE_PROMPT_CTX,
+      personaIndex: 1,
+    });
+    expect(user).not.toContain('IDENTITY CONTRACT');
+  });
+});
+
+describe('SCHEMA_MAPPING_SYSTEM_PROMPT — cross-surface identity rule', () => {
+  it('includes the cross-surface identity columns rule with worked examples', () => {
+    const { system } = buildSchemaMappingPrompt({
+      schema: { tables: [], enums: [], insertionOrder: [] },
+      adapterResources: { stripe: ['customer'] },
+    });
+    expect(system).toContain('Cross-Surface Identity Columns');
+    expect(system).toContain('stripe_customer_id');
+    expect(system).toContain('isBridgeTable: false');
   });
 });

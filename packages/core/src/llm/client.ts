@@ -5,8 +5,20 @@ import { CostTracker, type CostCategory } from './cost-tracker.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger, debugFile } from '../utils/logger.js';
 
-// Models that are reasoning models and don't support temperature
-const REASONING_MODELS = /^(o[1-9]|o3-mini|gpt-5-mini)/;
+// Models that don't accept the `temperature` parameter. Includes:
+//   - OpenAI reasoning models (o1+, gpt-5-mini)
+//   - Anthropic Opus 4.7+ (deprecated `temperature` for these models;
+//     setting it returns invalid_request_error from the API)
+const REASONING_MODELS = /^(o[1-9]|o3-mini|gpt-5-mini|claude-opus-4-7)/;
+
+// Per-model maximum output tokens. The default 65536 exceeds the cap on
+// some models and triggers AI SDK warnings + truncated responses. When the
+// cap is too tight for a structured-output schema, the response fails the
+// zod parse and the caller sees "No object generated".
+function maxOutputTokensForModel(modelId: string): number {
+  if (/^claude-opus-4-7/.test(modelId)) return 32_000;
+  return 65_536;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -137,7 +149,7 @@ export class LLMClient {
         prompt: opts.prompt,
         ...(isReasoning ? {} : { temperature: opts.temperature ?? this.config.temperature ?? 0.7 }),
         maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
-        maxOutputTokens: 65536,
+        maxOutputTokens: maxOutputTokensForModel(this.config.model),
         timeout: timeoutMs,
         providerOptions: {
           anthropic: { structuredOutputMode: 'jsonTool' },
