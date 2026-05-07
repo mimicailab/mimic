@@ -220,33 +220,6 @@ export const BlueprintLLMOutputWithApisSchema = z.object({
 export type BlueprintLLMOutput = z.infer<typeof BlueprintLLMOutputSchema>;
 
 // ---------------------------------------------------------------------------
-// Adapter batch output schema (Phase 2 of batched generation)
-// ---------------------------------------------------------------------------
-
-/**
- * Zod schema for adapter-batch-only LLM output.
- *
- * Used in Phase 2 of batched generation where the persona and DB data have
- * already been generated. The LLM only needs to produce API entity data for
- * a subset of adapters.
- */
-export const AdapterBatchOutputSchema = z.object({
-  apiEntities: z
-    .record(z.record(z.array(z.record(z.unknown()))))
-    .optional()
-    .describe(
-      'API entity seeds keyed by adapter ID then resource type — use for small reference data (<10 items)',
-    ),
-  apiEntityArchetypes: z
-    .record(z.record(EntityArchetypeConfigSchema))
-    .describe(
-      'REQUIRED: API entity archetypes keyed by adapter ID then resource type',
-    ),
-});
-
-export type AdapterBatchOutput = z.infer<typeof AdapterBatchOutputSchema>;
-
-// ---------------------------------------------------------------------------
 // Schema mapping output schema (DB↔API field correspondence)
 // ---------------------------------------------------------------------------
 
@@ -319,7 +292,7 @@ const VaryEntrySchema = z.object({
 
 const ArchetypeDistributionSchema = z.object({
   label: z.string().describe('Human-readable archetype label, e.g. "starter-plan"'),
-  weight: z.number().describe('Fraction 0-1, all weights should sum to ~1.0'),
+  weight: z.number().describe('Fraction 0-1. Matched-archetype weights should sum to ~1.0; apiOnly archetypes are additive and do not count toward that sum.'),
   fieldOverrides: z
     .array(FieldOverrideEntrySchema)
     .optional()
@@ -328,6 +301,15 @@ const ArchetypeDistributionSchema = z.object({
     .array(VaryEntrySchema)
     .optional()
     .describe('Fields that should vary per clone with a specific strategy the LLM chooses (e.g. amount ranges, name types). Omit fields the assembler can derive from the spec.'),
+  apiOnly: z
+    .boolean()
+    .optional()
+    .describe('Set true when entities of this archetype have NO database counterpart (e.g. "Stripe-only orphans from a botched import", "abandoned Plaid items"). The system will emit them into API responses but skip DB row creation, producing deliberate cross-platform asymmetry. Use ONLY when the persona explicitly declares such asymmetry; never as a generic flag.'),
+  count: z
+    .number()
+    .int()
+    .optional()
+    .describe('Explicit entity count for this archetype. Only meaningful when apiOnly:true — these counts are ADDITIVE on top of the matched (non-apiOnly) count. If omitted on an apiOnly archetype, count is derived from weight × matchedCount.'),
 });
 
 const DistributionFactSchema = z.object({
@@ -404,6 +386,8 @@ export function toDistributionOutput(raw: DistributionOutputRaw): DistributionOu
               return [v.field, spec];
             }))
           : undefined,
+        apiOnly: a.apiOnly,
+        count: a.count,
       })),
     };
   }
@@ -440,5 +424,7 @@ export type DistributionOutput = Record<string, {
     weight: number;
     fieldOverrides?: Record<string, unknown>;
     vary?: Record<string, Record<string, unknown>>;
+    apiOnly?: boolean;
+    count?: number;
   }[];
 }>;

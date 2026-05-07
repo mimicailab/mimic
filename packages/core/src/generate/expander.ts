@@ -144,6 +144,13 @@ export class BlueprintExpander {
     // ==================================================================
     const apiResponses: Record<string, ApiResponseSet> = {};
 
+    // Per-resource set of IDs emitted by `apiOnly: true` archetypes. The
+    // identity-row derivation step skips these so the entities only ever
+    // appear on the API side, producing the persona's declared asymmetry.
+    // Keyed by `${adapterId}.${resourceType}`. Lives only during expansion;
+    // never serialized.
+    const apiOnlyIds = new Map<string, Set<string>>();
+
     // A1. Expand apiEntityArchetypes
     if (blueprint.data.apiEntityArchetypes) {
       for (const [adapterId, resources] of Object.entries(
@@ -154,6 +161,7 @@ export class BlueprintExpander {
           resources,
           blueprint.personaId,
           range,
+          apiOnlyIds,
         );
       }
     }
@@ -239,7 +247,7 @@ export class BlueprintExpander {
 
         this.deriveIdentityTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          blueprint, schema, schemaMapping,
+          blueprint, schema, schemaMapping, apiOnlyIds,
         );
       }
 
@@ -251,7 +259,7 @@ export class BlueprintExpander {
 
         this.deriveIdentityTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          blueprint, schema, schemaMapping,
+          blueprint, schema, schemaMapping, apiOnlyIds,
         );
       }
 
@@ -277,7 +285,7 @@ export class BlueprintExpander {
 
         this.deriveMirroredTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          schema, blueprint, schemaMapping, modelingConfig,
+          schema, blueprint, schemaMapping, modelingConfig, apiOnlyIds,
         );
       }
 
@@ -770,6 +778,7 @@ export class BlueprintExpander {
     resources: Record<string, EntityArchetypeConfig>,
     personaId: string,
     range: TimeRange,
+    apiOnlyIds: Map<string, Set<string>>,
   ): ApiResponseSet {
     const responses: Record<string, ApiResponse[]> = {};
     const startSec = Math.floor(range.start.getTime() / 1000);
@@ -777,44 +786,79 @@ export class BlueprintExpander {
 
     for (const [resourceType, config] of Object.entries(resources)) {
       const { count, archetypes } = config;
-      const distribution = distributeByWeight(archetypes, count);
-      const expanded: ApiResponse[] = [];
 
-      logger.debug(
-        `Expanding ${count} API entities for "${adapterId}.${resourceType}" from ${archetypes.length} archetype(s)`,
+      // Option B count semantics: `count` is the MATCHED total. apiOnly
+      // archetypes are additive on top — their entities will appear in the
+      // API responses but be skipped during DB-row derivation.
+      const matchedArchetypes = archetypes.filter(a => !a.apiOnly);
+      const apiOnlyArchetypes = archetypes.filter(a => a.apiOnly);
+
+      const matchedDistribution = matchedArchetypes.length > 0
+        ? distributeByWeight(matchedArchetypes, count)
+        : [];
+
+      const totalApiOnly = apiOnlyArchetypes.reduce(
+        (s, a) => s + (a.count ?? Math.max(1, Math.round((a.weight ?? 0) * count))),
+        0,
       );
 
-      for (let arcIdx = 0; arcIdx < archetypes.length; arcIdx++) {
-        const archetype = archetypes[arcIdx]!;
-        const archetypeCount = distribution[arcIdx]!;
+      logger.debug(
+        `Expanding "${adapterId}.${resourceType}": ${count} matched + ${totalApiOnly} apiOnly ` +
+        `(from ${matchedArchetypes.length} matched + ${apiOnlyArchetypes.length} apiOnly archetype(s))`,
+      );
 
-        for (let i = 0; i < archetypeCount; i++) {
-          const row = this.fieldGen.applyVariations(
-            archetype.vary,
-            archetype.fields,
-            i,
-            `${adapterId}.${resourceType}`,
-          );
+      const expanded: ApiResponse[] = [];
+      const orphanIdSet = totalApiOnly > 0 ? new Set<string>() : undefined;
 
-          // Ensure created timestamp falls within the configured date range
-          const createdKey = row.created !== undefined ? 'created' : row.created_at !== undefined ? 'created_at' : null;
-          if (createdKey) {
-            const ts = row[createdKey] as number;
-            if (ts < startSec || ts > endSec) {
-              row[createdKey] = startSec + Math.floor(this.rng.next() * (endSec - startSec));
-            }
-          } else {
-            row.created = startSec + Math.floor(this.rng.next() * (endSec - startSec));
+      // Inline helper: materialize one entity from an archetype.
+      const emit = (archetype: typeof archetypes[number], i: number, isApiOnly: boolean): void => {
+        const row = this.fieldGen.applyVariations(
+          archetype.vary,
+          archetype.fields,
+          i,
+          `${adapterId}.${resourceType}`,
+        );
+
+        // Ensure created timestamp falls within the configured date range
+        const createdKey = row.created !== undefined ? 'created' : row.created_at !== undefined ? 'created_at' : null;
+        if (createdKey) {
+          const ts = row[createdKey] as number;
+          if (ts < startSec || ts > endSec) {
+            row[createdKey] = startSec + Math.floor(this.rng.next() * (endSec - startSec));
           }
-
-          expanded.push({
-            statusCode: 200,
-            headers: { 'content-type': 'application/json' },
-            body: row,
-            personaId,
-            stateKey: `${adapterId}_${resourceType}`,
-          });
+        } else {
+          row.created = startSec + Math.floor(this.rng.next() * (endSec - startSec));
         }
+
+        if (isApiOnly && orphanIdSet) {
+          const id = row.id;
+          if (typeof id === 'string') orphanIdSet.add(id);
+        }
+
+        expanded.push({
+          statusCode: 200,
+          headers: { 'content-type': 'application/json' },
+          body: row,
+          personaId,
+          stateKey: `${adapterId}_${resourceType}`,
+        });
+      };
+
+      // Matched archetypes — distributed by weight to sum to `count`.
+      for (let arcIdx = 0; arcIdx < matchedArchetypes.length; arcIdx++) {
+        const archetype = matchedArchetypes[arcIdx]!;
+        const archetypeCount = matchedDistribution[arcIdx]!;
+        for (let i = 0; i < archetypeCount; i++) emit(archetype, i, false);
+      }
+
+      // apiOnly archetypes — explicit additive counts.
+      for (const archetype of apiOnlyArchetypes) {
+        const explicit = archetype.count ?? Math.max(1, Math.round((archetype.weight ?? 0) * count));
+        for (let i = 0; i < explicit; i++) emit(archetype, i, true);
+      }
+
+      if (orphanIdSet && orphanIdSet.size > 0) {
+        apiOnlyIds.set(`${adapterId}.${resourceType}`, orphanIdSet);
       }
 
       // Sort by created timestamp for chronological consistency
@@ -1241,12 +1285,24 @@ export class BlueprintExpander {
         externalIdColumn: string;
       }[]>>;
     },
+    apiOnlyIds?: Map<string, Set<string>>,
   ): void {
     const tableName = classification.table;
     const tableInfo = tableIndex.get(tableName);
     let allRows: Row[] = [];
 
     if (!classification.sources || classification.sources.length === 0) return;
+
+    // Flat union of all apiOnly entity IDs across every adapter+resource.
+    // Used to drop mirrored rows whose FK refs point at apiOnly identities —
+    // orphan-ness propagates transitively (an invoice for an orphan customer
+    // lives on the API side only and never mirrors to DB).
+    const allApiOnlyIds = new Set<string>();
+    if (apiOnlyIds) {
+      for (const set of apiOnlyIds.values()) {
+        for (const id of set) allApiOnlyIds.add(id);
+      }
+    }
 
     // Build field mappings from schema mapping + config overrides.
     // Both bridge-table entries (legacy) and non-bridge id entries (IDENTITY
@@ -1323,12 +1379,46 @@ export class BlueprintExpander {
 
       const sourceRows: Row[] = [];
 
+      // apiOnly entities for this exact source (e.g. apiOnly invoices) skip
+      // mirroring directly. These IDs are also in `allApiOnlyIds` for the
+      // transitive ref check below, but a same-resource skip is clearer.
+      const sourceApiOnlyIds = apiOnlyIds?.get(`${source.adapter}.${source.resource}`);
+      let mirroredSkippedDueToOrphanRef = 0;
+      let mirroredSkippedDueToApiOnly = 0;
+
       for (const apiResponse of responses) {
         const body = apiResponse.body as Record<string, unknown>;
 
         // Skip derivation for IDs already claimed by a static narrative entity
         // (the static row carries persona content this generic row would lose).
         if (typeof body.id === 'string' && staticClaimedCrossSurfaceIds.has(body.id)) continue;
+
+        // Skip if this entity itself was emitted by an apiOnly archetype.
+        if (sourceApiOnlyIds && typeof body.id === 'string' && sourceApiOnlyIds.has(body.id)) {
+          mirroredSkippedDueToApiOnly++;
+          continue;
+        }
+
+        // Transitive skip: if the row's identity-FK ref points at an apiOnly
+        // identity (e.g. an invoice whose `customer` is a Stripe-only orphan),
+        // skip it. The API mock still serves the entity, but it has no DB row.
+        if (allApiOnlyIds.size > 0 && classification.identityFks) {
+          let pointsAtOrphan = false;
+          for (const fkRule of classification.identityFks) {
+            let refValue: unknown = body[fkRule.apiField];
+            if (typeof refValue === 'object' && refValue !== null && 'id' in refValue) {
+              refValue = (refValue as Record<string, unknown>).id;
+            }
+            if (typeof refValue === 'string' && allApiOnlyIds.has(refValue)) {
+              pointsAtOrphan = true;
+              break;
+            }
+          }
+          if (pointsAtOrphan) {
+            mirroredSkippedDueToOrphanRef++;
+            continue;
+          }
+        }
 
         const row: Row = {};
 
@@ -1408,6 +1498,13 @@ export class BlueprintExpander {
         assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
         sourceRows.push(row);
         trackRow(row, tableInfo, idTracker, tableName);
+      }
+
+      if (mirroredSkippedDueToApiOnly > 0 || mirroredSkippedDueToOrphanRef > 0) {
+        logger.debug(
+          `Mirrored "${tableName}" from ${sourceKey}: skipped ${mirroredSkippedDueToApiOnly} apiOnly entit${mirroredSkippedDueToApiOnly === 1 ? 'y' : 'ies'} ` +
+          `+ ${mirroredSkippedDueToOrphanRef} entit${mirroredSkippedDueToOrphanRef === 1 ? 'y' : 'ies'} referencing apiOnly identities`,
+        );
       }
 
       // Resolve FKs to identity tables
@@ -1490,6 +1587,7 @@ export class BlueprintExpander {
     blueprint: Blueprint,
     schema: SchemaModel,
     schemaMapping?: SchemaMapping,
+    apiOnlyIds?: Map<string, Set<string>>,
   ): void {
     const tableName = classification.table;
     const tableInfo = tableIndex.get(tableName);
@@ -1579,8 +1677,15 @@ export class BlueprintExpander {
       const responses = responseSet.responses[source.resource];
       if (!responses || responses.length === 0) continue;
 
+      // IDs emitted by `apiOnly: true` archetypes for this resource. These
+      // entities exist on the API side only — skipping derivation here is
+      // what produces the persona's declared cross-platform asymmetry.
+      const orphanIds = apiOnlyIds?.get(`${source.adapter}.${source.resource}`);
+
+      const matchedCount = orphanIds ? responses.length - orphanIds.size : responses.length;
       logger.debug(
-        `Deriving identity table "${tableName}" rows from ${source.adapter}.${source.resource} (${responses.length} entities)`,
+        `Deriving identity table "${tableName}" rows from ${source.adapter}.${source.resource}: ` +
+        `${matchedCount} matched + ${orphanIds?.size ?? 0} apiOnly (skipped) of ${responses.length} entities`,
       );
 
       // Build a round-robin index into archetypes for DB-only column variety.
@@ -1599,6 +1704,9 @@ export class BlueprintExpander {
         // entity — the static entity carries persona content this generic row
         // would lose.
         if (typeof body.id === 'string' && staticClaimedIds.has(body.id)) continue;
+
+        // Skip apiOnly entities — they live only on the API side.
+        if (orphanIds && typeof body.id === 'string' && orphanIds.has(body.id)) continue;
 
         const row: Row = {};
 

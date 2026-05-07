@@ -180,6 +180,54 @@ export function validatePhase2IdentityContract(
   }
 }
 
+/**
+ * Validate that no resource has an unreasonable share of `apiOnly: true`
+ * archetypes. Cross-platform asymmetry is a real persona-driven feature, but
+ * the LLM occasionally over-applies the flag (e.g. marks half of all
+ * subscriptions as orphans). Cap apiOnly entities at 30% of matched entities.
+ *
+ * Threshold rationale: real-world drift in healthy systems is single-digit
+ * percentages; 30% is generous but still catches the "everything is orphan"
+ * failure mode loud and early. Tune via `maxApiOnlyRatio` if needed.
+ */
+export function validateApiOnlyCap(
+  data: {
+    apiEntityArchetypes?: Record<string, Record<string, EntityArchetypeConfig>>;
+  },
+  options: { maxApiOnlyRatio?: number } = {},
+): void {
+  const maxRatio = options.maxApiOnlyRatio ?? 0.3;
+  if (!data.apiEntityArchetypes) return;
+
+  for (const [adapterId, resources] of Object.entries(data.apiEntityArchetypes)) {
+    for (const [resourceType, cfg] of Object.entries(resources)) {
+      let apiOnlyCount = 0;
+      for (const a of cfg.archetypes) {
+        if (!a.apiOnly) continue;
+        apiOnlyCount += a.count ?? Math.max(1, Math.round((a.weight ?? 0) * cfg.count));
+      }
+      if (apiOnlyCount === 0) continue;
+
+      const matchedCount = cfg.count;
+      const ratio = apiOnlyCount / Math.max(1, matchedCount);
+      if (ratio > maxRatio) {
+        const message =
+          `apiOnly cap exceeded for ${adapterId}.${resourceType}: ` +
+          `${apiOnlyCount} apiOnly entities vs ${matchedCount} matched ` +
+          `(ratio ${ratio.toFixed(2)} > cap ${maxRatio.toFixed(2)}). ` +
+          `Cross-platform asymmetry should describe a small, persona-declared subset, ` +
+          `not the dominant population.`;
+        const remedy =
+          'Fix: lower the apiOnly archetype counts so they reflect the persona\'s ' +
+          'explicit asymmetric claim (e.g. "3 deliberate Stripe-only orphans"). ' +
+          'If the persona genuinely calls for >30% asymmetry, raise maxApiOnlyRatio ' +
+          'on the GenerateOptions.';
+        throw new BlueprintGenerationError(message, remedy);
+      }
+    }
+  }
+}
+
 function throwViolation(
   phaseLabel: string,
   entry: IdentityContractEntry,

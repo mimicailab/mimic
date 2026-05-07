@@ -17,6 +17,17 @@ export interface ArchetypeDistribution {
   fieldOverrides?: Record<string, unknown>;
   /** Per-archetype vary specs from the LLM — override assembler defaults */
   vary?: Record<string, Record<string, unknown>>;
+  /**
+   * When true, entities of this archetype have no DB counterpart. The
+   * expander emits them into API responses but skips DB row creation,
+   * producing deliberate cross-platform asymmetry.
+   */
+  apiOnly?: boolean;
+  /**
+   * Explicit additive count (only meaningful when `apiOnly: true`). When
+   * omitted, an apiOnly archetype's count is derived from `weight × count`.
+   */
+  count?: number;
 }
 
 export interface ResourceDistribution {
@@ -198,6 +209,8 @@ function buildArchetype(
     weight: dist.weight,
     fields,
     vary,
+    ...(dist.apiOnly ? { apiOnly: true } : {}),
+    ...(dist.count !== undefined ? { count: dist.count } : {}),
   };
 }
 

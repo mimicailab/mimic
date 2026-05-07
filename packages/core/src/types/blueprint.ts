@@ -153,11 +153,30 @@ export interface EntityArchetype {
   fields: Record<string, unknown>;
   /** Fields that get randomized per clone, keyed by column name */
   vary: Record<string, FieldVariation>;
+  /**
+   * When true on an apiEntityArchetypes archetype, entities derived from it
+   * have NO database counterpart. The expander emits them into API responses
+   * but skips DB row creation, producing deliberate cross-platform asymmetry
+   * (e.g. Stripe-only orphans, Plaid items linked to closed bank accounts).
+   *
+   * Has no effect on entityArchetypes (DB-side); always false there.
+   */
+  apiOnly?: boolean;
+  /**
+   * Explicit entity count for this archetype. Only meaningful when
+   * `apiOnly: true` — these counts are ADDITIVE on top of the matched
+   * (non-apiOnly) count and do not participate in DB↔API coordination.
+   * If omitted, the count is derived from `weight × matchedCount`.
+   */
+  count?: number;
 }
 
 /** Per-table archetype configuration */
 export interface EntityArchetypeConfig {
-  /** Target count of entities to generate for this table */
+  /**
+   * Target MATCHED entity count. apiOnly archetypes contribute additively
+   * on top of this — see EntityArchetype.apiOnly + EntityArchetype.count.
+   */
   count: number;
   /** The archetype templates */
   archetypes: EntityArchetype[];
