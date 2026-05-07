@@ -1,0 +1,14 @@
+{
+  "name": "revenue-recovery-agent-example",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@mimicai/adapter-postgres": "workspace:*",
+    "@mimicai/adapter-stripe": "workspace:*",
+    "@mimicai/cli": "workspace:*"
+  },
+  "devDependencies": {
+    "@prisma/client": "^7.8.0",
+    "prisma": "^7.8.0"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "domain": "SaaS revenue recovery and reconciliation. A growth-stage SaaS billing platform where customers pay monthly or annually for starter/pro/enterprise plans. The Postgres database holds the internal source-of-truth (customers, subscriptions, invoices, payments, plus internal risk_flags set by CSMs and support_notes from the support team). Stripe holds the external truth — payment intents, refunds, real subscription state. The two can drift: cards expire, subscriptions cancel in Stripe before Postgres catches up, accidental double-charges happen. The agent's job is to investigate MRR drops by reconciling both sides, then execute recovery actions (retry failed payments, issue refunds, send dunning) in Stripe with operator approval.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6",
+    "timeoutMs": 600000
+  },
+
+  "personas": [
+    {
+      "name": "growth-stage-leak",
+      "description": "100-customer growth-stage SaaS, 12 weeks of billing history, three plans (starter $29/mo, pro $99/mo, enterprise $499/mo). The most recent week shows a -$4,820 MRR delta with five distinct causes that must be discoverable in the data: (1) eight failed charges this week — four cards expired this calendar month with new expiries unset, two insufficient_funds declines that historically retry well, two lost_card declines that should not be retried; (2) three enterprise customers downgraded from $499 to $99/mo on the same day after a renewal price-change conversation, captured in support_notes tagged 'downgrade'; (3) two voluntary cancellations this week — both customers had risk_flags of type 'billing_dispute' or 'competitor_mentioned' set 18-21 days earlier by their CSM, with a corresponding support_note explaining the concern, and nobody acted on the flag; (4) one accidental double-charge on customer 'Klein Records' on 2026-04-29 — same amount, same day, two payment intents both succeeded, eligible for a single refund of the duplicate; (5) one drift case — customer 'Larkspur Inc' has Postgres status='active' and mrr_cents=9900, but the Stripe subscription was cancelled 9 days ago and Postgres never picked it up (the cancellation_reason on the Postgres subscription is null). Beyond the affected customers, the wider customer base is healthy: stable MRR over the prior 11 weeks, mix of monthly and annual subscriptions, normal mix of paid and pending invoices, ~6 risk_flags total (some resolved, some active), ~34 support_notes spanning billing complaints, feature requests, and CSM check-ins. Every Stripe customer has a matching Postgres row except for 3 deliberate Stripe-only orphans from a botched import 4 weeks ago. Card BINs on the failed charges should cluster believably (real-shape BIN prefixes). All numbers must reconcile: the MRR delta computed from subscription history matches the sum of the five causes."
+    }
+  ],
+
+  "generate": {
+    "volume": "12 weeks",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "prisma",
+        "path": "./prisma/schema.prisma"
+      },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "stripe": { "enabled": true, "mcp": true }
+  },
+
+  "test": {
+    "agent": "http://localhost:3003/test",
+    "target_skill": "revenue-recovery",
+    "auto_scenarios": true
+  }
+}
