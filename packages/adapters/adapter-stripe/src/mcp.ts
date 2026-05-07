@@ -287,20 +287,27 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
     return text(`Created billing portal session ${data.id}: ${data.url}`);
   });
 
-  // 24. search_stripe_resources (synthetic — searches across all resource types)
-  server.tool('search_stripe_resources', 'Search across Stripe resources (customers, subscriptions, invoices, etc.)', {
-    query: z.string().describe('Search query string'),
-    resource: z.enum(['customers', 'subscriptions', 'invoices', 'payment_intents', 'charges']).optional().describe('Limit search to a specific resource type'),
+  // 24. search_stripe_resources — generic escape hatch over any list endpoint.
+  // Accepts any Stripe resource type so the agent can reach surfaces the
+  // dedicated list_* tools don't cover (payouts, webhook_endpoints, transfers,
+  // balance_transactions, files, mandates, etc.). Validation is delegated to
+  // the underlying mock route — invalid types return 404 from /v1/<type>.
+  server.tool('search_stripe_resources', 'Search across any Stripe resource type. Pass `resource` to scope (e.g. "payouts", "webhook_endpoints", "transfers") or omit for a broad scan over the common listable resources.', {
+    query: z.string().describe('Search query string (substring match against the resource JSON)'),
+    resource: z.string().optional().describe('Stripe resource type to scope to (e.g. "payouts", "charges", "webhook_endpoints"). Omit for a broad scan.'),
   }, async ({ query, resource }) => {
-    const types = resource ? [resource] : ['customers', 'subscriptions', 'invoices', 'payment_intents', 'charges'];
+    // Default scan covers the resources most commonly worth searching across.
+    // Callers wanting other types should pass `resource` explicitly.
+    const types = resource ? [resource] : [
+      'customers', 'subscriptions', 'invoices', 'payment_intents', 'charges',
+      'refunds', 'disputes', 'payouts', 'transfers', 'balance_transactions',
+      'webhook_endpoints',
+    ];
     const results: string[] = [];
 
     for (const type of types) {
-      const path = type === 'payment_intents'
-        ? '/v1/payment_intents'
-        : `/v1/${type}`;
       try {
-        const data = await call('GET', path) as any;
+        const data = await call('GET', `/v1/${type}`) as any;
         if (!data.data?.length) continue;
         const matches = data.data.filter((item: any) => {
           const str = JSON.stringify(item).toLowerCase();
@@ -309,22 +316,22 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
         for (const m of matches) {
           results.push(`[${type}] ${m.id} — ${JSON.stringify(m).slice(0, 120)}`);
         }
-      } catch { /* skip */ }
+      } catch { /* invalid resource type or empty result — skip */ }
     }
 
     if (!results.length) return text(`No results found for "${query}".`);
     return text(`Search results (${results.length}):\n${results.join('\n')}`);
   });
 
-  // 25. fetch_stripe_resources (synthetic — generic resource fetcher)
-  server.tool('fetch_stripe_resources', 'Fetch a specific Stripe resource by type and ID', {
-    resource_type: z.enum([
-      'customers', 'payment_intents', 'charges', 'subscriptions',
-      'invoices', 'refunds', 'products', 'prices', 'coupons', 'disputes',
-    ]).describe('The type of resource to fetch'),
-    resource_id: z.string().describe('The ID of the resource'),
+  // 25. fetch_stripe_resources — generic GET /v1/<type> or GET /v1/<type>/<id>.
+  // Open to any Stripe resource type. Pass `resource_id` to fetch one entity,
+  // or omit it to list. This is the canonical fallback for resources without
+  // a dedicated list_* tool (payouts, webhook_endpoints, etc.).
+  server.tool('fetch_stripe_resources', 'Fetch a Stripe resource — either a specific entity by ID, or list all entities for a resource type. Accepts ANY Stripe resource type (customers, subscriptions, invoices, payment_intents, charges, refunds, disputes, payouts, transfers, balance_transactions, webhook_endpoints, products, prices, coupons, files, mandates, …).', {
+    resource_type: z.string().describe('Stripe resource type, e.g. "payouts", "webhook_endpoints", "charges". Maps to /v1/<type>.'),
+    resource_id: z.string().optional().describe('Optional resource ID — omit to list all entities for this type.'),
   }, async ({ resource_type, resource_id }) => {
-    const path = `/v1/${resource_type}/${resource_id}`;
+    const path = resource_id ? `/v1/${resource_type}/${resource_id}` : `/v1/${resource_type}`;
     const data = await call('GET', path) as any;
     return text(JSON.stringify(data, null, 2));
   });
