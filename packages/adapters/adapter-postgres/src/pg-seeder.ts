@@ -556,12 +556,29 @@ function normalizeRowColumns(rows: Row[], tableInfo: TableInfo): string[] {
     const colInfo = colInfoMap.get(colName);
 
     if (colInfo?.hasDefault) {
-      // DB has a default — drop this column entirely when any row is missing/null,
-      // so Postgres applies the default consistently instead of receiving NULL.
+      // DB has a default — try to substitute the default value per-row for
+      // rows that are missing/null on this column, so rows that DO have a
+      // real value keep it. The old "drop the column for all rows" path
+      // silently clobbered legitimate values whenever any row was missing
+      // (e.g. 31 `year` intervals lost because 17 sibling rows were null).
+      const literal = resolveLiteralDefault(colInfo);
+      if (literal !== undefined) {
+        finalColumns.push(colName);
+        for (const row of rows) {
+          if (row[colName] === undefined || row[colName] === null) {
+            row[colName] = literal;
+          }
+        }
+        debug(`Substituted DB default ${JSON.stringify(literal)} for null/missing rows in "${tableInfo.name}.${colName}"`);
+        continue;
+      }
+      // Default is a SQL function (now(), gen_random_uuid(), ...) that we
+      // can't compute client-side. Fall back to dropping the column so
+      // Postgres runs the function on every row.
       for (const row of rows) {
         delete row[colName];
       }
-      debug(`Dropping column "${tableInfo.name}.${colName}" (has DB default, missing in some rows)`);
+      debug(`Dropping column "${tableInfo.name}.${colName}" (SQL-function default; can't substitute client-side)`);
       continue;
     }
 
@@ -697,5 +714,69 @@ function getTypeDefault(col: ColumnInfo): unknown {
       return '{}';
     default:
       return undefined;
+  }
+}
+
+/**
+ * Resolve a column's `DEFAULT` clause into a literal JS value when possible.
+ *
+ * Returns:
+ *   - `undefined` when the default is a SQL function (`now()`, `gen_random_uuid()`,
+ *     `CURRENT_TIMESTAMP`, ...) that we cannot evaluate client-side. Callers
+ *     should drop the column from the INSERT and let Postgres run the function.
+ *   - `null` when the default is the literal `NULL`.
+ *   - A typed value (string / number / boolean) otherwise, coerced to match
+ *     `col.type` so the seeder doesn't push a string into an integer column.
+ */
+function resolveLiteralDefault(col: ColumnInfo): unknown | undefined {
+  const raw = col.defaultValue;
+  if (raw === undefined || raw === null) return undefined;
+  const v = String(raw).trim();
+  if (v.length === 0) return undefined;
+
+  // SQL-function defaults — we can't compute these in code.
+  const isFunction =
+    /\(\s*\)\s*$/.test(v) ||                                  // any zero-arg fn: now(), gen_random_uuid(), ...
+    /^CURRENT_(TIMESTAMP|DATE|TIME|USER|ROLE)\b/i.test(v) ||
+    /^LOCAL(TIMESTAMP|TIME)\b/i.test(v) ||
+    /^now$/i.test(v);                                          // Prisma's bare `now` token
+  if (isFunction) return undefined;
+
+  if (/^null$/i.test(v)) return null;
+
+  // Strip surrounding quotes ('foo' / "foo") — SQL parser preserves them,
+  // Prisma parser doesn't.
+  let s = v;
+  const quoted = s.match(/^['"](.*)['"]$/s);
+  if (quoted) s = quoted[1]!;
+
+  switch (col.type) {
+    case 'boolean':
+      if (/^(true|t|1)$/i.test(s)) return true;
+      if (/^(false|f|0)$/i.test(s)) return false;
+      return undefined;
+    case 'integer':
+    case 'bigint':
+    case 'smallint':
+    case 'decimal':
+    case 'float':
+    case 'double': {
+      const n = Number(s);
+      return Number.isFinite(n) ? n : undefined;
+    }
+    case 'text':
+    case 'varchar':
+    case 'char':
+      return s;
+    case 'json':
+    case 'jsonb':
+      // Only accept clearly JSON-shaped defaults; otherwise leave to DB.
+      if (s.startsWith('{') || s.startsWith('[')) return s;
+      return undefined;
+    default:
+      // For dates/times/uuids, only accept defaults that were quoted (clearly
+      // a literal, not a function). A bare `gen_random_uuid()` already
+      // returned undefined above.
+      return quoted ? s : undefined;
   }
 }
