@@ -70,8 +70,11 @@ The user prompt contains "Persona index: N". ALL string identifiers (stripe_cust
 
 Rules:
 1. The persona must feel like a real person — give them a coherent backstory, plausible name, age, occupation, and location that match the description you are given.
-2. For **small reference/dimension tables** (categories, plans, settings — under ~10 rows), produce static "entity" rows in \`entities\`.
-   For **larger entity tables** (customers, employees, accounts — 10+ expected rows), use \`entityArchetypes\` instead. See the ARCHETYPE SYSTEM section below.
+2. Pick \`entities\` vs \`entityArchetypes\` by **what the table is**, not by row count:
+   - **Reference / dimension tables** (categories, plans, settings, products, regions) — use static \`entities\`. These are lookup data with no cross-surface FKs.
+   - **Transactional / cross-surface tables** (customers, subscriptions, invoices, payments — anything whose schema has a \`stripe_*_id\` / \`paddle_*_id\` / \`*_external_id\` column shown in the IDENTITY CONTRACT section) — **always** use \`entityArchetypes\`, even for small row counts. The expander derives mirrored DB rows from API entities so cross-surface IDs match by construction; static \`entities\` bypass that derivation and create dangling FKs (DB references an API id that doesn't exist).
+   - **Persona-pinned events on transactional tables** (e.g. "Klein Records double-charge on 2026-04-29") — use **anchor-bound archetypes** (see ANCHORS section). Do NOT inline persona events as static \`entities\` — even if it's only 1-2 rows, doing so produces unmatched cross-surface IDs.
+   See the ARCHETYPE SYSTEM and ANCHORS sections below.
 3. Each pattern must specify its type:
    - **recurring** — happens on a fixed schedule (rent, salary, subscriptions).  Provide a \`schedule\` with frequency and optional day-of-month / day-of-week.
    - **variable** — happens a random number of times per period (groceries, dining out).  Provide \`randomFields\` with ranges and a \`frequency\` spec.
@@ -165,6 +168,8 @@ For entity tables that need many rows (customers, employees, orders, accounts �
 - \`date\` — random ISO date string (YYYY-MM-DD) within the date range
 - \`derived\` — template with \`{{fieldName}}\` placeholders referencing other fields in the same row. **Use this to preserve data consistency** (e.g. emails matching company domain, usernames derived from names). **CRITICAL: Only use simple \`{{fieldName}}\` — do NOT use Jinja/Liquid filters like \`{{name | lower}}\`.** The resolver automatically lowercases and sanitizes values for email/URL use.
 - \`sequence\` — sequential ID with \`prefix\`, e.g. prefix "cus_p1_" → "cus_p1_001", "cus_p1_002"
+- \`anchor_date\` — read a named date off an anchor (\`anchor: "<id>"\`, \`key: "event"\` by default, optional \`format: "epoch_seconds"\` for API archetypes). Only valid in archetypes that set \`anchor\`.
+- \`anchor_field\` — read a resolved attribute off the anchor's customer (\`anchor: "<id>"\`, \`key: "id"\` by default; use \`"stripe_customer_id"\` etc. for cross-surface FKs). Only valid in archetypes that set \`anchor\`.
 
 **CRITICAL — REALISTIC EMAIL AND NAME RULES:**
 - For **individual/personal accounts**: use \`"type": "fullName"\` for name and \`"type": "email"\` for email (generates realistic random emails like jane.doe@gmail.com). Do NOT use derived templates for individual emails — the \`email\` type already produces realistic addresses.
@@ -180,6 +185,97 @@ For entity tables that need many rows (customers, employees, orders, accounts �
 - Patterns can reference archetype-expanded entities via \`{{table_name.column_name}}\` placeholders as usual
 - **CRITICAL: Foreign key columns MUST be included in archetype \`fields\`.** Use the \`{{table_name.column_name}}\` placeholder format so the expander resolves them. For example, a subscriptions archetype MUST include \`"customer_id": "{{customers.id}}"\` in \`fields\`. The expander will randomly assign each cloned row to one of the expanded parent entities.
 - **ALL REQUIRED columns from the schema MUST appear** in either \`fields\` or \`vary\`. Do NOT omit any NOT NULL column without a default.
+- **\`@default(now())\` timestamp columns (rendered as \`DEFAULT now()\` in the schema) are auto-distributed by the expander** across the configured volume range — you do NOT need to add a \`vary\` rule for them in the common case. Override **only when** the persona narrative pins a specific date or window for some rows (e.g. "double-charge on 2026-04-29", "8 failed charges this week"). For overrides, create a *separate archetype* for those persona-described rows with the constrained timestamp in \`vary\` (e.g. \`{ "type": "timestamp", "min": <epoch_secs>, "max": <epoch_secs> }\`). Do NOT enumerate timestamps row-by-row — let the expander materialize them.
+
+##############################################################################
+# ANCHORS — CROSS-TABLE COHERENCE FOR PERSONA EVENTS
+##############################################################################
+
+When the persona narrative describes an event that implicates rows on multiple tables AND on multiple surfaces (DB + API), declare an **anchor** instead of repeating dates and customer references across each archetype. Anchors keep cross-table coherence O(events), not O(rows).
+
+**Use anchors when:** the persona pins a specific customer + date and that combination must appear identically on rows from 2+ tables (e.g. "double-charge on Klein Records Apr 29" → 2 \`payments\` + 2 Stripe \`payment_intent\` + 1 \`invoice\`, all sharing the customer FK and the date).
+
+**Anchor structure:**
+\`\`\`json
+"anchors": [
+  {
+    "id": "klein_double_charge",
+    "customer": { "match": "Klein Records" },
+    "dates": { "event": "2026-04-29T00:00:00Z" }
+  }
+]
+\`\`\`
+- \`id\`: stable string archetypes reference.
+- \`customer.match\`: exact-or-substring lookup against the \`name\` / \`company\` column on the identity-customer table. The customer must exist in your \`customers\` archetype output (use a dedicated archetype with \`fields: { "name": "Klein Records" }\` and weight ~ 1/customer_count).
+- \`dates\`: named ISO strings. Use \`event\` as the canonical key.
+
+**Binding archetypes to anchors:**
+\`\`\`json
+"payments": {
+  "count": 0,
+  "archetypes": [
+    {
+      "label": "klein_dup_charge",
+      "weight": 0,
+      "anchor": "klein_double_charge",
+      "count": 2,
+      "fields": { "amount_cents": 9900, "status": "succeeded" },
+      "vary": {
+        "customer_id": { "type": "anchor_field", "anchor": "klein_double_charge", "key": "id" },
+        "created_at":  { "type": "anchor_date",  "anchor": "klein_double_charge", "key": "event" },
+        "stripe_payment_intent_id": { "type": "sequence", "prefix": "pi_klein_dup_" }
+      }
+    }
+  ]
+}
+\`\`\`
+And the matching API archetype on the Stripe side:
+\`\`\`json
+"stripe": {
+  "payment_intent": {
+    "count": 0,
+    "archetypes": [
+      {
+        "label": "klein_dup_charge_mirror",
+        "weight": 0,
+        "anchor": "klein_double_charge",
+        "count": 2,
+        "fields": { "amount": 9900, "status": "succeeded" },
+        "vary": {
+          "id":       { "type": "sequence", "prefix": "pi_klein_dup_" },
+          "customer": { "type": "anchor_field", "anchor": "klein_double_charge", "key": "stripe_customer_id" },
+          "created":  { "type": "anchor_date",  "anchor": "klein_double_charge", "key": "event", "format": "epoch_seconds" }
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+**Rules:**
+- Anchor-bound archetypes use exact \`count\` and \`weight: 0\` (they don't participate in weighted distribution).
+- Every anchor declared in \`data.anchors\` MUST be referenced by at least one archetype's \`anchor\` field. Unbound anchors are decorative and produce zero rows — generation fails with a clear error if an anchor is left unbound.
+- One anchor per persona event. Don't create anchors for ambient row distributions — for those, use the auto-distributed \`@default(now())\` rule above.
+- If an anchor's customer can't be matched to any expanded customer row, the anchor archetypes are skipped with a warning. Always emit the named customer in the \`customers\` archetype.
+
+**Choosing where to bind an anchor — MIRROR vs DRIFT vs TIME-WINDOW:**
+
+The DB row for a mirrored table (any DB table whose rows are derived from API data — payments, invoices, subscriptions) is normally CREATED by the mirror flow copying the API entity. Where you anchor-bind matters:
+
+1. **MIRROR events** (DB and API agree on the row, like Klein's double-charge — both surfaces show the two succeeded payment intents):
+   - Anchor-bind on the **API archetype only**. The mirror flow propagates the API row to DB with matching id, customer, and date.
+   - Do NOT add a DB anchor archetype for the same event. It would emit a separate set of rows whose ids don't match the API rows (sequence counters are global) and the DB ends up with double the rows.
+   - Example for Klein: ONE archetype on \`stripe.payment_intent\` with \`anchor: klein_double_charge, count: 2, vary.id: { sequence, prefix: "pi_klein_dup_" }, vary.customer: anchor_field, vary.created: anchor_date\`. No DB-side klein archetype needed.
+
+2. **DRIFT events** (DB and API intentionally diverge — Larkspur Inc has DB \`status=active\` but Stripe \`status=canceled\`):
+   - Anchor-bind on **both** the DB archetype AND the API archetype.
+   - Both archetypes hardcode the SAME cross-surface id in \`fields\` (e.g. \`fields.stripe_subscription_id: "sub_lark_drift_001"\` on the DB side and \`fields.id: "sub_lark_drift_001"\` on the API side). This pins the id on both surfaces; the DB-side row is emitted first, claims the id, and the mirror loop skips the API entity with that id — leaving the two rows free to disagree on body fields.
+   - Do NOT use \`sequence\` prefixes for the cross-surface id on a drift archetype — sequence counters are global, so the two surfaces would land on different ids (e.g. \`sub_lark_drift_001\` on one surface, \`sub_lark_drift_002\` on the other). Hardcoded ids are required.
+
+3. **TIME-WINDOWED events** (persona pins rows to "this week", "yesterday", "last 7 days"):
+   - Declare an anchor whose \`dates.event\` is the persona-pinned date inside the window. Bind the API archetype to that anchor with \`vary.created: anchor_date\` (and \`format: epoch_seconds\` for APIs that store unix timestamps).
+   - Mirror flow propagates the date to DB. Do NOT scatter timestamps via \`vary.created: { type: "timestamp" }\` for events the persona pins to a window — that produces dates across the full date range and the persona's "this week" framing is lost.
+   - Example for "8 failed charges this week": one anchor \`failed_this_week\` with \`dates.event: <today - 3d>\`, plus three API archetypes (per failure reason) anchor-bound to it with \`count: 4 / 2 / 2\`.
 
 ##############################################################################
 # API ENTITY ARCHETYPES — SCALABLE API DATA GENERATION
@@ -279,6 +375,18 @@ GOOD: { "fields": { "company": "{{name}}" },
 **RULE F — FK SEQUENCE AWARENESS:**
 When using \`sequence\` for FK references (e.g. \`customer\` field in subscriptions using prefix \`cus_p1_\`), the counter runs independently and may exceed the parent entity count. The expander automatically wraps excess references, but for best results keep child counts reasonable relative to parent counts.
 
+**RULE F2 — LABELS IMPLY FIELD VALUES (MANDATORY, for both DB and API archetypes):**
+An archetype's \`label\` is a human hint, not data. The actual record fields are what end up in the row. If your label encodes a categorical state — \`historical-failed\`, \`failed-expired-card\`, \`canceled-by-customer\`, \`paid-late\`, \`fraudulent-dispute\` — you MUST also encode that state in the actual reason/code/status fields, either in \`fields\` (constant across all clones of that archetype) or in \`vary\` (when the archetype covers multiple specific reasons via \`pick\`).
+- DB example: \`label: "historical-failed"\` on a \`payments\` archetype with \`status: "failed"\` MUST also set \`failure_reason\` — either as a constant in \`fields\` (e.g. \`{failure_reason: "card_expired"}\`) or as a \`pick\` in \`vary\` (e.g. \`{failure_reason: {type: "pick", values: ["card_expired", "insufficient_funds", "lost_card"]}}\`). Leaving the failure-reason column unset produces NULL rows the consumer cannot categorize.
+- API example: \`label: "failed-expired-card"\` on a Stripe \`charge\` archetype MUST set both \`failure_code\` and \`failure_message\` in \`fields\`, not leave them \`null\`. The label and the data must agree.
+- Subscription cancellation: \`label: "canceled-by-customer"\` must set \`status\`, \`canceled_at\`, and \`cancellation_reason\` (or the equivalent fields the resource actually has).
+- General rule: read your own label. Identify the categorical state it asserts. Find the field(s) on this resource that carry that state — use your knowledge of the schema (DB columns shown in the table definition; API fields documented in PLATFORM SCHEMA). Set them. Never leave them null when the label asserts a value.
+- This rule is the single biggest cause of "the data looks right but the agent can't categorize it" bugs. Labels without matching field values produce silently broken datasets.
+
+When the persona names exact counts per reason (e.g. "8 failed charges — 4 card_expired, 2 insufficient_funds, 2 lost_card"), prefer ONE archetype PER reason with an explicit \`count\` field over a single archetype with a \`pick\` rule. Per-reason archetypes with explicit counts guarantee the persona's distribution; \`pick\` only approximates it.
+
+\`count\` on a plain archetype emits EXACTLY that many rows and bypasses weight redistribution — set \`count: 4\` (NOT \`weight: 0.018\` hoping it lands at 4) for the four \`card_expired\` failures, \`count: 2\` for insufficient_funds, \`count: 2\` for lost_card. The remaining \`EntityArchetypeConfig.count\` is distributed across the weight-only archetypes (succeeded buckets etc.). Do NOT use \`weight: 0\` on plain archetypes — that emits zero rows. Anchor-bound archetypes are a different mechanism and DO use \`weight: 0 + count + anchor\`; that pattern only applies when \`anchor\` is set.
+
 ##############################################################################
 # PER-PARENT FANOUT — SCALABLE TRANSACTIONAL DATA
 ##############################################################################
@@ -341,7 +449,7 @@ The persona description contains specific numeric claims about the data (e.g., "
    - "14 Pro customers who haven't logged in for 30+ days" → create a "pro-inactive" archetype with count matching 14, plan "pro", and \`last_login_at\` set to a timestamp >30 days ago.
    - "~2,847 paying customers" → total customer count across all paid archetypes = 2847.
    - "£127k MRR" → archetype amounts × counts must sum to ~£127,000.
-3. **Use dedicated small archetypes for specific claims.** If the persona says "3 overdue invoices", create a separate archetype with weight that produces exactly 3 entities — do NOT rely on random status distribution from a larger pool.
+3. **Use dedicated small archetypes for specific claims.** If the persona says "3 overdue invoices", create a separate archetype with weight that produces exactly 3 entities — do NOT rely on random status distribution from a larger pool. **Never inline persona-specific events as static \`entities\` rows when the target table has cross-surface FK columns** (\`stripe_*_id\`, etc.) — that bypasses cross-surface derivation and produces dangling FKs. Use anchor-bound archetypes instead (see ANCHORS section).
 4. **For percentage claims**, compute the exact count from the total and create appropriately weighted archetypes.
 5. **Include all claimed facts** in the \`facts\` array with structured \`data\` fields matching the claim.
 
@@ -993,6 +1101,7 @@ rather than generated independently. This ensures the DB and API are always cons
 1. For each DB table, determine if it is a bridge table (has platform identifier + external ID columns)
 2. For each bridge table, map its columns to the corresponding API resource fields
 3. Identify cross-surface identity columns on non-bridge tables (see below) and map them too
+4. Map CROSS-SURFACE BODY FIELDS for every table that links to an API resource (see below)
 
 ## Cross-Surface Identity Columns
 
@@ -1011,6 +1120,41 @@ the API-side IDs MUST be the same string sequence — without it, the DB and the
 mock API will silently produce two universes of IDs that never join.
 
 Apply this even when the DB table itself is internal-only (not a bridge table).
+
+## Cross-Surface Body Fields (CRITICAL)
+
+When a DB table maps to an API resource (via a bridge or a cross-surface identity column),
+its other columns often hold the same data as fields on that API resource. The generator
+mirrors API entities into DB rows by copying these mapped fields — every column you DON'T
+map ends up NULL or randomly filled, even when the API source has the value.
+
+For each table that maps to an API resource, walk its remaining columns and emit a
+SchemaMappingEntry for every column that has a clear semantic counterpart on the API
+resource. Use your knowledge of the API platform's schema (Stripe, Plaid, Chargebee,
+HubSpot, etc.) — these are well-documented public APIs.
+
+Common semantic correspondences:
+
+- payments.failure_reason          →  stripe.charge.failure_code      (or .failure_message)
+- payments.amount_cents            →  stripe.charge.amount             (integer minor units)
+- payments.status                  →  stripe.charge.status             (succeeded/failed/pending)
+- payments.payment_method          →  stripe.charge.payment_method_details.type
+- invoices.amount_cents            →  stripe.invoice.amount_due        (or .total)
+- invoices.status                  →  stripe.invoice.status
+- subscriptions.status             →  stripe.subscription.status
+- subscriptions.canceled_at        →  stripe.subscription.canceled_at
+- customers.email                  →  stripe.customer.email
+- customers.name                   →  stripe.customer.name
+
+The pattern: any column whose name describes business state (status, reason, amount,
+method, type, kind, code, message, *_at timestamps) very likely has an API counterpart.
+Map it. Adapter-side categorical fields and reason fields are especially important —
+without these mappings, "failed payment" rows arrive in the DB with NULL reasons.
+
+\`isBridgeTable: false\` for these entries (the column lives on a non-bridge table that
+mirrors an API resource); \`apiField\` is the dotted path's leaf (use the top-level field
+when the API stores it nested, e.g. \`failure_code\`, not \`outcome.reason\` — the generator
+reads top-level body fields).
 
 ## Rules
 
@@ -1055,7 +1199,10 @@ export function buildSchemaMappingPrompt(
   }
 
   lines.push('Analyse the DB schema and API platforms above.');
-  lines.push('Identify bridge tables and map DB columns to API resource fields.');
+  lines.push('Identify bridge tables and cross-surface identity columns, AND emit body-field');
+  lines.push('mappings for every DB column on a mirrored table that has a semantic counterpart');
+  lines.push('on its linked API resource (status, amount, failure_reason→failure_code, method, etc).');
+  lines.push('Without body-field mappings, mirrored rows arrive in the DB with NULL/random data.');
 
   return { system: SCHEMA_MAPPING_SYSTEM_PROMPT, user: lines.join('\n') };
 }
@@ -1166,6 +1313,29 @@ When the persona names a count of entities sharing MULTIPLE correlated field val
 - "18 enterprise customers @ $499/mo" → ONE archetype with \`weight\` chosen so it produces 18 entities, \`fieldOverrides: [{field:"plan", value:"enterprise"}, {field:"mrr_cents", value:"49900"}]\`. NOT one archetype for plan and a separate weight for mrr.
 - "3 enterprise customers downgraded to pro at $99/mo" → ONE dedicated archetype with \`fieldOverrides: [{field:"plan", value:"pro"}, {field:"mrr_cents", value:"9900"}]\` and a \`downgrade\` tag — even though plan and mrr are normally derived independently.
 - The assembler's auto-variation generates fields independently. If you want plan and mrr to agree, you MUST co-locate them in one archetype. Splitting them across two distributions produces de-correlated rows and silently violates the persona's invariant.
+
+## CRITICAL — LABELS IMPLY FIELD VALUES
+An archetype's \`label\` is a human hint, not data. The actual record fields are what end up in the API response and (when mirrored) in the database. If your label encodes a categorical state — \`failed-expired-card\`, \`canceled-by-customer\`, \`paid-late\`, \`fraudulent-dispute\` — you MUST also encode that state in \`fieldOverrides\` on the resource's actual reason/code/status fields. Otherwise the label says one thing and the data says null, and downstream consumers (DB mirrors, agents reading the API) cannot categorize the row.
+- \`label: "failed-expired-card"\` on a Stripe charge → \`fieldOverrides\` MUST include \`{field: "status", value: "failed"}\` AND \`{field: "failure_code", value: "expired_card"}\` AND \`{field: "failure_message", value: "Your card has expired."}\`. Leaving \`failure_code\` null is a bug — it drops the very signal the label promised.
+- \`label: "canceled-by-customer"\` on a subscription → set \`status\`, \`cancellation_reason\`, \`canceled_at\` (as appropriate for the API).
+- \`label: "fraudulent-dispute"\` → set \`status\` AND \`reason: "fraudulent"\`.
+- General rule: read your own label. Identify the categorical state it names. Find the field(s) on the API resource that carry that state (use the resource's documented schema — failure_code/failure_message for charges, cancellation_reason for subscriptions, decline_code where applicable, etc.). Set them in \`fieldOverrides\`. Never leave them null when the label asserts a value.
+- This rule is the single biggest cause of "the data looks right but the agent can't categorize it" bugs. Labels without matching field values produce silently broken datasets.
+
+## CRITICAL — ANCHOR BINDING IS WHERE PERSONA EVENTS LIVE
+The DB blueprint may declare anchors in \`data.anchors\` (named persona events like "Klein's double-charge on 2026-04-29"). Each anchor MUST be bound to at least one archetype on this API side via the archetype's \`anchor\` field — otherwise the persona event produces zero rows on the API and the mirror flow has nothing to propagate to the DB.
+- For MIRROR events (DB and API agree, e.g. Klein's two succeeded payment_intents): bind the anchor on the relevant API resource(s) — \`{anchor: "klein_double_charge", count: 2, fieldOverrides: [...], vary: [{field: "id", type: "sequence", prefix: "pi_klein_dup_"}, ...]}\`. The DB blueprint should NOT bind the same anchor on the DB side; mirror flow creates the DB row from your API archetype.
+- For DRIFT events (DB and API diverge, e.g. Larkspur's Stripe sub canceled but Postgres still active): the DB side will bind too. On THIS side, hardcode the cross-surface id in \`fieldOverrides\` (e.g. \`{field: "id", value: "sub_lark_drift_001"}\`) so the DB and API rows land on the same id while diverging on status/canceled_at. Do NOT use a sequence for the id on a drift archetype — sequence counters are global and the two surfaces would land on different ids.
+- For TIME-WINDOW events ("this week", "yesterday"): bind the anchor on the API archetype with \`vary: [{field: "created", type: "anchor_date", anchor: "<id>", key: "event", format: "epoch_seconds"}]\`. The persona-pinned date propagates to the DB row via mirror.
+- Generation fails with a clear error if any anchor is declared but unbound. Read each anchor in \`data.anchors\` and bind it.
+
+## CRITICAL — EXPLICIT COUNTS BEAT WEIGHTS FOR PERSONA-PINNED NUMBERS
+When the persona narrates an exact number ("8 failed charges — 4 card_expired, 2 insufficient_funds, 2 lost_card"), use \`count\` on a per-reason archetype. \`count\` emits EXACTLY that many rows and bypasses weight redistribution; \`weight\` only approximates and rounds. The remaining \`distribution.count\` is split across weight-only archetypes.
+- \`{ label: "failed-expired-card", count: 4, fieldOverrides: [{field:"status", value:"failed"}, {field:"failure_code", value:"expired_card"}, ...] }\`
+- \`{ label: "failed-insufficient-funds", count: 2, ... }\`
+- \`{ label: "failed-lost-card", count: 2, ... }\`
+- The weight-only succeeded archetypes (no \`count\`, sum to ~1.0) absorb the remaining capacity.
+- Do NOT use \`weight: 0\` on plain archetypes hoping it means "explicit count" — that emits zero rows. \`weight: 0\` is only valid alongside \`apiOnly: true\` or an \`anchor\`. For plain "exactly N rows" use just \`count: N\` (omit \`weight\` or set it to 0; either works since count wins).
 
 ## Rules
 - Matched-archetype weights must sum to ~1.0 per resource type. apiOnly archetypes are additive and do NOT count toward this sum.
@@ -1317,6 +1487,16 @@ function formatColumn(col: ColumnInfo): string {
   // Mark columns that MUST be included in blueprint data
   if (!col.isNullable && !col.hasDefault && !col.isAutoIncrement && !col.isGenerated) {
     parts.push('⚠ REQUIRED');
+  }
+
+  // Flag @default(now()) timestamp columns as auto-distributed by the expander.
+  // Helps the LLM understand it can leave these unspecified in the common case
+  // but should override per archetype to encode persona-pinned dates.
+  if (
+    col.defaultValue === 'now()' &&
+    (col.type === 'timestamp' || col.type === 'timestamptz')
+  ) {
+    parts.push('⚠ AUTO-DISTRIBUTED across volume range; override only for persona-pinned dates');
   }
 
   return parts.join(' ');

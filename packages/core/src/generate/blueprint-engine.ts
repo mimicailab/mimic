@@ -444,6 +444,13 @@ export class BlueprintEngine {
     // than silently producing wildly asymmetric data.
     validateApiOnlyCap(mergedData, { maxApiOnlyRatio: options.maxApiOnlyRatio });
 
+    // Anchor binding check: every entry in `data.anchors` must be referenced
+    // by at least one archetype. Unbound anchors are silent persona-event
+    // failures — the LLM declared "Klein's double-charge" but no archetype
+    // emits the rows. Both DB and API archetypes are present here (Phase 1 +
+    // Phase 2 merged), so this is the right point to verify.
+    validateAnchorBindings(mergedData);
+
     const mergedBlueprint: Blueprint = {
       ...phase1Blueprint,
       data: mergedData,
@@ -703,6 +710,76 @@ function validateBlueprintCoverage(
           `It has ${nonFkRequired.length} required non-FK column(s) that need data.`,
         );
       }
+    }
+  }
+}
+
+/**
+ * Validate that every declared anchor in `data.anchors` is bound by at least
+ * one archetype. An anchor that no archetype references is decorative — it
+ * names a persona event that nothing emits, which silently breaks the event
+ * (Klein's double-charge rows never appear, Larkspur's drift sub never lands,
+ * etc).
+ *
+ * Throws BlueprintGenerationError with a list of unbound anchors. The user
+ * sees the names of the events the LLM forgot to materialize and can re-run
+ * generation with the fix in their hand.
+ */
+function validateAnchorBindings(data: Blueprint['data']): void {
+  const anchors = data.anchors ?? [];
+  if (anchors.length === 0) return;
+
+  // Collect every anchor id referenced by an archetype on either surface.
+  const boundIds = new Set<string>();
+  const dbBound = new Set<string>();
+  const apiBound = new Set<string>();
+
+  for (const config of Object.values(data.entityArchetypes ?? {})) {
+    for (const a of config.archetypes) {
+      if (typeof a.anchor === 'string' && a.anchor.length > 0) {
+        boundIds.add(a.anchor);
+        dbBound.add(a.anchor);
+      }
+    }
+  }
+  for (const adapter of Object.values(data.apiEntityArchetypes ?? {})) {
+    for (const config of Object.values(adapter)) {
+      for (const a of config.archetypes) {
+        if (typeof a.anchor === 'string' && a.anchor.length > 0) {
+          boundIds.add(a.anchor);
+          apiBound.add(a.anchor);
+        }
+      }
+    }
+  }
+
+  const unbound = anchors.map((a) => a.id).filter((id) => !boundIds.has(id));
+  if (unbound.length > 0) {
+    throw new BlueprintGenerationError(
+      `Blueprint declares anchor(s) [${unbound.join(', ')}] but no archetype binds them. ` +
+        `Each anchor in data.anchors must be referenced by at least one archetype's "anchor" field ` +
+        `on either the DB side (entityArchetypes) or the API side (apiEntityArchetypes), ` +
+        `otherwise the persona event the anchor names produces zero rows.`,
+      'Either remove the unbound anchor from data.anchors, or add an archetype with `anchor: <id>` ' +
+        '(plus `count` for the row count) on the table/resource that should carry the event.',
+    );
+  }
+
+  // For mirror-only events the API binding is what produces rows (mirror flow
+  // copies API → DB). DB-only binding without API binding usually means the
+  // LLM forgot to anchor-bind on the API side, leaving the API rows random.
+  // We log this as a warning rather than throwing because legitimate uses
+  // exist (DB-only drift overrides), but it's almost always a bug.
+  const hasAnyApiArchetypes = Object.keys(data.apiEntityArchetypes ?? {}).length > 0;
+  if (hasAnyApiArchetypes) {
+    const dbOnly = [...dbBound].filter((id) => !apiBound.has(id));
+    if (dbOnly.length > 0) {
+      logger.warn(
+        `Anchor(s) [${dbOnly.join(', ')}] are bound on the DB side but not on any API side. ` +
+        `For mirror events (DB and API agree on the row), bind the anchor on the API side too — ` +
+        `mirror flow then propagates the row to DB. DB-only binding is correct only for drift ` +
+        `overrides (DB and API intentionally diverge with hardcoded matching ids).`,
+      );
     }
   }
 }

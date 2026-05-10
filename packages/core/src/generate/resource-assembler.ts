@@ -24,10 +24,17 @@ export interface ArchetypeDistribution {
    */
   apiOnly?: boolean;
   /**
-   * Explicit additive count (only meaningful when `apiOnly: true`). When
-   * omitted, an apiOnly archetype's count is derived from `weight × count`.
+   * Explicit row count for this archetype. Required when weight is 0 and the
+   * archetype is not anchor-bound. For apiOnly archetypes, additive on top of
+   * the matched count. For anchor-bound archetypes, defaults to 1 if omitted.
    */
   count?: number;
+  /**
+   * Anchor id this archetype is bound to. Causes the archetype to emit
+   * exactly `count` rows tied to the resolved anchor. Used for persona events
+   * declared in `data.anchors`.
+   */
+  anchor?: string;
 }
 
 export interface ResourceDistribution {
@@ -211,6 +218,7 @@ function buildArchetype(
     vary,
     ...(dist.apiOnly ? { apiOnly: true } : {}),
     ...(dist.count !== undefined ? { count: dist.count } : {}),
+    ...(dist.anchor ? { anchor: dist.anchor } : {}),
   };
 }
 

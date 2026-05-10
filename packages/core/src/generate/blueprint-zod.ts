@@ -92,19 +92,54 @@ const FieldVariationSchema = z.object({
   type: z.enum([
     'firstName', 'lastName', 'fullName', 'email', 'phone', 'companyName',
     'pick', 'range', 'decimal_range', 'uuid', 'timestamp', 'date', 'derived', 'sequence',
+    'anchor_date', 'anchor_field',
   ]),
   values: z.array(z.unknown()).optional(),
   min: z.number().optional(),
   max: z.number().optional(),
   template: z.string().optional().describe('For derived: template with {{fieldName}} placeholders'),
   prefix: z.string().optional().describe('For sequence: prefix string, e.g. "cus_p1_"'),
+  anchor: z.string().optional().describe('For anchor_date/anchor_field: anchor id reference'),
+  key: z.string().optional().describe('For anchor_date: which date key on the anchor (default "event"). For anchor_field: which resolved attribute (e.g. "id", "stripe_customer_id")'),
+  format: z.enum(['iso', 'epoch_seconds']).optional().describe('For anchor_date: output format (iso default; epoch_seconds for API archetypes)'),
 });
 
-const EntityArchetypeSchema = z.object({
-  label: z.string().describe('Human-readable label, e.g. "starter-plan"'),
-  weight: z.number().describe('Fraction 0-1, all weights for a table should sum to ~1.0'),
-  fields: z.record(z.unknown()).describe('Constant fields shared by all clones of this archetype'),
-  vary: z.record(FieldVariationSchema).describe('Fields that get randomized per clone'),
+const EntityArchetypeSchema = z
+  .object({
+    label: z.string().describe('Human-readable label, e.g. "starter-plan"'),
+    weight: z.number().describe('Fraction 0-1, all weights for a table should sum to ~1.0. Set to 0 ONLY when paired with an explicit `count`, `anchor`, or `apiOnly`.'),
+    fields: z.record(z.unknown()).describe('Constant fields shared by all clones of this archetype'),
+    vary: z.record(FieldVariationSchema).describe('Fields that get randomized per clone'),
+    anchor: z.string().optional().describe('Anchor id this archetype is bound to. Causes the archetype to emit exactly `count` rows tied to the resolved anchor (no weight redistribution).'),
+    count: z.number().int().optional().describe('Explicit row count. Required when weight is 0 (or omitted) on a non-anchor, non-apiOnly archetype. For anchor-bound archetypes, defaults to 1 if omitted. For apiOnly archetypes, additive on top of the matched count.'),
+    apiOnly: z.boolean().optional().describe('When true, this archetype emits API-only rows with no DB counterpart (e.g. Stripe-only orphans). Pair with explicit `count`.'),
+  })
+  .refine(
+    (a) => {
+      // An archetype must emit rows. The mechanisms are: weight > 0 (share of
+      // the table's count), explicit count > 0 (fixed emission), anchor
+      // (anchor-bound emission, count optional, defaults to 1), or apiOnly
+      // (additive). weight: 0 alone with none of the above produces zero rows
+      // — almost always a mistake.
+      const hasWeight = typeof a.weight === 'number' && a.weight > 0;
+      const hasCount = typeof a.count === 'number' && a.count > 0;
+      const hasAnchor = typeof a.anchor === 'string' && a.anchor.length > 0;
+      const isApiOnly = a.apiOnly === true;
+      return hasWeight || hasCount || hasAnchor || isApiOnly;
+    },
+    {
+      message:
+        'Archetype emits zero rows: it has weight 0 (or undefined) AND no count, no anchor, and no apiOnly. ' +
+        'Set one of: weight > 0 (share of table count), count > 0 (exact rows), anchor (cross-table coherence), or apiOnly: true (additive API-only).',
+    },
+  );
+
+const AnchorSchema = z.object({
+  id: z.string().describe('Stable id referenced by archetypes (e.g. "klein_double_charge")'),
+  customer: z.object({
+    match: z.string().describe('Customer name or company to look up; expander creates one if no row matches'),
+  }).optional(),
+  dates: z.record(z.string()).describe('Named ISO date or timestamp strings. Use `event` for the canonical date.'),
 });
 
 const EntityArchetypeConfigSchema = z.object({
@@ -149,6 +184,10 @@ const PersonaDataSchema = z.object({
     .record(z.record(EntityArchetypeConfigSchema))
     .optional()
     .describe('API entity archetypes keyed by adapter ID then resource type'),
+  anchors: z
+    .array(AnchorSchema)
+    .optional()
+    .describe('Persona-narrated events that imply coherent rows across multiple tables. Each anchor names a customer + date(s); archetypes opt in via `anchor` to share them.'),
 });
 
 /** PersonaData variant where apiEntityArchetypes is required (used when APIs are configured) */
@@ -171,6 +210,10 @@ const PersonaDataWithApisSchema = z.object({
   apiEntityArchetypes: z
     .record(z.record(EntityArchetypeConfigSchema))
     .describe('REQUIRED: API entity archetypes keyed by adapter ID then resource type. Use for resource types with 10+ entities (customers, subscriptions, invoices, etc.)'),
+  anchors: z
+    .array(AnchorSchema)
+    .optional()
+    .describe('Persona-narrated events that imply coherent rows across multiple tables. Each anchor names a customer + date(s); archetypes opt in via `anchor` to share them.'),
 });
 
 // ---------------------------------------------------------------------------
@@ -282,17 +325,21 @@ const VaryEntrySchema = z.object({
   type: z.enum([
     'firstName', 'lastName', 'fullName', 'email', 'phone', 'companyName',
     'pick', 'range', 'decimal_range', 'uuid', 'timestamp', 'date', 'derived', 'sequence',
+    'anchor_date', 'anchor_field',
   ]).describe('Variation strategy'),
   values: z.array(z.string()).optional().describe('For pick: enum values to choose from'),
   min: z.number().optional().describe('For range/decimal_range: minimum'),
   max: z.number().optional().describe('For range/decimal_range: maximum'),
   template: z.string().optional().describe('For derived: template with {{fieldName}} placeholders'),
   prefix: z.string().optional().describe('For sequence: prefix string'),
+  anchor: z.string().optional().describe('For anchor_date/anchor_field: the anchor id to read from'),
+  key: z.string().optional().describe('For anchor_date: which date key on the anchor (default "event"). For anchor_field: which resolved attribute (e.g. "id", "stripe_customer_id")'),
+  format: z.enum(['iso', 'epoch_seconds']).optional().describe('For anchor_date: output format. Use "epoch_seconds" for APIs that store created times as Unix integers (Stripe, etc.)'),
 });
 
 const ArchetypeDistributionSchema = z.object({
   label: z.string().describe('Human-readable archetype label, e.g. "starter-plan"'),
-  weight: z.number().describe('Fraction 0-1. Matched-archetype weights should sum to ~1.0; apiOnly archetypes are additive and do not count toward that sum.'),
+  weight: z.number().describe('Fraction 0-1. Matched-archetype weights should sum to ~1.0; apiOnly and anchor-bound archetypes are additive and do not count toward that sum. Set to 0 ONLY when paired with explicit count, anchor, or apiOnly.'),
   fieldOverrides: z
     .array(FieldOverrideEntrySchema)
     .optional()
@@ -309,7 +356,11 @@ const ArchetypeDistributionSchema = z.object({
     .number()
     .int()
     .optional()
-    .describe('Explicit entity count for this archetype. Only meaningful when apiOnly:true — these counts are ADDITIVE on top of the matched (non-apiOnly) count. If omitted on an apiOnly archetype, count is derived from weight × matchedCount.'),
+    .describe('Explicit row count for this archetype. Required when weight is 0 (or omitted) and the archetype is not anchor-bound. For apiOnly archetypes, additive on top of the matched count. For anchor-bound archetypes, defaults to 1 if omitted.'),
+  anchor: z
+    .string()
+    .optional()
+    .describe('Anchor id this archetype is bound to. Causes the archetype to emit exactly `count` rows tied to the resolved anchor (no weight redistribution). Use for persona events declared in `data.anchors`.'),
 });
 
 const DistributionFactSchema = z.object({
@@ -383,11 +434,15 @@ export function toDistributionOutput(raw: DistributionOutputRaw): DistributionOu
               if (v.max !== undefined) spec.max = v.max;
               if (v.template) spec.template = v.template;
               if (v.prefix) spec.prefix = v.prefix;
+              if (v.anchor) spec.anchor = v.anchor;
+              if (v.key) spec.key = v.key;
+              if (v.format) spec.format = v.format;
               return [v.field, spec];
             }))
           : undefined,
         apiOnly: a.apiOnly,
         count: a.count,
+        anchor: a.anchor,
       })),
     };
   }
@@ -426,5 +481,6 @@ export type DistributionOutput = Record<string, {
     vary?: Record<string, Record<string, unknown>>;
     apiOnly?: boolean;
     count?: number;
+    anchor?: string;
   }[];
 }>;

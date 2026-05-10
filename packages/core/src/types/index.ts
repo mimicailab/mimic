@@ -12,6 +12,7 @@ export type {
 } from './schema.js';
 
 export type {
+  Anchor,
   Blueprint,
   PersonaProfile,
   PersonaData,
