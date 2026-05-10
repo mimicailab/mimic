@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Simulate APIs, databases, MCP servers, and user personas. Deterministic. Offline. Open source.
+  Replace every flaky sandbox with one local environment. Mimic mocks your APIs, databases, and MCP servers — drop-in compatible, coherent across surfaces, identical every run.
 </p>
 
 <p align="center">
@@ -33,9 +33,9 @@
 
 ---
 
-Your AI agent talks to Plaid for bank data, Stripe for payments, Slack for messages, and PostgreSQL for everything else. In production, that works. In testing, you're stitching together different sandboxes with inconsistent data, rate limits, and surprise breaking changes.
+**Production looks unified. Testing looks like duct tape.** Your AI agent talks to Plaid for bank data, Stripe for payments, Slack for messages, and PostgreSQL for everything else. In production, that works. In testing, you're stitching together different sandboxes with inconsistent data, rate limits, and surprise breaking changes.
 
-Mimic replaces all of that with a single, consistent synthetic environment. One persona generates coherent data across every surface — the same user has the same bank accounts in Plaid, the same payment history in Stripe, and the same rows in PostgreSQL.
+Mimic replaces all of that with a single, consistent synthetic environment. **One blueprint, one coherent world** — the same user has the same bank accounts in Plaid, the same payment history in Stripe, and the same rows in PostgreSQL.
 
 ```bash
 npm install -g @mimicai/cli
@@ -54,11 +54,12 @@ That's it. Your agent now has a fully populated local environment with realistic
 
 | Challenge | What Mimic does |
 |-----------|-----------------|
-| Three APIs, three fake users, zero consistency | One persona. Consistent across every system. |
-| Third-party sandboxes throttle your CI tests | Local mocks. Zero latency. No rate limits. |
-| Most sandboxes only cover part of the API | Full API coverage with realistic test data. |
-| Sandbox data changes and tests start failing | Deterministic seeding. Identical every run. |
-| MCP servers have no real environment to test | Mock MCP servers with realistic tool responses. |
+| Production looks unified. Testing looks like duct tape. | One local environment. One coherent world across every surface. |
+| Every sandbox tells a different story. | One persona. Consistent across every system. |
+| Third-party sandboxes throttle our CI tests. | Local mocks. Zero latency. No rate limits. |
+| Most sandboxes only cover part of the API. | Full API coverage with realistic test data. |
+| Sandbox data shifts and tests start failing. | Deterministic seeding. Identical every run. |
+| Our MCP servers have no real environment to test against. | Mock MCP servers with realistic tool responses. |
 
 ## How It Works
 
@@ -180,6 +181,8 @@ Execute test scenarios against your mock environment with optional AI-powered ev
 
 ## Adapters
 
+**18 adapters today. 100+ on the roadmap.** Every adapter ships as an API mock and an MCP server.
+
 ### Databases
 
 | Adapter | Package | Status |
@@ -189,21 +192,44 @@ Execute test scenarios against your mock environment with optional AI-powered ev
 | MySQL | `@mimicai/adapter-mysql` | Stable |
 | SQLite | `@mimicai/adapter-sqlite` | Stable |
 
-### API Mocks
+### Payments
 
 | Adapter | Package | Status |
 |---------|---------|--------|
 | Stripe | `@mimicai/adapter-stripe` | Stable |
 | Plaid | `@mimicai/adapter-plaid` | Stable |
+| GoCardless | `@mimicai/adapter-gocardless` | Stable |
+
+### Billing
+
+| Adapter | Package | Status |
+|---------|---------|--------|
 | Paddle | `@mimicai/adapter-paddle` | Stable |
 | Chargebee | `@mimicai/adapter-chargebee` | Stable |
-| GoCardless | `@mimicai/adapter-gocardless` | Stable |
 | Recurly | `@mimicai/adapter-recurly` | Stable |
 | RevenueCat | `@mimicai/adapter-revenuecat` | Stable |
 | Lemon Squeezy | `@mimicai/adapter-lemonsqueezy` | Stable |
 | Zuora | `@mimicai/adapter-zuora` | Stable |
+
+### Comms
+
+| Adapter | Package | Status |
+|---------|---------|--------|
 | Gmail | `@mimicai/adapter-gmail` | Stable |
 | Slack | `@mimicai/adapter-slack` | Stable |
+
+### CRM
+
+| Adapter | Package | Status |
+|---------|---------|--------|
+| Attio | `@mimicai/adapter-attio` | Stable |
+| HubSpot | `@mimicai/adapter-hubspot` | Stable |
+
+### Tools
+
+| Adapter | Package | Status |
+|---------|---------|--------|
+| Granola | `@mimicai/adapter-granola` | Stable |
 
 100+ more adapters are on the roadmap across fintech, communication, CRM, ticketing, project management, and more. See the [full roadmap on our website](https://mimicai.co/#adapters).
 
@@ -381,7 +407,7 @@ mimic info                    Print environment info for bug reports
 | Package | Description |
 |---------|-------------|
 | [`@mimicai/core`](packages/core/) | Engine — schema parsing, generation, seeding, MCP server, test runner |
-| [`@mimicai/cli`](packages/cli/) | CLI binary with 9 commands |
+| [`@mimicai/cli`](packages/cli/) | CLI binary with 10 commands |
 | [`@mimicai/blueprints`](packages/blueprints/) | Pre-built persona blueprints |
 | [`@mimicai/adapter-sdk`](packages/adapter-sdk/) | SDK for building custom adapters |
 | [`@mimicai/adapter-postgres`](packages/adapters/adapter-postgres/) | PostgreSQL database seeder |
@@ -397,6 +423,11 @@ mimic info                    Print environment info for bug reports
 | [`@mimicai/adapter-revenuecat`](packages/adapters/adapter-revenuecat/) | RevenueCat API mock + MCP server |
 | [`@mimicai/adapter-lemonsqueezy`](packages/adapters/adapter-lemonsqueezy/) | Lemon Squeezy API mock + MCP server |
 | [`@mimicai/adapter-zuora`](packages/adapters/adapter-zuora/) | Zuora API mock + MCP server |
+| [`@mimicai/adapter-gmail`](packages/adapters/adapter-gmail/) | Gmail API mock + MCP server |
+| [`@mimicai/adapter-slack`](packages/adapters/adapter-slack/) | Slack API mock + MCP server |
+| [`@mimicai/adapter-attio`](packages/adapters/adapter-attio/) | Attio API mock + MCP server |
+| [`@mimicai/adapter-hubspot`](packages/adapters/adapter-hubspot/) | HubSpot API mock + MCP server |
+| [`@mimicai/adapter-granola`](packages/adapters/adapter-granola/) | Granola API mock + MCP server |
 
 ## Community
 
@@ -412,6 +443,10 @@ We welcome contributions — new adapters, bug fixes, documentation, and ideas.
 Licensed under [Apache 2.0](LICENSE-APACHE-2.0).
 
 ---
+
+<p align="center">
+  <strong>Stop testing against <em>theatre.</em></strong>
+</p>
 
 <p align="center">
   <sub>Built by <a href="https://github.com/mimicailab">@mimicailab</a></sub>
