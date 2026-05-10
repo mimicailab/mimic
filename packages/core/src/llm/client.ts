@@ -2,6 +2,7 @@ import { generateText, streamText, Output } from 'ai';
 import type { z } from 'zod';
 import { createProvider, type ProviderConfig } from './providers.js';
 import { CostTracker, type CostCategory } from './cost-tracker.js';
+import { callAnthropicStructured } from './anthropic-native.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger, debugFile } from '../utils/logger.js';
 
@@ -16,8 +17,20 @@ const REASONING_MODELS = /^(o[1-9]|o3-mini|gpt-5-mini|claude-opus-4-7)/;
 // cap is too tight for a structured-output schema, the response fails the
 // zod parse and the caller sees "No object generated".
 function maxOutputTokensForModel(modelId: string): number {
-  if (/^claude-opus-4-7/.test(modelId)) return 32_000;
+  // Opus 4.7's effective max-output is 64k for the synchronous request path
+  // we use here; 128k is gated behind streaming + a beta header.
+  if (/^claude-opus-4-7/.test(modelId)) return 64_000;
   return 65_536;
+}
+
+// Anthropic structured-output mode. We default to 'jsonTool' across all
+// models because Anthropic's native structured-output mode (outputFormat)
+// produces minimum-viable responses on Opus 4.7 — the model treats every
+// optional schema field as "skip" and emits an almost-empty object that
+// passes Zod but fails domain coverage. jsonTool mode presents the schema
+// as a tool input; Anthropic models fill tool inputs more completely.
+function anthropicStructuredOutputMode(_modelId: string): 'auto' | 'jsonTool' {
+  return 'jsonTool';
 }
 
 // ---------------------------------------------------------------------------
@@ -135,6 +148,47 @@ export class LLMClient {
       timeoutMs: this.config.timeoutMs ?? 120_000,
     });
 
+    // For Anthropic, bypass the AI SDK and call the API directly. The AI SDK
+    // forces `additionalProperties: false` on every object node, which makes
+    // `z.record(z.unknown())` fields forbid all keys — Sonnet ignores it,
+    // Opus 4.7 obeys it and emits empty `{}` everywhere. Going direct lets us
+    // ship a schema with open records and produce the rich content the
+    // persona requires. Other providers keep the AI SDK path.
+    if (this.config.provider === 'anthropic') {
+      try {
+        const isReasoning = REASONING_MODELS.test(this.config.model);
+        const result = await callAnthropicStructured({
+          schema: opts.schema,
+          schemaName: opts.schemaName,
+          schemaDescription: opts.schemaDescription,
+          system: opts.system,
+          prompt: opts.prompt,
+          model: this.config.model,
+          apiKey: this.config.apiKey,
+          baseUrl: this.config.baseUrl,
+          temperature: opts.temperature ?? this.config.temperature,
+          maxOutputTokens: maxOutputTokensForModel(this.config.model),
+          timeoutMs: this.config.timeoutMs ?? 600_000,
+          maxRetries: opts.maxRetries ?? this.config.maxRetries ?? 2,
+          isReasoning,
+          label,
+        });
+        this.costTracker.record({
+          label,
+          category,
+          model: this.config.model,
+          promptTokens: result.promptTokens,
+          completionTokens: result.completionTokens,
+        });
+        logger.debug(
+          `LLM [${label}] done — ${result.promptTokens} prompt + ${result.completionTokens} completion tokens`,
+        );
+        return result;
+      } catch (error) {
+        throw this.wrapError(error, label);
+      }
+    }
+
     try {
       // Use streamText to avoid HTTP timeouts on large structured outputs.
       // The streaming connection stays alive while the LLM generates tokens.
@@ -152,7 +206,7 @@ export class LLMClient {
         maxOutputTokens: maxOutputTokensForModel(this.config.model),
         timeout: timeoutMs,
         providerOptions: {
-          anthropic: { structuredOutputMode: 'jsonTool' },
+          anthropic: { structuredOutputMode: anthropicStructuredOutputMode(this.config.model) },
           openai: { strictJsonSchema: false },
         },
       });
@@ -173,14 +227,27 @@ export class LLMClient {
           try {
             let raw = JSON.parse(rawText);
             logger.debug(`LLM [${label}] parsed JSON type: ${typeof raw}, keys: ${Object.keys(raw ?? {}).slice(0, 10).join(', ')}`);
-            // Some providers wrap the response in { data: ... } or { json: ... }.
-            // Only unwrap if the wrapper key is the SOLE key (to avoid
-            // clobbering schemas that have a legitimate "data" field).
+            // Unwrap single-key envelope responses. Different providers /
+            // models pick different wrapper keys for the same payload:
+            //   { "data": {...} }                — generic
+            //   { "json": {...} }                — older Anthropic jsonTool
+            //   { "$PARAMETER_NAME": "..." }     — Opus 4.7 jsonTool placeholder
+            //   { "input": "..." }               — Opus 4.7 tool-call wrapper
+            // The value may be either an object (use as-is) or a stringified
+            // JSON (parse first). Only unwrap when the wrapper is the SOLE
+            // key — schemas with legitimate top-level "data" / "input" fields
+            // have additional siblings.
             const rawKeys = Object.keys(raw ?? {});
-            if (rawKeys.length === 1 && raw.data) {
-              raw = raw.data;
-            } else if (rawKeys.length === 1 && raw.json) {
-              raw = raw.json;
+            if (rawKeys.length === 1) {
+              const inner = raw[rawKeys[0]];
+              if (inner && typeof inner === 'object') {
+                raw = inner;
+              } else if (typeof inner === 'string') {
+                try {
+                  const parsed = JSON.parse(inner);
+                  if (parsed && typeof parsed === 'object') raw = parsed;
+                } catch { /* leave raw as-is */ }
+              }
             }
             // Normalize common LLM output shape mismatches before Zod validation
             raw = normalizeLLMOutput(raw);
