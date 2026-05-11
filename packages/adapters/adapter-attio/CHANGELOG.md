@@ -1,5 +1,13 @@
 # @mimicai/adapter-attio
 
+## 0.13.0
+
+### Patch Changes
+
+- Updated dependencies [[`014be6a`](https://github.com/mimicailab/mimic/commit/014be6a23ad9fb99de9845cbe6c32391ea51bdca)]:
+  - @mimicai/core@0.13.0
+  - @mimicai/adapter-sdk@0.13.0
+
 ## 0.12.1
 
 ### Patch Changes

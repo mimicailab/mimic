@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { join } from 'node:path';
-import { writeFile } from 'node:fs/promises';
+import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 
 import {
   loadConfig,
@@ -22,6 +22,7 @@ import {
   LangSmithExporter,
   InspectExporter,
   MimicExporter,
+  ClaudeSkillExporter,
 } from '@mimicai/core';
 import type {
   MimicConfig,
@@ -64,9 +65,13 @@ export function registerTestCommand(program: Command): void {
     )
     .option(
       '--export <format>',
-      'export scenarios: mimic, promptfoo, braintrust, langsmith, inspect',
+      'export scenarios: mimic, promptfoo, braintrust, langsmith, inspect, claude-skill',
     )
     .option('--inspect', 'shortcut for --export inspect')
+    .option(
+      '--force-install-skill',
+      'when --export claude-skill, overwrite an existing skills/mimic-eval/SKILL.md',
+    )
     .action(async (opts) => {
       await runTest(opts);
     });
@@ -88,6 +93,7 @@ interface TestOptions {
   tier?: string[];
   export?: string;
   inspect?: boolean;
+  forceInstallSkill?: boolean;
 }
 
 interface ScenarioConfig {
@@ -194,9 +200,22 @@ async function runTest(opts: TestOptions): Promise<void> {
         // Export if requested
         if (exportFormat) {
           const exportDir = join(cwd, '.mimic', 'exports');
-          const exporter = createExporter(exportFormat, config.test?.agent);
+          const exporter = createExporter(
+            exportFormat,
+            config.test?.agent,
+            config,
+          );
           const files = await exporter.export(autoScenarios, exportDir);
           logger.done(`Exported to ${exportFormat}: ${files.join(', ')}`);
+
+          if (exportFormat === 'claude-skill') {
+            await installClaudeSkill(
+              files,
+              cwd,
+              config,
+              opts.forceInstallSkill ?? false,
+            );
+          }
 
           // If only exporting (no manual scenarios), we're done
           if (testScenarios.length === 0) {
@@ -229,8 +248,22 @@ async function runTest(opts: TestOptions): Promise<void> {
 
       if (exportFormat) {
         const exportDir = join(cwd, '.mimic', 'exports');
-        const exporter = createExporter(exportFormat, config.test?.agent);
-        await exporter.export(autoScenarios, exportDir);
+        const exporter = createExporter(
+          exportFormat,
+          config.test?.agent,
+          config,
+        );
+        const files = await exporter.export(autoScenarios, exportDir);
+
+        if (exportFormat === 'claude-skill') {
+          await installClaudeSkill(
+            files,
+            cwd,
+            config,
+            opts.forceInstallSkill ?? false,
+          );
+        }
+
         if (testScenarios.length === 0) return;
       }
 
@@ -454,7 +487,11 @@ function toTestScenario(
 // Exporter factory
 // ---------------------------------------------------------------------------
 
-function createExporter(format: string, agentUrl?: string): ScenarioExporter {
+function createExporter(
+  format: string,
+  agentUrl?: string,
+  config?: MimicConfig,
+): ScenarioExporter {
   switch (format) {
     case 'promptfoo':
       return new PromptFooExporter(agentUrl);
@@ -466,13 +503,61 @@ function createExporter(format: string, agentUrl?: string): ScenarioExporter {
       return new InspectExporter();
     case 'mimic':
       return new MimicExporter();
+    case 'claude-skill':
+      return new ClaudeSkillExporter({
+        targetSkill: config?.test?.target_skill,
+      });
     default:
       throw new MimicError(
         `Unknown export format "${format}"`,
         'CONFIG_INVALID',
-        'Use mimic, promptfoo, braintrust, langsmith, or inspect',
+        'Use mimic, promptfoo, braintrust, langsmith, inspect, or claude-skill',
       );
   }
+}
+
+/**
+ * Claude Skill install step — copy the exported `SKILL.md` from
+ * `<exportDir>/skills/mimic-eval/SKILL.md` into `<cwd>/skills/mimic-eval/SKILL.md`
+ * so Claude Code picks it up with no manual setup.
+ *
+ * Skips (with a warning) if the destination already exists, unless `force` is true.
+ */
+async function installClaudeSkill(
+  exportedFiles: string[],
+  cwd: string,
+  config: MimicConfig,
+  force: boolean,
+): Promise<void> {
+  const source = exportedFiles.find((p) =>
+    p.endsWith(join('skills', 'mimic-eval', 'SKILL.md')),
+  );
+  if (!source) return;
+
+  const destDir = join(cwd, 'skills', 'mimic-eval');
+  const dest = join(destDir, 'SKILL.md');
+
+  if (!force && (await fileExists(dest))) {
+    logger.warn(
+      `skills/mimic-eval/SKILL.md already exists — keeping it. ` +
+        `Canonical version at ${source}; pass --force-install-skill to overwrite.`,
+    );
+    return;
+  }
+
+  await mkdir(destDir, { recursive: true });
+  await copyFile(source, dest);
+
+  if (!config.test?.target_skill) {
+    logger.warn(
+      `No test.target_skill configured — SKILL.md uses a placeholder. ` +
+        `Set test.target_skill in mimic.json to point at the skill being evaluated.`,
+    );
+  }
+
+  logger.done(
+    `Installed skills/mimic-eval/SKILL.md — Claude Code will auto-pick it up.`,
+  );
 }
 
 // ---------------------------------------------------------------------------

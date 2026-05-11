@@ -1,5 +1,23 @@
 # @mimicailab/cli
 
+## 0.13.0
+
+### Minor Changes
+
+- [`014be6a`](https://github.com/mimicailab/mimic/commit/014be6a23ad9fb99de9845cbe6c32391ea51bdca) Thanks [@ada-raj](https://github.com/ada-raj)! - Add `claude-skill` test exporter. `mimic test --export claude-skill` writes a `mimic-eval` Claude Skill (`SKILL.md`) under `.mimic/exports/skills/mimic-eval/` and installs a copy into the project's `skills/` directory so Claude Code picks it up automatically. The skill loads `mimic-scenarios.json`, fans out one sub-agent per scenario, scores responses with a hybrid (strict substring + LLM-judge paraphrase + numeric range) check, and prints a scored markdown report. Configure the target skill via the new `test.target_skill` field in `mimic.json`. Existing `skills/mimic-eval/SKILL.md` files are preserved by default; pass `--force-install-skill` to overwrite.
+
+  The `claude-skill` exporter now also writes `mimic-scenarios.json` alongside the `SKILL.md` (previously this had to be generated separately via `--export mimic`, which made it easy for the scenario JSON to drift stale relative to the current fact manifest).
+
+### Patch Changes
+
+- Updated dependencies [[`014be6a`](https://github.com/mimicailab/mimic/commit/014be6a23ad9fb99de9845cbe6c32391ea51bdca)]:
+  - @mimicai/core@0.13.0
+  - @mimicai/adapter-mongodb@0.13.0
+  - @mimicai/adapter-mysql@0.13.0
+  - @mimicai/adapter-postgres@0.13.0
+  - @mimicai/adapter-sqlite@0.13.0
+  - @mimicai/blueprints@0.13.0
+
 ## 0.12.1
 
 ### Patch Changes

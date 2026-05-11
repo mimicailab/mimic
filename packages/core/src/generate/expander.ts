@@ -1,4 +1,5 @@
 import type {
+  Anchor,
   Blueprint,
   DataPattern,
   RandomSpec,
@@ -106,6 +107,18 @@ export class BlueprintExpander {
     const idTracker = createIdTracker();
     const tableIndex = indexTables(schema);
 
+    // Auto-inject `{ type: "timestamp" }` vary rules on DB archetypes for any
+    // `@default(now())` timestamp column that the LLM left unspecified. The
+    // LLM is encouraged to omit these columns (the schema renders them as
+    // `DEFAULT now()` so they appear "DB-handled"), but in practice the seeder
+    // can't mix per-row DEFAULT with explicit values in a batched INSERT — it
+    // drops the column entirely and every row's timestamp collapses to seed-
+    // insertion time. By injecting a deterministic vary rule bound to the
+    // configured volume range, the LLM does no extra work and the column is
+    // populated with realistic timestamps. LLM intent always wins: an explicit
+    // `vary` or `fields` entry for the column is never overwritten.
+    injectNowDefaultVaryRules(blueprint, schema, range);
+
     // Build classifications if not provided but schema mapping exists
     const adapterIds = [
       ...Object.keys(blueprint.data.apiEntityArchetypes ?? {}),
@@ -131,6 +144,21 @@ export class BlueprintExpander {
 
     const hasThreeRoleFlow = identitySet.size > 0 || mirroredSet.size > 0;
 
+    // Anchor resolver — resolves persona-narrated events (e.g. "Klein Records
+    // double-charge on 2026-04-29") against the customer rows the LLM emits,
+    // so anchor-bound archetypes on payments/invoices/Stripe payment_intent
+    // all agree on the customer FK and the date. Lazy + cached; holds a live
+    // reference to `tables`, so customer rows that arrive during PHASE D are
+    // still findable when downstream anchor-bound archetypes expand.
+    const anchorResolver = new AnchorResolver(
+      blueprint.data.anchors,
+      tables,
+      schema,
+      classifications,
+      blueprint,
+      schemaMapping,
+    );
+
     logger.debug(
       `Expanding blueprint "${blueprint.personaId}" over ${volume} ` +
         `(${range.start.toISOString()} → ${range.end.toISOString()})` +
@@ -144,6 +172,13 @@ export class BlueprintExpander {
     // ==================================================================
     const apiResponses: Record<string, ApiResponseSet> = {};
 
+    // Per-resource set of IDs emitted by `apiOnly: true` archetypes. The
+    // identity-row derivation step skips these so the entities only ever
+    // appear on the API side, producing the persona's declared asymmetry.
+    // Keyed by `${adapterId}.${resourceType}`. Lives only during expansion;
+    // never serialized.
+    const apiOnlyIds = new Map<string, Set<string>>();
+
     // A1. Expand apiEntityArchetypes
     if (blueprint.data.apiEntityArchetypes) {
       for (const [adapterId, resources] of Object.entries(
@@ -154,6 +189,8 @@ export class BlueprintExpander {
           resources,
           blueprint.personaId,
           range,
+          apiOnlyIds,
+          anchorResolver,
         );
       }
     }
@@ -226,6 +263,7 @@ export class BlueprintExpander {
           tableName,
           tableInfo,
           idTracker,
+          anchorResolver,
         );
         tables[tableName] = [...existingRows, ...archetypeRows];
       }
@@ -239,7 +277,7 @@ export class BlueprintExpander {
 
         this.deriveIdentityTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          blueprint, schema,
+          blueprint, schema, schemaMapping, apiOnlyIds,
         );
       }
 
@@ -251,7 +289,7 @@ export class BlueprintExpander {
 
         this.deriveIdentityTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          blueprint, schema,
+          blueprint, schema, schemaMapping, apiOnlyIds,
         );
       }
 
@@ -277,7 +315,8 @@ export class BlueprintExpander {
 
         this.deriveMirroredTableRows(
           tables, apiResponses, classification, tableIndex, idTracker,
-          schema, schemaMapping, modelingConfig,
+          schema, blueprint, schemaMapping, modelingConfig, apiOnlyIds,
+          anchorResolver,
         );
       }
 
@@ -309,7 +348,7 @@ export class BlueprintExpander {
           if (identitySet.has(tableName) || mirroredSet.has(tableName)) continue;
           const tableInfo = tableIndex.get(tableName);
           const existingRows = tables[tableName] ?? [];
-          const archetypeRows = this.expandArchetypes(config, tableName, tableInfo, idTracker);
+          const archetypeRows = this.expandArchetypes(config, tableName, tableInfo, idTracker, anchorResolver);
           tables[tableName] = [...existingRows, ...archetypeRows];
         }
       }
@@ -337,7 +376,7 @@ export class BlueprintExpander {
           if (schema.insertionOrder.includes(tableName)) continue;
           const tableInfo = tableIndex.get(tableName);
           const existingRows = tables[tableName] ?? [];
-          const archetypeRows = this.expandArchetypes(config, tableName, tableInfo, idTracker);
+          const archetypeRows = this.expandArchetypes(config, tableName, tableInfo, idTracker, anchorResolver);
           tables[tableName] = [...existingRows, ...archetypeRows];
         }
       }
@@ -357,6 +396,18 @@ export class BlueprintExpander {
     // ==================================================================
     // PHASE E: Post-process all DB tables
     // ==================================================================
+    // Fill `@default(now())` timestamp columns missing on rows BEFORE sorting.
+    // Without this, the LLM omits e.g. `created_at` (because the DB has a
+    // default), the seeder drops the whole column (so Postgres applies the
+    // default consistently), and every row's `created_at` collapses to seed
+    // insertion time — destroying the historical spread the persona asked for.
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 0) {
+        fillNowDefaultTimestamps(rows, tableInfo, range, this.rng);
+      }
+    }
+
     for (const [tableName, rows] of Object.entries(tables)) {
       const tableInfo = tableIndex.get(tableName);
       sortChronologically(rows, tableInfo);
@@ -383,10 +434,98 @@ export class BlueprintExpander {
     // UUIDs and propagate the swap through every FK that points to them.
     coerceUuidColumns(tables, schema);
 
+    // Enforce schema enums deterministically. The LLM sometimes emits
+    // synonyms ("expired_card" when the schema defines "card_expired") or
+    // entirely off-schema values; without this pass those reach the seeder
+    // and either fail the constraint or distort the stats. Reading values
+    // from `col.enumValues` makes this independent of which DB the schema
+    // came from — works for Postgres enums, MySQL enum-equivalent CHECKs,
+    // and any other source that populates ColumnInfo.enumValues.
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 0) {
+        coerceEnumColumns(rows, tableInfo);
+      }
+    }
+
+    // Apply client-resolvable DB defaults to expanded.tables BEFORE facts
+    // are generated. Without this, the fact pipeline counts in-memory rows
+    // (62 'month' / 37 'year' / 8 null intervals) but the seeder substitutes
+    // the literal DB default ('month') for nulls — so the seeded DB has
+    // 70/37/0, and every persona-narrated stat about the null bucket lies.
+    // By materializing the defaults here, `expanded.tables` describes what
+    // the DB will actually hold, and stats stay byte-equal across surfaces.
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 0) {
+        applyClientResolvableDefaults(rows, tableInfo);
+      }
+    }
+
     // ==================================================================
     // PHASE F: Cross-reference API ↔ DB (bidirectional sync)
     // ==================================================================
-    this.crossReferenceApiWithDb(tables, apiResponses);
+    this.crossReferenceApiWithDb(tables, apiResponses, tableIndex);
+
+    // ==================================================================
+    // PHASE F.5: Backfill missing cross-surface API entities
+    // ==================================================================
+    // Referential-integrity guarantee for cross-surface FKs. The 3-role
+    // mirror flow only covers archetype-shaped DB rows; static
+    // `data.entities[]` rows and any other inline path bypass it. A DB
+    // payments row with `stripe_payment_intent_id = "pi_p1_klein_001"`
+    // referencing a Stripe `payment_intent` that doesn't exist would
+    // break a recovery agent walking DB → Stripe. This pass scans every
+    // cross-surface FK declared in `schemaMapping`, finds DB values that
+    // have no API counterpart, and synthesizes an API entity from the
+    // DB row + linked rows.
+    backfillMissingCrossSurfaceEntities(
+      tables,
+      apiResponses,
+      schema,
+      schemaMapping,
+      blueprint.personaId,
+    );
+
+    // ==================================================================
+    // PHASE F.6: Symmetric pairing — DB row with empty cross-surface ID
+    // ==================================================================
+    // PHASE F.5 fills the "DB has an external_id but API doesn't" gap.
+    // This pass fills the other half: DB rows on a paired (external-mirrored)
+    // table whose cross-surface ID column is blank entirely — the LLM
+    // forgot to set it, so backfill had nothing to anchor on. We mint a
+    // deterministic ID, write it back onto the DB row, and synthesize the
+    // API counterpart. Without this, a drift-style DB-only row (Larkspur
+    // active in DB, no Stripe sub at all) leaves agents that follow the
+    // DB→API link dangling. Symmetry is a schema-level promise, not a
+    // content-level one.
+    ensureSymmetricCrossSurfacePresence(
+      tables,
+      apiResponses,
+      schema,
+      schemaMapping,
+      blueprint.personaId,
+      resourceSpecs,
+    );
+
+    // ==================================================================
+    // PHASE F.7: Cross-surface anchor ID reconciliation
+    // ==================================================================
+    // Each anchor describes one logical event ("Klein double-charge").
+    // When the LLM emits anchor-bound archetypes on BOTH surfaces (a DB
+    // payments archetype + a Stripe payment_intent archetype), each
+    // archetype runs its own `sequence` vary rule and lands on different
+    // IDs — the DB row's stripe_payment_intent_id doesn't match any Stripe
+    // payment_intent.id and a recovery agent walking DB→Stripe gets a 404.
+    // This pass detects anchor-tagged rows on both surfaces, pairs them
+    // by anchor + resource mapping, and rewrites API IDs to match the DB
+    // cross-surface column. ID renames ripple to every other API entity
+    // that referenced the old ID so secondary FKs stay intact.
+    reconcileAnchorBoundCrossSurfaceIds(tables, apiResponses, schema, schemaMapping);
+
+    // Strip the anchor tracking marker before returning — it's an
+    // expansion-time internal, not part of the seeded contract.
+    stripAnchorTags(tables, apiResponses);
 
     // ==================================================================
     // PHASE G: Pass through blueprint facts (legacy) — real facts are
@@ -716,31 +855,87 @@ export class BlueprintExpander {
     tableName: string,
     tableInfo: TableInfo | undefined,
     idTracker: IdTracker,
+    anchorResolver?: AnchorResolver,
   ): Row[] {
     const { count, archetypes } = config;
-    const distribution = distributeByWeight(archetypes, count);
+
+    // Split into three buckets:
+    //   - anchored: emit exactly `archetype.count` rows tied to a resolved
+    //     anchor (cross-table coherence; bypasses weight distribution).
+    //   - explicit-count plain: archetype declares an explicit `count` but
+    //     no anchor. Emits exactly that many rows; reduces the budget left
+    //     for weight-distributed archetypes. This is the mechanism the LLM
+    //     uses for persona claims like "exactly 4 card_expired failures".
+    //   - weighted: no explicit count, distributed by `weight` across the
+    //     remaining budget (config.count minus explicit-count claims).
+    const weighted: EntityArchetype[] = [];
+    const explicitCount: EntityArchetype[] = [];
+    const anchored: EntityArchetype[] = [];
+    for (const a of archetypes) {
+      if (a.anchor && anchorResolver?.has(a.anchor)) anchored.push(a);
+      else if (typeof a.count === 'number' && a.count > 0) explicitCount.push(a);
+      else weighted.push(a);
+    }
+
+    const rawExplicitTotal = explicitCount.reduce((s, a) => s + (a.count ?? 0), 0);
+    const explicitCounts = capExplicitCountsToBudget(
+      explicitCount,
+      rawExplicitTotal,
+      count,
+      `Archetype "${tableName}"`,
+    );
+    const explicitTotal = explicitCounts.reduce((s, n) => s + n, 0);
+    const remainingForWeighted = Math.max(0, count - explicitTotal);
+
+    const distribution =
+      weighted.length > 0 ? distributeByWeight(weighted, remainingForWeighted) : [];
     const rows: Row[] = [];
 
     logger.debug(
-      `Expanding ${count} entities for "${tableName}" from ${archetypes.length} archetype(s)`,
+      `Expanding entities for "${tableName}": ${count} target ` +
+        `(${explicitTotal} explicit-count across ${explicitCount.length} archetype(s)` +
+        (rawExplicitTotal !== explicitTotal
+          ? `, scaled down from ${rawExplicitTotal} to fit budget`
+          : '') +
+        `, ${remainingForWeighted} weighted across ${weighted.length} archetype(s))` +
+        (anchored.length > 0 ? `, ${anchored.length} anchor-bound archetype(s)` : ''),
     );
 
-    for (let arcIdx = 0; arcIdx < archetypes.length; arcIdx++) {
-      const archetype = archetypes[arcIdx]!;
+    const emitRow = (archetype: EntityArchetype, i: number): void => {
+      const row = this.fieldGen.applyVariations(
+        archetype.vary,
+        archetype.fields,
+        i,
+        tableName,
+      );
+
+      assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+      resolveReferences(row, idTracker, this.rng);
+      rows.push(row);
+      trackRow(row, tableInfo, idTracker, tableName);
+    };
+
+    for (let aIdx = 0; aIdx < explicitCount.length; aIdx++) {
+      const archetype = explicitCount[aIdx]!;
+      const archetypeCount = explicitCounts[aIdx]!;
+      for (let i = 0; i < archetypeCount; i++) emitRow(archetype, i);
+    }
+
+    for (let arcIdx = 0; arcIdx < weighted.length; arcIdx++) {
+      const archetype = weighted[arcIdx]!;
       const archetypeCount = distribution[arcIdx]!;
+      for (let i = 0; i < archetypeCount; i++) emitRow(archetype, i);
+    }
 
-      for (let i = 0; i < archetypeCount; i++) {
-        const row = this.fieldGen.applyVariations(
-          archetype.vary,
-          archetype.fields,
-          i,
-          tableName,
-        );
-
-        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
-        resolveReferences(row, idTracker, this.rng);
-        rows.push(row);
-        trackRow(row, tableInfo, idTracker, tableName);
+    for (const archetype of anchored) {
+      const resolved = anchorResolver!.resolve(archetype.anchor!, { surface: 'db' });
+      if (!resolved) continue;
+      rewriteAnchorVaryRules(archetype, resolved);
+      const archetypeCount = archetype.count ?? 1;
+      const startIdx = rows.length;
+      for (let i = 0; i < archetypeCount; i++) emitRow(archetype, i);
+      for (let i = startIdx; i < rows.length; i++) {
+        rows[i]![ANCHOR_TAG_KEY] = archetype.anchor;
       }
     }
 
@@ -770,61 +965,206 @@ export class BlueprintExpander {
     resources: Record<string, EntityArchetypeConfig>,
     personaId: string,
     range: TimeRange,
+    apiOnlyIds: Map<string, Set<string>>,
+    anchorResolver?: AnchorResolver,
   ): ApiResponseSet {
     const responses: Record<string, ApiResponse[]> = {};
     const startSec = Math.floor(range.start.getTime() / 1000);
     const endSec = Math.floor(range.end.getTime() / 1000);
 
-    for (const [resourceType, config] of Object.entries(resources)) {
-      const { count, archetypes } = config;
-      const distribution = distributeByWeight(archetypes, count);
-      const expanded: ApiResponse[] = [];
+    // Two-pass within an adapter so anchor-bound archetypes can resolve
+    // against customer entities the LLM emits in this same adapter:
+    //
+    //   Pass 1 — non-anchor archetypes (matched + apiOnly), all resources
+    //   Pass 1.5 — register the freshly-expanded customers with the resolver
+    //   Pass 2 — anchor-bound archetypes, all resources
+    //
+    // Without this, an anchor on `payment_intent` referencing customer
+    // "Klein Records" would find an empty pool because the customer
+    // resource hasn't been expanded yet (the DB customer table also hasn't
+    // been derived yet — API expansion runs first).
 
-      logger.debug(
-        `Expanding ${count} API entities for "${adapterId}.${resourceType}" from ${archetypes.length} archetype(s)`,
+    interface Bucket {
+      resourceType: string;
+      config: EntityArchetypeConfig;
+      matched: EntityArchetype[];
+      matchedExplicit: EntityArchetype[];
+      apiOnly: EntityArchetype[];
+      anchored: EntityArchetype[];
+      expanded: ApiResponse[];
+      orphanIdSet?: Set<string>;
+    }
+
+    const buckets: Bucket[] = [];
+    for (const [resourceType, config] of Object.entries(resources)) {
+      const { archetypes } = config;
+      const matched: EntityArchetype[] = [];
+      const matchedExplicit: EntityArchetype[] = [];
+      const apiOnly: EntityArchetype[] = [];
+      const anchored: EntityArchetype[] = [];
+      for (const a of archetypes) {
+        if (a.anchor && anchorResolver?.has(a.anchor)) anchored.push(a);
+        else if (a.apiOnly) apiOnly.push(a);
+        else if (typeof a.count === 'number' && a.count > 0) matchedExplicit.push(a);
+        else matched.push(a);
+      }
+      buckets.push({
+        resourceType,
+        config,
+        matched,
+        matchedExplicit,
+        apiOnly,
+        anchored,
+        expanded: [],
+      });
+    }
+
+    const emit = (
+      bucket: Bucket,
+      archetype: EntityArchetype,
+      i: number,
+      isApiOnly: boolean,
+    ): void => {
+      const row = this.fieldGen.applyVariations(
+        archetype.vary,
+        archetype.fields,
+        i,
+        `${adapterId}.${bucket.resourceType}`,
       );
 
-      for (let arcIdx = 0; arcIdx < archetypes.length; arcIdx++) {
-        const archetype = archetypes[arcIdx]!;
-        const archetypeCount = distribution[arcIdx]!;
-
-        for (let i = 0; i < archetypeCount; i++) {
-          const row = this.fieldGen.applyVariations(
-            archetype.vary,
-            archetype.fields,
-            i,
-            `${adapterId}.${resourceType}`,
-          );
-
-          // Ensure created timestamp falls within the configured date range
-          const createdKey = row.created !== undefined ? 'created' : row.created_at !== undefined ? 'created_at' : null;
-          if (createdKey) {
-            const ts = row[createdKey] as number;
-            if (ts < startSec || ts > endSec) {
-              row[createdKey] = startSec + Math.floor(this.rng.next() * (endSec - startSec));
-            }
-          } else {
-            row.created = startSec + Math.floor(this.rng.next() * (endSec - startSec));
-          }
-
-          expanded.push({
-            statusCode: 200,
-            headers: { 'content-type': 'application/json' },
-            body: row,
-            personaId,
-            stateKey: `${adapterId}_${resourceType}`,
-          });
+      // Ensure created timestamp falls within the configured date range.
+      // Anchor-rewritten rows already carry a deterministic value here, so
+      // the in-range check is a no-op for them.
+      const createdKey =
+        row.created !== undefined ? 'created' : row.created_at !== undefined ? 'created_at' : null;
+      if (createdKey) {
+        const ts = row[createdKey] as number;
+        if (typeof ts === 'number' && (ts < startSec || ts > endSec)) {
+          row[createdKey] = startSec + Math.floor(this.rng.next() * (endSec - startSec));
         }
+      } else {
+        row.created = startSec + Math.floor(this.rng.next() * (endSec - startSec));
       }
 
-      // Sort by created timestamp for chronological consistency
-      expanded.sort((a, b) => {
+      if (isApiOnly) {
+        if (!bucket.orphanIdSet) bucket.orphanIdSet = new Set<string>();
+        const id = row.id;
+        if (typeof id === 'string') bucket.orphanIdSet.add(id);
+      }
+
+      bucket.expanded.push({
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body: row,
+        personaId,
+        stateKey: `${adapterId}_${bucket.resourceType}`,
+      });
+    };
+
+    // ── Pass 1: matched + apiOnly archetypes for every resource ──────
+    for (const bucket of buckets) {
+      const { count } = bucket.config;
+
+      // Same three-bucket split as DB expansion: explicit-count matched
+      // archetypes claim their rows first, weighted matched archetypes
+      // share the remainder. apiOnly archetypes are additive (separate
+      // budget, never reduce the matched count).
+      const rawMatchedExplicitTotal = bucket.matchedExplicit.reduce(
+        (s, a) => s + (a.count ?? 0),
+        0,
+      );
+      const matchedExplicitCounts = capExplicitCountsToBudget(
+        bucket.matchedExplicit,
+        rawMatchedExplicitTotal,
+        count,
+        `API archetype "${adapterId}.${bucket.resourceType}"`,
+      );
+      const matchedExplicitTotal = matchedExplicitCounts.reduce((s, n) => s + n, 0);
+      const remainingForWeighted = Math.max(0, count - matchedExplicitTotal);
+
+      const matchedDistribution = bucket.matched.length > 0
+        ? distributeByWeight(bucket.matched, remainingForWeighted)
+        : [];
+
+      const totalApiOnly = bucket.apiOnly.reduce(
+        (s, a) => s + (a.count ?? Math.max(1, Math.round((a.weight ?? 0) * count))),
+        0,
+      );
+
+      logger.debug(
+        `Expanding "${adapterId}.${bucket.resourceType}": ${count} matched ` +
+          `(${matchedExplicitTotal} explicit-count across ${bucket.matchedExplicit.length} archetype(s)` +
+          (rawMatchedExplicitTotal !== matchedExplicitTotal
+            ? `, scaled down from ${rawMatchedExplicitTotal} to fit budget`
+            : '') +
+          `, ${remainingForWeighted} weighted across ${bucket.matched.length} archetype(s)) ` +
+          `+ ${totalApiOnly} apiOnly + ${bucket.anchored.length} anchor-bound archetype(s)`,
+      );
+
+      for (let aIdx = 0; aIdx < bucket.matchedExplicit.length; aIdx++) {
+        const archetype = bucket.matchedExplicit[aIdx]!;
+        const archetypeCount = matchedExplicitCounts[aIdx]!;
+        for (let i = 0; i < archetypeCount; i++) emit(bucket, archetype, i, false);
+      }
+
+      for (let arcIdx = 0; arcIdx < bucket.matched.length; arcIdx++) {
+        const archetype = bucket.matched[arcIdx]!;
+        const archetypeCount = matchedDistribution[arcIdx]!;
+        for (let i = 0; i < archetypeCount; i++) emit(bucket, archetype, i, false);
+      }
+
+      for (const archetype of bucket.apiOnly) {
+        const explicit = archetype.count ?? Math.max(1, Math.round((archetype.weight ?? 0) * count));
+        for (let i = 0; i < explicit; i++) emit(bucket, archetype, i, true);
+      }
+    }
+
+    // ── Pass 1.5: register expanded customer entities with the resolver
+    // so anchor-bound archetypes in pass 2 can match by name. We treat any
+    // resource type whose name starts with "customer" as the customer pool
+    // (covers `customer` on Stripe, `customers` on Plaid-style APIs, etc.).
+    if (anchorResolver) {
+      const customerBucket = buckets.find((b) =>
+        b.resourceType.toLowerCase().startsWith('customer'),
+      );
+      if (customerBucket) {
+        anchorResolver.registerApiCustomers(
+          adapterId,
+          customerBucket.expanded.map((r) => r.body as Row),
+        );
+      }
+    }
+
+    // ── Pass 2: anchor-bound archetypes ──────────────────────────────
+    for (const bucket of buckets) {
+      for (const archetype of bucket.anchored) {
+        const resolved = anchorResolver!.resolve(archetype.anchor!, {
+          surface: 'api',
+          adapterId,
+        });
+        if (!resolved) continue;
+        rewriteAnchorVaryRules(archetype, resolved);
+        const archetypeCount = archetype.count ?? 1;
+        const startIdx = bucket.expanded.length;
+        for (let i = 0; i < archetypeCount; i++) emit(bucket, archetype, i, false);
+        for (let i = startIdx; i < bucket.expanded.length; i++) {
+          (bucket.expanded[i]!.body as Record<string, unknown>)[ANCHOR_TAG_KEY] =
+            archetype.anchor;
+        }
+      }
+    }
+
+    // ── Finalize: orphan tracking + chronological sort ───────────────
+    for (const bucket of buckets) {
+      if (bucket.orphanIdSet && bucket.orphanIdSet.size > 0) {
+        apiOnlyIds.set(`${adapterId}.${bucket.resourceType}`, bucket.orphanIdSet);
+      }
+      bucket.expanded.sort((a, b) => {
         const ca = (a.body as Record<string, unknown>).created as number ?? 0;
         const cb = (b.body as Record<string, unknown>).created as number ?? 0;
         return ca - cb;
       });
-
-      responses[resourceType] = expanded;
+      responses[bucket.resourceType] = bucket.expanded;
     }
 
     return { adapterId, responses };
@@ -947,12 +1287,21 @@ export class BlueprintExpander {
   // -----------------------------------------------------------------------
 
   /**
-   * Replace `gen_*` placeholder IDs in API response bodies with real IDs
-   * from sibling resources in the same adapter.
+   * Resolve cross-resource ID references within each adapter to real IDs.
    *
-   * Uses a convention-based FK map: field name → parent resource type.
-   * For each FK field with a `gen_*` value, picks a random real ID from
-   * the parent resource's ID pool.
+   * Walks every API response body and for each FK-style field rewrites the
+   * value to a real ID from the parent resource's pool when the current
+   * value isn't already a member of that pool. This covers two failure
+   * modes:
+   *
+   *   1. `gen_*` placeholder values the LLM was told to emit when it didn't
+   *      know the real ID at generation time.
+   *   2. LLM-invented semantic strings (e.g. `cus_klein_records`) that look
+   *      shaped like a real Stripe ID but reference nothing.
+   *
+   * Without this, both classes of value flow through to the expander's FK
+   * resolver and break downstream joins. The pool-membership check ensures
+   * legitimate refs are preserved unchanged.
    */
   private resolveApiCrossReferences(
     apiResponses: Record<string, ApiResponseSet>,
@@ -1011,7 +1360,9 @@ export class BlueprintExpander {
       // Build ID pools per resource type within this adapter.
       // Register under both singular and plural forms so lookups
       // work regardless of whether the adapter uses "customer" or "customers".
+      // Each pool also gets a Set for O(1) membership checks.
       const idPools = new Map<string, string[]>();
+      const idPoolSets = new Map<string, Set<string>>();
       for (const [resourceType, responses] of Object.entries(responseSet.responses)) {
         const ids: string[] = [];
         for (const r of responses) {
@@ -1019,16 +1370,23 @@ export class BlueprintExpander {
           if (typeof body.id === 'string') ids.push(body.id);
         }
         if (ids.length > 0) {
+          const set = new Set(ids);
           idPools.set(resourceType, ids);
+          idPoolSets.set(resourceType, set);
           const plural = resourceType.endsWith('s') ? resourceType : resourceType + 's';
           const singular = resourceType.endsWith('s') ? resourceType.slice(0, -1) : resourceType;
-          if (!idPools.has(plural)) idPools.set(plural, ids);
-          if (!idPools.has(singular)) idPools.set(singular, ids);
+          if (!idPools.has(plural)) { idPools.set(plural, ids); idPoolSets.set(plural, set); }
+          if (!idPools.has(singular)) { idPools.set(singular, ids); idPoolSets.set(singular, set); }
         }
       }
 
       if (idPools.size === 0) continue;
 
+      // Rewrite any FK-style field whose value isn't in the resolved id pool.
+      // This catches both `gen_xyz` placeholders (LLM was told to use them)
+      // AND LLM-invented semantic ids ("cus_klein_records") that don't match
+      // the actual entity ids the system generated. Out-of-pool values would
+      // otherwise break cross-surface joins downstream.
       let resolvedCount = 0;
       let nulledCount = 0;
       for (const responses of Object.values(responseSet.responses)) {
@@ -1037,15 +1395,20 @@ export class BlueprintExpander {
           for (const [field, parentResource] of fkMap) {
             const val = body[field];
             if (typeof val !== 'string') continue;
-            if (!val.startsWith('gen_')) continue;
             const pool = idPools.get(parentResource);
-            if (pool && pool.length > 0) {
-              body[field] = this.rng.pick(pool);
-              resolvedCount++;
-            } else {
-              body[field] = null;
-              nulledCount++;
+            const poolSet = idPoolSets.get(parentResource);
+            if (!pool || pool.length === 0) {
+              // No pool to rewrite to. Only null out `gen_` placeholders so
+              // we don't clobber values that might be meaningful elsewhere.
+              if (val.startsWith('gen_')) {
+                body[field] = null;
+                nulledCount++;
+              }
+              continue;
             }
+            if (poolSet!.has(val)) continue;  // valid ref, leave it
+            body[field] = this.rng.pick(pool);
+            resolvedCount++;
           }
         }
       }
@@ -1075,7 +1438,18 @@ export class BlueprintExpander {
   private crossReferenceApiWithDb(
     tables: Record<string, Row[]>,
     apiResponses: Record<string, ApiResponseSet>,
+    tableIndex: Map<string, TableInfo>,
   ): void {
+    // Build a per-table column-name set so we never write a field onto a row
+    // whose table doesn't have a column for it. Without this guard, the
+    // API → DB sync below silently injects API-only fields (phone, currency,
+    // ...) into rows on tables that lack those columns; the seeder drops them
+    // before INSERT but they're visible to stats / facts / inspection, which
+    // makes facts cite "DB" data that isn't actually in the DB.
+    const tableColumns = new Map<string, Set<string>>();
+    for (const [name, info] of tableIndex) {
+      tableColumns.set(name, new Set(info.columns.map(c => c.name)));
+    }
     // ── Phase 1: Build lookup maps from DB tables ────────────────────
     // Map: idValue → { tableName, row, colName }
     const SEQ_ID = /^[a-z_]+p\d+_\d+$/;
@@ -1131,7 +1505,8 @@ export class BlueprintExpander {
     // Phase 2a: API → DB sync
     // API data is authoritative for overlapping fields (name, email, status, etc.)
     // because identity table rows are derived from API entities.
-    for (const [_tableName, rows] of Object.entries(tables)) {
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const allowedCols = tableColumns.get(tableName);
       for (const row of rows) {
         for (const [_colName, value] of Object.entries(row)) {
           if (typeof value !== 'string' || !SEQ_ID.test(value)) continue;
@@ -1139,6 +1514,12 @@ export class BlueprintExpander {
           if (!apiBody) continue;
 
           for (const field of API_TO_DB_FIELDS) {
+            // Only sync fields that actually exist as columns on this DB
+            // table. Without this guard, fields like `phone` / `currency`
+            // get written onto rows whose tables have no such column —
+            // they end up in expanded.tables (visible to stats / facts /
+            // inspection) and are silently dropped by the seeder.
+            if (allowedCols && !allowedCols.has(field)) continue;
             const apiVal = apiBody[field];
             if (apiVal === undefined || apiVal === null) continue;
             const dbVal = row[field];
@@ -1206,6 +1587,7 @@ export class BlueprintExpander {
     tableIndex: Map<string, TableInfo>,
     idTracker: IdTracker,
     schema: SchemaModel,
+    blueprint: Blueprint,
     schemaMapping?: SchemaMapping,
     modelingConfig?: {
       fieldMappings?: Record<string, Record<string, Record<string, string>>>;
@@ -1217,27 +1599,160 @@ export class BlueprintExpander {
         externalIdColumn: string;
       }[]>>;
     },
+    apiOnlyIds?: Map<string, Set<string>>,
+    anchorResolver?: AnchorResolver,
   ): void {
     const tableName = classification.table;
     const tableInfo = tableIndex.get(tableName);
-    const allRows: Row[] = [];
+    let allRows: Row[] = [];
 
     if (!classification.sources || classification.sources.length === 0) return;
 
-    // Build field mappings from schema mapping + config overrides
-    const bridgeMappings = new Map<string, SchemaMappingEntry[]>();
+    // Flat union of all apiOnly entity IDs across every adapter+resource.
+    // Used to drop mirrored rows whose FK refs point at apiOnly identities —
+    // orphan-ness propagates transitively (an invoice for an orphan customer
+    // lives on the API side only and never mirrors to DB).
+    const allApiOnlyIds = new Set<string>();
+    if (apiOnlyIds) {
+      for (const set of apiOnlyIds.values()) {
+        for (const id of set) allApiOnlyIds.add(id);
+      }
+    }
+
+    // Build field mappings from schema mapping + config overrides.
+    // Both bridge-table entries (legacy) and non-bridge id entries (IDENTITY
+    // CONTRACT pattern) contribute. For non-bridge entries, the LLM only
+    // produced one mapping per cross-surface column (apiField === 'id'); other
+    // body fields fall through to API_TO_DB_MAP / configFieldMap below.
+    const fieldMappings = new Map<string, SchemaMappingEntry[]>();
     if (schemaMapping) {
       for (const entry of schemaMapping.mappings) {
-        if (entry.dbTable !== tableName || !entry.isBridgeTable) continue;
+        if (entry.dbTable !== tableName) continue;
         const key = `${entry.adapterId}:${entry.apiResource}`;
-        const group = bridgeMappings.get(key) ?? [];
+        const group = fieldMappings.get(key) ?? [];
         group.push(entry);
-        bridgeMappings.set(key, group);
+        fieldMappings.set(key, group);
       }
     }
 
     const hasBillingPlatformCol = tableInfo?.columns.some(c => c.name === 'billing_platform');
     const hasExternalIdCol = tableInfo?.columns.some(c => c.name === 'external_id');
+
+    // Cross-surface FK columns this table uses (driven by schema mapping).
+    // We use these to:
+    //   1. Skip derivation for IDs already claimed by a static narrative entity.
+    //   2. Dedup statics + derived in deduplicateByUniqueConstraints below.
+    const fkColumnsForTable = new Set<string>();
+    if (schemaMapping && tableInfo) {
+      const tableColumnNames = new Set(tableInfo.columns.map(c => c.name));
+      for (const entry of schemaMapping.mappings) {
+        if (entry.dbTable !== tableName) continue;
+        if (entry.isBridgeTable) continue;
+        if (entry.apiField !== 'id') continue;
+        if (!tableColumnNames.has(entry.dbColumn)) continue;
+        fkColumnsForTable.add(entry.dbColumn);
+      }
+    }
+
+    // Process narrative-named static entities FIRST so their hand-coded
+    // auto-increment ids land before derived rows take adjacent ids.
+    // assignAutoIncrementIds bumps the counter to max(current, hand-coded id),
+    // so subsequent derive-loop ids skip past the static-claimed range.
+    const staticRows = blueprint.data.entities?.[tableName] ?? [];
+    const staticClaimedCrossSurfaceIds = new Set<string>();
+    for (const ent of staticRows) {
+      for (const fkCol of fkColumnsForTable) {
+        const v = (ent as Row)[fkCol];
+        if (typeof v === 'string') staticClaimedCrossSurfaceIds.add(v);
+      }
+    }
+    if (staticRows.length > 0) {
+      for (let i = 0; i < staticRows.length; i++) {
+        const row = { ...staticRows[i]! } as Row;
+        resolveInlineVariations(row, tableName, this.fieldGen, i);
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        resolveReferences(row, idTracker);
+        allRows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+    }
+
+    // Expand DB archetypes that emit dedicated rows for this mirrored table.
+    // Two cases trigger emission (and only these):
+    //
+    //   1. Anchor-bound archetypes targeting a persona event (Klein
+    //      double-charge, Larkspur drift). The LLM uses these to pin a
+    //      specific customer + date(s) on the DB side. When the archetype
+    //      hardcodes its cross-surface id column in `fields` (e.g.
+    //      `stripe_subscription_id: "sub_lark_drift_001"`), the row is
+    //      added to `staticClaimedCrossSurfaceIds` so the API mirror loop
+    //      below skips the matching API entity — DB and API end up with
+    //      one row each, sharing the id but free to diverge on body
+    //      fields (the DRIFT pattern). When the archetype uses a
+    //      `sequence` vary rule for the cross-surface id instead, the
+    //      mirror loop won't be able to dedupe (different ids); the
+    //      backfill pass in PHASE F.5 synthesizes a matching API entity.
+    //
+    //   2. Explicit-count plain archetypes (no anchor, no apiOnly,
+    //      `count > 0`). These give the LLM a way to land an exact
+    //      number of rows on a mirrored DB table without declaring an
+    //      anchor — e.g. "exactly 4 historical card_expired failures
+    //      with backdated timestamps." Same id-claim mechanic as anchor
+    //      rows.
+    //
+    // Both flows go through assignAutoIncrementIds / trackRow so PK
+    // counters and FK lookups stay coherent with mirror-derived rows.
+    const dbArchetypes = blueprint.data.entityArchetypes?.[tableName];
+    if (dbArchetypes && tableInfo) {
+      for (const archetype of dbArchetypes.archetypes) {
+        const isAnchorBound =
+          !!archetype.anchor && !!anchorResolver?.has(archetype.anchor);
+        const isExplicitCountPlain =
+          !archetype.anchor &&
+          !archetype.apiOnly &&
+          typeof archetype.count === 'number' &&
+          archetype.count > 0;
+        if (!isAnchorBound && !isExplicitCountPlain) continue;
+
+        let archetypeCount: number;
+        if (isAnchorBound) {
+          const resolved = anchorResolver!.resolve(archetype.anchor!, {
+            surface: 'db',
+          });
+          if (!resolved) continue;
+          rewriteAnchorVaryRules(archetype, resolved);
+          archetypeCount = archetype.count ?? 1;
+        } else {
+          archetypeCount = archetype.count!;
+        }
+
+        for (let i = 0; i < archetypeCount; i++) {
+          const row = this.fieldGen.applyVariations(
+            archetype.vary,
+            archetype.fields,
+            i,
+            tableName,
+          );
+          assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+          resolveReferences(row, idTracker, this.rng);
+
+          // Claim every cross-surface id this row owns so the mirror loop
+          // below skips a matching API entity (drift) and the backfill
+          // pass synthesizes whatever's still missing.
+          for (const fkCol of fkColumnsForTable) {
+            const v = row[fkCol];
+            if (typeof v === 'string') staticClaimedCrossSurfaceIds.add(v);
+          }
+
+          if (isAnchorBound) {
+            row[ANCHOR_TAG_KEY] = archetype.anchor;
+          }
+
+          allRows.push(row);
+          trackRow(row, tableInfo, idTracker, tableName);
+        }
+      }
+    }
 
     for (const source of classification.sources) {
       const sourceKey = `${source.adapter}.${source.resource}`;
@@ -1247,8 +1762,8 @@ export class BlueprintExpander {
       const responses = responseSet.responses[source.resource];
       if (!responses || responses.length === 0) continue;
 
-      // Get field mappings for this source
-      const mappings = bridgeMappings.get(`${source.adapter}:${source.resource}`) ?? [];
+      // Get field mappings for this source (both bridge and non-bridge entries)
+      const mappings = fieldMappings.get(`${source.adapter}:${source.resource}`) ?? [];
 
       // Get config-level field mapping overrides
       const configFieldMap = modelingConfig?.fieldMappings?.[tableName];
@@ -1256,8 +1771,47 @@ export class BlueprintExpander {
 
       const sourceRows: Row[] = [];
 
+      // apiOnly entities for this exact source (e.g. apiOnly invoices) skip
+      // mirroring directly. These IDs are also in `allApiOnlyIds` for the
+      // transitive ref check below, but a same-resource skip is clearer.
+      const sourceApiOnlyIds = apiOnlyIds?.get(`${source.adapter}.${source.resource}`);
+      let mirroredSkippedDueToOrphanRef = 0;
+      let mirroredSkippedDueToApiOnly = 0;
+
       for (const apiResponse of responses) {
         const body = apiResponse.body as Record<string, unknown>;
+
+        // Skip derivation for IDs already claimed by a static narrative entity
+        // (the static row carries persona content this generic row would lose).
+        if (typeof body.id === 'string' && staticClaimedCrossSurfaceIds.has(body.id)) continue;
+
+        // Skip if this entity itself was emitted by an apiOnly archetype.
+        if (sourceApiOnlyIds && typeof body.id === 'string' && sourceApiOnlyIds.has(body.id)) {
+          mirroredSkippedDueToApiOnly++;
+          continue;
+        }
+
+        // Transitive skip: if the row's identity-FK ref points at an apiOnly
+        // identity (e.g. an invoice whose `customer` is a Stripe-only orphan),
+        // skip it. The API mock still serves the entity, but it has no DB row.
+        if (allApiOnlyIds.size > 0 && classification.identityFks) {
+          let pointsAtOrphan = false;
+          for (const fkRule of classification.identityFks) {
+            let refValue: unknown = body[fkRule.apiField];
+            if (typeof refValue === 'object' && refValue !== null && 'id' in refValue) {
+              refValue = (refValue as Record<string, unknown>).id;
+            }
+            if (typeof refValue === 'string' && allApiOnlyIds.has(refValue)) {
+              pointsAtOrphan = true;
+              break;
+            }
+          }
+          if (pointsAtOrphan) {
+            mirroredSkippedDueToOrphanRef++;
+            continue;
+          }
+        }
+
         const row: Row = {};
 
         // Set discriminator column
@@ -1277,6 +1831,36 @@ export class BlueprintExpander {
           const apiValue = body[mapping.apiField];
           if (apiValue !== undefined && apiValue !== null) {
             row[mapping.dbColumn] = apiValue;
+          }
+        }
+
+        // Secondary cross-surface FK columns: a single DB table may have
+        // multiple cross-surface ID columns pointing at DIFFERENT API resources
+        // — e.g. payments.stripe_payment_id ← stripe.charge.id AND
+        // payments.stripe_payment_intent_id ← stripe.payment_intent.id. The
+        // current source covers only one of them; the other resource's ID is
+        // typically present on the body as a ref field named after the
+        // resource (Stripe convention: charge.payment_intent = "pi_..."). Use
+        // that to populate the secondary FK column without needing to derive
+        // a second set of rows.
+        if (schemaMapping) {
+          for (const entry of schemaMapping.mappings) {
+            if (entry.dbTable !== tableName) continue;
+            if (entry.isBridgeTable) continue;
+            if (entry.apiField !== 'id') continue;
+            if (entry.adapterId !== source.adapter) continue;
+            if (entry.apiResource === source.resource) continue;
+            if (row[entry.dbColumn] !== undefined) continue;
+            const refValue = body[entry.apiResource];
+            if (typeof refValue === 'string') {
+              row[entry.dbColumn] = refValue;
+            } else if (
+              typeof refValue === 'object' && refValue !== null &&
+              'id' in (refValue as Record<string, unknown>)
+            ) {
+              const id = (refValue as Record<string, unknown>).id;
+              if (typeof id === 'string') row[entry.dbColumn] = id;
+            }
           }
         }
 
@@ -1306,6 +1890,13 @@ export class BlueprintExpander {
         assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
         sourceRows.push(row);
         trackRow(row, tableInfo, idTracker, tableName);
+      }
+
+      if (mirroredSkippedDueToApiOnly > 0 || mirroredSkippedDueToOrphanRef > 0) {
+        logger.debug(
+          `Mirrored "${tableName}" from ${sourceKey}: skipped ${mirroredSkippedDueToApiOnly} apiOnly entit${mirroredSkippedDueToApiOnly === 1 ? 'y' : 'ies'} ` +
+          `+ ${mirroredSkippedDueToOrphanRef} entit${mirroredSkippedDueToOrphanRef === 1 ? 'y' : 'ies'} referencing apiOnly identities`,
+        );
       }
 
       // Resolve FKs to identity tables
@@ -1345,6 +1936,24 @@ export class BlueprintExpander {
       allRows.push(...sourceRows);
     }
 
+    // (Static entities were already processed before the source loop above.)
+
+    // Apply DB archetype enrichment to mirrored rows. The mirror flow only
+    // copies fields the schema mapping declared; DB-only columns the LLM
+    // described in `entityArchetypes` (e.g. `vary.failure_reason: pick` on a
+    // "failed" archetype, or persona-shaped `fields.payment_method`) were
+    // previously discarded because mirrored tables skip `expandArchetypes`.
+    //
+    // For each mirrored row, find the archetype whose constant `fields` agree
+    // with the row's already-populated values (so a row with `status=failed`
+    // matches `historical-failed` but not `*-succeeded`), then fill any
+    // columns the row hasn't already set from that archetype's `fields` and
+    // `vary` rules. Sequence/uuid variations are skipped so we don't overwrite
+    // mirrored IDs the mirror flow already produced.
+    if (allRows.length > 0 && tableInfo) {
+      this.enrichMirroredRowsFromArchetypes(allRows, blueprint, tableName, tableInfo);
+    }
+
     if (allRows.length > 0) {
       tables[tableName] = [...(tables[tableName] ?? []), ...allRows];
 
@@ -1356,6 +1965,89 @@ export class BlueprintExpander {
 
       logger.debug(
         `Mirrored table "${tableName}": derived ${allRows.length} rows from ${classification.sources!.length} source(s)`,
+      );
+    }
+  }
+
+  /**
+   * Apply DB-archetype enrichment to a set of mirrored rows. For each row,
+   * pick the archetype whose `fields` constants are non-conflicting with the
+   * row (a status="failed" row matches the "historical-failed" archetype, not
+   * the "*-succeeded" ones), and fill any unset columns from that archetype's
+   * `fields` and `vary`. Sequence/uuid variations are skipped to avoid
+   * overwriting IDs the mirror flow already populated.
+   */
+  private enrichMirroredRowsFromArchetypes(
+    rows: Row[],
+    blueprint: Blueprint,
+    tableName: string,
+    tableInfo: TableInfo,
+  ): void {
+    const dbArchetypes = blueprint.data.entityArchetypes?.[tableName];
+    const all = dbArchetypes?.archetypes ?? [];
+    // Skip anchor-bound archetypes — they're meant to emit dedicated rows, not
+    // enrich mirrored ones.
+    const candidates = all.filter((a) => !a.anchor);
+    if (candidates.length === 0) return;
+
+    const dbColumnNames = new Set(tableInfo.columns.map((c) => c.name));
+    let enriched = 0;
+    let rowsTouched = 0;
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]!;
+
+      // An archetype "matches" the row when, for every constant the archetype
+      // declares in `fields`, the row either hasn't set that field yet or has
+      // the same value. A conflicting value (row.status="failed" vs
+      // archetype.fields.status="succeeded") disqualifies the archetype.
+      const matching = candidates.filter((a) =>
+        Object.entries(a.fields).every(([k, v]) => {
+          const rv = row[k];
+          if (rv === undefined || rv === null) return true;
+          return rv === v;
+        }),
+      );
+      if (matching.length === 0) continue;
+
+      // Round-robin among matching archetypes for variety. Deterministic
+      // because the row order is deterministic (driven by API response order
+      // which is itself driven by the seeded archetype expansion).
+      const archetype = matching[i % matching.length]!;
+
+      let touched = false;
+
+      // Constant fields: apply only when the row hasn't already set this
+      // column. The schema mapping wins when it produced a value; the
+      // archetype fills the gap.
+      for (const [field, value] of Object.entries(archetype.fields)) {
+        if (row[field] !== undefined && row[field] !== null) continue;
+        if (!dbColumnNames.has(field)) continue;
+        row[field] = value;
+        enriched++;
+        touched = true;
+      }
+
+      // Variations: apply only when the row hasn't already set this column.
+      // Skip sequence/uuid — those generate fresh IDs that would collide with
+      // mirror-populated cross-surface columns.
+      for (const [field, variation] of Object.entries(archetype.vary)) {
+        if (row[field] !== undefined && row[field] !== null) continue;
+        if (!dbColumnNames.has(field)) continue;
+        if (variation.type === 'sequence' || variation.type === 'uuid') continue;
+        row[field] = this.fieldGen.resolveVariation(
+          variation, row, i, `${tableName}.${field}`,
+        );
+        enriched++;
+        touched = true;
+      }
+
+      if (touched) rowsTouched++;
+    }
+
+    if (enriched > 0) {
+      logger.debug(
+        `Mirrored table "${tableName}": archetype-enriched ${enriched} value(s) across ${rowsTouched} row(s)`,
       );
     }
   }
@@ -1385,6 +2077,8 @@ export class BlueprintExpander {
     idTracker: IdTracker,
     blueprint: Blueprint,
     schema: SchemaModel,
+    schemaMapping?: SchemaMapping,
+    apiOnlyIds?: Map<string, Set<string>>,
   ): void {
     const tableName = classification.table;
     const tableInfo = tableIndex.get(tableName);
@@ -1404,6 +2098,54 @@ export class BlueprintExpander {
 
     const hasBillingPlatformCol = tableInfo?.columns.some(c => c.name === 'billing_platform');
     const hasExternalIdCol = tableInfo?.columns.some(c => c.name === 'external_id');
+
+    // Per-source cross-surface FK column lookup (the IDENTITY CONTRACT pattern).
+    // For tables that DON'T have `external_id` but DO have a column like
+    // `stripe_customer_id` mapping to `stripe.customer.id`, we derive the FK
+    // column from the schema mapping and populate it with `body.id`. Without
+    // this, derived rows would have NULL in that column and DB↔API joins fail.
+    const fkColumnByAdapterResource = new Map<string, string>();
+    if (schemaMapping && tableInfo) {
+      const tableColumnNames = new Set(tableInfo.columns.map(c => c.name));
+      for (const entry of schemaMapping.mappings) {
+        if (entry.dbTable !== tableName) continue;
+        if (entry.isBridgeTable) continue;
+        if (entry.apiField !== 'id') continue;
+        if (!tableColumnNames.has(entry.dbColumn)) continue;
+        fkColumnByAdapterResource.set(`${entry.adapterId}.${entry.apiResource}`, entry.dbColumn);
+      }
+    }
+
+    // Collect IDs claimed by narrative-named static entities so we can skip
+    // those during API derivation. The static entity wins because it carries
+    // persona-specific content (name, plan, mrr_cents, support narrative)
+    // that the generic derived row would lose.
+    const staticClaimedIds = new Set<string>();
+    const fkColumns = Array.from(new Set(fkColumnByAdapterResource.values()));
+    const staticEntityRows = blueprint.data.entities[tableName] ?? [];
+    for (const ent of staticEntityRows) {
+      const ext = (ent as Row).external_id;
+      if (typeof ext === 'string') staticClaimedIds.add(ext);
+      for (const fkCol of fkColumns) {
+        const v = (ent as Row)[fkCol];
+        if (typeof v === 'string') staticClaimedIds.add(v);
+      }
+    }
+
+    // Process static narrative-named entities FIRST so their hand-coded auto-
+    // increment ids (e.g. `id: 1` for Klein Records) land cleanly. The
+    // counter-bumping in `assignAutoIncrementIds` ensures derived rows in the
+    // loop below skip past these ids and don't collide on the PK.
+    if (staticEntityRows.length > 0) {
+      for (let i = 0; i < staticEntityRows.length; i++) {
+        const row = { ...staticEntityRows[i]! } as Row;
+        resolveInlineVariations(row, tableName, this.fieldGen, i);
+        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+        resolveReferences(row, idTracker);
+        allRows.push(row);
+        trackRow(row, tableInfo, idTracker, tableName);
+      }
+    }
 
     // Common API → DB field mappings for identity tables.
     // Only map fields that actually exist in the target table schema.
@@ -1426,21 +2168,69 @@ export class BlueprintExpander {
       const responses = responseSet.responses[source.resource];
       if (!responses || responses.length === 0) continue;
 
+      // IDs emitted by `apiOnly: true` archetypes for this resource. These
+      // entities exist on the API side only — skipping derivation here is
+      // what produces the persona's declared cross-platform asymmetry.
+      const orphanIds = apiOnlyIds?.get(`${source.adapter}.${source.resource}`);
+
+      const matchedCount = orphanIds ? responses.length - orphanIds.size : responses.length;
       logger.debug(
-        `Deriving identity table "${tableName}" rows from ${source.adapter}.${source.resource} (${responses.length} entities)`,
+        `Deriving identity table "${tableName}" rows from ${source.adapter}.${source.resource}: ` +
+        `${matchedCount} matched + ${orphanIds?.size ?? 0} apiOnly (skipped) of ${responses.length} entities`,
       );
 
-      // Build a round-robin index into archetypes for DB-only column variety.
-      // Match archetypes by billing_platform where possible.
+      // Build a per-row archetype assignment that respects each archetype's
+      // explicit `count`. Archetypes with `count > 0` (persona-named singletons
+      // like `klein-records: count: 1`) are applied to exactly that many rows
+      // and never spread further; archetypes that rely on `weight` distribute
+      // across the remaining row budget proportionally. Without this, simple
+      // round-robin (`templatePool[i % len]`) cycles each archetype across
+      // ~rows/len rows — so a `klein-records` archetype with `count: 1` would
+      // tag ~8 customers as "Klein Records," which Phase 2b of
+      // crossReferenceApiWithDb then propagates back to the API side.
       const platformArchetypes = archetypeTemplates.filter(
         a => a.fields.billing_platform === source.adapter ||
              a.fields.billing_platform === source.discriminator?.value,
       );
       const templatePool = platformArchetypes.length > 0 ? platformArchetypes : archetypeTemplates;
 
-      for (let i = 0; i < responses.length; i++) {
-        const apiResponse = responses[i]!;
+      // Pre-filter the responses to only those that will actually emit a DB
+      // row. Two classes of responses are skipped at emission time:
+      //   - apiOnly orphans (declared by the persona to exist on the API
+      //     side only — e.g. "3 deliberate Stripe-only orphans").
+      //   - IDs already claimed by a narrative-named static entity (the
+      //     static entity carries the persona content this generic
+      //     derived row would lose).
+      //
+      // The assignment array is positional (`assignments[i]` is the
+      // archetype for `emittable[i]`), so building it against `responses.length`
+      // — which includes skipped slots — caused named singletons to be
+      // silently dropped whenever an orphan sorted into one of the first
+      // N slots that hold explicit-count assignments. Sort-order is non-
+      // deterministic across runs (sorted by `created` timestamp picked
+      // randomly per orphan), so this surfaced as "named customer X
+      // randomly missing in some runs."
+      //
+      // Filtering to the emittable subset before allocation makes
+      // assignments[i] always align with emittable[i], so every explicit-
+      // count named archetype is guaranteed a real emission slot.
+      const emittable = responses.filter((r) => {
+        const id = (r.body as Record<string, unknown>).id;
+        if (typeof id !== 'string') return true;
+        if (staticClaimedIds.has(id)) return false;
+        if (orphanIds?.has(id)) return false;
+        return true;
+      });
+
+      const assignments = buildIdentityTemplateAssignments(
+        templatePool,
+        emittable.length,
+      );
+
+      for (let i = 0; i < emittable.length; i++) {
+        const apiResponse = emittable[i]!;
         const body = apiResponse.body as Record<string, unknown>;
+
         const row: Row = {};
 
         // 1. Set billing_platform
@@ -1452,9 +2242,17 @@ export class BlueprintExpander {
           }
         }
 
-        // 2. Set external_id from API entity ID
+        // 2. Set external_id from API entity ID (bridge-table pattern)
         if (hasExternalIdCol && typeof body.id === 'string') {
           row.external_id = body.id;
+        }
+
+        // 2b. Set cross-surface FK column from API entity ID (IDENTITY CONTRACT
+        // pattern: tables without `external_id` use a column like
+        // `stripe_customer_id` to store the API ID).
+        const fkColumn = fkColumnByAdapterResource.get(`${source.adapter}.${source.resource}`);
+        if (fkColumn && typeof body.id === 'string') {
+          row[fkColumn] = body.id;
         }
 
         // 3. Map common fields from API → DB
@@ -1465,11 +2263,11 @@ export class BlueprintExpander {
           }
         }
 
-        // 4. Apply DB-only columns from archetype template (round-robin).
-        // Only set fields that exist in the DB schema to avoid inserting
-        // columns that don't exist in the target table.
+        // 4. Apply DB-only columns from the per-row archetype assignment.
+        // Honors archetype.count for persona-named singletons; otherwise
+        // distributes by weight across remaining rows.
         if (templatePool.length > 0) {
-          const template = templatePool[i % templatePool.length]!;
+          const template = assignments[i] ?? templatePool[i % templatePool.length]!;
           for (const [field, value] of Object.entries(template.fields)) {
             if (row[field] !== undefined) continue;
             if (field === 'billing_platform' || field === 'external_id') continue;
@@ -1493,22 +2291,8 @@ export class BlueprintExpander {
       }
     }
 
-    // Also include any static entities from the blueprint
-    const entityRows = blueprint.data.entities[tableName];
-    if (entityRows && entityRows.length > 0) {
-      for (let i = 0; i < entityRows.length; i++) {
-        const row = { ...entityRows[i]! } as Row;
-        // Only include static entities that aren't already covered by API derivation
-        const extId = row.external_id as string | undefined;
-        if (extId && allRows.some(r => r.external_id === extId)) continue;
-
-        resolveInlineVariations(row, tableName, this.fieldGen, i);
-        assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
-        resolveReferences(row, idTracker);
-        allRows.push(row);
-        trackRow(row, tableInfo, idTracker, tableName);
-      }
-    }
+    // (Static entities were already prepended above so their hand-coded
+    // auto-increment ids land cleanly before derived rows take their slots.)
 
     // Expand DB archetypes for non-API-linked entities (e.g., free-tier users
     // with no billing_platform). In 3-role flow, identity rows are derived from
@@ -1872,12 +2656,22 @@ function assignAutoIncrementIds(
   if (!tableInfo) return;
 
   for (const col of tableInfo.columns) {
-    if (col.isAutoIncrement && row[col.name] === undefined) {
-      const counterKey = `${tableName}.${col.name}`;
+    if (!col.isAutoIncrement) continue;
+    const counterKey = `${tableName}.${col.name}`;
+    if (row[col.name] === undefined) {
       const current = idTracker.counters.get(counterKey) ?? 0;
       const next = current + 1;
       idTracker.counters.set(counterKey, next);
       row[col.name] = next;
+    } else {
+      // Pre-set (e.g. a hand-coded static entity with `id: 5`). Bump the
+      // counter to max(current, this id) so subsequent auto-assigns don't
+      // collide with values the static rows already claimed.
+      const v = row[col.name];
+      if (typeof v === 'number') {
+        const current = idTracker.counters.get(counterKey) ?? 0;
+        if (v > current) idTracker.counters.set(counterKey, v);
+      }
     }
   }
 
@@ -2119,6 +2913,66 @@ function distributeByWeight(
   }
 
   return counts;
+}
+
+/**
+ * Pre-compute the per-row archetype assignment for `deriveIdentityTableRows`,
+ * honoring `archetype.count` for persona-named singletons.
+ *
+ * The original identity-derive code used `templatePool[i % len]` round-robin —
+ * a simple variety mechanism that ignored `count`. With explicit-count
+ * archetypes (e.g. `klein-records: count: 1`) the LLM expects exactly N rows
+ * to receive that archetype's fields/vary, but round-robin spreads it across
+ * `rows / len` rows (~8 of 100 for 13 templates), bleeding "Klein Records"
+ * across multiple customers and then propagating back to the API via
+ * `crossReferenceApiWithDb`. This function fixes the spread.
+ *
+ * Algorithm:
+ *   1. Archetypes with `count > 0` claim their exact slots first.
+ *   2. Remaining rows are distributed across weight-only archetypes by
+ *      their relative weight.
+ *   3. If every archetype declared `count` and the total is short of
+ *      `totalRows`, the leftover rows fall back to round-robin among
+ *      explicit archetypes — leaves nothing unassigned.
+ */
+function buildIdentityTemplateAssignments(
+  templatePool: EntityArchetype[],
+  totalRows: number,
+): EntityArchetype[] {
+  if (templatePool.length === 0 || totalRows <= 0) return [];
+
+  const explicit = templatePool.filter(
+    (a) => typeof a.count === 'number' && a.count > 0,
+  );
+  const weighted = templatePool.filter(
+    (a) => !(typeof a.count === 'number' && a.count > 0),
+  );
+
+  const assignments: EntityArchetype[] = [];
+
+  for (const a of explicit) {
+    const c = Math.min(a.count!, Math.max(0, totalRows - assignments.length));
+    for (let k = 0; k < c; k++) assignments.push(a);
+    if (assignments.length >= totalRows) break;
+  }
+
+  const remaining = Math.max(0, totalRows - assignments.length);
+  if (remaining > 0 && weighted.length > 0) {
+    const dist = distributeByWeight(weighted, remaining);
+    for (let j = 0; j < weighted.length; j++) {
+      const archetype = weighted[j]!;
+      const c = dist[j] ?? 0;
+      for (let k = 0; k < c; k++) assignments.push(archetype);
+    }
+  }
+
+  // Pad any leftover slots from round-robin among the pool. Happens only when
+  // every archetype set explicit count and the totals undershoot totalRows.
+  while (assignments.length < totalRows) {
+    assignments.push(templatePool[assignments.length % templatePool.length]!);
+  }
+
+  return assignments;
 }
 
 function indexTables(schema: SchemaModel): Map<string, TableInfo> {
@@ -2455,6 +3309,574 @@ function fillMissingRequiredColumns(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Anchors — cross-table coherence for persona-narrated events
+// ---------------------------------------------------------------------------
+
+/**
+ * An anchor resolved against the actual expanded customer rows. The
+ * `customerRow` is the row whose `name` (or `company`) matched the anchor's
+ * customer specification — picked deterministically — and `dates` are the
+ * anchor's named ISO strings normalized to epoch seconds.
+ */
+interface ResolvedAnchor {
+  id: string;
+  customerRow: Row | undefined;
+  dates: Record<string, number>;
+}
+
+/**
+ * Resolves anchors lazily, with surface-specific projections of the matched
+ * customer. The DB projection looks at `tables[customerTableName]`; the API
+ * projection looks at registered API customer entities (per adapter). Both
+ * caches are populated as expansion progresses — the resolver is constructed
+ * once at the top of expand() and called from both expandApiArchetypes and
+ * expandArchetypes.
+ *
+ * Why two surfaces: DB and API customers carry different ID shapes (DB
+ * autoincrement int vs Stripe-style "cus_xxx" string), so an anchor_field
+ * rule with `key: "id"` must return different values depending on whether
+ * the enclosing archetype targets a DB table or an API resource.
+ */
+class AnchorResolver {
+  private readonly anchors: Map<string, Anchor>;
+  private readonly tables: Record<string, Row[]>;
+  private readonly customerTableName: string | undefined;
+  /** Surface-keyed cache; the same anchor may be resolved differently for DB vs API. */
+  private readonly cache = new Map<string, ResolvedAnchor>();
+  /** Registered API customer entities, keyed by adapter id. */
+  private readonly apiCustomers = new Map<string, Row[]>();
+  /** Static customer entities the blueprint declared inline (read once at construction). */
+  private readonly staticDbCustomers: Row[];
+  /** schemaMapping reference — needed to project a DB customer onto a synthetic API customer. */
+  private readonly schemaMapping: SchemaMapping | undefined;
+
+  constructor(
+    anchors: Anchor[] | undefined,
+    tables: Record<string, Row[]>,
+    schema: SchemaModel,
+    classifications: TableClassification[],
+    blueprint?: Blueprint,
+    schemaMapping?: SchemaMapping,
+  ) {
+    this.anchors = new Map((anchors ?? []).map((a) => [a.id, a]));
+    this.tables = tables;
+    this.customerTableName =
+      classifications.find((c) => c.role === 'identity')?.table ??
+      schema.tables.find((t) => t.name === 'customers')?.name ??
+      schema.tables.find((t) => t.name === 'customer')?.name;
+    this.staticDbCustomers =
+      blueprint && this.customerTableName
+        ? ((blueprint.data.entities?.[this.customerTableName] ?? []) as Row[])
+        : [];
+    this.schemaMapping = schemaMapping;
+  }
+
+  has(id: string): boolean {
+    return this.anchors.has(id);
+  }
+
+  /**
+   * Register API customer entities for an adapter. Called by
+   * expandApiArchetypes between its non-anchor and anchor-bound passes so
+   * that pass-2 anchor lookups can find the customer on the API side.
+   */
+  registerApiCustomers(adapterId: string, entities: Row[]): void {
+    this.apiCustomers.set(adapterId, entities);
+    // Invalidate cached API resolutions for this adapter so a re-resolve
+    // picks up the freshly registered entities.
+    for (const key of [...this.cache.keys()]) {
+      if (key.startsWith(`api:${adapterId}:`)) this.cache.delete(key);
+    }
+  }
+
+  resolve(
+    id: string,
+    options: { surface: 'db' } | { surface: 'api'; adapterId: string } = { surface: 'db' },
+  ): ResolvedAnchor | undefined {
+    const cacheKey =
+      options.surface === 'db' ? `db:${id}` : `api:${options.adapterId}:${id}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) return cached;
+
+    const anchor = this.anchors.get(id);
+    if (!anchor) return undefined;
+
+    const customerRow =
+      options.surface === 'db'
+        ? this.findDbCustomer(anchor)
+        : this.findApiCustomer(anchor, options.adapterId);
+
+    const dates: Record<string, number> = {};
+    for (const [key, value] of Object.entries(anchor.dates)) {
+      const ms = Date.parse(value);
+      if (!Number.isNaN(ms)) dates[key] = Math.floor(ms / 1000);
+    }
+
+    const resolved: ResolvedAnchor = { id, customerRow, dates };
+    this.cache.set(cacheKey, resolved);
+
+    if (anchor.customer && !customerRow) {
+      if (options.surface === 'db') {
+        logger.warn(
+          `Anchor "${id}" (db): no customer matching "${anchor.customer.match}" was found ` +
+            `in ${this.customerTableName ?? '<unknown table>'}. ` +
+            `Anchor-bound DB archetypes for this anchor will skip — declare a named ` +
+            `customer archetype with fields.name = "${anchor.customer.match}".`,
+        );
+      } else {
+        // API-side miss is recoverable: PHASE F.7b
+        // `reconcileAnchorCustomerLinks` rewrites anchor-tagged API entities'
+        // customer FK to the right value once both sides exist. Demote to debug
+        // so a transient lookup miss during expansion doesn't surface as a
+        // user-facing warning when the final data is correct. If the link
+        // reconciler also fails (DB customer never materialized), the DB-side
+        // warning above will fire and capture the real problem.
+        logger.debug(
+          `Anchor "${id}" (api): no customer matching "${anchor.customer.match}" was found ` +
+            `in API responses for adapter "${options.adapterId}" at expansion time. ` +
+            `Customer FKs on anchor-tagged API entities will be repointed by ` +
+            `reconcileAnchorCustomerLinks once DB customers materialize.`,
+        );
+      }
+    }
+    return resolved;
+  }
+
+  private findDbCustomer(anchor: Anchor): Row | undefined {
+    if (!anchor.customer || !this.customerTableName) return undefined;
+    const rows = this.tables[this.customerTableName] ?? [];
+    const live = matchCustomer(rows, anchor.customer.match);
+    if (live) return live;
+    // Fallback to the blueprint's static-declared customers: identity-table
+    // expansion (PHASE B) only runs after expandApiArchetypes (PHASE A), so
+    // when an anchor resolves API-side first, `tables[customers]` is still
+    // empty. The blueprint's static entities are stable across the entire
+    // expansion — safe to read at any point.
+    return matchCustomer(this.staticDbCustomers, anchor.customer.match);
+  }
+
+  private findApiCustomer(anchor: Anchor, adapterId: string): Row | undefined {
+    if (!anchor.customer) return undefined;
+    const entities = this.apiCustomers.get(adapterId) ?? [];
+    const direct = matchCustomer(entities, anchor.customer.match);
+    if (direct) return direct;
+
+    // Pre-resolution fallback: the API surface hasn't materialized this
+    // anchor's customer yet (LLM emitted a static DB Klein but no Stripe
+    // Klein archetype). Project the DB row onto a synthetic API row using
+    // the cross-surface ID column from the schema mapping so anchor-bound
+    // archetypes can still resolve `anchor_field: id` to the right value.
+    // PHASE F.5 will later materialize a real API entity with that id from
+    // the DB row, so the synthetic stays consistent with the final dataset.
+    const dbRow = this.findDbCustomer(anchor);
+    if (!dbRow || !this.schemaMapping || !this.customerTableName) return undefined;
+
+    const idMapping = this.schemaMapping.mappings.find(
+      (m) =>
+        m.dbTable === this.customerTableName &&
+        m.adapterId === adapterId &&
+        m.apiField === 'id' &&
+        !m.isBridgeTable,
+    );
+    if (!idMapping) return undefined;
+    const crossSurfaceId = dbRow[idMapping.dbColumn];
+    if (typeof crossSurfaceId !== 'string' || crossSurfaceId.length === 0) {
+      return undefined;
+    }
+
+    // Project the DB row into a synthetic API customer row. The synthetic
+    // exists only to feed `anchor_field` lookups (`archetype.vary[col] =
+    // { type: 'anchor_field', key: <name> }`), which read
+    // `resolved.customerRow[key]`. The cross-surface id replaces the DB
+    // PK so a `key: "id"` rule resolves to the API-side identifier;
+    // every other column is passed through verbatim so adapter-specific
+    // keys (anything the LLM puts in `anchor_field.key`) still resolve
+    // against whatever the DB row carries. No adapter-specific shape
+    // fields are injected — adapters that have e.g. an `object` field
+    // already declare it in their archetypes.
+    const synthetic: Row = { ...dbRow, id: crossSurfaceId };
+    logger.debug(
+      `AnchorResolver: synthesized API customer for adapter "${adapterId}" ` +
+        `from DB row ${idMapping.dbColumn}=${crossSurfaceId} ` +
+        `to resolve anchor "${anchor.id}" (anchor-bound API archetype expanded before ` +
+        `PHASE F.5 backfilled the real entity).`,
+    );
+    return synthetic;
+  }
+}
+
+/** Case-insensitive name/company match against a row collection. */
+function matchCustomer(rows: Row[], match: string): Row | undefined {
+  const target = match.toLowerCase();
+  return rows.find((r) => {
+    const name = String(r.name ?? '').toLowerCase();
+    const company = String(r.company ?? '').toLowerCase();
+    return (
+      name === target ||
+      company === target ||
+      (name !== '' && (name.includes(target) || target.includes(name))) ||
+      (company !== '' && (company.includes(target) || target.includes(company)))
+    );
+  });
+}
+
+/**
+ * Rewrite an anchor-bound archetype's `anchor_date` / `anchor_field` vary
+ * rules into plain `pick` rules carrying the resolved value. After this
+ * step the FieldGenerator can expand the archetype with no anchor awareness.
+ *
+ * Mutation is intentional and one-shot per archetype — same pattern as
+ * `injectNowDefaultVaryRules`.
+ */
+function rewriteAnchorVaryRules(
+  archetype: EntityArchetype,
+  resolved: ResolvedAnchor,
+): void {
+  for (const [colName, rule] of Object.entries(archetype.vary)) {
+    if (rule.type === 'anchor_date') {
+      const dateKey = rule.key ?? 'event';
+      const ts = resolved.dates[dateKey];
+      if (ts === undefined) continue;
+      const value =
+        rule.format === 'epoch_seconds'
+          ? ts
+          : new Date(ts * 1000).toISOString();
+      archetype.vary[colName] = { type: 'pick', values: [value] };
+    } else if (rule.type === 'anchor_field') {
+      const path = rule.key ?? 'id';
+      const value = resolved.customerRow?.[path];
+      if (value === undefined || value === null) continue;
+      archetype.vary[colName] = { type: 'pick', values: [value] };
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cross-surface backfill — referential integrity for DB-side FK references
+// ---------------------------------------------------------------------------
+
+/**
+ * Walk every DB column declared as a cross-surface FK in the schema mapping
+ * (e.g. `payments.stripe_payment_intent_id` → `stripe.payment_intent.id`).
+ * For each DB value that has no matching entity in the API responses,
+ * synthesize one from the DB row + linked rows.
+ *
+ * Why this exists: the 3-role mirror flow guarantees ID coherence only for
+ * archetype-shaped rows derived from API entities. Static `data.entities[]`
+ * rows (commonly used by the LLM for persona-pinned events like a specific
+ * customer's double-charge) bypass that derivation entirely — they go
+ * straight into the DB table with whatever IDs the LLM emits, but no
+ * matching API entity is created. A reconciliation agent walking DB→API
+ * would then 404. This pass closes that gap as a referential-integrity
+ * invariant: every DB cross-surface FK that's declared in the schema
+ * mapping must resolve to an API entity at expansion end.
+ *
+ * Synthesis strategy: copy primitives that share the column name (status,
+ * currency, etc.); rename obvious `_cents` → bare amount and `_at` → bare
+ * created/updated/etc.; resolve FK columns by looking up the linked row's
+ * cross-surface id and emitting it under the API field name (which equals
+ * the referenced resource type by Stripe-style convention). Anything not
+ * derivable from the DB row is omitted — downstream consumers must accept
+ * sparser entities than the LLM-authored ones.
+ */
+function backfillMissingCrossSurfaceEntities(
+  tables: Record<string, Row[]>,
+  apiResponses: Record<string, ApiResponseSet>,
+  schema: SchemaModel,
+  schemaMapping: SchemaMapping | undefined,
+  personaId: string,
+): void {
+  if (!schemaMapping) return;
+
+  for (const mapping of schemaMapping.mappings) {
+    if (mapping.isBridgeTable) continue;
+    if (mapping.apiField !== 'id') continue;
+
+    const dbRows = tables[mapping.dbTable] ?? [];
+    if (dbRows.length === 0) continue;
+
+    const apiSet = apiResponses[mapping.adapterId];
+    if (!apiSet) continue;
+
+    const apiEntities = apiSet.responses[mapping.apiResource] ?? [];
+    const existingIds = new Set<string>();
+    for (const e of apiEntities) {
+      const id = (e.body as Record<string, unknown>).id;
+      if (typeof id === 'string') existingIds.add(id);
+    }
+
+    const synthesized: ApiResponse[] = [];
+    const seenIds = new Set<string>();
+    for (const dbRow of dbRows) {
+      const externalId = dbRow[mapping.dbColumn];
+      if (typeof externalId !== 'string' || externalId.length === 0) continue;
+      if (existingIds.has(externalId) || seenIds.has(externalId)) continue;
+      seenIds.add(externalId);
+
+      const body = synthesizeApiEntityFromDbRow(
+        dbRow,
+        mapping,
+        schema,
+        tables,
+        schemaMapping,
+      );
+      if (!body) continue;
+
+      synthesized.push({
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body,
+        personaId,
+        stateKey: `${mapping.adapterId}_${mapping.apiResource}`,
+      });
+    }
+
+    if (synthesized.length === 0) continue;
+
+    logger.warn(
+      `Backfilled ${synthesized.length} ${mapping.adapterId}.${mapping.apiResource} ` +
+        `entit${synthesized.length === 1 ? 'y' : 'ies'} for cross-surface FK references ` +
+        `from "${mapping.dbTable}.${mapping.dbColumn}" that had no API counterpart. ` +
+        `Common causes: static \`data.entities\` rows, anchor-bound DB archetypes ` +
+        `that mint their own cross-surface IDs, or explicit-count DB archetypes ` +
+        `that bypass mirror derivation. Backfill synthesized a sparse API entity ` +
+        `from the DB row so DB→API joins resolve.`,
+    );
+
+    apiSet.responses[mapping.apiResource] = [...apiEntities, ...synthesized];
+    apiSet.responses[mapping.apiResource].sort((a, b) => {
+      const ca = (a.body as Record<string, unknown>).created as number ?? 0;
+      const cb = (b.body as Record<string, unknown>).created as number ?? 0;
+      return ca - cb;
+    });
+  }
+}
+
+function synthesizeApiEntityFromDbRow(
+  dbRow: Row,
+  mapping: SchemaMappingEntry,
+  schema: SchemaModel,
+  tables: Record<string, Row[]>,
+  schemaMapping: SchemaMapping,
+): Record<string, unknown> | undefined {
+  const externalId = dbRow[mapping.dbColumn];
+  if (typeof externalId !== 'string') return undefined;
+
+  const body: Record<string, unknown> = {
+    id: externalId,
+    object: mapping.apiResource,
+  };
+
+  // Pass 1: primitives + cents/at renaming
+  for (const [key, value] of Object.entries(dbRow)) {
+    if (key === 'id') continue;
+    if (key === mapping.dbColumn) continue;
+    if (key.endsWith('_id')) continue; // FKs handled in pass 2
+    if (value === undefined || value === null) continue;
+
+    if (key.endsWith('_at')) {
+      const ts = parseTimestampToSec(value);
+      if (ts === null) continue;
+      const apiField = key === 'created_at' ? 'created' : key.slice(0, -3);
+      body[apiField] = ts;
+      continue;
+    }
+
+    if (key.endsWith('_cents')) {
+      body[key.slice(0, -'_cents'.length)] = value;
+      continue;
+    }
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      body[key] = value;
+    }
+  }
+
+  // Pass 2: resolve FK columns to cross-surface IDs on the linked rows
+  const tableInfo = schema.tables.find((t) => t.name === mapping.dbTable);
+  if (tableInfo) {
+    for (const fk of tableInfo.foreignKeys) {
+      for (let i = 0; i < fk.columns.length; i++) {
+        const fkCol = fk.columns[i]!;
+        const fkVal = dbRow[fkCol];
+        if (fkVal === undefined || fkVal === null) continue;
+
+        const refTable = fk.referencedTable;
+        const refCol = fk.referencedColumns[i]!;
+        const refRow = (tables[refTable] ?? []).find((r) => r[refCol] === fkVal);
+        if (!refRow) continue;
+
+        const refMapping = schemaMapping.mappings.find(
+          (m) =>
+            m.dbTable === refTable &&
+            m.adapterId === mapping.adapterId &&
+            m.apiField === 'id' &&
+            !m.isBridgeTable,
+        );
+        if (!refMapping) continue;
+
+        const refExternalId = refRow[refMapping.dbColumn];
+        if (typeof refExternalId !== 'string') continue;
+
+        // API field name follows Stripe-style convention: the referenced
+        // resource type singular (`customer`, `subscription`, `invoice`).
+        // refMapping.apiResource is already singular for adapters that
+        // follow this convention; if not, downstream consumers may need
+        // additional adapter-specific normalization.
+        body[refMapping.apiResource] = refExternalId;
+      }
+    }
+  }
+
+  return body;
+}
+
+/**
+ * Auto-inject `{ type: "timestamp" }` vary rules for `@default(now())`
+ * timestamp columns that DB archetypes haven't covered explicitly.
+ *
+ * Why this layer exists: the LLM is told (correctly) that the persona's
+ * REQUIRED columns are the ones with `!hasDefault`. So `created_at @default(now())`
+ * is rendered as just `DEFAULT now()` and the LLM omits it from `fields`/`vary`,
+ * assuming the DB will fill it. In practice the seeder drops the whole column
+ * (because it can't mix per-row DEFAULT with explicit values in one batched
+ * INSERT) and Postgres applies `now()` to every row, collapsing the historical
+ * spread the persona narrative asked for.
+ *
+ * By injecting a deterministic vary rule whose min/max match the configured
+ * generation range, we get O(rules) LLM cost for O(rows) timestamps. The LLM
+ * remains free to override per-archetype — any existing entry in `vary` or
+ * `fields` for the column is left untouched, so persona-pinned dates and
+ * anchor-bound rules continue to win.
+ */
+function injectNowDefaultVaryRules(
+  blueprint: Blueprint,
+  schema: SchemaModel,
+  range: TimeRange,
+): void {
+  const archetypes = blueprint.data.entityArchetypes;
+  if (!archetypes) return;
+
+  const startSec = Math.floor(range.start.getTime() / 1000);
+  const endSec = Math.floor(range.end.getTime() / 1000);
+  if (endSec <= startSec) return;
+
+  for (const [tableName, config] of Object.entries(archetypes)) {
+    const tableInfo = schema.tables.find((t) => t.name === tableName);
+    if (!tableInfo) continue;
+
+    const targets = tableInfo.columns.filter(
+      (c) =>
+        c.defaultValue === 'now()' &&
+        (c.type === 'timestamp' || c.type === 'timestamptz'),
+    );
+    if (targets.length === 0) continue;
+
+    for (const archetype of config.archetypes) {
+      for (const col of targets) {
+        if (archetype.vary[col.name]) continue;
+        if (col.name in archetype.fields) continue;
+        archetype.vary[col.name] = {
+          type: 'timestamp',
+          min: startSec,
+          max: endSec,
+        };
+      }
+    }
+  }
+}
+
+/**
+ * Fill missing `@default(now())` timestamp columns with values inside the
+ * configured generation date range.
+ *
+ * Why this exists: when a Prisma model declares e.g.
+ * `created_at DateTime @default(now())`, the LLM is implicitly encouraged to
+ * leave the column out (the DB will fill it). The Postgres seeder then sees
+ * a column with a DB default that is missing on at least one row and drops
+ * the whole column from the INSERT so Postgres applies the default
+ * consistently — which means every row's `created_at` collapses to seed
+ * insertion time. The 12 weeks of "history" the persona asked for becomes
+ * a single timestamp on `now()`. By populating these columns up front with
+ * realistic timestamps inside the configured range, the seeder keeps the
+ * column and our values reach the database intact.
+ *
+ * Anchoring: when the row already carries other timestamp values (e.g.
+ * `paid_at`, `current_period_start`, `due_date`), the chosen `created_at`
+ * is constrained to be ≤ the earliest of them so that
+ * "creation precedes everything else" remains true on the row.
+ */
+function fillNowDefaultTimestamps(
+  rows: Row[],
+  tableInfo: TableInfo,
+  range: TimeRange,
+  rng: SeededRandom,
+): void {
+  const startSec = Math.floor(range.start.getTime() / 1000);
+  const endSec = Math.floor(range.end.getTime() / 1000);
+  if (endSec <= startSec) return;
+
+  const nowDefaultCols = tableInfo.columns.filter(
+    (c) =>
+      c.defaultValue === 'now()' &&
+      (c.type === 'timestamp' || c.type === 'timestamptz' || c.type === 'date'),
+  );
+  if (nowDefaultCols.length === 0) return;
+
+  const nowDefaultNames = new Set(nowDefaultCols.map((c) => c.name));
+  const siblingTsCols = tableInfo.columns.filter(
+    (c) =>
+      !nowDefaultNames.has(c.name) &&
+      (c.type === 'timestamp' || c.type === 'timestamptz' || c.type === 'date'),
+  );
+
+  for (const col of nowDefaultCols) {
+    const hasMissing = rows.some(
+      (row) => row[col.name] === undefined || row[col.name] === null,
+    );
+    if (!hasMissing) continue;
+
+    logger.debug(
+      `Filling @default(now()) "${tableInfo.name}.${col.name}" with timestamps in [${range.start.toISOString()}, ${range.end.toISOString()}]`,
+    );
+
+    for (const row of rows) {
+      if (row[col.name] !== undefined && row[col.name] !== null) continue;
+
+      let upperSec = endSec;
+      for (const sib of siblingTsCols) {
+        const v = parseTimestampToSec(row[sib.name]);
+        if (v !== null && v < upperSec) upperSec = v;
+      }
+      const upper = Math.max(upperSec, startSec);
+      const tsSec =
+        upper > startSec
+          ? startSec + Math.floor(rng.next() * (upper - startSec))
+          : startSec;
+
+      const iso = new Date(tsSec * 1000).toISOString();
+      row[col.name] = col.type === 'date' ? iso.split('T')[0]! : iso;
+    }
+  }
+}
+
+function parseTimestampToSec(v: unknown): number | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v === 'number') {
+    return v > 1e12 ? Math.floor(v / 1000) : Math.floor(v);
+  }
+  if (typeof v === 'string') {
+    const ms = Date.parse(v);
+    if (Number.isNaN(ms)) return null;
+    return Math.floor(ms / 1000);
+  }
+  if (v instanceof Date) {
+    return Math.floor(v.getTime() / 1000);
+  }
+  return null;
+}
+
 /**
  * Generate a realistic value for a column based on its type.
  * Uses the seeded RNG for determinism.
@@ -2532,7 +3954,13 @@ function deduplicateByUniqueConstraints(
   const result = rows.filter((row) => {
     for (let i = 0; i < uniqueKeySets.length; i++) {
       const cols = uniqueKeySets[i]!;
-      const key = cols.map((c) => String(row[c] ?? '')).join('\x00');
+      // SQL semantics: NULL doesn't equal NULL, so a row with any NULL in the
+      // unique key doesn't conflict with anything (Postgres, MySQL, SQLite all
+      // behave this way). Without this, e.g. 100 rows with NULL `stripe_pi_id`
+      // would collapse to 1 here even though Postgres would happily accept all.
+      const hasNull = cols.some(c => row[c] === undefined || row[c] === null);
+      if (hasNull) continue;
+      const key = cols.map((c) => String(row[c])).join('\x00');
       if (seenSets[i]!.has(key)) return false;
       seenSets[i]!.add(key);
     }
@@ -2903,4 +4331,713 @@ function coerceUuidColumns(
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Count-budget enforcement
+// ---------------------------------------------------------------------------
+
+/**
+ * Scale `archetype.count` values down proportionally so they fit the configured
+ * budget. The previous behaviour ("honor explicit counts, weighted gets 0")
+ * trusted the LLM's per-archetype claims even when their sum exceeded the
+ * table-level budget — producing e.g. 14 failed-charge rows when the persona
+ * asked for 8. Counts are a deterministic invariant: persona says 8, the
+ * pipeline emits 8.
+ *
+ * The cap preserves relative ratios across explicit archetypes (so a
+ * 4/3/3/4 split scaled to budget 8 becomes ~2/2/2/2, not "first archetype
+ * keeps 8 and the rest get 0"), and never returns negative counts.
+ */
+function capExplicitCountsToBudget(
+  archetypes: EntityArchetype[],
+  rawTotal: number,
+  budget: number,
+  contextLabel: string,
+): number[] {
+  if (archetypes.length === 0) return [];
+  if (rawTotal <= budget || budget <= 0) {
+    return archetypes.map((a) => Math.max(0, a.count ?? 0));
+  }
+
+  // Proportional scale-down. Use floor + redistribute remainder to the
+  // archetypes with the largest fractional part so the total lands on
+  // exactly `budget` (no rounding drift).
+  const scaled = archetypes.map((a) => {
+    const c = a.count ?? 0;
+    return (c * budget) / rawTotal;
+  });
+  const floors = scaled.map((s) => Math.floor(s));
+  let used = floors.reduce((s, n) => s + n, 0);
+  const remainders = scaled.map((s, i) => ({ frac: s - Math.floor(s), idx: i }));
+  remainders.sort((a, b) => b.frac - a.frac);
+  for (let i = 0; used < budget && i < remainders.length; i++) {
+    floors[remainders[i]!.idx]++;
+    used++;
+  }
+
+  logger.warn(
+    `${contextLabel}: explicit-count archetypes claimed ${rawTotal} rows, ` +
+      `exceeding the configured budget of ${budget}. Scaling counts down ` +
+      `proportionally so the total lands at ${budget}.`,
+  );
+
+  return floors;
+}
+
+// ---------------------------------------------------------------------------
+// Enum coercion — closed-set enforcement against schema enumValues
+// ---------------------------------------------------------------------------
+
+/**
+ * For every enum-typed column on the table, coerce any out-of-set value to
+ * the closest legal one. The LLM frequently emits synonyms (`expired_card`
+ * when the schema defines `card_expired`) that bypass schema-only validation
+ * but still corrupt downstream stats: the value "fits" the column type but
+ * doesn't belong to the canonical set.
+ *
+ * Resolution order:
+ *   1. Already legal → leave it.
+ *   2. Normalize (lowercase, strip non-alphanumeric) and match against
+ *      similarly-normalized canonical values.
+ *   3. If the value is a multi-token string with the same tokens in a
+ *      different order ("expired_card" ↔ "card_expired"), match.
+ *   4. Otherwise fall back to the first legal value — deterministic and
+ *      keeps the row insertable. A warning fires the first time a column
+ *      hits the fallback so the data-quality issue stays visible.
+ *
+ * NULLs and undefineds are left untouched; nullability is decided at insert
+ * time by the seeder.
+ */
+function coerceEnumColumns(rows: Row[], tableInfo: TableInfo): void {
+  for (const col of tableInfo.columns) {
+    if (!col.enumValues || col.enumValues.length === 0) continue;
+    if (col.type !== 'enum') continue;
+
+    const legal = new Set(col.enumValues);
+    const normalized = new Map<string, string>();
+    const tokenSorted = new Map<string, string>();
+    for (const v of col.enumValues) {
+      normalized.set(normalizeEnumKey(v), v);
+      tokenSorted.set(sortedTokenKey(v), v);
+    }
+
+    let fallbackWarned = false;
+    let coercedCount = 0;
+    let droppedCount = 0;
+    for (const row of rows) {
+      const v = row[col.name];
+      if (v === null || v === undefined) continue;
+      if (typeof v !== 'string') continue;
+      if (legal.has(v)) continue;
+
+      const byNorm = normalized.get(normalizeEnumKey(v));
+      if (byNorm) {
+        row[col.name] = byNorm;
+        coercedCount++;
+        continue;
+      }
+      const byTokens = tokenSorted.get(sortedTokenKey(v));
+      if (byTokens) {
+        row[col.name] = byTokens;
+        coercedCount++;
+        continue;
+      }
+      if (col.isNullable) {
+        row[col.name] = null;
+        droppedCount++;
+        continue;
+      }
+      // Deterministic last-resort: pick the first canonical value. This
+      // keeps the row insertable; the warning makes the LLM mismatch visible.
+      if (!fallbackWarned) {
+        logger.warn(
+          `Enum coercion fallback on "${tableInfo.name}.${col.name}": ` +
+            `value "${v}" has no near-match in [${col.enumValues.join(', ')}]; ` +
+            `using "${col.enumValues[0]}". This indicates an LLM/schema mismatch.`,
+        );
+        fallbackWarned = true;
+      }
+      row[col.name] = col.enumValues[0];
+      droppedCount++;
+    }
+    if (coercedCount > 0 || droppedCount > 0) {
+      logger.debug(
+        `Enum coercion on "${tableInfo.name}.${col.name}": ` +
+          `${coercedCount} normalized, ${droppedCount} dropped to default/null`,
+      );
+    }
+  }
+}
+
+function normalizeEnumKey(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function sortedTokenKey(s: string): string {
+  return s
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length > 0)
+    .sort()
+    .join('_');
+}
+
+// ---------------------------------------------------------------------------
+// Client-resolvable DB defaults — applied pre-stats so facts match DB state
+// ---------------------------------------------------------------------------
+
+/**
+ * For columns with a literal SQL DEFAULT clause we can evaluate in JS,
+ * substitute the default value on any row whose column is null/missing.
+ * This mirrors what the Postgres seeder does at insert time
+ * (`normalizeRowColumns`) but happens earlier — before fact generation —
+ * so stats describe the data the DB will actually hold.
+ *
+ * SQL-function defaults (`now()`, `gen_random_uuid()`, `CURRENT_TIMESTAMP`)
+ * are left for the seeder to handle since we can't evaluate them client-
+ * side without losing determinism. Those nulls will still drift between
+ * stats and DB; the prior `injectNowDefaultVaryRules` / `fillNowDefaultTimestamps`
+ * helpers handle the timestamp case explicitly.
+ *
+ * Idempotent: rows that already carry a value keep it. Safe to run after
+ * `fillMissingRequiredColumns`.
+ */
+function applyClientResolvableDefaults(rows: Row[], tableInfo: TableInfo): void {
+  for (const col of tableInfo.columns) {
+    if (!col.hasDefault) continue;
+    const literal = resolveLiteralDefaultValue(col);
+    if (literal === undefined) continue;
+
+    let filled = 0;
+    for (const row of rows) {
+      const v = row[col.name];
+      if (v === undefined || v === null) {
+        row[col.name] = literal;
+        filled++;
+      }
+    }
+    if (filled > 0) {
+      logger.debug(
+        `Applied DB default ${JSON.stringify(literal)} to ${filled} row(s) ` +
+          `on "${tableInfo.name}.${col.name}" so stats match the seeded DB.`,
+      );
+    }
+  }
+}
+
+/**
+ * Mirror of adapter-postgres `resolveLiteralDefault`: turn a column's
+ * `defaultValue` (raw SQL fragment) into a JS literal we can substitute.
+ * Returns `undefined` when the default is a SQL function we can't evaluate
+ * client-side; the seeder will fill those in.
+ */
+function resolveLiteralDefaultValue(col: ColumnInfo): unknown | undefined {
+  const raw = col.defaultValue;
+  if (raw === undefined || raw === null) return undefined;
+  const v = String(raw).trim();
+  if (v.length === 0) return undefined;
+
+  const isFunction =
+    /\(\s*\)\s*$/.test(v) ||
+    /^CURRENT_(TIMESTAMP|DATE|TIME|USER|ROLE)\b/i.test(v) ||
+    /^LOCAL(TIMESTAMP|TIME)\b/i.test(v) ||
+    /^now$/i.test(v);
+  if (isFunction) return undefined;
+
+  if (/^null$/i.test(v)) return null;
+
+  let s = v;
+  const quoted = s.match(/^['"](.*)['"]$/s);
+  if (quoted) s = quoted[1]!;
+
+  switch (col.type) {
+    case 'boolean':
+      if (/^(true|t|1)$/i.test(s)) return true;
+      if (/^(false|f|0)$/i.test(s)) return false;
+      return undefined;
+    case 'integer':
+    case 'bigint':
+    case 'smallint':
+    case 'decimal':
+    case 'float':
+    case 'double': {
+      const n = Number(s);
+      return Number.isFinite(n) ? n : undefined;
+    }
+    case 'text':
+    case 'varchar':
+    case 'char':
+    case 'enum':
+      return s;
+    case 'json':
+    case 'jsonb':
+      if (s.startsWith('{') || s.startsWith('[')) return s;
+      return undefined;
+    default:
+      return quoted ? s : undefined;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Anchor-bound cross-surface ID reconciliation
+// ---------------------------------------------------------------------------
+
+/** Row-level marker carried during expansion; stripped before return. */
+const ANCHOR_TAG_KEY = '__anchor__';
+
+/**
+ * Force anchor-bound DB rows and their API counterparts to share IDs.
+ *
+ * Background: an anchor (`klein_double_charge`) describes one logical event
+ * that can implicate rows on multiple tables AND multiple surfaces. If the
+ * LLM emits a DB payments archetype AND a Stripe payment_intent archetype
+ * both bound to that anchor, each runs its own `sequence` vary rule and
+ * lands on different IDs. The DB row's `stripe_payment_intent_id` no longer
+ * matches any Stripe `payment_intent.id`, and a recovery agent walking
+ * DB→Stripe gets a 404.
+ *
+ * This pass walks the cross-surface mappings and, for every (anchor, mapping)
+ * pair where both surfaces have anchor-tagged rows, pairs them positionally
+ * (sorted by ID for determinism) and rewrites the API entity ID to match
+ * the DB row's cross-surface column. ID renames ripple to every other API
+ * entity that referenced the old ID so secondary FKs stay intact.
+ *
+ * Why DB wins the rename war: the DB row already has FK constraints and is
+ * typically the agent's first read; aligning the API surface to it minimizes
+ * the cascade of rewrites and keeps the in-memory `tables` byte-stable.
+ */
+function reconcileAnchorBoundCrossSurfaceIds(
+  tables: Record<string, Row[]>,
+  apiResponses: Record<string, ApiResponseSet>,
+  _schema: SchemaModel,
+  schemaMapping: SchemaMapping | undefined,
+): void {
+  if (!schemaMapping) return;
+
+  for (const mapping of schemaMapping.mappings) {
+    if (mapping.isBridgeTable) continue;
+    if (mapping.apiField !== 'id') continue;
+
+    const dbRows = tables[mapping.dbTable] ?? [];
+    if (dbRows.length === 0) continue;
+
+    const apiSet = apiResponses[mapping.adapterId];
+    if (!apiSet) continue;
+    const apiEntities = apiSet.responses[mapping.apiResource] ?? [];
+    if (apiEntities.length === 0) continue;
+
+    // Group anchor-tagged rows on each side by anchor id.
+    const dbByAnchor = new Map<string, Row[]>();
+    for (const row of dbRows) {
+      const anchor = row[ANCHOR_TAG_KEY];
+      if (typeof anchor !== 'string') continue;
+      const v = row[mapping.dbColumn];
+      if (typeof v !== 'string' || v.length === 0) continue;
+      const list = dbByAnchor.get(anchor) ?? [];
+      list.push(row);
+      dbByAnchor.set(anchor, list);
+    }
+    if (dbByAnchor.size === 0) continue;
+
+    const apiByAnchor = new Map<string, ApiResponse[]>();
+    for (const resp of apiEntities) {
+      const body = resp.body as Record<string, unknown>;
+      const anchor = body[ANCHOR_TAG_KEY];
+      if (typeof anchor !== 'string') continue;
+      const list = apiByAnchor.get(anchor) ?? [];
+      list.push(resp);
+      apiByAnchor.set(anchor, list);
+    }
+    if (apiByAnchor.size === 0) continue;
+
+    for (const [anchorId, dbList] of dbByAnchor) {
+      const apiList = apiByAnchor.get(anchorId);
+      if (!apiList || apiList.length === 0) continue;
+
+      // Sort each side for deterministic pairing. The DB cross-surface
+      // column and the API id are both string IDs, so lexicographic order
+      // gives a stable correspondence regardless of insertion order.
+      dbList.sort((a, b) =>
+        String(a[mapping.dbColumn]).localeCompare(String(b[mapping.dbColumn])),
+      );
+      apiList.sort((a, b) =>
+        String((a.body as Record<string, unknown>).id).localeCompare(
+          String((b.body as Record<string, unknown>).id),
+        ),
+      );
+
+      // Body-field sync: every non-id mapping on this DB↔API resource pair
+      // that's marked `direction: 'mirror'` gets its DB value copied onto
+      // the anchor-paired API row. Drift-capable mappings are skipped so
+      // persona-narrated divergence (e.g. Larkspur DB.status='active' vs
+      // Stripe.status='canceled') survives.
+      //
+      // We deliberately DON'T filter on `m.apiResource === mapping.apiResource`.
+      // When a DB table has two cross-surface IDs (e.g. payments links to
+      // both stripe.charge and stripe.payment_intent), the schema-mapping
+      // LLM typically emits body-field mappings under only one resource
+      // because the same field names appear on both linked resources by
+      // API convention. Applying the mapping to whichever apiResource the
+      // outer loop is currently reconciling means a single
+      // `payments.amount_cents → "amount"` mapping covers both
+      // `charge.amount` and `payment_intent.amount`.
+      const mirrorBodyMappings = schemaMapping.mappings.filter(
+        (m) =>
+          m.dbTable === mapping.dbTable &&
+          m.adapterId === mapping.adapterId &&
+          !m.isBridgeTable &&
+          m.apiField !== 'id' &&
+          m.direction === 'mirror',
+      );
+
+      const n = Math.min(dbList.length, apiList.length);
+      for (let i = 0; i < n; i++) {
+        const dbVal = String(dbList[i]![mapping.dbColumn]);
+        const apiBody = apiList[i]!.body as Record<string, unknown>;
+        const oldId = String(apiBody.id);
+
+        if (oldId !== dbVal) {
+          // If a non-anchor API entity already owns `dbVal`, evict it to a
+          // fresh ID first. Without this, two entities end up sharing `dbVal`
+          // and the downstream DataValidator dedup renames whichever it sees
+          // second — sometimes the anchor-paired one we just aligned, which
+          // silently breaks the DB→API link this pass is meant to guarantee.
+          evictConflictingApiId(apiSet, mapping.apiResource, apiList[i]!, dbVal);
+          apiBody.id = dbVal;
+          // Ripple: every other entity in this adapter that referenced
+          // oldId by value gets pointed at dbVal so FKs stay intact.
+          renameCrossSurfaceId(apiSet, oldId, dbVal);
+        }
+
+        // DB→API sync for mirror-direction body fields. The DB row is the
+        // source of truth for persona-pinned values on anchor-paired rows
+        // (Klein's $99 amount, the customer FK pointing at Klein) — the
+        // LLM's API-side anchor archetypes frequently leave these as
+        // generic vary rules and land on random/wrong values. Drift fields
+        // are filtered out above, so this never touches status/period/
+        // cancellation columns.
+        for (const bm of mirrorBodyMappings) {
+          const dbValue = dbList[i]![bm.dbColumn];
+          if (dbValue === undefined || dbValue === null) continue;
+          apiBody[bm.apiField] = dbValue;
+        }
+      }
+
+      // Cardinality enforcement: when the LLM over-emits anchor-tagged rows
+      // on one surface (e.g. 4 Stripe payment_intents for a "double-charge"
+      // event the persona scoped to 2 DB rows), the surplus rows pollute
+      // downstream stats and make the anchor's intended event look wider
+      // than it is. The DB row count is treated as ground truth — it
+      // matches the persona's structural commitment and is what every
+      // anchor-bound DB archetype declared via `count:`. Drop the excess
+      // anchor-tagged API entities; non-anchor entities for the same
+      // resource are untouched.
+      if (apiList.length > dbList.length) {
+        const excess = apiList.slice(dbList.length);
+        const excessIds = new Set(
+          excess.map((r) => (r.body as Record<string, unknown>).id).filter(
+            (v): v is string => typeof v === 'string',
+          ),
+        );
+        if (excessIds.size > 0) {
+          apiSet.responses[mapping.apiResource] = (
+            apiSet.responses[mapping.apiResource] ?? []
+          ).filter((r) => {
+            const id = (r.body as Record<string, unknown>).id;
+            return typeof id !== 'string' || !excessIds.has(id);
+          });
+          // Note: incoming references to dropped IDs are left as-is. They
+          // become dangling FKs that the mock server will 404 on — a
+          // surfaced inconsistency is better than a silently-rewritten one,
+          // and in practice excess anchor entities rarely have inbound
+          // references from non-anchor data.
+          logger.warn(
+            `Anchor "${anchorId}" on ${mapping.adapterId}.${mapping.apiResource}: ` +
+              `LLM emitted ${apiList.length} anchor-tagged API entities but DB has ` +
+              `${dbList.length} anchor-tagged rows. Dropped ${excessIds.size} excess ` +
+              `API entit${excessIds.size === 1 ? 'y' : 'ies'} to match DB cardinality.`,
+          );
+        }
+      } else if (dbList.length > apiList.length) {
+        // The inverse — DB over-emitted, API under-emitted — is rare in
+        // practice (LLMs tend to over-emit on the richer surface) but
+        // worth flagging because it leaves DB rows pointing at nothing.
+        // PHASE F.5 backfill should already have synthesized counterparts
+        // for any DB row with a populated cross-surface ID, so a warning
+        // here means something earlier didn't run as expected.
+        logger.warn(
+          `Anchor "${anchorId}" on ${mapping.adapterId}.${mapping.apiResource}: ` +
+            `DB has ${dbList.length} anchor-tagged rows but API has only ${apiList.length}. ` +
+            `${dbList.length - apiList.length} DB row(s) won't have an anchor-tagged ` +
+            `API counterpart — expected PHASE F.5 backfill to cover this.`,
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Find any API entity in `resourceType` (other than `keep`) that currently
+ * holds `targetId`, evict it to a fresh unique ID, and ripple the rename
+ * everywhere it's referenced. No-op when nothing else owns `targetId`.
+ *
+ * Used by `reconcileAnchorBoundCrossSurfaceIds` to free up an ID before
+ * assigning it to the anchor-paired entity — otherwise the downstream
+ * DataValidator dedup may rename the anchor-paired entity instead, undoing
+ * the reconciliation.
+ */
+function evictConflictingApiId(
+  apiSet: ApiResponseSet,
+  resourceType: string,
+  keep: ApiResponse,
+  targetId: string,
+): void {
+  const responses = apiSet.responses[resourceType];
+  if (!responses) return;
+
+  for (const resp of responses) {
+    if (resp === keep) continue;
+    const body = resp.body as Record<string, unknown>;
+    if (body.id !== targetId) continue;
+
+    // Pick a fresh id by appending an "_evictN" suffix until unique. The
+    // suffix is recognisable in logs so the data-quality issue (LLM emitted
+    // the same id for two distinct entities) stays visible to operators.
+    const inUse = new Set<string>();
+    for (const r of responses) {
+      const v = (r.body as Record<string, unknown>).id;
+      if (typeof v === 'string') inUse.add(v);
+    }
+    let n = 2;
+    while (inUse.has(`${targetId}_evict${n}`)) n++;
+    const newId = `${targetId}_evict${n}`;
+    body.id = newId;
+    // Deliberately do NOT ripple this rename to other entities that
+    // referenced `targetId`. Those refs almost always point at the
+    // anchor-paired entity that will own `targetId` after reconciliation,
+    // not at the evicted one. The evicted entity loses any incoming refs
+    // emitted alongside it — acceptable: the conflict was an LLM mistake,
+    // and the anchor-paired DB↔API invariant is the load-bearing one.
+    logger.debug(
+      `Evicted conflicting ${resourceType} id "${targetId}" → "${newId}" ` +
+        `so anchor reconciliation can claim the original.`,
+    );
+    return;
+  }
+}
+
+/**
+ * Rewrite every occurrence of `oldId` as a string value in every body across
+ * every resource in this adapter. Cheap O(entities * fields) scan; runs at
+ * most once per ID rename and IDs are short, so the cost is in the noise.
+ */
+function renameCrossSurfaceId(
+  apiSet: ApiResponseSet,
+  oldId: string,
+  newId: string,
+): void {
+  for (const responses of Object.values(apiSet.responses)) {
+    for (const resp of responses) {
+      const body = resp.body as Record<string, unknown>;
+      for (const [key, value] of Object.entries(body)) {
+        if (typeof value === 'string' && value === oldId) {
+          body[key] = newId;
+        } else if (
+          value !== null &&
+          typeof value === 'object' &&
+          !Array.isArray(value) &&
+          (value as Record<string, unknown>).id === oldId
+        ) {
+          (value as Record<string, unknown>).id = newId;
+        }
+      }
+    }
+  }
+}
+
+/** Remove the per-row anchor marker before the data leaves the expander. */
+function stripAnchorTags(
+  tables: Record<string, Row[]>,
+  apiResponses: Record<string, ApiResponseSet>,
+): void {
+  for (const rows of Object.values(tables)) {
+    for (const row of rows) delete row[ANCHOR_TAG_KEY];
+  }
+  for (const set of Object.values(apiResponses)) {
+    for (const responses of Object.values(set.responses)) {
+      for (const resp of responses) {
+        const body = resp.body as Record<string, unknown>;
+        delete body[ANCHOR_TAG_KEY];
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Symmetric cross-surface presence — the inverse of PHASE F.5 backfill
+// ---------------------------------------------------------------------------
+
+/**
+ * PHASE F.5 (`backfillMissingCrossSurfaceEntities`) handles the asymmetry
+ * "DB has a cross-surface ID, API doesn't" by synthesizing an API entity
+ * from the DB row. This pass handles the *other* asymmetry: the DB row
+ * exists on a paired (external-mirrored) table but its cross-surface ID
+ * column is empty — so PHASE F.5 has nothing to anchor on. Without this,
+ * a drift-style row that lives only on the DB side (Larkspur active in
+ * Postgres, no Stripe subscription at all) leaves DB→API joins dangling.
+ *
+ * For each such row we mint a deterministic ID, write it back onto the
+ * DB row, and call into the same `synthesizeApiEntityFromDbRow` used by
+ * PHASE F.5 so the projection logic stays in one place. The mint uses
+ * the API resource singular as a prefix and a monotonic counter scoped
+ * per-resource so IDs don't collide with LLM-emitted ones.
+ *
+ * Skips bridge tables (their semantics are different) and rows that
+ * already have a cross-surface ID — those are PHASE F.5's job.
+ */
+function ensureSymmetricCrossSurfacePresence(
+  tables: Record<string, Row[]>,
+  apiResponses: Record<string, ApiResponseSet>,
+  schema: SchemaModel,
+  schemaMapping: SchemaMapping | undefined,
+  personaId: string,
+  resourceSpecs: Record<string, AdapterResourceSpecs> | undefined,
+): void {
+  if (!schemaMapping) return;
+
+  // Highest in-use suffix per (adapter, resource) so newly minted IDs don't
+  // collide with anything the LLM or PHASE F.5 already produced.
+  const suffixCounters = new Map<string, number>();
+  const observeId = (adapterId: string, resource: string, id: string): void => {
+    const key = `${adapterId}.${resource}`;
+    const m = id.match(/(\d+)$/);
+    if (!m) return;
+    const n = parseInt(m[1]!, 10);
+    if (!Number.isFinite(n)) return;
+    const cur = suffixCounters.get(key) ?? 0;
+    if (n > cur) suffixCounters.set(key, n);
+  };
+  for (const [adapterId, apiSet] of Object.entries(apiResponses)) {
+    for (const [resource, responses] of Object.entries(apiSet.responses)) {
+      for (const resp of responses) {
+        const id = (resp.body as Record<string, unknown>).id;
+        if (typeof id === 'string') observeId(adapterId, resource, id);
+      }
+    }
+  }
+
+  for (const mapping of schemaMapping.mappings) {
+    if (mapping.isBridgeTable) continue;
+    if (mapping.apiField !== 'id') continue;
+
+    const dbRows = tables[mapping.dbTable] ?? [];
+    if (dbRows.length === 0) continue;
+
+    const apiSet = apiResponses[mapping.adapterId];
+    if (!apiSet) continue;
+    const apiEntities = apiSet.responses[mapping.apiResource] ?? [];
+    const existingIds = new Set<string>();
+    for (const e of apiEntities) {
+      const id = (e.body as Record<string, unknown>).id;
+      if (typeof id === 'string') existingIds.add(id);
+    }
+
+    const minted: ApiResponse[] = [];
+    const counterKey = `${mapping.adapterId}.${mapping.apiResource}`;
+    const prefix = mintedIdPrefix(
+      mapping.adapterId,
+      mapping.apiResource,
+      personaId,
+      resourceSpecs,
+    );
+
+    for (const dbRow of dbRows) {
+      const current = dbRow[mapping.dbColumn];
+      if (typeof current === 'string' && current.length > 0) continue;
+
+      const next = (suffixCounters.get(counterKey) ?? 0) + 1;
+      suffixCounters.set(counterKey, next);
+      let newId = `${prefix}${String(next).padStart(3, '0')}`;
+      while (existingIds.has(newId)) {
+        const bumped = (suffixCounters.get(counterKey) ?? next) + 1;
+        suffixCounters.set(counterKey, bumped);
+        newId = `${prefix}${String(bumped).padStart(3, '0')}`;
+      }
+      existingIds.add(newId);
+
+      dbRow[mapping.dbColumn] = newId;
+
+      const body = synthesizeApiEntityFromDbRow(
+        dbRow,
+        mapping,
+        schema,
+        tables,
+        schemaMapping,
+      );
+      if (!body) continue;
+
+      minted.push({
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        body,
+        personaId,
+        stateKey: `${mapping.adapterId}_${mapping.apiResource}`,
+      });
+    }
+
+    if (minted.length === 0) continue;
+
+    logger.warn(
+      `Symmetric mirror: ${mapping.dbTable} had ${minted.length} row(s) with an empty ` +
+        `cross-surface ID column "${mapping.dbColumn}". Minted IDs and synthesized ` +
+        `${mapping.adapterId}.${mapping.apiResource} counterparts so DB→API joins resolve.`,
+    );
+
+    apiSet.responses[mapping.apiResource] = [...apiEntities, ...minted];
+    apiSet.responses[mapping.apiResource].sort((a, b) => {
+      const ca = (a.body as Record<string, unknown>).created as number ?? 0;
+      const cb = (b.body as Record<string, unknown>).created as number ?? 0;
+      return ca - cb;
+    });
+  }
+}
+
+/**
+ * Build the ID prefix for an adapter+resource when minting symmetric
+ * counterparts. Sources in priority order:
+ *
+ *   1. `resourceSpecs[adapter].resources[resource].fields.id.idPrefix`
+ *      — the per-resource prefix the adapter declared (e.g. Stripe's
+ *      `cus_` for `customer`, `sub_` for `subscription`).
+ *   2. `resourceSpecs[adapter].platform.idPrefix` + persona suffix —
+ *      the platform-wide prefix when the resource didn't declare one.
+ *   3. `<resource-name>_` — a last-resort prefix that's only used when
+ *      no adapter spec is available at all; keeps the minted id
+ *      identifiable in logs without baking in any adapter convention.
+ *
+ * The persona suffix mirrors what blueprint sequences do (`cus_p1_<n>`)
+ * so the minted ids slot into the same namespace.
+ */
+function mintedIdPrefix(
+  adapterId: string,
+  apiResource: string,
+  personaId: string,
+  resourceSpecs: Record<string, AdapterResourceSpecs> | undefined,
+): string {
+  const m = personaId.match(/(\d+)$/);
+  const personaSuffix = m ? `p${m[1]}_` : '';
+  const adapterSpec = resourceSpecs?.[adapterId];
+  const resourceSpec = adapterSpec?.resources[apiResource];
+  const resourceIdPrefix = resourceSpec?.fields.id?.idPrefix;
+  if (resourceIdPrefix) {
+    // Stripe-style: `cus_p1_sym_`, `sub_p1_sym_`. The `sym_` tail keeps
+    // minted ids distinguishable from LLM-emitted ones in logs.
+    return `${resourceIdPrefix}${personaSuffix}sym_`;
+  }
+  const platformIdPrefix = adapterSpec?.platform.idPrefix;
+  if (platformIdPrefix) {
+    return `${platformIdPrefix}${apiResource}_${personaSuffix}sym_`;
+  }
+  return `${apiResource}_${personaSuffix}sym_`;
 }

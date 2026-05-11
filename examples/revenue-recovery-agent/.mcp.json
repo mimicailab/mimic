@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "mimic-postgres": { "type": "http", "url": "http://localhost:4201/mcp" },
+    "mimic-stripe":   { "type": "http", "url": "http://localhost:4202/mcp" }
+  }
+}

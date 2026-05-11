@@ -1,6 +1,6 @@
 {
   "name": "@mimicai/core",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Core engine for Mimic — persona-driven synthetic data generation, schema parsing, database seeding, and MCP server",
   "type": "module",
   "license": "Apache-2.0",
@@ -40,8 +40,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/anthropic": "^3.0.76",
     "@ai-sdk/openai": "^3.0.41",
+    "@anthropic-ai/sdk": "^0.95.1",
     "@faker-js/faker": "^10.3.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@mrleebo/prisma-ast": "^0.15.0",
@@ -51,7 +52,8 @@
     "ora": "^9.3.0",
     "pgsql-parser": "^17.9.14",
     "seedrandom": "^3.0.5",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
     "@types/pg": "^8.18.0",

@@ -33,6 +33,38 @@ export interface PersonaData {
   entityArchetypes?: Record<string, EntityArchetypeConfig>;
   /** API entity archetypes: adapterId → resourceType → EntityArchetypeConfig */
   apiEntityArchetypes?: Record<string, Record<string, EntityArchetypeConfig>>;
+  /**
+   * Persona-narrated events that imply coherent rows across multiple tables
+   * and surfaces (e.g. "Klein Records double-charge on 2026-04-29" implies
+   * two payments + two Stripe payment_intents + an invoice — all sharing the
+   * same date, customer, and amount). Each anchor names a customer + date(s);
+   * archetypes opt in via `EntityArchetype.anchor` to consume the resolved
+   * values via `anchor_date` / `anchor_field` vary rules.
+   */
+  anchors?: Anchor[];
+}
+
+/**
+ * A persona-narrated event whose implications span multiple tables and
+ * possibly multiple surfaces (DB + API). Anchors give the LLM a way to say
+ * "these N rows on T tables share a customer and a date" without enumerating
+ * every row — the same scaling property `sequence` prefixes give for IDs.
+ */
+export interface Anchor {
+  /** Stable id referenced by archetypes (e.g. "klein_double_charge") */
+  id: string;
+  /**
+   * Customer pinning. `match` looks up the customer by `name` or `company`
+   * (case-insensitive); if no row matches, the expander creates one. Single
+   * customer for now — multi-customer pick is a future extension.
+   */
+  customer?: { match: string };
+  /**
+   * Named dates. Use `event` for the canonical anchor date. Future versions
+   * will support derived dates with relative offsets — for now, all dates
+   * are ISO strings (date or full timestamp).
+   */
+  dates: Record<string, string>;
 }
 
 /** A single entity row to insert */
@@ -130,7 +162,9 @@ export interface FieldVariation {
     | 'timestamp'
     | 'date'
     | 'derived'
-    | 'sequence';
+    | 'sequence'
+    | 'anchor_date'
+    | 'anchor_field';
   /** For 'pick': array of possible values */
   values?: unknown[];
   /** For 'range'/'decimal_range': min value */
@@ -141,6 +175,24 @@ export interface FieldVariation {
   template?: string;
   /** For 'sequence': prefix string, e.g. "cus_p1_" produces "cus_p1_001", "cus_p1_002" */
   prefix?: string;
+  /**
+   * For 'anchor_date'/'anchor_field': the anchor id this rule resolves against.
+   * Only meaningful when the enclosing archetype is anchor-bound; otherwise
+   * the resolver falls back to `null`.
+   */
+  anchor?: string;
+  /**
+   * For 'anchor_date': which date key on the anchor to use (defaults to 'event').
+   * For 'anchor_field': which resolved attribute of the anchor to read
+   * (e.g. 'id' for customer_id, 'stripe_customer_id' for cross-surface FK).
+   */
+  key?: string;
+  /**
+   * For 'anchor_date': output format. 'iso' (default) emits an ISO-8601
+   * string; 'epoch_seconds' emits a Unix timestamp (used by API archetypes
+   * whose targets store dates as integers).
+   */
+  format?: 'iso' | 'epoch_seconds';
 }
 
 /** A representative template row + distribution weight + variation rules */
@@ -153,11 +205,51 @@ export interface EntityArchetype {
   fields: Record<string, unknown>;
   /** Fields that get randomized per clone, keyed by column name */
   vary: Record<string, FieldVariation>;
+  /**
+   * When true on an apiEntityArchetypes archetype, entities derived from it
+   * have NO database counterpart. The expander emits them into API responses
+   * but skips DB row creation, producing deliberate cross-platform asymmetry
+   * (e.g. Stripe-only orphans, Plaid items linked to closed bank accounts).
+   *
+   * Has no effect on entityArchetypes (DB-side); always false there.
+   */
+  apiOnly?: boolean;
+  /**
+   * Explicit row count for this archetype. When set:
+   *
+   *   - On a plain (non-anchor, non-apiOnly) archetype: emit exactly `count`
+   *     rows, bypassing weight redistribution. The remaining
+   *     `EntityArchetypeConfig.count - sum(explicitCount archetypes)` is
+   *     distributed across weight-only archetypes. Use this for persona-
+   *     pinned counts ("exactly 4 card_expired failures") where weight
+   *     approximation isn't precise enough.
+   *   - On `apiOnly: true`: count is ADDITIVE on top of the matched count
+   *     (no DB↔API coordination, since the entity has no DB counterpart).
+   *   - On an anchor-bound archetype: count is the number of rows tied to
+   *     the resolved anchor (no weight redistribution).
+   *
+   * If omitted on a plain archetype, the count is derived from
+   * `weight × EntityArchetypeConfig.count`.
+   */
+  count?: number;
+  /**
+   * Anchor reference. When set, this archetype emits exactly `count` rows
+   * (no weight redistribution) bound to the named anchor — every row gets
+   * the anchor's resolved customer FK, dates, and other fields wherever
+   * `anchor_field`/`anchor_date` vary rules reference them. Enables
+   * cross-table coherence: a DB payments archetype and an API
+   * payment_intent archetype that share the same anchor will agree on
+   * customer, date, and (with a shared sequence prefix) ids.
+   */
+  anchor?: string;
 }
 
 /** Per-table archetype configuration */
 export interface EntityArchetypeConfig {
-  /** Target count of entities to generate for this table */
+  /**
+   * Target MATCHED entity count. apiOnly archetypes contribute additively
+   * on top of this — see EntityArchetype.apiOnly + EntityArchetype.count.
+   */
   count: number;
   /** The archetype templates */
   archetypes: EntityArchetype[];
@@ -229,6 +321,27 @@ export interface SchemaMappingEntry {
   apiField: string;
   /** Whether this DB table is a "bridge table" — a projection of API data into the DB */
   isBridgeTable: boolean;
+  /**
+   * Whether DB and API are required to hold the same value on logically-paired
+   * rows (`mirror`) or are permitted to intentionally diverge (`drift_capable`).
+   *
+   * - `mirror`: anchor-bound row reconciliation enforces DB→API equality on
+   *   this column. Use for cross-surface facts that can't legitimately
+   *   differ — amounts, currencies, FK references to shared entities,
+   *   immutable timestamps, id mappings. An agent reading either side
+   *   expects the same value.
+   *
+   * - `drift_capable`: reconciliation leaves the field alone so persona-
+   *   narrated divergence survives expansion. Use for state-at-a-moment
+   *   fields where real-world systems frequently lag — row status, period
+   *   rollover dates, cancellation timestamps. (Non-anchor rows still get
+   *   the API value pulled into the DB by the mirror flow; only the
+   *   anchor-paired reconciler skips it.)
+   *
+   * Required on every mapping. For id mappings the value is always
+   * `mirror` — cross-surface IDs by definition must match.
+   */
+  direction: 'mirror' | 'drift_capable';
 }
 
 /**

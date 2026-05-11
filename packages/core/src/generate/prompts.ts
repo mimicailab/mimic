@@ -1,4 +1,6 @@
 import type { SchemaModel, TableInfo, ColumnInfo, PromptContext, AdapterResourceSpecs } from '../types/index.js';
+import type { SchemaMapping } from '../types/blueprint.js';
+import { getPersonaIdPrefix, getResourceIdPrefix } from './identity-prefix.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,39 +33,20 @@ export interface BuildPromptOptions {
    * (e.g. billing_platform, external_id columns) without generating full API data.
    */
   apiPlatformNames?: string[];
+  /**
+   * LLM-derived DB↔API field correspondence. When provided, non-bridge entries
+   * with apiField=='id' drive the IDENTITY CONTRACT block, pinning the DB-side
+   * value prefix to the same string the API side will use.
+   */
+  schemaMapping?: SchemaMapping;
+  /**
+   * Adapter ResourceSpecs (when available). Used to look up per-resource
+   * idPrefix when rendering the IDENTITY CONTRACT — preferred over
+   * promptContext.idPrefix because it's per-resource, not per-platform.
+   */
+  resourceSpecs?: Record<string, AdapterResourceSpecs>;
 }
 
-/**
- * Summary of Phase 1 generation results, passed to Phase 2 so API archetypes
- * can use matching IDs and reference the DB structure.
- */
-export interface Phase1Summary {
-  /** DB tables with entity counts and sample ID columns */
-  tables: { name: string; rowCount: number; idColumns?: Record<string, string> }[];
-  /** Sequence prefixes extracted from Phase 1 archetypes, keyed by "table.column" */
-  idPrefixes: Record<string, string>;
-  /** Per-platform ID prefixes extracted from DB entities, keyed by platform name */
-  platformPrefixes: Record<string, { column: string; prefix: string }[]>;
-}
-
-export interface BuildAdapterBatchPromptOptions {
-  persona: { name: string; description: string };
-  domain: string;
-  /** Subset of API adapters to generate data for in this batch */
-  apis: Record<string, { adapter?: string; config?: Record<string, unknown> }>;
-  /** Platform-specific prompt contexts for this batch's adapters */
-  promptContexts?: Record<string, PromptContext>;
-  /** Current date (ISO string) */
-  currentDate?: string;
-  /** Volume string from config (e.g. "6 months") */
-  volume?: string;
-  /** 1-based index of this persona */
-  personaIndex?: number;
-  /** Total number of personas being generated */
-  totalPersonas?: number;
-  /** Summary of Phase 1 DB generation results for cross-surface ID consistency */
-  phase1Summary?: Phase1Summary;
-}
 
 // ---------------------------------------------------------------------------
 // System prompt
@@ -87,8 +70,11 @@ The user prompt contains "Persona index: N". ALL string identifiers (stripe_cust
 
 Rules:
 1. The persona must feel like a real person — give them a coherent backstory, plausible name, age, occupation, and location that match the description you are given.
-2. For **small reference/dimension tables** (categories, plans, settings — under ~10 rows), produce static "entity" rows in \`entities\`.
-   For **larger entity tables** (customers, employees, accounts — 10+ expected rows), use \`entityArchetypes\` instead. See the ARCHETYPE SYSTEM section below.
+2. Pick \`entities\` vs \`entityArchetypes\` by **what the table is**, not by row count:
+   - **Reference / dimension tables** (categories, plans, settings, products, regions) — use static \`entities\`. These are lookup data with no cross-surface FKs.
+   - **Transactional / cross-surface tables** (customers, subscriptions, invoices, payments — anything whose schema has a \`stripe_*_id\` / \`paddle_*_id\` / \`*_external_id\` column shown in the IDENTITY CONTRACT section) — **always** use \`entityArchetypes\`, even for small row counts. The expander derives mirrored DB rows from API entities so cross-surface IDs match by construction; static \`entities\` bypass that derivation and create dangling FKs (DB references an API id that doesn't exist).
+   - **Persona-pinned events on transactional tables** (e.g. "Klein Records double-charge on 2026-04-29") — use **anchor-bound archetypes** (see ANCHORS section). Do NOT inline persona events as static \`entities\` — even if it's only 1-2 rows, doing so produces unmatched cross-surface IDs.
+   See the ARCHETYPE SYSTEM and ANCHORS sections below.
 3. Each pattern must specify its type:
    - **recurring** — happens on a fixed schedule (rent, salary, subscriptions).  Provide a \`schedule\` with frequency and optional day-of-month / day-of-week.
    - **variable** — happens a random number of times per period (groceries, dining out).  Provide \`randomFields\` with ranges and a \`frequency\` spec.
@@ -182,6 +168,8 @@ For entity tables that need many rows (customers, employees, orders, accounts �
 - \`date\` — random ISO date string (YYYY-MM-DD) within the date range
 - \`derived\` — template with \`{{fieldName}}\` placeholders referencing other fields in the same row. **Use this to preserve data consistency** (e.g. emails matching company domain, usernames derived from names). **CRITICAL: Only use simple \`{{fieldName}}\` — do NOT use Jinja/Liquid filters like \`{{name | lower}}\`.** The resolver automatically lowercases and sanitizes values for email/URL use.
 - \`sequence\` — sequential ID with \`prefix\`, e.g. prefix "cus_p1_" → "cus_p1_001", "cus_p1_002"
+- \`anchor_date\` — read a named date off an anchor (\`anchor: "<id>"\`, \`key: "event"\` by default, optional \`format: "epoch_seconds"\` for API archetypes). Only valid in archetypes that set \`anchor\`.
+- \`anchor_field\` — read a resolved attribute off the anchor's customer (\`anchor: "<id>"\`, \`key: "id"\` by default; use \`"stripe_customer_id"\` etc. for cross-surface FKs). Only valid in archetypes that set \`anchor\`.
 
 **CRITICAL — REALISTIC EMAIL AND NAME RULES:**
 - For **individual/personal accounts**: use \`"type": "fullName"\` for name and \`"type": "email"\` for email (generates realistic random emails like jane.doe@gmail.com). Do NOT use derived templates for individual emails — the \`email\` type already produces realistic addresses.
@@ -197,6 +185,97 @@ For entity tables that need many rows (customers, employees, orders, accounts �
 - Patterns can reference archetype-expanded entities via \`{{table_name.column_name}}\` placeholders as usual
 - **CRITICAL: Foreign key columns MUST be included in archetype \`fields\`.** Use the \`{{table_name.column_name}}\` placeholder format so the expander resolves them. For example, a subscriptions archetype MUST include \`"customer_id": "{{customers.id}}"\` in \`fields\`. The expander will randomly assign each cloned row to one of the expanded parent entities.
 - **ALL REQUIRED columns from the schema MUST appear** in either \`fields\` or \`vary\`. Do NOT omit any NOT NULL column without a default.
+- **\`@default(now())\` timestamp columns (rendered as \`DEFAULT now()\` in the schema) are auto-distributed by the expander** across the configured volume range — you do NOT need to add a \`vary\` rule for them in the common case. Override **only when** the persona narrative pins a specific date or window for some rows (e.g. "double-charge on 2026-04-29", "8 failed charges this week"). For overrides, create a *separate archetype* for those persona-described rows with the constrained timestamp in \`vary\` (e.g. \`{ "type": "timestamp", "min": <epoch_secs>, "max": <epoch_secs> }\`). Do NOT enumerate timestamps row-by-row — let the expander materialize them.
+
+##############################################################################
+# ANCHORS — CROSS-TABLE COHERENCE FOR PERSONA EVENTS
+##############################################################################
+
+When the persona narrative describes an event that implicates rows on multiple tables AND on multiple surfaces (DB + API), declare an **anchor** instead of repeating dates and customer references across each archetype. Anchors keep cross-table coherence O(events), not O(rows).
+
+**Use anchors when:** the persona pins a specific customer + date and that combination must appear identically on rows from 2+ tables (e.g. "double-charge on Klein Records Apr 29" → 2 \`payments\` + 2 Stripe \`payment_intent\` + 1 \`invoice\`, all sharing the customer FK and the date).
+
+**Anchor structure:**
+\`\`\`json
+"anchors": [
+  {
+    "id": "klein_double_charge",
+    "customer": { "match": "Klein Records" },
+    "dates": { "event": "2026-04-29T00:00:00Z" }
+  }
+]
+\`\`\`
+- \`id\`: stable string archetypes reference.
+- \`customer.match\`: exact-or-substring lookup against the \`name\` / \`company\` column on the identity-customer table. The customer must exist in your \`customers\` archetype output (use a dedicated archetype with \`fields: { "name": "Klein Records" }\` and weight ~ 1/customer_count).
+- \`dates\`: named ISO strings. Use \`event\` as the canonical key.
+
+**Binding archetypes to anchors:**
+\`\`\`json
+"payments": {
+  "count": 0,
+  "archetypes": [
+    {
+      "label": "klein_dup_charge",
+      "weight": 0,
+      "anchor": "klein_double_charge",
+      "count": 2,
+      "fields": { "amount_cents": 9900, "status": "succeeded" },
+      "vary": {
+        "customer_id": { "type": "anchor_field", "anchor": "klein_double_charge", "key": "id" },
+        "created_at":  { "type": "anchor_date",  "anchor": "klein_double_charge", "key": "event" },
+        "stripe_payment_intent_id": { "type": "sequence", "prefix": "pi_klein_dup_" }
+      }
+    }
+  ]
+}
+\`\`\`
+And the matching API archetype on the Stripe side:
+\`\`\`json
+"stripe": {
+  "payment_intent": {
+    "count": 0,
+    "archetypes": [
+      {
+        "label": "klein_dup_charge_mirror",
+        "weight": 0,
+        "anchor": "klein_double_charge",
+        "count": 2,
+        "fields": { "amount": 9900, "status": "succeeded" },
+        "vary": {
+          "id":       { "type": "sequence", "prefix": "pi_klein_dup_" },
+          "customer": { "type": "anchor_field", "anchor": "klein_double_charge", "key": "stripe_customer_id" },
+          "created":  { "type": "anchor_date",  "anchor": "klein_double_charge", "key": "event", "format": "epoch_seconds" }
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+**Rules:**
+- Anchor-bound archetypes use exact \`count\` and \`weight: 0\` (they don't participate in weighted distribution).
+- Every anchor declared in \`data.anchors\` MUST be referenced by at least one archetype's \`anchor\` field. Unbound anchors are decorative and produce zero rows — generation fails with a clear error if an anchor is left unbound.
+- One anchor per persona event. Don't create anchors for ambient row distributions — for those, use the auto-distributed \`@default(now())\` rule above.
+- If an anchor's customer can't be matched to any expanded customer row, the anchor archetypes are skipped with a warning. Always emit the named customer in the \`customers\` archetype.
+
+**Choosing where to bind an anchor — MIRROR vs DRIFT vs TIME-WINDOW:**
+
+The DB row for a mirrored table (any DB table whose rows are derived from API data — payments, invoices, subscriptions) is normally CREATED by the mirror flow copying the API entity. Where you anchor-bind matters:
+
+1. **MIRROR events** (DB and API agree on the row, like Klein's double-charge — both surfaces show the two succeeded payment intents):
+   - Anchor-bind on the **API archetype only**. The mirror flow propagates the API row to DB with matching id, customer, and date.
+   - Do NOT add a DB anchor archetype for the same event. It would emit a separate set of rows whose ids don't match the API rows (sequence counters are global) and the DB ends up with double the rows.
+   - Example for Klein: ONE archetype on \`stripe.payment_intent\` with \`anchor: klein_double_charge, count: 2, vary.id: { sequence, prefix: "pi_klein_dup_" }, vary.customer: anchor_field, vary.created: anchor_date\`. No DB-side klein archetype needed.
+
+2. **DRIFT events** (DB and API intentionally diverge — Larkspur Inc has DB \`status=active\` but Stripe \`status=canceled\`):
+   - Anchor-bind on **both** the DB archetype AND the API archetype.
+   - Both archetypes hardcode the SAME cross-surface id in \`fields\` (e.g. \`fields.stripe_subscription_id: "sub_lark_drift_001"\` on the DB side and \`fields.id: "sub_lark_drift_001"\` on the API side). This pins the id on both surfaces; the DB-side row is emitted first, claims the id, and the mirror loop skips the API entity with that id — leaving the two rows free to disagree on body fields.
+   - Do NOT use \`sequence\` prefixes for the cross-surface id on a drift archetype — sequence counters are global, so the two surfaces would land on different ids (e.g. \`sub_lark_drift_001\` on one surface, \`sub_lark_drift_002\` on the other). Hardcoded ids are required.
+
+3. **TIME-WINDOWED events** (persona pins rows to "this week", "yesterday", "last 7 days"):
+   - Declare an anchor whose \`dates.event\` is the persona-pinned date inside the window. Bind the API archetype to that anchor with \`vary.created: anchor_date\` (and \`format: epoch_seconds\` for APIs that store unix timestamps).
+   - Mirror flow propagates the date to DB. Do NOT scatter timestamps via \`vary.created: { type: "timestamp" }\` for events the persona pins to a window — that produces dates across the full date range and the persona's "this week" framing is lost.
+   - Example for "8 failed charges this week": one anchor \`failed_this_week\` with \`dates.event: <today - 3d>\`, plus three API archetypes (per failure reason) anchor-bound to it with \`count: 4 / 2 / 2\`.
 
 ##############################################################################
 # API ENTITY ARCHETYPES — SCALABLE API DATA GENERATION
@@ -296,6 +375,18 @@ GOOD: { "fields": { "company": "{{name}}" },
 **RULE F — FK SEQUENCE AWARENESS:**
 When using \`sequence\` for FK references (e.g. \`customer\` field in subscriptions using prefix \`cus_p1_\`), the counter runs independently and may exceed the parent entity count. The expander automatically wraps excess references, but for best results keep child counts reasonable relative to parent counts.
 
+**RULE F2 — LABELS IMPLY FIELD VALUES (MANDATORY, for both DB and API archetypes):**
+An archetype's \`label\` is a human hint, not data. The actual record fields are what end up in the row. If your label encodes a categorical state — \`historical-failed\`, \`failed-expired-card\`, \`canceled-by-customer\`, \`paid-late\`, \`fraudulent-dispute\` — you MUST also encode that state in the actual reason/code/status fields, either in \`fields\` (constant across all clones of that archetype) or in \`vary\` (when the archetype covers multiple specific reasons via \`pick\`).
+- DB example: \`label: "historical-failed"\` on a \`payments\` archetype with \`status: "failed"\` MUST also set \`failure_reason\` — either as a constant in \`fields\` (e.g. \`{failure_reason: "card_expired"}\`) or as a \`pick\` in \`vary\` (e.g. \`{failure_reason: {type: "pick", values: ["card_expired", "insufficient_funds", "lost_card"]}}\`). Leaving the failure-reason column unset produces NULL rows the consumer cannot categorize.
+- API example: \`label: "failed-expired-card"\` on a Stripe \`charge\` archetype MUST set both \`failure_code\` and \`failure_message\` in \`fields\`, not leave them \`null\`. The label and the data must agree.
+- Subscription cancellation: \`label: "canceled-by-customer"\` must set \`status\`, \`canceled_at\`, and \`cancellation_reason\` (or the equivalent fields the resource actually has).
+- General rule: read your own label. Identify the categorical state it asserts. Find the field(s) on this resource that carry that state — use your knowledge of the schema (DB columns shown in the table definition; API fields documented in PLATFORM SCHEMA). Set them. Never leave them null when the label asserts a value.
+- This rule is the single biggest cause of "the data looks right but the agent can't categorize it" bugs. Labels without matching field values produce silently broken datasets.
+
+When the persona names exact counts per reason (e.g. "8 failed charges — 4 card_expired, 2 insufficient_funds, 2 lost_card"), prefer ONE archetype PER reason with an explicit \`count\` field over a single archetype with a \`pick\` rule. Per-reason archetypes with explicit counts guarantee the persona's distribution; \`pick\` only approximates it.
+
+\`count\` on a plain archetype emits EXACTLY that many rows and bypasses weight redistribution — set \`count: 4\` (NOT \`weight: 0.018\` hoping it lands at 4) for the four \`card_expired\` failures, \`count: 2\` for insufficient_funds, \`count: 2\` for lost_card. The remaining \`EntityArchetypeConfig.count\` is distributed across the weight-only archetypes (succeeded buckets etc.). Do NOT use \`weight: 0\` on plain archetypes — that emits zero rows. Anchor-bound archetypes are a different mechanism and DO use \`weight: 0 + count + anchor\`; that pattern only applies when \`anchor\` is set.
+
 ##############################################################################
 # PER-PARENT FANOUT — SCALABLE TRANSACTIONAL DATA
 ##############################################################################
@@ -358,7 +449,7 @@ The persona description contains specific numeric claims about the data (e.g., "
    - "14 Pro customers who haven't logged in for 30+ days" → create a "pro-inactive" archetype with count matching 14, plan "pro", and \`last_login_at\` set to a timestamp >30 days ago.
    - "~2,847 paying customers" → total customer count across all paid archetypes = 2847.
    - "£127k MRR" → archetype amounts × counts must sum to ~£127,000.
-3. **Use dedicated small archetypes for specific claims.** If the persona says "3 overdue invoices", create a separate archetype with weight that produces exactly 3 entities — do NOT rely on random status distribution from a larger pool.
+3. **Use dedicated small archetypes for specific claims.** If the persona says "3 overdue invoices", create a separate archetype with weight that produces exactly 3 entities — do NOT rely on random status distribution from a larger pool. **Never inline persona-specific events as static \`entities\` rows when the target table has cross-surface FK columns** (\`stripe_*_id\`, etc.) — that bypasses cross-surface derivation and produces dangling FKs. Use anchor-bound archetypes instead (see ANCHORS section).
 4. **For percentage claims**, compute the exact count from the total and create appropriately weighted archetypes.
 5. **Include all claimed facts** in the \`facts\` array with structured \`data\` fields matching the claim.
 
@@ -521,7 +612,7 @@ The persona pins \`raj@northwind.com\` and \`aisha@northwind.com\` for trial use
  * Build the system + user prompts for blueprint generation.
  */
 export function buildPrompt(options: BuildPromptOptions): PromptPair {
-  const { schema, persona, domain, apis, promptContexts, currentDate, volume, personaIndex, totalPersonas, apiPlatformNames } = options;
+  const { schema, persona, domain, apis, promptContexts, currentDate, volume, personaIndex, totalPersonas, apiPlatformNames, schemaMapping, resourceSpecs } = options;
 
   const today = currentDate ?? new Date().toISOString().split('T')[0];
   const startDate = volume ? computeStartDate(today, volume) : undefined;
@@ -541,6 +632,11 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
   const platformHint = !hasApis && apiPlatformNames && apiPlatformNames.length > 0
     ? formatPlatformHint(apiPlatformNames, personaIndex, promptContexts)
     : '';
+
+  const identityContract = formatIdentityContract(
+    collectIdentityContract({ schemaMapping, personaIndex, promptContexts, resourceSpecs }),
+    'phase1',
+  );
 
   const dateRange = startDate
     ? `⚠ DATE RANGE: ${startDate} → ${today}. ALL generated dates MUST fall within this range. No exceptions.`
@@ -568,6 +664,7 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
     ...(requiredSummary ? [requiredSummary, ''] : []),
     ...(apiSection ? [apiSection, ''] : []),
     ...(platformHint ? [platformHint, ''] : []),
+    ...(identityContract ? [identityContract, ''] : []),
     ...(apiOnlyMode
       ? [
           '⚠ API-ONLY MODE: There is NO database schema. Do NOT generate `entities`, `entityArchetypes`, or `patterns`. ' +
@@ -581,246 +678,7 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
   return { system: SYSTEM_PROMPT, user };
 }
 
-// ---------------------------------------------------------------------------
-// Batched adapter generation prompt
-// ---------------------------------------------------------------------------
 
-/**
- * System prompt for Phase 2 of batched generation.
- *
- * Focused exclusively on API entity data — no persona profile, no database
- * entities, no patterns. The LLM receives a small subset of adapter platform
- * schemas and produces only `apiEntities` + `apiEntityArchetypes`.
- */
-const BATCH_SYSTEM_PROMPT = `You are a synthetic data architect generating API entity data for an existing persona.
-
-Generate ONLY apiEntities and apiEntityArchetypes for the specified API platforms.
-Do NOT generate persona profiles, database entities, entityArchetypes, or patterns.
-
-##############################################################################
-# CRITICAL RULES
-##############################################################################
-
-**RULE A — DATE ANCHORING:** ALL dates must fall within the provided date range.
-
-**RULE B — ID NAMESPACING:** ALL string IDs must use the persona index prefix.
-
-**RULE C — REQUIRED FIELDS:** Every field listed under "Required fields" for
-each platform resource MUST appear in either \`fields\` (constant) or \`vary\`
-(randomized) of every archetype for that resource. Missing fields cause broken
-API responses.
-
-**RULE D — AMOUNT FORMATS:** Follow each platform's amount format exactly:
-- "integer cents" → use \`range\` with values in cents (e.g. 2999 = $29.99)
-- "decimal string" → put decimal strings in \`fields\` (e.g. "29.99")
-- "decimal number" → use \`decimal_range\` (e.g. min: 29.00, max: 299.00)
-- "object {value, currency}" → put the FULL object in \`fields\`:
-  \`"amount": { "value": "29.99", "currency": "EUR" }\`
-  Do NOT use \`derived\` templates for object amounts — they become strings.
-
-**RULE E — VARY KEY NAMES:** Keys in \`vary\` must be actual field names from
-the resource's required fields list, not values or IDs.
-
-**RULE F — FACT-DRIVEN ARCHETYPES (MANDATORY):**
-The persona description contains specific numeric claims (e.g., "3 overdue invoices totalling £12,400"). These are HARD CONSTRAINTS — design archetypes so expansion produces those exact numbers.
-- Create dedicated small archetypes for specific claims (e.g., an overdue archetype with weight producing exactly 3 entities)
-- For amount totals, set amounts so count × amount = claimed total
-- Do NOT rely on random distributions matching the persona — encode claims directly into archetype weights and field values
-
-**RULE G — DATE-DRIVEN ARCHETYPES (MANDATORY):**
-The persona description also contains specific date references for events ("on Apr 22 the SOC 2 package arrived", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp/date field (\`sent_at\`, \`created_at\`, \`closed_at\`, \`paid_at\`, etc.).
-- Parse every explicit date ("Apr 22"), relative date ("last week", "two weeks ago"), and event anchor ("during the kickoff") in the persona description.
-- Resolve relative dates against the Current date in this prompt. "last week" = today − 7d; "yesterday" = today − 1d.
-- For each anchored event, create a dedicated archetype whose timestamp field (\`vary\` of \`type: 'range'\`) clusters within ±1 day of the anchor — NOT a random timestamp across the full date range.
-- Every entity in a cluster must get a DISTINCT timestamp (use \`range\` so the expander assigns unique values within the window).
-- Mid-range "safe" dates are wrong. If the persona narrative anchors an event to a specific date, the data MUST land at that date.
-
-**RULE H — NARRATIVE-NAMED-ENTITY ARCHETYPES (MANDATORY):**
-The persona description also names specific entities — channels (\`#deals\`, \`#engineering\`), thread topics ("the SOC 2 review", "the intro outreach"), records ("Northwind deal", "Priya Shah"), proper nouns, kebab-case ids, quoted titles. These are HARD CONSTRAINTS for fields that name an entity (\`name\`, \`title\`, \`subject\`, \`thread_subject\`, \`channel_name\`, \`label\`, \`dealname\`, etc.).
-- Extract every named entity from the persona — proper nouns, kebab-case ids, hash-prefixed channel names (\`#deals\` → \`deals\`), quoted titles, named threads.
-- Create ONE dedicated archetype per named instance, with the relevant field PINNED to the EXACT persona string (preserve case, hyphens, spaces; strip only \`#\` / \`@\` routing punctuation). Two named channels → two archetypes; three named threads → three archetypes.
-- Distinct narrative clusters MUST get distinct field values. Marshallers group by these strings (Gmail by \`thread_subject\`, Slack by channel \`name\`); collisions cause unwanted merges (47 emails collapsing into one thread, two channels merging into one).
-- Cross-resource label fields are non-negotiable: when persona names a channel \`deals\`, BOTH \`channel.name = "deals"\` AND \`message.channel_name = "deals"\` must use the SAME exact string. The marshaller resolves cross-references by exact label match.
-- NEVER substitute a generic placeholder ("Conversation", "general", "sample-channel", a corporate name when persona said \`deals\`) when the persona has named the entity.
-
-**RULE I — NARRATIVE-NAMED-IDENTITY CONSISTENCY (MANDATORY):**
-Named PEOPLE (proper nouns, named roles like "the AE Sarah") frequently span multiple adapter surfaces. Identity fields (\`email\`, \`full_name\`, \`firstname\`/\`lastname\`) are JOIN KEYS — agents navigate from one surface to another by matching them. Divergence is silent and breaks downstream joins.
-- Decide canonical (\`full_name\`, \`email\`) ONCE per named person, BEFORE generating any adapter's content. Reuse byte-for-byte across every surface that person appears in.
-- When persona pins an email (\`raj@northwind.com\`), use it verbatim everywhere.
-- When persona names a person but does NOT pin an email, derive a canonical and reuse it. Match the format convention of any OTHER person in the same domain — if persona writes \`raj@northwind.com\`, use \`priya@northwind.com\` (NOT \`priya.shah@northwind.com\`). Default to bare-localpart \`firstname@domain\` when no other person at the same domain appears.
-- Same person → identical strings everywhere: \`record_person.primary_email\` (Attio) = \`crm_contact.email\` (HubSpot) = \`message_email.from_email\` (Gmail, when sender is that person) = \`speaker.email\` (Granola transcript).
-- NEVER let the LLM "improve" the format per resource. Corporate-style \`firstname.lastname@\` looks realistic in Gmail but breaks the CRM→email join if other surfaces use bare-localpart.
-
-##############################################################################
-# ARCHETYPE FORMAT
-##############################################################################
-
-- For resource types with 10+ expected entities → use \`apiEntityArchetypes\`
-- For resource types with <10 entities → use \`apiEntities\` (flat arrays)
-- Archetype weights should sum to ~1.0 per resource type
-- Do NOT include \`created\` or \`created_at\` timestamps — the expander adds them
-
-Available variation types:
-- firstName, lastName, fullName, email, phone, companyName
-- pick (random from values array), range (random int), decimal_range (random decimal)
-- uuid, timestamp (random Unix seconds in date range), date (random ISO date)
-- derived (template with {{fieldName}} placeholders), sequence (prefix + counter)
-
-##############################################################################
-# OUTPUT
-##############################################################################
-
-Output ONLY valid JSON matching the provided Zod schema. No markdown, no commentary.`;
-
-/**
- * Build a prompt for a batch of API adapters ONLY (Phase 2 of batched
- * generation). Does not include DB schema or persona generation instructions.
- */
-export function buildAdapterBatchPrompt(
-  options: BuildAdapterBatchPromptOptions,
-): PromptPair {
-  const {
-    persona,
-    domain,
-    apis,
-    promptContexts,
-    currentDate,
-    volume,
-    personaIndex,
-    totalPersonas,
-    phase1Summary,
-  } = options;
-
-  const today = currentDate ?? new Date().toISOString().split('T')[0];
-  const startDate = volume ? computeStartDate(today, volume) : undefined;
-  const apiSection = formatApis(apis, promptContexts);
-  const batchAdapterKeys = Object.keys(apis).map(k => (apis[k] as { adapter?: string }).adapter ?? k);
-  const dbContext = phase1Summary ? formatPhase1Summary(phase1Summary, batchAdapterKeys) : '';
-
-  const dateRange = startDate
-    ? `⚠ DATE RANGE: ${startDate} → ${today}. ALL generated dates MUST fall within this range.`
-    : `⚠ Current date: ${today}. ALL generated dates must be relative to this date.`;
-
-  const identityRegistry = buildIdentityRegistry(persona.description);
-
-  const user = [
-    `Domain: ${domain}`,
-    '',
-    `Persona: "${persona.name}"`,
-    persona.description,
-    '',
-    dateRange,
-    '',
-    ...(personaIndex !== undefined
-      ? [
-          `⚠ Persona index: ${personaIndex} (of ${totalPersonas ?? '?'} total)`,
-          `ALL string IDs MUST use format: "cus_p${personaIndex}_001", "sub_p${personaIndex}_001", etc.`,
-          '',
-        ]
-      : []),
-    ...(identityRegistry ? [identityRegistry, ''] : []),
-    ...(dbContext ? [dbContext, ''] : []),
-    apiSection,
-    '',
-    'Generate apiEntities and apiEntityArchetypes for ALL platforms listed above.',
-    'Cover ALL resource types for each platform. Empty resources cause broken API endpoints.',
-  ].join('\n');
-
-  return { system: BATCH_SYSTEM_PROMPT, user };
-}
-
-/**
- * Build a "REGISTERED IDENTITIES" block that pre-extracts every named person
- * from the persona description and pins their canonical (full_name, email).
- * Pinned emails come straight from the persona text; unpinned named persons
- * get a derived `firstname@<dominant-domain>` email so identity fields remain
- * identical across every parallel adapter generation call.
- *
- * Without this, parallel adapter LLM calls each pick their own format
- * (Attio settles on `priya@`, Gmail drifts to `priya.shah@`) and downstream
- * cross-surface joins silently break.
- */
-function buildIdentityRegistry(personaDescription: string): string {
-  // 1. Pinned emails: anything that looks like `<localpart>@<domain>` in prose.
-  const emailRe = /\b([a-zA-Z][\w.-]*?)@([a-zA-Z][\w.-]*?\.[a-zA-Z]{2,})\b/g;
-  const pinned = new Map<string, string>(); // localpart-lower → full email
-  for (const m of personaDescription.matchAll(emailRe)) {
-    const local = (m[1] ?? '').toLowerCase();
-    const full = `${m[1]}@${m[2]}`.toLowerCase();
-    if (!pinned.has(local)) pinned.set(local, full);
-  }
-
-  // 2. Dominant domain among pinned emails — used to derive unpinned ones.
-  const domainCounts = new Map<string, number>();
-  for (const full of pinned.values()) {
-    const dom = full.split('@')[1]!;
-    domainCounts.set(dom, (domainCounts.get(dom) ?? 0) + 1);
-  }
-  const dominantDomain =
-    [...domainCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-
-  // 3. Named persons by FirstName-LastName proper-noun pairs in the prose.
-  // Skip pairs that are clearly company/place names by ignoring those that
-  // are followed by a comma + lowercase word ("Northwind Robotics, late-stage…")
-  // — heuristic, not perfect, but fine for the common case.
-  const personNameRe = /\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\b/g;
-  const namedPersons = new Map<string, { fullName: string; firstName: string }>();
-  for (const m of personaDescription.matchAll(personNameRe)) {
-    const first = m[1]!;
-    const last = m[2]!;
-    const fullName = `${first} ${last}`;
-    // Exclude common org/place tail-words and the words that immediately follow
-    // a person-name in business prose (e.g. "Northwind Robotics" — Robotics).
-    const orgTails = new Set([
-      'Robotics', 'Inc', 'Ltd', 'LLC', 'Corp', 'Corporation', 'Co', 'Holdings',
-      'Solutions', 'Systems', 'Technologies', 'Tech', 'Labs', 'Group', 'Capital',
-      'Partners', 'Ventures', 'Software', 'Networks', 'Bank', 'Industries',
-    ]);
-    if (orgTails.has(last)) continue;
-    if (!namedPersons.has(fullName.toLowerCase())) {
-      namedPersons.set(fullName.toLowerCase(), { fullName, firstName: first });
-    }
-  }
-
-  // 4. Build entries: prefer pinned email; otherwise derive bare-localpart at
-  // dominant domain.
-  const entries: string[] = [];
-  for (const [, { fullName, firstName }] of namedPersons) {
-    const local = firstName.toLowerCase();
-    const email =
-      pinned.get(local) ??
-      (dominantDomain ? `${local}@${dominantDomain}` : null);
-    if (!email) continue;
-    entries.push(`  - ${fullName}: email=${email}, full_name="${fullName}"`);
-  }
-  // Also surface any pinned email whose localpart didn't match a FirstName-Last
-  // pair (e.g. `raj@northwind.com` mentioned without "Raj Patel" alongside).
-  for (const [local, full] of pinned) {
-    const seen = entries.some((e) => e.includes(`email=${full}`));
-    if (!seen) {
-      const display = local.charAt(0).toUpperCase() + local.slice(1);
-      entries.push(`  - ${display}: email=${full}`);
-    }
-  }
-
-  if (entries.length === 0) return '';
-
-  return [
-    '⚠ REGISTERED IDENTITIES — USE THESE EXACT STRINGS:',
-    'Every adapter generation call runs in parallel without shared state. To keep',
-    'cross-surface identity joins working, the values below are pre-canonicalised.',
-    'When the persona-named person below appears in ANY resource (Attio',
-    'record_person, Gmail message_email, HubSpot crm_contact, Granola transcript',
-    'speaker, Slack messages, Postgres users), use their email and full_name',
-    'BYTE-FOR-BYTE as listed:',
-    '',
-    ...entries,
-    '',
-    'NEVER substitute a different format (e.g. firstname.lastname@) — the registry',
-    'is the source of truth for identity. Adding an extra dot or rewriting the',
-    'format silently breaks downstream agent joins.',
-  ].join('\n');
-}
 
 // ---------------------------------------------------------------------------
 // Schema formatter  (human-readable dump for the LLM context window)
@@ -1086,54 +944,125 @@ function abbreviateAdapterId(id: string): string {
     .slice(0, 4);
 }
 
+// ---------------------------------------------------------------------------
+// Identity contract block (cross-surface ID prefix pinning)
+// ---------------------------------------------------------------------------
+
 /**
- * Format the Phase 1 generation summary for Phase 2 batch prompts.
- *
- * Gives the LLM context about what DB entities already exist and which
- * ID prefixes were used, so API archetypes use matching IDs for
- * cross-surface consistency.
+ * Resolved identity-contract row: a single (DB column ⇄ API id) pin with the
+ * exact prefix both sides must use. The output of `collectIdentityContract`
+ * is consumed by both prompt rendering (Phase 1 + Phase 2) and the post-hoc
+ * validator, so they all see the same set of constraints.
  */
-function formatPhase1Summary(summary: Phase1Summary, batchAdapterKeys?: string[]): string {
-  const lines: string[] = [
-    '--- DATABASE ENTITY SUMMARY (already generated — use matching IDs) ---',
-    '⚠ CRITICAL: The database already has the following entities. Your API entity IDs',
-    'MUST use the SAME sequence prefixes so cross-surface references are consistent.',
+export interface IdentityContractEntry {
+  dbTable: string;
+  dbColumn: string;
+  adapterId: string;
+  apiResource: string;
+  apiField: string;
+  /** Persona-namespaced prefix, e.g. "cus_p1_" */
+  prefix: string;
+}
+
+/**
+ * Resolve `schemaMapping` + per-adapter prefix lookups into the concrete set
+ * of cross-surface ID constraints that apply for a given persona/run.
+ *
+ * Returns an empty array (and *not* an error) when:
+ *   - schemaMapping is undefined
+ *   - personaIndex is undefined (no namespacing yet → contract underdefined)
+ *   - no non-bridge id-mapping entries exist
+ *   - no adapter-side prefix can be resolved (caller decides if that's OK)
+ */
+export function collectIdentityContract(
+  options: {
+    schemaMapping?: SchemaMapping;
+    personaIndex?: number;
+    promptContexts?: Record<string, PromptContext>;
+    resourceSpecs?: Record<string, AdapterResourceSpecs>;
+    /** Restrict to a subset of adapter IDs (e.g. one Phase 2 batch). */
+    filterAdapters?: string[];
+  },
+): IdentityContractEntry[] {
+  const { schemaMapping, personaIndex, promptContexts, resourceSpecs, filterAdapters } = options;
+  if (!schemaMapping || personaIndex === undefined) return [];
+
+  const out: IdentityContractEntry[] = [];
+  for (const e of schemaMapping.mappings) {
+    if (e.isBridgeTable) continue;
+    if (e.apiField !== 'id') continue;
+    if (filterAdapters && !filterAdapters.includes(e.adapterId)) continue;
+
+    const rawPrefix = getResourceIdPrefix(e.adapterId, e.apiResource, promptContexts, resourceSpecs);
+    if (!rawPrefix) continue;
+
+    out.push({
+      dbTable: e.dbTable,
+      dbColumn: e.dbColumn,
+      adapterId: e.adapterId,
+      apiResource: e.apiResource,
+      apiField: e.apiField,
+      prefix: getPersonaIdPrefix(rawPrefix, personaIndex),
+    });
+  }
+  return out;
+}
+
+/**
+ * Render the IDENTITY CONTRACT block — same constraints, two framings.
+ *
+ *   phase: 'phase1'  →  framed for DB archetype generation (vary[<column>])
+ *   phase: 'phase2'  →  framed for API archetype generation (vary.id)
+ *
+ * Returns an empty string when there are no constraints to render — callers
+ * splice that conditionally so the no-cross-surface-FK case is a clean no-op.
+ */
+export function formatIdentityContract(
+  entries: IdentityContractEntry[],
+  phase: 'phase1' | 'phase2',
+): string {
+  if (entries.length === 0) return '';
+
+  if (phase === 'phase1') {
+    const lines = [
+      '--- IDENTITY CONTRACT (DB side, informational) ---',
+      'The following DB columns are cross-surface join keys with the API mock.',
+      'The system will pin them to the prefixes below after generation, so you',
+      'do not need to set `vary` on these columns yourself. The values are',
+      'shown here so any archetype that REFERENCES these IDs by name (in',
+      'narrative fields, FKs from related tables, etc.) uses matching strings.',
+      '',
+    ];
+    for (const e of entries) {
+      lines.push(
+        `  ${e.dbTable}.${e.dbColumn}  →  prefix "${e.prefix}"  ` +
+        `(joins ${e.adapterId}.${e.apiResource}.${e.apiField})  ` +
+        `e.g. "${e.prefix}001", "${e.prefix}002", …`,
+      );
+    }
+    lines.push('--- END IDENTITY CONTRACT ---');
+    return lines.join('\n');
+  }
+
+  // phase 2 — API side
+  const lines = [
+    '--- IDENTITY CONTRACT (API side, informational) ---',
+    'The following API resource IDs are cross-surface join keys with DB',
+    'columns. The system will pin `vary.id` for these resources after',
+    'generation, so you do not need to set it yourself. Use the prefixes',
+    'below when referencing these IDs in OTHER fields — e.g. when emitting',
+    '`subscription.customer` or `charge.customer`, those reference fields',
+    'should use the same prefix so they resolve correctly.',
     '',
   ];
-
-  for (const table of summary.tables) {
-    lines.push(`  ${table.name}: ${table.rowCount} rows`);
+  for (const e of entries) {
+    lines.push(
+      `  ${e.adapterId}.${e.apiResource}.${e.apiField}  →  prefix "${e.prefix}"  ` +
+      `(matches ${e.dbTable}.${e.dbColumn})  ` +
+      `e.g. "${e.prefix}001", "${e.prefix}002", …`,
+    );
   }
-
-  // Show per-platform prefixes relevant to this batch
-  const platforms = summary.platformPrefixes;
-  const relevantPlatforms = batchAdapterKeys
-    ? Object.entries(platforms).filter(([name]) => batchAdapterKeys.includes(name))
-    : Object.entries(platforms);
-
-  if (relevantPlatforms.length > 0) {
-    lines.push('');
-    lines.push('⚠ Platform-specific ID prefixes used in the DB (use these EXACT prefixes for API entities):');
-    for (const [platform, entries] of relevantPlatforms) {
-      for (const { column, prefix } of entries) {
-        lines.push(`  ${platform} (DB ${column}) → "${prefix}" (e.g. "${prefix}001", "${prefix}002")`);
-      }
-    }
-  } else if (Object.keys(summary.idPrefixes).length > 0) {
-    lines.push('');
-    lines.push('Sequence prefixes used in DB entities:');
-    for (const [key, prefix] of Object.entries(summary.idPrefixes)) {
-      lines.push(`  ${key} → "${prefix}" (e.g. "${prefix}001", "${prefix}002")`);
-    }
-  }
-
-  lines.push('');
-  lines.push(
-    'For each platform\'s "customers" resource, the API entity `id` MUST use the same prefix ' +
-    'as the DB entity\'s `external_id` or platform-specific ID column. This ensures an agent ' +
-    'querying the API can find the same customer that exists in the database.',
-  );
-  lines.push('--- END DATABASE SUMMARY ---');
+  lines.push('--- END IDENTITY CONTRACT ---');
   return lines.join('\n');
 }
 
@@ -1171,7 +1100,140 @@ rather than generated independently. This ensures the DB and API are always cons
 
 1. For each DB table, determine if it is a bridge table (has platform identifier + external ID columns)
 2. For each bridge table, map its columns to the corresponding API resource fields
-3. Also map non-bridge tables that have FK references to API platform IDs (e.g. an orders table with a stripe_customer_id column)
+3. Identify cross-surface identity columns on non-bridge tables (see below) and map them too
+4. Map CROSS-SURFACE BODY FIELDS for every table that links to an API resource (see below)
+
+## Cross-Surface Identity Columns
+
+A "cross-surface identity column" is a string column on a non-bridge DB table whose
+NAME suggests it stores an external API platform's ID (a known platform prefix
+combined with a resource hint, usually ending in \`_id\`). Examples:
+
+- customers.stripe_customer_id     →  stripe.customer.id
+- orders.paddle_subscription_id    →  paddle.subscription.id
+- accounts.chargebee_id            →  chargebee.customer.id
+
+For every such column you find, you MUST emit a SchemaMappingEntry with
+\`isBridgeTable: false\`, mapping the DB column to that API resource's primary
+\`id\` field. This entry is what tells the generator that the DB-side values and
+the API-side IDs MUST be the same string sequence — without it, the DB and the
+mock API will silently produce two universes of IDs that never join.
+
+Apply this even when the DB table itself is internal-only (not a bridge table).
+
+## Cross-Surface Body Fields (CRITICAL)
+
+When a DB table maps to an API resource (via a bridge or a cross-surface identity column),
+its other columns often hold the same data as fields on that API resource. The generator
+mirrors API entities into DB rows by copying these mapped fields — every column you DON'T
+map ends up NULL or randomly filled, even when the API source has the value.
+
+For each table that maps to an API resource, walk its remaining columns and emit a
+SchemaMappingEntry for every column that has a clear semantic counterpart on the API
+resource. Use your knowledge of the API platform's schema (Stripe, Plaid, Chargebee,
+HubSpot, etc.) — these are well-documented public APIs.
+
+Common semantic correspondences:
+
+- payments.failure_reason          →  stripe.charge.failure_code      (or .failure_message)
+- payments.amount_cents            →  stripe.charge.amount             (integer minor units)
+- payments.status                  →  stripe.charge.status             (succeeded/failed/pending)
+- payments.payment_method          →  stripe.charge.payment_method_details.type
+- invoices.amount_cents            →  stripe.invoice.amount_due        (or .total)
+- invoices.status                  →  stripe.invoice.status
+- subscriptions.status             →  stripe.subscription.status
+- subscriptions.canceled_at        →  stripe.subscription.canceled_at
+- customers.email                  →  stripe.customer.email
+- customers.name                   →  stripe.customer.name
+
+The pattern: any column whose name describes business state (status, reason, amount,
+method, type, kind, code, message, *_at timestamps) very likely has an API counterpart.
+Map it. Adapter-side categorical fields and reason fields are especially important —
+without these mappings, "failed payment" rows arrive in the DB with NULL reasons.
+
+\`isBridgeTable: false\` for these entries (the column lives on a non-bridge table that
+mirrors an API resource); \`apiField\` is the dotted path's leaf (use the top-level field
+when the API stores it nested, e.g. \`failure_code\`, not \`outcome.reason\` — the generator
+reads top-level body fields).
+
+## Direction — mirror vs drift_capable (CRITICAL)
+
+Every mapping entry MUST set \`direction\` to either \`"mirror"\` or \`"drift_capable"\`.
+
+This flag tells the row reconciler whether the DB and API are *allowed* to hold
+different values on the same logical row (anchor-paired rows). It has nothing to
+do with normal mirror-flow derivation — it only governs whether the anchor-pair
+reconciler enforces equality on this specific column.
+
+**Getting this wrong corrupts the test data.** Marking a true drift field as
+\`mirror\` erases the persona-narrated divergence (e.g. "DB shows active, Stripe
+shows canceled" becomes "both show active" — the entire test scenario
+disappears). Marking a true mirror field as \`drift_capable\` leaves DB and API
+holding different amounts/customers on a logically-paired row — an agent
+reading either side sees inconsistent data with no narrative reason for it.
+
+### ALWAYS \`drift_capable\` — no exceptions
+
+These column-name patterns are drift signals by definition. They name the
+state of a row at a moment in time, and the whole point of having both a DB
+and an external API is that those two views of "current state" can disagree.
+**You MUST mark these \`drift_capable\` regardless of any other consideration:**
+
+- \`status\`, \`state\`, \`phase\`, \`stage\`, \`lifecycle\` (and any column whose
+  name ends in any of these — \`payment_status\`, \`subscription_state\`, etc.).
+  This includes every status mapping across every resource: subscription
+  status, invoice status, charge status, customer status, dispute status.
+- \`canceled_at\`, \`cancelled_at\`, \`cancellation_reason\`, \`cancellation_details\`
+  — cancellation is the most common drift event in billing data.
+- \`current_period_start\`, \`current_period_end\`, \`trial_start\`, \`trial_end\`,
+  \`period_start\`, \`period_end\` — period rollovers happen at different
+  cadences on the two surfaces.
+- \`updated_at\`, \`synced_at\`, \`last_sync\`, \`refreshed_at\` — these literally
+  describe per-surface bookkeeping; they can't agree by definition.
+- \`paused_at\`, \`resumed_at\`, \`pending_update\`, \`pending_*\` — state-transition
+  metadata that the DB lags the external system on.
+
+If a column name matches any of these patterns, \`direction\` is
+\`drift_capable\`. Do not rationalize it as mirror. Do not write "when synced
+correctly these would agree" — they won't, that's the entire reason a
+revenue-recovery / reconciliation agent exists.
+
+### ALWAYS \`mirror\` — these are facts, not state
+
+These describe immutable facts about the same logical entity. The DB and API
+agree on them by definition, because they're the same fact recorded twice:
+
+- All \`id\` mappings (cross-surface IDs always match — that's their entire
+  purpose). \`apiField === "id"\` → always \`mirror\`.
+- Amounts, totals, balances, fees: \`amount\`, \`amount_due\`, \`amount_paid\`,
+  \`amount_refunded\`, \`amount_captured\`, \`unit_amount\`, \`total\`, \`subtotal\`,
+  \`balance\`, \`mrr_cents\`, \`price\`, \`fee\`, \`tax\`.
+- Currencies: \`currency\`, \`currency_code\`.
+- FK references to shared entities: \`customer\`, \`customer_id\`,
+  \`subscription\`, \`subscription_id\`, \`invoice\`, \`invoice_id\`,
+  \`payment_intent\`, \`charge\`, etc.
+- Created timestamps (immutable per-event): \`created\`, \`created_at\`. (Note:
+  \`updated_at\` is the OPPOSITE — that's drift_capable.)
+- Failure reasons on failed charges: \`failure_reason\`, \`failure_code\`,
+  \`failure_message\`, \`decline_code\`. (These describe a past event.)
+- Identity attributes the same entity carries on both sides: \`name\`,
+  \`email\`, \`phone\`, \`description\`, \`metadata\`.
+- Payment instrument facts: \`payment_method\` (the type used), \`brand\`,
+  \`last4\`, \`exp_month\`, \`exp_year\`.
+
+### Decision procedure when the column doesn't match either list
+
+1. Does the column name describe a *moment-in-time state* the system is in
+   right now (status, phase, period bounds, sync metadata)? → \`drift_capable\`.
+2. Does the column name describe a *historical fact* about a past event
+   (amount charged, when it was created, why it failed)? → \`mirror\`.
+3. Does the column name describe an *identity attribute* (name, email,
+   customer reference)? → \`mirror\`.
+4. Genuinely ambiguous? → \`mirror\`, but this should be rare. The two lists
+   above cover ~all of billing/CRM/messaging schemas.
+
+The flag is required on EVERY entry, including id mappings (always
+\`"mirror"\` for those — cross-surface IDs must match by definition).
 
 ## Rules
 
@@ -1182,6 +1244,7 @@ rather than generated independently. This ensures the DB and API are always cons
 - **CRITICAL: Emit one mapping entry PER adapter PER column. NEVER use wildcards like "all" or "any".**
   Different platforms use different resource names for the same concept (e.g. Stripe uses "charges" while PayPal uses "payments").
   You MUST emit a separate mapping for each platform with its correct resource name.
+- **CRITICAL: Every entry MUST include \`direction\` (\`"mirror"\` or \`"drift_capable"\`).** See the direction section above.
 - Output ONLY valid JSON matching the provided schema. No markdown, no commentary.`;
 
 /**
@@ -1216,7 +1279,10 @@ export function buildSchemaMappingPrompt(
   }
 
   lines.push('Analyse the DB schema and API platforms above.');
-  lines.push('Identify bridge tables and map DB columns to API resource fields.');
+  lines.push('Identify bridge tables and cross-surface identity columns, AND emit body-field');
+  lines.push('mappings for every DB column on a mirrored table that has a semantic counterpart');
+  lines.push('on its linked API resource (status, amount, failure_reason→failure_code, method, etc).');
+  lines.push('Without body-field mappings, mirrored rows arrive in the DB with NULL/random data.');
 
   return { system: SCHEMA_MAPPING_SYSTEM_PROMPT, user: lines.join('\n') };
 }
@@ -1239,10 +1305,21 @@ export interface BuildDistributionPromptOptions {
   totalPersonas?: number;
   /**
    * Identity entity count constraints from Phase 1 DB archetypes.
-   * Maps resource type → exact count. The LLM MUST use these counts
-   * for identity resources (e.g. customers) to ensure DB↔API coordination.
+   * Maps resource type → exact count for identity resources to ensure
+   * DB↔API coordination. Counts apply to non-apiOnly archetypes only;
+   * apiOnly archetypes are additive on top.
    */
   identityEntityCounts?: Record<string, number>;
+  /**
+   * LLM-derived DB↔API field correspondence. When provided, drives the
+   * IDENTITY CONTRACT block on the API side, pinning archetype id prefixes
+   * to the same string the DB side already uses.
+   */
+  schemaMapping?: SchemaMapping;
+  /**
+   * Per-adapter prompt context (idPrefix lookups) for the identity contract.
+   */
+  promptContexts?: Record<string, PromptContext>;
 }
 
 const DISTRIBUTION_SYSTEM_PROMPT = `You are a synthetic data architect. Your ONLY task is to decide the distribution of API entity data for a given persona.
@@ -1259,9 +1336,11 @@ Return a JSON object with:
 
 Each archetype has:
 - "label": human-readable name
-- "weight": fraction 0-1 (all weights sum to ~1.0)
+- "weight": fraction 0-1 (matched-archetype weights sum to ~1.0; apiOnly weights are additive)
 - "fieldOverrides": array of { "field", "value" } pairs for CONSTANT values (value is always a string)
 - "vary": optional array of { "field", "type", ... } for fields where you want a SPECIFIC variation strategy
+- "apiOnly": optional boolean. Set true when entities have NO database counterpart (see API-ONLY ARCHETYPES section below).
+- "count": optional integer. Only meaningful when apiOnly:true — explicit additive count for this orphan archetype.
 
 ## When to use vary
 Most fields are auto-varied by the assembler from the spec (IDs, timestamps, emails, names, etc.).
@@ -1295,8 +1374,51 @@ The persona description ALSO names specific entities — channels (\`#deals\`), 
 - Cross-resource label fields are non-negotiable. When persona names a channel \`deals\`, BOTH \`channel.name = "deals"\` AND \`message.channel_name = "deals"\` must match exactly. The marshaller resolves cross-refs by exact label match.
 - NEVER substitute a generic placeholder ("Conversation", "general", "sample-channel", a corporate name when persona said \`deals\`) when the persona has named the entity.
 
+## CRITICAL — API-ONLY ARCHETYPES (cross-platform asymmetry)
+The persona may explicitly declare entities that exist on the API side WITHOUT a database counterpart. Common phrasings: "3 deliberate Stripe-only orphans from a botched import", "5 abandoned Plaid items linked to closed bank accounts", "2 webhook subscriptions that never made it into the audit log". These are HARD CONSTRAINTS — without them, the data is symmetric and the asymmetry-detection scenarios cannot be tested.
+- Create a DEDICATED archetype with \`apiOnly: true\` for each declared asymmetric group. Set \`count\` to the explicit number from the persona ("3 orphans" → \`count: 3\`).
+- apiOnly archetypes are ADDITIVE on top of the matched count. Their weight does NOT count toward the ~1.0 sum of matched archetypes. Example: matched archetypes summing to weight 1.0 with \`distribution.count: 100\`, plus an \`apiOnly: true\` archetype with \`count: 3\` → 103 total entities, 3 with no DB counterpart.
+- Use apiOnly ONLY when the persona explicitly declares such asymmetry. NEVER use it speculatively, as a "small percentage of weird data," or to express anomalies that are actually matched (a customer in past_due is matched, not apiOnly).
+- The system enforces a soft cap: apiOnly entities should not exceed ~30% of matched entities. If the persona claims more than that, lower the count and surface the inconsistency.
+
+## CRITICAL — PERSONA-LEVEL FIELD CONSTRAINTS
+The persona may declare GLOBAL invariants over a field — claims that apply to EVERY entity, not just one archetype. Examples: "All payments are denominated in USD", "Every customer is in the EU region", "All invoices use 30-day terms". These are HARD CONSTRAINTS — encode them on EVERY archetype, not just the dominant one.
+- For a single-value invariant ("all USD"), set the field on \`fieldOverrides\` for EVERY archetype: \`{ "field": "currency", "value": "usd" }\`. The assembler-derived default for currency_code is \`pick from [usd, eur, gbp]\` and will produce mixed currencies if you skip this.
+- Alternatively, use a single-value \`vary\` to make the constraint loud: \`{ "field": "currency", "type": "pick", "values": ["usd"] }\`.
+- NEVER assume the assembler-derived default will respect the persona's invariant. The assembler doesn't read the persona — only you do.
+- This rule applies to: currency, region, country, locale, timezone, status (when persona pins one), and any other categorical field with a global persona-level constraint.
+
+## CRITICAL — CROSS-COLUMN CORRELATION
+When the persona names a count of entities sharing MULTIPLE correlated field values ("18 enterprise customers paying $499/mo each", "5 trial users with status=trialing AND mrr=0"), these correlations are HARD CONSTRAINTS — put the correlated fields on ONE archetype, never split across two distributions.
+- "18 enterprise customers @ $499/mo" → ONE archetype with \`weight\` chosen so it produces 18 entities, \`fieldOverrides: [{field:"plan", value:"enterprise"}, {field:"mrr_cents", value:"49900"}]\`. NOT one archetype for plan and a separate weight for mrr.
+- "3 enterprise customers downgraded to pro at $99/mo" → ONE dedicated archetype with \`fieldOverrides: [{field:"plan", value:"pro"}, {field:"mrr_cents", value:"9900"}]\` and a \`downgrade\` tag — even though plan and mrr are normally derived independently.
+- The assembler's auto-variation generates fields independently. If you want plan and mrr to agree, you MUST co-locate them in one archetype. Splitting them across two distributions produces de-correlated rows and silently violates the persona's invariant.
+
+## CRITICAL — LABELS IMPLY FIELD VALUES
+An archetype's \`label\` is a human hint, not data. The actual record fields are what end up in the API response and (when mirrored) in the database. If your label encodes a categorical state — \`failed-expired-card\`, \`canceled-by-customer\`, \`paid-late\`, \`fraudulent-dispute\` — you MUST also encode that state in \`fieldOverrides\` on the resource's actual reason/code/status fields. Otherwise the label says one thing and the data says null, and downstream consumers (DB mirrors, agents reading the API) cannot categorize the row.
+- \`label: "failed-expired-card"\` on a Stripe charge → \`fieldOverrides\` MUST include \`{field: "status", value: "failed"}\` AND \`{field: "failure_code", value: "expired_card"}\` AND \`{field: "failure_message", value: "Your card has expired."}\`. Leaving \`failure_code\` null is a bug — it drops the very signal the label promised.
+- \`label: "canceled-by-customer"\` on a subscription → set \`status\`, \`cancellation_reason\`, \`canceled_at\` (as appropriate for the API).
+- \`label: "fraudulent-dispute"\` → set \`status\` AND \`reason: "fraudulent"\`.
+- General rule: read your own label. Identify the categorical state it names. Find the field(s) on the API resource that carry that state (use the resource's documented schema — failure_code/failure_message for charges, cancellation_reason for subscriptions, decline_code where applicable, etc.). Set them in \`fieldOverrides\`. Never leave them null when the label asserts a value.
+- This rule is the single biggest cause of "the data looks right but the agent can't categorize it" bugs. Labels without matching field values produce silently broken datasets.
+
+## CRITICAL — ANCHOR BINDING IS WHERE PERSONA EVENTS LIVE
+The DB blueprint may declare anchors in \`data.anchors\` (named persona events like "Klein's double-charge on 2026-04-29"). Each anchor MUST be bound to at least one archetype on this API side via the archetype's \`anchor\` field — otherwise the persona event produces zero rows on the API and the mirror flow has nothing to propagate to the DB.
+- For MIRROR events (DB and API agree, e.g. Klein's two succeeded payment_intents): bind the anchor on the relevant API resource(s) — \`{anchor: "klein_double_charge", count: 2, fieldOverrides: [...], vary: [{field: "id", type: "sequence", prefix: "pi_klein_dup_"}, ...]}\`. The DB blueprint should NOT bind the same anchor on the DB side; mirror flow creates the DB row from your API archetype.
+- For DRIFT events (DB and API diverge, e.g. Larkspur's Stripe sub canceled but Postgres still active): the DB side will bind too. On THIS side, hardcode the cross-surface id in \`fieldOverrides\` (e.g. \`{field: "id", value: "sub_lark_drift_001"}\`) so the DB and API rows land on the same id while diverging on status/canceled_at. Do NOT use a sequence for the id on a drift archetype — sequence counters are global and the two surfaces would land on different ids.
+- For TIME-WINDOW events ("this week", "yesterday"): bind the anchor on the API archetype with \`vary: [{field: "created", type: "anchor_date", anchor: "<id>", key: "event", format: "epoch_seconds"}]\`. The persona-pinned date propagates to the DB row via mirror.
+- Generation fails with a clear error if any anchor is declared but unbound. Read each anchor in \`data.anchors\` and bind it.
+
+## CRITICAL — EXPLICIT COUNTS BEAT WEIGHTS FOR PERSONA-PINNED NUMBERS
+When the persona narrates an exact number ("8 failed charges — 4 card_expired, 2 insufficient_funds, 2 lost_card"), use \`count\` on a per-reason archetype. \`count\` emits EXACTLY that many rows and bypasses weight redistribution; \`weight\` only approximates and rounds. The remaining \`distribution.count\` is split across weight-only archetypes.
+- \`{ label: "failed-expired-card", count: 4, fieldOverrides: [{field:"status", value:"failed"}, {field:"failure_code", value:"expired_card"}, ...] }\`
+- \`{ label: "failed-insufficient-funds", count: 2, ... }\`
+- \`{ label: "failed-lost-card", count: 2, ... }\`
+- The weight-only succeeded archetypes (no \`count\`, sum to ~1.0) absorb the remaining capacity.
+- Do NOT use \`weight: 0\` on plain archetypes hoping it means "explicit count" — that emits zero rows. \`weight: 0\` is only valid alongside \`apiOnly: true\` or an \`anchor\`. For plain "exactly N rows" use just \`count: N\` (omit \`weight\` or set it to 0; either works since count wins).
+
 ## Rules
-- Archetype weights must sum to ~1.0 per resource type
+- Matched-archetype weights must sum to ~1.0 per resource type. apiOnly archetypes are additive and do NOT count toward this sum.
 - Reference data (volumeHint: "reference") should have low counts (1-10)
 - Entity data (volumeHint: "entity") scales with the persona context (20-200)
 - ⚠ IMPORTANT: You MUST include ALL listed resource types in your output. Every resource must have count >= 1. Even if the persona is unlikely to have many of a resource type (e.g. disputes, refunds), include at least a small realistic count (1-5). Mock API endpoints need data for all resource types to be useful.
@@ -1322,10 +1444,24 @@ export function buildDistributionPrompt(
     personaIndex,
     totalPersonas,
     identityEntityCounts,
+    schemaMapping,
+    promptContexts,
   } = options;
 
   const today = currentDate ?? new Date().toISOString().split('T')[0];
   const startDate = volume ? computeStartDate(today, volume) : undefined;
+
+  const adapterKeys = Object.keys(resourceSpecs);
+  const identityContract = formatIdentityContract(
+    collectIdentityContract({
+      schemaMapping,
+      personaIndex,
+      promptContexts,
+      resourceSpecs,
+      filterAdapters: adapterKeys,
+    }),
+    'phase2',
+  );
 
   const lines: string[] = [
     `Domain: ${domain}`,
@@ -1343,18 +1479,28 @@ export function buildDistributionPrompt(
     lines.push(`Persona index: ${personaIndex} (of ${totalPersonas ?? '?'} total)`);
   }
 
-  // Include identity entity count constraints if provided
+  if (identityContract) {
+    lines.push('', identityContract);
+  }
+
+  // Include identity entity count constraints if provided.
+  // These are *matched* counts only — apiOnly archetypes (e.g. orphans the
+  // persona declares as API-only) add to this total and are not coordinated
+  // with the DB.
   if (identityEntityCounts && Object.keys(identityEntityCounts).length > 0) {
     lines.push('');
     lines.push('--- IDENTITY ENTITY COUNT CONSTRAINTS (from DB coordination) ---');
-    lines.push('⚠ MANDATORY: The following resource counts are coordinated with the database.');
-    lines.push('You MUST use these EXACT counts for the specified resources:');
+    lines.push('⚠ MANDATORY: The following counts are the MATCHED entity counts —');
+    lines.push('every matched-archetype entity must have a corresponding row in the database.');
+    lines.push('Use these EXACT counts as the sum of weights for archetypes WITHOUT apiOnly:true:');
     lines.push('');
     for (const [resource, count] of Object.entries(identityEntityCounts)) {
-      lines.push(`  ${resource}: exactly ${count} entities`);
+      lines.push(`  ${resource}: exactly ${count} matched entities`);
     }
     lines.push('');
-    lines.push('These counts ensure API entity totals match database identity table rows.');
+    lines.push('apiOnly:true archetypes carry their own additive count (you choose, persona-driven).');
+    lines.push('Example: matched=100 + an "orphan" apiOnly archetype with count:3 → 103 total entities,');
+    lines.push('         3 of which have no DB counterpart and represent a deliberate asymmetry.');
     lines.push('Other non-identity resources can have any appropriate count.');
     lines.push('--- END CONSTRAINTS ---');
   }
@@ -1392,10 +1538,11 @@ export function buildDistributionPrompt(
   }
 
   lines.push('Return { "resources": [...], "facts": [...] }');
-  lines.push('Each resource entry: { "resource": "<type>", "distribution": { "count": N, "archetypes": [...] } }');
-  lines.push('Each archetype: { "label": "...", "weight": 0.N, "fieldOverrides": [...], "vary": [...] }');
+  lines.push('Each resource entry: { "resource": "<type>", "distribution": { "count": N (matched count), "archetypes": [...] } }');
+  lines.push('Each archetype: { "label": "...", "weight": 0.N, "fieldOverrides": [...], "vary": [...], "apiOnly"?: bool, "count"?: int }');
   lines.push('fieldOverrides: [{ "field": "status", "value": "active" }] — constant values only, values are always strings.');
   lines.push('vary: [{ "field": "amount", "type": "range", "min": 500, "max": 5000 }] — only when you have a specific opinion the assembler cannot infer.');
+  lines.push('apiOnly: true ONLY for archetypes the persona declares as having no DB counterpart (e.g. orphans). Add an explicit "count" alongside.');
   lines.push('facts: [{ "id": "fact_001", "type": "overdue", "platform": "<adapter>", "severity": "warn", "detail": "..." }] — testable assertions about the data.');
 
   return { system: DISTRIBUTION_SYSTEM_PROMPT, user: lines.join('\n') };
@@ -1420,6 +1567,16 @@ function formatColumn(col: ColumnInfo): string {
   // Mark columns that MUST be included in blueprint data
   if (!col.isNullable && !col.hasDefault && !col.isAutoIncrement && !col.isGenerated) {
     parts.push('⚠ REQUIRED');
+  }
+
+  // Flag @default(now()) timestamp columns as auto-distributed by the expander.
+  // Helps the LLM understand it can leave these unspecified in the common case
+  // but should override per archetype to encode persona-pinned dates.
+  if (
+    col.defaultValue === 'now()' &&
+    (col.type === 'timestamp' || col.type === 'timestamptz')
+  ) {
+    parts.push('⚠ AUTO-DISTRIBUTED across volume range; override only for persona-pinned dates');
   }
 
   return parts.join(' ');

@@ -1,5 +1,12 @@
 # tasks-sqlite
 
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies [[`014be6a`](https://github.com/mimicailab/mimic/commit/014be6a23ad9fb99de9845cbe6c32391ea51bdca)]:
+  - @mimicai/cli@0.13.0
+
 ## 1.0.3
 
 ### Patch Changes

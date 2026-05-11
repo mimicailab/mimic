@@ -17,6 +17,24 @@ export interface ArchetypeDistribution {
   fieldOverrides?: Record<string, unknown>;
   /** Per-archetype vary specs from the LLM — override assembler defaults */
   vary?: Record<string, Record<string, unknown>>;
+  /**
+   * When true, entities of this archetype have no DB counterpart. The
+   * expander emits them into API responses but skips DB row creation,
+   * producing deliberate cross-platform asymmetry.
+   */
+  apiOnly?: boolean;
+  /**
+   * Explicit row count for this archetype. Required when weight is 0 and the
+   * archetype is not anchor-bound. For apiOnly archetypes, additive on top of
+   * the matched count. For anchor-bound archetypes, defaults to 1 if omitted.
+   */
+  count?: number;
+  /**
+   * Anchor id this archetype is bound to. Causes the archetype to emit
+   * exactly `count` rows tied to the resolved anchor. Used for persona events
+   * declared in `data.anchors`.
+   */
+  anchor?: string;
 }
 
 export interface ResourceDistribution {
@@ -198,6 +216,9 @@ function buildArchetype(
     weight: dist.weight,
     fields,
     vary,
+    ...(dist.apiOnly ? { apiOnly: true } : {}),
+    ...(dist.count !== undefined ? { count: dist.count } : {}),
+    ...(dist.anchor ? { anchor: dist.anchor } : {}),
   };
 }
 

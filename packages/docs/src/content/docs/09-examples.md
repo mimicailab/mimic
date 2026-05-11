@@ -1,7 +1,7 @@
 ---
 title: "Examples"
 eyebrow: "Examples"
-description: "Eleven working examples demonstrating different database backends, API mock adapters, and agent architectures."
+description: "Twelve working examples demonstrating different database backends, API mock adapters, and agent architectures."
 order: 10
 slug: "examples"
 prev: { slug: "guides", title: "Guides" }
@@ -17,7 +17,7 @@ prev: { slug: "guides", title: "Guides" }
   Clone, seed, and chat &mdash; each example works end-to-end out of the box.
 </p>
 
-<p>Mimic ships with eleven working examples that demonstrate different database backends, API mock adapters, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
+<p>Mimic ships with twelve working examples that demonstrate different database backends, API mock adapters, persona styles, and agent architectures. Each example lives in the <code>examples/</code> directory and follows the same pattern:</p>
 
 <ol>
   <li><strong>Define personas</strong> in <code>mimic.json</code> &mdash; describe who generates the data</li>
@@ -41,6 +41,7 @@ prev: { slug: "guides", title: "Guides" }
       <tr><td><code>meeting-notes</code></td><td>PostgreSQL (Prisma)</td><td>Slack</td><td>Team meetings</td><td>OpenAI Agents SDK</td><td>Meeting summaries posted to Slack channels</td></tr>
       <tr><td><code>cfo-agent</code></td><td>PostgreSQL (Prisma)</td><td>Stripe + Paddle + Chargebee + GoCardless + RevenueCat + Lemon Squeezy + Zuora + Recurly</td><td>SaaS CFO / billing intelligence</td><td>LangChain + LangGraph</td><td>8 billing platforms, supervisor + sub-agent, Next.js UI</td></tr>
       <tr><td><code>briefing-agent</code></td><td>PostgreSQL (Prisma)</td><td>Attio + HubSpot + Granola + Gmail + Slack</td><td>B2B sales pre-call briefing</td><td>Claude Skills</td><td>Cross-surface synthesis, no orchestration code &mdash; markdown SKILL.md files only</td></tr>
+      <tr><td><code>revenue-recovery-agent</code></td><td>PostgreSQL (Prisma)</td><td>Stripe (read + write)</td><td>SaaS revenue recovery &amp; reconciliation</td><td>Claude Skills</td><td>Two-phase investigate-then-execute, write-path agent against the mock</td></tr>
     </tbody>
   </table>
 </div>
@@ -1104,4 +1105,121 @@ mimic host (separate terminal)
 <div class="callout tip">
   <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
   <div><p><strong>Skills, not graphs:</strong> The CFO agent uses a LangGraph supervisor &mdash; the 2024 paradigm. The Briefing Agent uses Claude Skills &mdash; orchestration becomes markdown the model interprets at runtime. Same Mimic underneath, two different agent paradigms on top. Use this example when you want to see what end-to-end testing looks like for a Skills-based agent across a multi-surface sales stack.</p></div>
+</div>
+
+<h3 id="example-revenue-recovery-agent">Revenue Recovery Agent &mdash; PostgreSQL + Stripe (read + write)</h3>
+
+<p>The structural sibling of the Briefing Agent, flipped from read-only to <strong>read + write</strong>. A SaaS revenue-recovery agent that investigates MRR drops by reconciling PostgreSQL and Stripe, presents a recovery plan, and &mdash; on operator approval &mdash; executes payment retries, refunds, and reconciliation writes against the Stripe mock. This is the example to reach for when you want to develop or demo a <strong>write-path agent</strong> without the blast radius of touching real billing.</p>
+
+<p>Like the Briefing Agent, it has <strong>no orchestration code</strong>. The whole thing is a set of <strong>Claude Skills</strong> (markdown <code>SKILL.md</code> files) that Claude Code reads at runtime. A two-phase contract &mdash; investigate, present plan, stop, only execute on approval &mdash; is enforced in the orchestrator skill markdown, not in a runtime gate.</p>
+
+<p><strong>Persona:</strong> A single richly-detailed <strong>growth-stage-leak</strong> persona &mdash; 100 customers, 12 weeks of billing history across starter/pro/enterprise plans, and a <strong>-$4,820 MRR week</strong> constructed from five distinct, individually-discoverable causes that must reconcile to the headline: <strong>(1)</strong> 8 failed charges &mdash; 4 expired cards (need dunning, not retry), 2 <code>insufficient_funds</code> (retry well), 2 <code>lost_card</code> (do not retry &mdash; fraud signal); <strong>(2)</strong> 3 enterprise downgrades on the same day with matching <code>support_notes</code>; <strong>(3)</strong> 2 voluntary cancellations whose customers had <code>risk_flags</code> set 18-21 days earlier that nobody acted on; <strong>(4)</strong> 1 accidental double-charge eligible for a single refund; <strong>(5)</strong> 1 drift case &mdash; Postgres shows <code>status='active'</code> while the Stripe subscription was cancelled 9 days ago. Plus ~3 deliberate Stripe-only orphans from a botched import. This is the kind of multi-cause, causally-consistent universe that's impossible to fake by hand and trivial to regenerate with Mimic.</p>
+
+<h4>Architecture</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">text</span><span>revenue-recovery-agent architecture</span><button class="code-copy">Copy</button></div>
+  <pre><code>Claude Code
+  └─ reads skills/revenue-recovery/SKILL.md  (orchestrator, phase contract)
+       ├─ skills/mrr-diagnosis/SKILL.md
+       ├─ skills/churn-investigation/SKILL.md
+       ├─ skills/payment-failures/SKILL.md
+       ├─ skills/reconciliation/SKILL.md
+       └─ skills/risk-signals/SKILL.md
+  └─ connects via MCP to mimic host
+
+mimic host (separate terminal)
+  ├─ postgres MCP   (customers, subscriptions, invoices, payments,
+  │                  risk_flags, support_notes)
+  └─ stripe   MCP   (read + write &mdash; payment_intents, refunds,
+                     subscriptions, balance)</code></pre>
+</div>
+
+<h4>Config</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">json</span><span>examples/revenue-recovery-agent/mimic.json</span><button class="code-copy">Copy</button></div>
+  <pre><code>{
+  <span class="yk">"domain"</span>: <span class="str">"SaaS revenue recovery and reconciliation &mdash; Postgres holds internal source-of-truth, Stripe holds external truth, the two can drift; agent investigates MRR drops and executes recovery actions with operator approval"</span>,
+  <span class="yk">"llm"</span>: { <span class="yk">"provider"</span>: <span class="str">"anthropic"</span>, <span class="yk">"model"</span>: <span class="str">"claude-opus-4-7"</span> },
+  <span class="yk">"personas"</span>: [{ <span class="yk">"name"</span>: <span class="str">"growth-stage-leak"</span>, <span class="yk">"description"</span>: <span class="str">"100-customer growth-stage SaaS, 12 weeks of billing, -$4,820 MRR week with 5 discoverable causes..."</span> }],
+  <span class="yk">"generate"</span>: { <span class="yk">"volume"</span>: <span class="str">"12 weeks"</span>, <span class="yk">"seed"</span>: <span class="ty">42</span> },
+  <span class="yk">"databases"</span>: {
+    <span class="yk">"primary"</span>: { <span class="yk">"type"</span>: <span class="str">"postgres"</span>, <span class="yk">"url"</span>: <span class="str">"$DATABASE_URL"</span>, <span class="yk">"schema"</span>: { <span class="yk">"source"</span>: <span class="str">"prisma"</span>, <span class="yk">"path"</span>: <span class="str">"./prisma/schema.prisma"</span> } }
+  },
+  <span class="yk">"apis"</span>: {
+    <span class="yk">"stripe"</span>: { <span class="yk">"enabled"</span>: <span class="ty">true</span>, <span class="yk">"mcp"</span>: <span class="ty">true</span> }
+  }
+}</code></pre>
+</div>
+
+<h4>Schema</h4>
+
+<p>Six tables. The first four mirror what <code>billing-agent</code> uses (<code>customers</code>, <code>subscriptions</code>, <code>invoices</code>, <code>payments</code>) &mdash; the last two are what make the "we knew this was coming" finding possible:</p>
+
+<ul>
+  <li><code>risk_flags</code> &mdash; <strong>internal</strong> at-risk markers set by CSMs, support, or automation (<code>flag_type</code>, <code>severity</code>, <code>set_by</code>, <code>resolved_at</code>, <code>note</code>)</li>
+  <li><code>support_notes</code> &mdash; <strong>internal</strong> free-text notes from support tickets and CSM check-ins, with <code>tags</code> for billing / churn-risk / downgrade categorisation</li>
+</ul>
+
+<h4>Skills</h4>
+
+<p>Six composable skills under <code>examples/revenue-recovery-agent/skills/</code>. <code>revenue-recovery</code> is the orchestrator and the only skill that ever calls write tools.</p>
+
+<div class="doc-table-wrap">
+  <table class="doc-table">
+    <thead><tr><th>Skill</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>revenue-recovery</code></td><td>Orchestrator &mdash; runs Phase 1 in parallel, builds the plan, stops at the approval prompt, executes Phase 2 by risk tier</td></tr>
+      <tr><td><code>mrr-diagnosis</code></td><td>Quantifies the MRR delta and decomposes it into involuntary churn, voluntary churn, downgrades, refunds, expansion offset</td></tr>
+      <tr><td><code>churn-investigation</code></td><td>Named cancellations + downgrades with reasons from Stripe <code>cancellation_details</code> and Postgres <code>support_notes</code></td></tr>
+      <tr><td><code>payment-failures</code></td><td>Failed payment intents ranked by retry-success probability (decline-reason driven); detects BIN clusters and expiry waves</td></tr>
+      <tr><td><code>reconciliation</code></td><td>Postgres&harr;Stripe drift detection &mdash; status mismatches, <code>mrr_cents</code> disagreements, orphans, refund drift</td></tr>
+      <tr><td><code>risk-signals</code></td><td>Correlates affected customers with prior <code>risk_flags</code> and <code>support_notes</code>; promotes risk tier when prior signals existed</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h4>Phase contract</h4>
+
+<p>The two-phase contract is enforced by the skill markdown, not by any runtime gate in Mimic &mdash; Mimic core stays general and has no domain knowledge of which tools are destructive. The discipline lives in <code>skills/revenue-recovery/SKILL.md</code>:</p>
+
+<ul>
+  <li><strong>Phase 1 (Investigation)</strong> &mdash; read-only by policy. The skill explicitly forbids calling <code>create_payment_intent</code>, <code>create_refund</code>, <code>cancel_subscription</code>, or any other write tool while building the plan. The final step is a hard stop: present plan, ask <em>"Approve all, approve a subset, or reject?"</em>.</li>
+  <li><strong>Phase 2 (Execution)</strong> &mdash; only entered after explicit approval. Writes are tiered: <strong>low risk</strong> (retry on <code>insufficient_funds</code>, dunning on <code>expired_card</code>) batched in parallel; <strong>medium risk</strong> (refunds &lt; $1k, escalations, Postgres-only reconciliation writes) one at a time, with logging; <strong>high risk</strong> (refunds &ge; $1k, cancellations, anything <code>risk-signals</code> flagged) require a second per-action confirmation even after the plan was approved.</li>
+</ul>
+
+<h4>Quick start</h4>
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">bash</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="cm"># 1. Start PostgreSQL</span>
+<span class="prompt">$</span> cd examples/revenue-recovery-agent
+<span class="prompt">$</span> docker compose up -d
+&#8203;
+<span class="cm"># 2. Configure environment</span>
+<span class="prompt">$</span> cp .env.example .env
+<span class="cm"># Add ANTHROPIC_API_KEY</span>
+&#8203;
+<span class="cm"># 3. Install + Prisma</span>
+<span class="prompt">$</span> npm install
+<span class="prompt">$</span> export $(cat .env | xargs)
+<span class="prompt">$</span> npx prisma generate && npx prisma migrate dev --name init
+&#8203;
+<span class="cm"># 4. Generate and seed Postgres + Stripe</span>
+<span class="prompt">$</span> npx mimic run -g
+<span class="prompt">$</span> npx mimic seed --verbose
+&#8203;
+<span class="cm"># 5. Host the MCP servers (Postgres + Stripe, read+write)</span>
+<span class="prompt">$</span> npx mimic host
+&#8203;
+<span class="cm"># 6. Point Claude Code at the printed MCP endpoints, then chat:</span>
+<span class="cm">#    "MRR is down this week. Why, and what should we do?"</span></code></pre>
+</div>
+
+<p>Claude Code picks up <code>skills/revenue-recovery/SKILL.md</code>, fans out across the five investigation sub-skills in parallel, and presents a recovery plan with named customers, root causes, and proposed actions tagged with the Stripe tool that would execute each one. The agent then <strong>stops</strong> and asks for approval. On approval, Phase 2 executes the writes &mdash; payment retries and refunds in Stripe, then reconciliation updates back to Postgres.</p>
+
+<div class="callout tip">
+  <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+  <div><p><strong>Write-path agents, finally testable:</strong> The synthetic environment is the safety. If the model ever slipped and fired a write in Phase 1, the blast radius is one demo run against the in-memory mock &mdash; <code>mimic host</code> resets to the seeded baseline on restart. That's the Mimic claim for write-path agents: develop and demo them because slipping costs nothing. Pair this example with <a href="#example-briefing-agent">briefing-agent</a> to see the read-only and read-write halves of the Claude Skills paradigm on the same stack.</p></div>
 </div>

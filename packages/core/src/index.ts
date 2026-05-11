@@ -154,6 +154,8 @@ export { BraintrustExporter } from './test/exporters/braintrust.exporter.js';
 export { LangSmithExporter } from './test/exporters/langsmith.exporter.js';
 export { InspectExporter } from './test/exporters/inspect.exporter.js';
 export { MimicExporter } from './test/exporters/mimic.exporter.js';
+export { ClaudeSkillExporter } from './test/exporters/claude-skill.exporter.js';
+export type { ClaudeSkillExporterOptions } from './test/exporters/claude-skill.exporter.js';
 
 // Mock
 export { MockServer } from './mock/server.js';

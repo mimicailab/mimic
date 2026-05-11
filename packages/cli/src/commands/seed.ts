@@ -6,6 +6,7 @@ import {
   loadConfig,
   logger,
   readJson,
+  writeJson,
   fileExists,
   MimicError,
   parseSchema,
@@ -147,6 +148,7 @@ async function runSeed(opts: SeedOptions): Promise<void> {
         case 'postgres': {
           const pgSeeder = seeder as InstanceType<typeof PgSeeder>;
           await pgSeeder.seedBatch(schema!, dataMap, { strategy: strategy as 'truncate-and-insert' | 'append' | 'upsert' });
+          await rewriteSnapshotFromPostgres(pgSeeder, schema!, dataMap, dataDir);
           break;
         }
         case 'mysql': {
@@ -300,6 +302,52 @@ function resolvePersonaNames(
   }
 
   return all;
+}
+
+/**
+ * Replace each persona's `tables` block in `.mimic/data/<persona>.json` with
+ * the live Postgres state read back via `row_to_json` — so the Explorer (and
+ * anything else consuming the snapshot) renders ground truth, including
+ * server-assigned IDs, DB defaults, and a single uniform timestamp format.
+ *
+ * Skipped when multiple personas were merged into one DB: `seedBatch` offsets
+ * auto-increment PKs across personas but doesn't tag rows by origin, so we
+ * can't split a unified table back into per-persona slices from readback
+ * alone. The pre-seed snapshots remain in that case.
+ *
+ * Non-fatal: any failure here is logged and swallowed — the seed itself
+ * already succeeded, and we don't want a snapshot-rewrite hiccup to make
+ * the user think the DB load failed.
+ */
+async function rewriteSnapshotFromPostgres(
+  pgSeeder: InstanceType<typeof PgSeeder>,
+  schema: SchemaModel,
+  dataMap: Map<string, ExpandedData>,
+  dataDir: string,
+): Promise<void> {
+  if (dataMap.size !== 1) {
+    logger.debug(
+      `Skipping post-seed snapshot rewrite — ${dataMap.size} personas merged ` +
+        `into the DB; per-persona row provenance can't be split from a single readback`,
+    );
+    return;
+  }
+
+  try {
+    const dbTables = await pgSeeder.readBackTables(schema);
+    const [personaName] = [...dataMap.keys()];
+    const data = dataMap.get(personaName!)!;
+    data.tables = dbTables;
+    await writeJson(join(dataDir, `${personaName}.json`), data);
+    logger.debug(
+      `Snapshot rewritten from Postgres state → .mimic/data/${personaName}.json`,
+    );
+  } catch (err) {
+    logger.warn(
+      `Post-seed snapshot rewrite failed: ${err instanceof Error ? err.message : String(err)}. ` +
+        `DB seed succeeded; Explorer will still read the pre-seed snapshot.`,
+    );
+  }
 }
 
 async function resolveSchema(

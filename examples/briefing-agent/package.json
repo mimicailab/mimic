@@ -3,13 +3,13 @@
   "version": "0.0.2",
   "private": true,
   "dependencies": {
-    "@mimicai/adapter-attio": "^0.12.0",
-    "@mimicai/adapter-gmail": "^0.12.1",
-    "@mimicai/adapter-granola": "^0.12.0",
-    "@mimicai/adapter-hubspot": "^0.12.0",
-    "@mimicai/adapter-postgres": "^0.12.1",
-    "@mimicai/adapter-slack": "^0.12.1",
-    "@mimicai/cli": "^0.12.1"
+    "@mimicai/adapter-attio": "^0.13.0",
+    "@mimicai/adapter-gmail": "^0.13.0",
+    "@mimicai/adapter-granola": "^0.13.0",
+    "@mimicai/adapter-hubspot": "^0.13.0",
+    "@mimicai/adapter-postgres": "^0.13.0",
+    "@mimicai/adapter-slack": "^0.13.0",
+    "@mimicai/cli": "^0.13.0"
   },
   "devDependencies": {
     "@prisma/client": "^7.8.0",
