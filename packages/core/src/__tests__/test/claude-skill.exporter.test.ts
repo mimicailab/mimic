@@ -46,25 +46,34 @@ describe('ClaudeSkillExporter', () => {
     await rm(outDir, { recursive: true, force: true });
   });
 
-  it('writes SKILL.md under <outDir>/skills/mimic-eval/', async () => {
+  it('writes SKILL.md under <outDir>/skills/mimic-eval/ and mimic-scenarios.json at the export root', async () => {
     const exporter = new ClaudeSkillExporter({ targetSkill: 'briefing-prep' });
     const scenarios = [makeScenario({ name: 's1', platform: 'attio' })];
 
     const files = await exporter.export(scenarios, outDir);
 
-    expect(files).toHaveLength(1);
-    expect(files[0]).toBe(join(outDir, 'skills', 'mimic-eval', 'SKILL.md'));
+    expect(files).toHaveLength(2);
+    expect(files).toContain(join(outDir, 'mimic-scenarios.json'));
+    expect(files).toContain(join(outDir, 'skills', 'mimic-eval', 'SKILL.md'));
 
-    const content = await readFile(files[0]!, 'utf-8');
-    expect(content.startsWith('---\nname: mimic-eval\n')).toBe(true);
+    const skillPath = files.find((p) => p.endsWith('SKILL.md'))!;
+    const skillContent = await readFile(skillPath, 'utf-8');
+    expect(skillContent.startsWith('---\nname: mimic-eval\n')).toBe(true);
+
+    const scenariosPath = files.find((p) => p.endsWith('mimic-scenarios.json'))!;
+    const scenariosContent = JSON.parse(await readFile(scenariosPath, 'utf-8'));
+    expect(scenariosContent).toHaveLength(1);
+    expect(scenariosContent[0].name).toBe('s1');
+    expect(scenariosContent[0].metadata.source_fact).toBe('fact_s1');
   });
 
   it('substitutes the target skill name throughout the body', async () => {
     const exporter = new ClaudeSkillExporter({ targetSkill: 'revenue-recovery' });
     const scenarios = [makeScenario({ name: 's1', platform: 'stripe' })];
 
-    const [out] = await exporter.export(scenarios, outDir);
-    const content = await readFile(out!, 'utf-8');
+    const files = await exporter.export(scenarios, outDir);
+    const skillPath = files.find((p) => p.endsWith('SKILL.md'))!;
+    const content = await readFile(skillPath, 'utf-8');
 
     expect(content).toContain('default `revenue-recovery`');
     expect(content).toContain('skills/revenue-recovery/SKILL.md');
@@ -75,8 +84,9 @@ describe('ClaudeSkillExporter', () => {
     const exporter = new ClaudeSkillExporter();
     const scenarios = [makeScenario({ name: 's1', platform: 'attio' })];
 
-    const [out] = await exporter.export(scenarios, outDir);
-    const content = await readFile(out!, 'utf-8');
+    const files = await exporter.export(scenarios, outDir);
+    const skillPath = files.find((p) => p.endsWith('SKILL.md'))!;
+    const content = await readFile(skillPath, 'utf-8');
 
     expect(content).toContain('<your-target-skill>');
   });
@@ -90,8 +100,9 @@ describe('ClaudeSkillExporter', () => {
       makeScenario({ name: 's4', platform: 'slack' }),
     ];
 
-    const [out] = await exporter.export(scenarios, outDir);
-    const content = await readFile(out!, 'utf-8');
+    const files = await exporter.export(scenarios, outDir);
+    const skillPath = files.find((p) => p.endsWith('SKILL.md'))!;
+    const content = await readFile(skillPath, 'utf-8');
 
     expect(content).toContain('`mimic-attio`');
     expect(content).toContain('`mimic-gmail`');
@@ -118,8 +129,9 @@ describe('ClaudeSkillExporter', () => {
       },
     ];
 
-    const [out] = await exporter.export(scenarios, outDir);
-    const content = await readFile(out!, 'utf-8');
+    const files = await exporter.export(scenarios, outDir);
+    const skillPath = files.find((p) => p.endsWith('SKILL.md'))!;
+    const content = await readFile(skillPath, 'utf-8');
 
     expect(content).toContain('mimic-<platform>');
   });
@@ -131,8 +143,9 @@ describe('ClaudeSkillExporter', () => {
       makeScenario({ name: 's2', platform: 'gmail', persona: 'northwind-priya' }),
     ];
 
-    const [out] = await exporter.export(scenarios, outDir);
-    const content = await readFile(out!, 'utf-8');
+    const files = await exporter.export(scenarios, outDir);
+    const skillPath = files.find((p) => p.endsWith('SKILL.md'))!;
+    const content = await readFile(skillPath, 'utf-8');
 
     expect(content).toContain('`northwind-priya`');
     expect(content).toContain('Scenarios at generation time: 2');

@@ -7,7 +7,7 @@ description: Run Mimic-generated eval scenarios against a target agent skill (de
 
 You are the orchestrator of an eval loop that grades a target agent skill against ground-truth scenarios derived from a Mimic fact manifest. Each scenario carries an input prompt and a list of substrings the agent's response must surface.
 
-Persona under test: `growth-stage-leak`. Scenarios at generation time: 18.
+Persona under test: `growth-stage-leak`. Scenarios at generation time: 19.
 
 ## Inputs you'll need
 

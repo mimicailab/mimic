@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { writeFile, mkdir } from 'node:fs/promises';
 import type { ScenarioExporter } from './exporter.interface.js';
 import type { MimicScenario } from '../../types/fact-manifest.js';
+import { MimicExporter } from './mimic.exporter.js';
 
 /**
  * Exports MimicScenarios as a Claude Skill — a single `SKILL.md` under
@@ -27,6 +28,7 @@ const DEFAULT_TARGET_SKILL_PLACEHOLDER = '<your-target-skill>';
 
 export class ClaudeSkillExporter implements ScenarioExporter {
   readonly format = 'claude-skill';
+  private readonly mimicExporter = new MimicExporter();
 
   constructor(private readonly options: ClaudeSkillExporterOptions = {}) {}
 
@@ -34,6 +36,8 @@ export class ClaudeSkillExporter implements ScenarioExporter {
     scenarios: MimicScenario[],
     outputDir: string,
   ): Promise<string[]> {
+    const scenarioFiles = await this.mimicExporter.export(scenarios, outputDir);
+
     const skillDir = join(outputDir, 'skills', 'mimic-eval');
     await mkdir(skillDir, { recursive: true });
 
@@ -48,9 +52,9 @@ export class ClaudeSkillExporter implements ScenarioExporter {
       scenarioCount: scenarios.length,
     });
 
-    const outPath = join(skillDir, 'SKILL.md');
-    await writeFile(outPath, skillContent, 'utf-8');
-    return [outPath];
+    const skillPath = join(skillDir, 'SKILL.md');
+    await writeFile(skillPath, skillContent, 'utf-8');
+    return [...scenarioFiles, skillPath];
   }
 }
 
