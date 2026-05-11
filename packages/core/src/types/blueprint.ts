@@ -321,6 +321,27 @@ export interface SchemaMappingEntry {
   apiField: string;
   /** Whether this DB table is a "bridge table" — a projection of API data into the DB */
   isBridgeTable: boolean;
+  /**
+   * Whether DB and API are required to hold the same value on logically-paired
+   * rows (`mirror`) or are permitted to intentionally diverge (`drift_capable`).
+   *
+   * - `mirror`: anchor-bound row reconciliation enforces DB→API equality on
+   *   this column. Use for cross-surface facts that can't legitimately
+   *   differ — amounts, currencies, FK references to shared entities,
+   *   immutable timestamps, id mappings. An agent reading either side
+   *   expects the same value.
+   *
+   * - `drift_capable`: reconciliation leaves the field alone so persona-
+   *   narrated divergence survives expansion. Use for state-at-a-moment
+   *   fields where real-world systems frequently lag — row status, period
+   *   rollover dates, cancellation timestamps. (Non-anchor rows still get
+   *   the API value pulled into the DB by the mirror flow; only the
+   *   anchor-paired reconciler skips it.)
+   *
+   * Required on every mapping. For id mappings the value is always
+   * `mirror` — cross-surface IDs by definition must match.
+   */
+  direction: 'mirror' | 'drift_capable';
 }
 
 /**

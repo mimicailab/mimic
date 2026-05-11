@@ -388,6 +388,34 @@ const FORBIDDEN_QUALIFIERS = [
 
 const PLACEHOLDER_RE = /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g;
 
+// Bare-numeral allowances. These describe contexts where a literal small
+// integer is a stable narrative reference (a time window, ISO date, named
+// entity id) rather than a data assertion. The audit pass strips these
+// before scanning for bare digits, so a template like "in the last 7 days"
+// passes while "100 customers" is still flagged.
+//
+// Each entry is applied via String.prototype.replace, so order doesn't
+// matter — but more specific patterns should come first to avoid leaking.
+const NARRATIVE_NUMERAL_ALLOWANCES: RegExp[] = [
+  // ISO dates and date-like fragments: "2026-04-29", "2026-04-29T14:22:00Z"
+  /\b\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:?\d{2})?)?/g,
+  // Persona-stable id tokens like "cus_p1_038", "pi_p1_223", "sub_p1_103".
+  // `<prefix>_p<persona>_<seq>` is mimic's namespacing convention; allow it
+  // so facts can mention specific IDs verbatim.
+  /\b[a-z]+(?:_[a-z]+)*_p\d+(?:_[a-z0-9]+)+\b/gi,
+  // Time-window references with any common separator combination between
+  // the digit(s) and the time unit:
+  //   "7 days", "12 weeks", "6 months", "2 years"
+  //   "7-30 days", "7–30 days", "7—30 days" (hyphen / en / em)
+  //   "7 to 30 days", "7-to-30 days", "7-to-30-day", "7_to_30_days"
+  //   "last_7_days", "30_to_90_days", "over_90_days"
+  // The character class between the leading digit and the trailing time
+  // unit accepts space/underscore/hyphen and the literal token "to" in
+  // either word or punctuated form, so the LLM can use whichever style
+  // matches the surrounding narrative.
+  /\b\d+(?:[\s\-–—_]+(?:to[\s\-_]+)?\d+)?[\s\-_]*(?:days?|weeks?|months?|years?|hours?|minutes?|seconds?)\b/gi,
+];
+
 interface TemplateAudit {
   ok: boolean;
   reasons: string[];
@@ -396,8 +424,15 @@ interface TemplateAudit {
 function auditTemplate(template: string, data_refs: Record<string, string>): TemplateAudit {
   const reasons: string[] = [];
 
-  // 1. No bare numerals outside placeholders
-  const stripped = template.replace(PLACEHOLDER_RE, '');
+  // 1. No bare numerals outside placeholders. Strip placeholders first so
+  // their numeric values don't trip the audit, then strip the narrative
+  // allowance patterns above (time windows, ISO dates, persona-stable ids).
+  // Anything that's still a bare digit at this point is a data assertion
+  // the LLM should have placed inside a {placeholder}.
+  let stripped = template.replace(PLACEHOLDER_RE, '');
+  for (const re of NARRATIVE_NUMERAL_ALLOWANCES) {
+    stripped = stripped.replace(re, '');
+  }
   const bareNumeral = stripped.match(/\d/);
   if (bareNumeral) {
     reasons.push(`bare numeral "${bareNumeral[0]}" outside placeholder — context: "${stripped.slice(Math.max(0, bareNumeral.index! - 30), bareNumeral.index! + 30)}"`);

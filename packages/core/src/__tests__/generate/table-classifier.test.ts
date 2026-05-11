@@ -83,7 +83,7 @@ describe('classifyTables', () => {
 
     const schemaMapping: SchemaMapping = {
       mappings: [
-        { dbTable: 'payments', dbColumn: 'external_id', adapterId: 'stripe', apiResource: 'charges', apiField: 'id', isBridgeTable: true },
+        { dbTable: 'payments', dbColumn: 'external_id', adapterId: 'stripe', apiResource: 'charges', apiField: 'id', isBridgeTable: true, direction: 'mirror' },
       ],
       bridgeTables: ['payments'],
     };
@@ -187,9 +187,9 @@ describe('classifyTables (schema-mapping primary)', () => {
   const stripeMapping: SchemaMapping = {
     bridgeTables: [],
     mappings: [
-      { dbTable: 'customers',     dbColumn: 'stripe_customer_id',     adapterId: 'stripe', apiResource: 'customer',     apiField: 'id', isBridgeTable: false },
-      { dbTable: 'subscriptions', dbColumn: 'stripe_subscription_id', adapterId: 'stripe', apiResource: 'subscription', apiField: 'id', isBridgeTable: false },
-      { dbTable: 'invoices',      dbColumn: 'stripe_invoice_id',      adapterId: 'stripe', apiResource: 'invoice',      apiField: 'id', isBridgeTable: false },
+      { dbTable: 'customers',     dbColumn: 'stripe_customer_id',     adapterId: 'stripe', apiResource: 'customer',     apiField: 'id', isBridgeTable: false, direction: 'mirror' },
+      { dbTable: 'subscriptions', dbColumn: 'stripe_subscription_id', adapterId: 'stripe', apiResource: 'subscription', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
+      { dbTable: 'invoices',      dbColumn: 'stripe_invoice_id',      adapterId: 'stripe', apiResource: 'invoice',      apiField: 'id', isBridgeTable: false, direction: 'mirror' },
     ],
   };
 
@@ -246,7 +246,7 @@ describe('classifyTables (schema-mapping primary)', () => {
     const mapping: SchemaMapping = {
       bridgeTables: [],
       mappings: [
-        { dbTable: 'subscribers', dbColumn: 'acme_account_token', adapterId: 'acme', apiResource: 'account', apiField: 'id', isBridgeTable: false },
+        { dbTable: 'subscribers', dbColumn: 'acme_account_token', adapterId: 'acme', apiResource: 'account', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
       ],
     };
     const result = classifyTables({ schema, schemaMapping: mapping, adapterIds: ['acme'] });

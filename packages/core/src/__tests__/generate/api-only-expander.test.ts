@@ -41,6 +41,7 @@ const SCHEMA_MAPPING: SchemaMapping = {
       apiResource: 'customer',
       apiField: 'id',
       isBridgeTable: false,
+      direction: 'mirror',
     },
   ],
 };

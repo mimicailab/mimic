@@ -287,6 +287,14 @@ export function createSchemaMappingOutputSchema(adapterIds: [string, ...string[]
     isBridgeTable: z.boolean().describe(
       'True if this DB table is a projection of API data (has billing_platform + external_id columns)',
     ),
+    direction: z.enum(['mirror', 'drift_capable']).describe(
+      'Reconciliation direction for anchor-paired rows. ' +
+      '"mirror": DB and API must hold the same value (amounts, currencies, FKs to shared entities, ids, immutable timestamps). ' +
+      'Reconciler enforces DB→API equality on anchor-paired rows. ' +
+      '"drift_capable": DB and API may intentionally diverge to model real-world inconsistency (row status, ' +
+      'cancellation timestamps, period rollovers — any state-at-a-moment field). Reconciler leaves alone. ' +
+      'Always "mirror" for id mappings. Default to "mirror" when in doubt — reconciliation expects equality unless told otherwise.',
+    ),
   });
 
   return z.object({

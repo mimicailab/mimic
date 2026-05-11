@@ -1156,6 +1156,85 @@ mirrors an API resource); \`apiField\` is the dotted path's leaf (use the top-le
 when the API stores it nested, e.g. \`failure_code\`, not \`outcome.reason\` — the generator
 reads top-level body fields).
 
+## Direction — mirror vs drift_capable (CRITICAL)
+
+Every mapping entry MUST set \`direction\` to either \`"mirror"\` or \`"drift_capable"\`.
+
+This flag tells the row reconciler whether the DB and API are *allowed* to hold
+different values on the same logical row (anchor-paired rows). It has nothing to
+do with normal mirror-flow derivation — it only governs whether the anchor-pair
+reconciler enforces equality on this specific column.
+
+**Getting this wrong corrupts the test data.** Marking a true drift field as
+\`mirror\` erases the persona-narrated divergence (e.g. "DB shows active, Stripe
+shows canceled" becomes "both show active" — the entire test scenario
+disappears). Marking a true mirror field as \`drift_capable\` leaves DB and API
+holding different amounts/customers on a logically-paired row — an agent
+reading either side sees inconsistent data with no narrative reason for it.
+
+### ALWAYS \`drift_capable\` — no exceptions
+
+These column-name patterns are drift signals by definition. They name the
+state of a row at a moment in time, and the whole point of having both a DB
+and an external API is that those two views of "current state" can disagree.
+**You MUST mark these \`drift_capable\` regardless of any other consideration:**
+
+- \`status\`, \`state\`, \`phase\`, \`stage\`, \`lifecycle\` (and any column whose
+  name ends in any of these — \`payment_status\`, \`subscription_state\`, etc.).
+  This includes every status mapping across every resource: subscription
+  status, invoice status, charge status, customer status, dispute status.
+- \`canceled_at\`, \`cancelled_at\`, \`cancellation_reason\`, \`cancellation_details\`
+  — cancellation is the most common drift event in billing data.
+- \`current_period_start\`, \`current_period_end\`, \`trial_start\`, \`trial_end\`,
+  \`period_start\`, \`period_end\` — period rollovers happen at different
+  cadences on the two surfaces.
+- \`updated_at\`, \`synced_at\`, \`last_sync\`, \`refreshed_at\` — these literally
+  describe per-surface bookkeeping; they can't agree by definition.
+- \`paused_at\`, \`resumed_at\`, \`pending_update\`, \`pending_*\` — state-transition
+  metadata that the DB lags the external system on.
+
+If a column name matches any of these patterns, \`direction\` is
+\`drift_capable\`. Do not rationalize it as mirror. Do not write "when synced
+correctly these would agree" — they won't, that's the entire reason a
+revenue-recovery / reconciliation agent exists.
+
+### ALWAYS \`mirror\` — these are facts, not state
+
+These describe immutable facts about the same logical entity. The DB and API
+agree on them by definition, because they're the same fact recorded twice:
+
+- All \`id\` mappings (cross-surface IDs always match — that's their entire
+  purpose). \`apiField === "id"\` → always \`mirror\`.
+- Amounts, totals, balances, fees: \`amount\`, \`amount_due\`, \`amount_paid\`,
+  \`amount_refunded\`, \`amount_captured\`, \`unit_amount\`, \`total\`, \`subtotal\`,
+  \`balance\`, \`mrr_cents\`, \`price\`, \`fee\`, \`tax\`.
+- Currencies: \`currency\`, \`currency_code\`.
+- FK references to shared entities: \`customer\`, \`customer_id\`,
+  \`subscription\`, \`subscription_id\`, \`invoice\`, \`invoice_id\`,
+  \`payment_intent\`, \`charge\`, etc.
+- Created timestamps (immutable per-event): \`created\`, \`created_at\`. (Note:
+  \`updated_at\` is the OPPOSITE — that's drift_capable.)
+- Failure reasons on failed charges: \`failure_reason\`, \`failure_code\`,
+  \`failure_message\`, \`decline_code\`. (These describe a past event.)
+- Identity attributes the same entity carries on both sides: \`name\`,
+  \`email\`, \`phone\`, \`description\`, \`metadata\`.
+- Payment instrument facts: \`payment_method\` (the type used), \`brand\`,
+  \`last4\`, \`exp_month\`, \`exp_year\`.
+
+### Decision procedure when the column doesn't match either list
+
+1. Does the column name describe a *moment-in-time state* the system is in
+   right now (status, phase, period bounds, sync metadata)? → \`drift_capable\`.
+2. Does the column name describe a *historical fact* about a past event
+   (amount charged, when it was created, why it failed)? → \`mirror\`.
+3. Does the column name describe an *identity attribute* (name, email,
+   customer reference)? → \`mirror\`.
+4. Genuinely ambiguous? → \`mirror\`, but this should be rare. The two lists
+   above cover ~all of billing/CRM/messaging schemas.
+
+The flag is required on EVERY entry, including id mappings (always
+\`"mirror"\` for those — cross-surface IDs must match by definition).
+
 ## Rules
 
 - Only map columns that have a clear semantic correspondence — do NOT guess
@@ -1165,6 +1244,7 @@ reads top-level body fields).
 - **CRITICAL: Emit one mapping entry PER adapter PER column. NEVER use wildcards like "all" or "any".**
   Different platforms use different resource names for the same concept (e.g. Stripe uses "charges" while PayPal uses "payments").
   You MUST emit a separate mapping for each platform with its correct resource name.
+- **CRITICAL: Every entry MUST include \`direction\` (\`"mirror"\` or \`"drift_capable"\`).** See the direction section above.
 - Output ONLY valid JSON matching the provided schema. No markdown, no commentary.`;
 
 /**

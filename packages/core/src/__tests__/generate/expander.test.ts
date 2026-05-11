@@ -562,8 +562,8 @@ describe('@default(now()) timestamp filling', () => {
     const SCHEMA_MAPPING: SchemaMapping = {
       bridgeTables: [],
       mappings: [
-        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false },
-        { dbTable: 'payments', dbColumn: 'stripe_payment_intent_id', adapterId: 'stripe', apiResource: 'payment_intent', apiField: 'id', isBridgeTable: false },
+        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
+        { dbTable: 'payments', dbColumn: 'stripe_payment_intent_id', adapterId: 'stripe', apiResource: 'payment_intent', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
       ],
     };
 
@@ -655,7 +655,7 @@ describe('@default(now()) timestamp filling', () => {
     const SCHEMA_MAPPING: SchemaMapping = {
       bridgeTables: [],
       mappings: [
-        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false },
+        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
       ],
     };
 
@@ -747,8 +747,8 @@ describe('@default(now()) timestamp filling', () => {
     const SCHEMA_MAPPING: SchemaMapping = {
       bridgeTables: [],
       mappings: [
-        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false },
-        { dbTable: 'payments', dbColumn: 'stripe_payment_id', adapterId: 'stripe', apiResource: 'charge', apiField: 'id', isBridgeTable: false },
+        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
+        { dbTable: 'payments', dbColumn: 'stripe_payment_id', adapterId: 'stripe', apiResource: 'charge', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
       ],
     };
 
@@ -929,9 +929,11 @@ describe('@default(now()) timestamp filling', () => {
     const SCHEMA_MAPPING: SchemaMapping = {
       bridgeTables: [],
       mappings: [
-        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false },
-        { dbTable: 'subscriptions', dbColumn: 'stripe_subscription_id', adapterId: 'stripe', apiResource: 'subscription', apiField: 'id', isBridgeTable: false },
-        { dbTable: 'subscriptions', dbColumn: 'status', adapterId: 'stripe', apiResource: 'subscription', apiField: 'status', isBridgeTable: false },
+        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
+        { dbTable: 'subscriptions', dbColumn: 'stripe_subscription_id', adapterId: 'stripe', apiResource: 'subscription', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
+        // Larkspur drift: subscription status diverges intentionally between
+        // DB and Stripe. Anchor-pair reconciler must leave this alone.
+        { dbTable: 'subscriptions', dbColumn: 'status', adapterId: 'stripe', apiResource: 'subscription', apiField: 'status', isBridgeTable: false, direction: 'drift_capable' },
       ],
     };
 

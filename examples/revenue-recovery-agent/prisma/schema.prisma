@@ -6,6 +6,76 @@ datasource db {
   provider = "postgresql"
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Enums — values previously listed in `// comment` form on plain String columns.
+// Declaring them as real enums lets mimic's expander coerce LLM-emitted
+// synonyms back to canonical values and lets Postgres reject anything else
+// at insert time. Synonyms the LLM frequently produces (e.g. `card_expired`
+// ↔ `expired_card`) are normalized by mimic's `coerceEnumColumns` pass via
+// token-sorted matching.
+// ────────────────────────────────────────────────────────────────────────────
+
+enum Plan {
+  starter
+  pro
+  enterprise
+}
+
+enum CustomerStatus {
+  active
+  past_due
+  canceled
+  churned
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+  trialing
+}
+
+enum BillingInterval {
+  month
+  year
+}
+
+enum InvoiceStatus {
+  draft
+  open
+  paid
+  void
+  uncollectible
+}
+
+enum PaymentStatus {
+  succeeded
+  failed
+  refunded
+}
+
+enum FailureReason {
+  insufficient_funds
+  card_declined
+  expired_card
+  lost_card
+  fraudulent
+}
+
+enum RiskFlagType {
+  billing_dispute
+  churn_risk
+  support_escalation
+  contract_concern
+  competitor_mentioned
+}
+
+enum Severity {
+  low
+  medium
+  high
+}
+
 /// Subscription customer. mrr_cents is the source-of-truth MRR carried in Postgres;
 /// reconciliation skill compares this against the live Stripe subscription state.
 model customers {
@@ -14,8 +84,8 @@ model customers {
   email              String          @unique
   company            String?
   stripe_customer_id String?         @unique
-  plan               String          @default("starter") // starter, pro, enterprise
-  status             String          @default("active") // active, churned, past_due, downgraded
+  plan               Plan            @default(starter)
+  status             CustomerStatus  @default(active)
   mrr_cents          Int             @default(0)
   created_at         DateTime        @default(now())
   updated_at         DateTime        @updatedAt
@@ -27,12 +97,12 @@ model customers {
 }
 
 model subscriptions {
-  id                     Int       @id @default(autoincrement())
+  id                     Int                @id @default(autoincrement())
   customer_id            Int
-  stripe_subscription_id String?   @unique
-  plan                   String
-  status                 String    @default("active") // active, past_due, canceled, trialing
-  interval               String    @default("month") // month, year
+  stripe_subscription_id String?            @unique
+  plan                   Plan               @default(starter)
+  status                 SubscriptionStatus @default(active)
+  interval               BillingInterval    @default(month)
   amount_cents           Int
   current_period_start   DateTime
   current_period_end     DateTime
@@ -40,53 +110,50 @@ model subscriptions {
   /// Free-text reason captured at cancellation. Mirrors Stripe's cancellation_details.reason
   /// when available, otherwise filled from internal exit interview / support context.
   cancellation_reason    String?
-  created_at             DateTime  @default(now())
-  customer               customers @relation(fields: [customer_id], references: [id])
+  created_at             DateTime           @default(now())
+  customer               customers          @relation(fields: [customer_id], references: [id])
 }
 
 model invoices {
-  id                Int       @id @default(autoincrement())
+  id                Int           @id @default(autoincrement())
   customer_id       Int
-  stripe_invoice_id String?   @unique
+  stripe_invoice_id String?       @unique
   amount_cents      Int
-  status            String    @default("draft") // draft, open, paid, void, uncollectible
+  status            InvoiceStatus @default(draft)
   due_date          DateTime
   paid_at           DateTime?
-  created_at        DateTime  @default(now())
-  customer          customers @relation(fields: [customer_id], references: [id])
+  created_at        DateTime      @default(now())
+  customer          customers     @relation(fields: [customer_id], references: [id])
 }
 
 model payments {
-  id                       Int       @id @default(autoincrement())
+  id                       Int            @id @default(autoincrement())
   customer_id              Int
-  stripe_payment_id        String?   @unique
-  stripe_payment_intent_id String?   @unique
+  stripe_payment_id        String?        @unique
+  stripe_payment_intent_id String?        @unique
   amount_cents             Int
-  currency                 String    @default("usd")
-  status                   String    @default("succeeded") // succeeded, failed, refunded
-  payment_method           String    @default("card")
+  currency                 String         @default("usd")
+  status                   PaymentStatus  @default(succeeded)
+  payment_method           String         @default("card")
   /// Decline reason on failed charges. Drives retry-probability ranking in payment-failures skill.
-  /// Common values: insufficient_funds, card_declined, expired_card, lost_card, fraudulent.
-  failure_reason           String?
-  created_at               DateTime  @default(now())
-  customer                 customers @relation(fields: [customer_id], references: [id])
+  failure_reason           FailureReason?
+  created_at               DateTime       @default(now())
+  customer                 customers      @relation(fields: [customer_id], references: [id])
 }
 
 /// Internal at-risk markers set by CSM, support, or automated heuristics.
 /// Correlated with churn in the risk-signals skill — finds the "we knew this was coming" cases.
 model risk_flags {
-  id          Int       @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   customer_id Int
-  /// Category: billing_dispute, churn_risk, support_escalation, contract_concern, competitor_mentioned
-  flag_type   String
-  /// low | medium | high
-  severity    String    @default("medium")
+  flag_type   RiskFlagType
+  severity    Severity     @default(medium)
   /// User identifier (CSM, support agent, or "system") who set the flag.
   set_by      String
-  set_at      DateTime  @default(now())
+  set_at      DateTime     @default(now())
   resolved_at DateTime?
   note        String?
-  customer    customers @relation(fields: [customer_id], references: [id])
+  customer    customers    @relation(fields: [customer_id], references: [id])
 
   @@index([customer_id, set_at])
 }

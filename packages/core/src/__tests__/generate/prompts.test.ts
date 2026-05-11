@@ -198,6 +198,7 @@ const STRIPE_FK_MAPPING: SchemaMapping = {
       apiResource: 'customer',
       apiField: 'id',
       isBridgeTable: false,
+      direction: 'mirror',
     },
   ],
 };
@@ -236,6 +237,7 @@ describe('IDENTITY CONTRACT — Phase 1 (DB) prompt', () => {
         {
           dbTable: 'customers', dbColumn: 'external_id', adapterId: 'stripe',
           apiResource: 'customer', apiField: 'id', isBridgeTable: true,
+          direction: 'mirror',
         },
       ],
     };
@@ -272,8 +274,8 @@ describe('IDENTITY CONTRACT — Phase 2 (API) prompt', () => {
     const multi: SchemaMapping = {
       bridgeTables: [],
       mappings: [
-        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false },
-        { dbTable: 'orders', dbColumn: 'paddle_subscription_id', adapterId: 'paddle', apiResource: 'subscription', apiField: 'id', isBridgeTable: false },
+        { dbTable: 'customers', dbColumn: 'stripe_customer_id', adapterId: 'stripe', apiResource: 'customer', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
+        { dbTable: 'orders', dbColumn: 'paddle_subscription_id', adapterId: 'paddle', apiResource: 'subscription', apiField: 'id', isBridgeTable: false, direction: 'mirror' },
       ],
     };
     const { user } = buildDistributionPrompt({
