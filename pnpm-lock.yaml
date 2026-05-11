@@ -116,13 +116,13 @@ importers:
   examples/revenue-recovery-agent:
     dependencies:
       '@mimicai/adapter-postgres':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/adapters/adapter-postgres
       '@mimicai/adapter-stripe':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/adapters/adapter-stripe
       '@mimicai/cli':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/cli
     devDependencies:
       '@prisma/client':
@@ -135,22 +135,22 @@ importers:
   examples/stripe-explorer:
     dependencies:
       '@mimicai/adapter-plaid':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/adapters/adapter-plaid
       '@mimicai/adapter-stripe':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/adapters/adapter-stripe
       '@mimicai/cli':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/cli
       '@mimicai/explorer':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/explorer
 
   examples/tasks-sqlite:
     dependencies:
       '@mimicai/cli':
-        specifier: workspace:*
+        specifier: ^0.13.0
         version: link:../../packages/cli
       better-sqlite3:
         specifier: ^12.8.0

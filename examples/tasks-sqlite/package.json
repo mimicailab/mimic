@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mimicai/cli": "workspace:*",
+    "@mimicai/cli": "^0.13.0",
     "better-sqlite3": "^12.8.0"
   }
 }
