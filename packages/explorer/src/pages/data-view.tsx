@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
+import { useEffect, useMemo, useState } from 'react';
 import type { PersonaDataSummary, DataResponse } from '@/lib/api';
-import { JsonViewer } from '@/components/explorer/json-viewer';
+import { JsonView } from '@/components/json-view';
+import { FactRow } from '@/components/fact-row';
 
 interface DataViewProps {
   persona: string;
@@ -11,192 +11,271 @@ interface DataViewProps {
   loadPersonaData: (persona: string) => Promise<DataResponse>;
 }
 
-export function DataView({ persona, dataSummary, loadPersonaData }: DataViewProps) {
+type Tab =
+  | { kind: 'facts' }
+  | { kind: 'db' }
+  | { kind: 'api'; adapterId: string };
+
+const SURFACE_COLOR: Record<string, string> = {
+  postgres: 'var(--postgres)',
+  postgresql: 'var(--postgres)',
+  mysql: 'var(--postgres)',
+  sqlite: 'var(--postgres)',
+  stripe: 'var(--stripe)',
+};
+
+function tabKey(t: Tab): string {
+  if (t.kind === 'facts') return 'facts';
+  if (t.kind === 'db') return 'db';
+  return `api:${t.adapterId}`;
+}
+
+export function DataView({ persona, source, resource, loadPersonaData }: DataViewProps) {
   const [data, setData] = useState<DataResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedSource, setSelectedSource] = useState<string | null>(null);
-  const [selectedResource, setSelectedResource] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>({ kind: 'facts' });
+  const [selectedResource, setSelectedResource] = useState<string | null>(resource ?? null);
 
   useEffect(() => {
     setLoading(true);
     loadPersonaData(persona).then((d) => {
       setData(d);
       setLoading(false);
+      // pick initial tab/resource from props if provided
+      if (source) {
+        if (source === 'facts') setTab({ kind: 'facts' });
+        else if (Object.keys(d.tables).includes(source) || source === 'db') {
+          setTab({ kind: 'db' });
+        } else if (d.apiResponses[source]) {
+          setTab({ kind: 'api', adapterId: source });
+        } else {
+          setTab(initialTab(d));
+        }
+      } else {
+        setTab(initialTab(d));
+      }
     });
   }, [persona]);
 
-  if (loading) {
+  if (loading || !data) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="text-muted-foreground">Loading data...</span>
+      <div className="content-inner">
+        <div className="page-eyebrow"><span className="dash" /> persona data</div>
+        <h1 className="display">{persona}</h1>
+        <p className="lede">Loading…</p>
       </div>
     );
   }
 
-  if (!data) return null;
+  const totalDb = Object.values(data.tables).reduce((a, b) => a + (b as unknown[]).length, 0);
+  const apiTotals: Array<[string, number]> = Object.entries(data.apiResponses).map(
+    ([id, set]) => [
+      id,
+      Object.values(set.responses).reduce((a, b) => a + (b as unknown[]).length, 0),
+    ],
+  );
 
-  // Build navigation tree
-  const sources: Array<{
-    id: string;
-    label: string;
-    type: 'table' | 'api';
-    resources: Array<{ id: string; label: string; count: number }>;
-  }> = [];
+  const activeResources: Array<{ key: string; label: string; count: number }> =
+    tab.kind === 'db'
+      ? Object.entries(data.tables).map(([name, rows]) => ({
+          key: name,
+          label: name,
+          count: (rows as unknown[]).length,
+        }))
+      : tab.kind === 'api'
+        ? Object.entries(data.apiResponses[tab.adapterId]?.responses ?? {})
+            .filter(([, arr]) => (arr as unknown[]).length > 0)
+            .map(([name, arr]) => ({
+              key: name,
+              label: name,
+              count: (arr as unknown[]).length,
+            }))
+        : [];
 
-  // DB tables
-  if (Object.keys(data.tables).length > 0) {
-    sources.push({
-      id: 'database',
-      label: 'Database',
-      type: 'table',
-      resources: Object.entries(data.tables).map(([name, rows]) => ({
-        id: name,
-        label: name,
-        count: (rows as unknown[]).length,
-      })),
-    });
-  }
-
-  // API adapters
-  for (const [adapterId, responseSet] of Object.entries(data.apiResponses)) {
-    const resources = Object.entries(responseSet.responses)
-      .filter(([, arr]) => (arr as unknown[]).length > 0)
-      .map(([resource, arr]) => ({
-        id: resource,
-        label: resource,
-        count: (arr as unknown[]).length,
-      }));
-    if (resources.length > 0) {
-      sources.push({ id: adapterId, label: adapterId, type: 'api', resources });
-    }
-  }
-
-  const activeSource = selectedSource ?? sources[0]?.id ?? null;
-  const sourceObj = sources.find((s) => s.id === activeSource);
-  const activeResource = selectedResource ?? sourceObj?.resources[0]?.id ?? null;
-
-  const getActiveData = (): unknown[] => {
-    if (!sourceObj || !activeResource) return [];
-    if (sourceObj.type === 'table') {
-      return (data.tables[activeResource] as unknown[]) ?? [];
-    }
-    return (data.apiResponses[activeSource!]?.responses[activeResource] as unknown[]) ?? [];
-  };
-
-  const activeData = getActiveData();
+  const currentKey =
+    activeResources.find((r) => r.key === selectedResource)?.key ??
+    activeResources[0]?.key ??
+    null;
+  const currentRows =
+    tab.kind === 'db' && currentKey
+      ? (data.tables[currentKey] as unknown[])
+      : tab.kind === 'api' && currentKey
+        ? ((data.apiResponses[tab.adapterId]?.responses[currentKey] ?? []) as unknown[])
+        : [];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{persona}</h1>
-        <p className="text-muted-foreground mt-1">
-          Generated data for this persona across all configured surfaces.
-        </p>
+    <div className="content-inner">
+      <div className="page-eyebrow"><span className="dash" /> persona data</div>
+      <h1 className="display">{persona}</h1>
+      <p className="lede">
+        {(totalDb + apiTotals.reduce((a, [, n]) => a + n, 0)).toLocaleString()} entities across{' '}
+        {(totalDb > 0 ? 1 : 0) + apiTotals.length} surface
+        {(totalDb > 0 ? 1 : 0) + apiTotals.length === 1 ? '' : 's'}, persisted to{' '}
+        <span className="mono dim">.mimic/data/{persona}.json</span>.
+      </p>
+
+      <div className="tabs-row">
+        <button
+          className={'tab ' + (tab.kind === 'facts' ? 'active' : '')}
+          onClick={() => setTab({ kind: 'facts' })}
+        >
+          Facts <span className="c">{data.facts.length}</span>
+        </button>
+        {totalDb > 0 && (
+          <button
+            className={'tab ' + (tab.kind === 'db' ? 'active' : '')}
+            onClick={() => {
+              setTab({ kind: 'db' });
+              setSelectedResource(null);
+            }}
+          >
+            <span style={{ color: 'var(--postgres)' }}>Database</span>{' '}
+            <span className="c">{totalDb}</span>
+          </button>
+        )}
+        {apiTotals.map(([id, n]) => (
+          <button
+            key={id}
+            className={
+              'tab ' + (tab.kind === 'api' && tab.adapterId === id ? 'active' : '')
+            }
+            onClick={() => {
+              setTab({ kind: 'api', adapterId: id });
+              setSelectedResource(null);
+            }}
+          >
+            <span style={{ color: SURFACE_COLOR[id] ?? 'var(--ink-2)' }}>{id}</span>{' '}
+            <span className="c">{n}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Facts */}
-      {data.facts && data.facts.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-lg font-semibold">Facts ({data.facts.length})</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {data.facts.map((fact) => (
-              <div
-                key={fact.id}
-                className={cn(
-                  'rounded-lg border p-3',
-                  fact.severity === 'critical' && 'border-red-500/30 bg-red-500/5',
-                  fact.severity === 'warn' && 'border-amber-500/30 bg-amber-500/5',
-                  fact.severity === 'info' && 'border-blue-500/30 bg-blue-500/5',
-                )}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className={cn(
-                      'text-xs font-medium rounded px-1.5 py-0.5',
-                      fact.severity === 'critical' && 'bg-red-500/10 text-red-500',
-                      fact.severity === 'warn' && 'bg-amber-500/10 text-amber-500',
-                      fact.severity === 'info' && 'bg-blue-500/10 text-blue-500',
-                    )}
-                  >
-                    {fact.severity}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{fact.platform}</span>
-                  <span className="text-xs text-muted-foreground">{fact.type}</span>
-                </div>
-                <p className="text-sm">{fact.detail}</p>
-              </div>
-            ))}
-          </div>
+      {tab.kind === 'facts' && (
+        <div className="factlog" style={{ borderTop: 'none' }}>
+          {data.facts.map((f, i) => (
+            <FactRow key={f.id} fact={f} idx={i} />
+          ))}
+          {data.facts.length === 0 && (
+            <div style={{ padding: '64px 0', color: 'var(--ink-4)', textAlign: 'center' }}>
+              No facts generated for this persona.
+            </div>
+          )}
         </div>
       )}
 
-      {/* Source / Resource navigation + data viewer */}
-      <div className="flex gap-4 min-h-[500px]">
-        {/* Source tree */}
-        <div className="w-56 shrink-0 space-y-2">
-          {sources.map((source) => (
-            <div key={source.id}>
-              <div
-                className={cn(
-                  'px-2 py-1 text-xs font-semibold uppercase tracking-wider cursor-pointer rounded',
-                  activeSource === source.id
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-                onClick={() => {
-                  setSelectedSource(source.id);
-                  setSelectedResource(source.resources[0]?.id ?? null);
-                }}
-              >
-                {source.label}
-                <span className="ml-1.5 font-normal normal-case">
-                  ({source.type === 'api' ? 'api' : 'db'})
-                </span>
-              </div>
-              {activeSource === source.id && (
-                <div className="ml-2 mt-1 space-y-0.5">
-                  {source.resources.map((res) => (
-                    <button
-                      key={res.id}
-                      onClick={() => setSelectedResource(res.id)}
-                      className={cn(
-                        'flex w-full items-center justify-between rounded px-2 py-1 text-sm transition-colors',
-                        activeResource === res.id
-                          ? 'bg-accent text-accent-foreground'
-                          : 'text-muted-foreground hover:bg-accent/50',
-                      )}
-                    >
-                      <span className="truncate">{res.label}</span>
-                      <span className="text-xs font-mono">{res.count}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+      {tab.kind !== 'facts' && (
+        <div className="dataview2" key={tabKey(tab)}>
+          <div className="dataview2-left">
+            <div className="dv-group">
+              {tab.kind === 'db' ? 'Tables' : 'Resources'}
             </div>
-          ))}
-        </div>
-
-        {/* Data panel */}
-        <div className="flex-1 rounded-lg border bg-card overflow-hidden">
-          <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2">
-            <span className="text-sm font-medium">
-              {activeResource ?? 'Select a resource'}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {activeData.length} {activeData.length === 1 ? 'record' : 'records'}
-            </span>
-          </div>
-          <div className="overflow-auto max-h-[600px] p-4">
-            {activeData.length > 0 ? (
-              <JsonViewer data={activeData} />
-            ) : (
-              <div className="text-center text-muted-foreground py-12">
-                No data available
+            {activeResources.map((r) => (
+              <button
+                key={r.key}
+                className={'dv-item ' + (currentKey === r.key ? 'active' : '')}
+                onClick={() => setSelectedResource(r.key)}
+              >
+                <span>{r.label}</span>
+                <span className="n">{r.count}</span>
+              </button>
+            ))}
+            {activeResources.length === 0 && (
+              <div className="dv-item" style={{ color: 'var(--ink-4)', cursor: 'default' }}>
+                <span>no data</span>
               </div>
             )}
           </div>
+          <div className="dataview2-right">
+            <div className="dv-detail-head">
+              <div className="dv-detail-title">{currentKey ?? 'Select a resource'}</div>
+              <div className="dv-detail-meta">
+                {currentRows.length.toLocaleString()} record
+                {currentRows.length === 1 ? '' : 's'} · {tab.kind === 'db' ? 'database' : tab.adapterId}
+              </div>
+            </div>
+            <div className="dv-detail-body">
+              <ResourceBody rows={currentRows} />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
+}
+
+function initialTab(d: DataResponse): Tab {
+  if (d.facts.length > 0) return { kind: 'facts' };
+  if (Object.keys(d.tables).length > 0) return { kind: 'db' };
+  const firstApi = Object.keys(d.apiResponses)[0];
+  if (firstApi) return { kind: 'api', adapterId: firstApi };
+  return { kind: 'facts' };
+}
+
+function ResourceBody({ rows }: { rows: unknown[] }) {
+  const shape = useMemo(() => detectShape(rows), [rows]);
+  if (rows.length === 0) {
+    return (
+      <div style={{ padding: 64, color: 'var(--ink-4)', textAlign: 'center' }}>
+        No records.
+      </div>
+    );
+  }
+  if (shape === 'table') {
+    return <DataTable rows={rows as Record<string, unknown>[]} />;
+  }
+  return <JsonView data={rows} />;
+}
+
+function detectShape(rows: unknown[]): 'table' | 'json' {
+  if (rows.length === 0) return 'json';
+  const first = rows[0];
+  if (first === null || typeof first !== 'object' || Array.isArray(first)) return 'json';
+  // Use table view when first item is a flat-ish object
+  const entries = Object.entries(first as Record<string, unknown>);
+  if (entries.length === 0) return 'json';
+  return 'table';
+}
+
+function DataTable({ rows }: { rows: Record<string, unknown>[] }) {
+  const allKeys = new Set<string>();
+  rows.slice(0, 20).forEach((r) => Object.keys(r).forEach((k) => allKeys.add(k)));
+  const columns = Array.from(allKeys).slice(0, 8);
+  const hasMore = allKeys.size > 8;
+
+  return (
+    <table className="dtable">
+      <thead>
+        <tr>
+          <th className="n">#</th>
+          {columns.map((c) => (
+            <th key={c}>{c}</th>
+          ))}
+          {hasMore && <th>…</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr key={i}>
+            <td className="n">{i + 1}</td>
+            {columns.map((c) => (
+              <td key={c} className={isIdCol(c) ? 'id' : row[c] === null ? 'null' : ''}>
+                {renderCell(row[c])}
+              </td>
+            ))}
+            {hasMore && <td className="muted">…</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function isIdCol(c: string): boolean {
+  return c === 'id' || c.endsWith('_id');
+}
+
+function renderCell(v: unknown): string {
+  if (v === null || v === undefined) return 'null';
+  if (typeof v === 'object') return Array.isArray(v) ? `[${v.length}]` : '{…}';
+  return String(v);
 }

@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
-import { api, type ExplorerConfig, type AdapterInfo, type PersonaDataSummary, type DataResponse } from './lib/api';
-import { Sidebar } from './components/layout/sidebar';
-import { Header } from './components/layout/header';
+import {
+  api,
+  type ExplorerConfig,
+  type AdapterInfo,
+  type PersonaDataSummary,
+  type DataResponse,
+} from './lib/api';
+import { Rail } from './components/rail';
+import { StatusBar } from './components/status-bar';
 import { Dashboard } from './pages/dashboard';
 import { AdapterView } from './pages/adapter-view';
 import { DataView } from './pages/data-view';
@@ -24,10 +30,20 @@ export function App() {
 
   useEffect(() => {
     Promise.all([api.getConfig(), api.getAdapters(), api.getDataSummary()])
-      .then(([cfg, adp, data]) => {
+      .then(async ([cfg, adp, data]) => {
         setConfig(cfg);
         setAdapters(adp);
         setDataSummary(data);
+        // Eager-load first persona's data so the dashboard can show facts + reconciliation drift.
+        const first = cfg.personas[0]?.name;
+        if (first) {
+          try {
+            const pd = await api.getPersonaData(first);
+            setPersonaData({ [first]: pd });
+          } catch {
+            // ignore — dashboard handles empty
+          }
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -43,12 +59,20 @@ export function App() {
     return data;
   };
 
+  const navigate = (p: Page) => {
+    setPage(p);
+    setTimeout(() => {
+      const el = document.querySelector('.content');
+      if (el) el.scrollTop = 0;
+    }, 0);
+  };
+
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 text-4xl font-bold tracking-tight">mimic</div>
-          <div className="text-muted-foreground">Loading explorer...</div>
+      <div className="full-center">
+        <div className="stack">
+          <div className="glyph">mimic</div>
+          <div className="msg">loading explorer</div>
         </div>
       </div>
     );
@@ -56,44 +80,74 @@ export function App() {
 
   if (error) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="mb-4 text-4xl font-bold tracking-tight text-destructive">Error</div>
-          <div className="text-muted-foreground mb-4">{error}</div>
-          <div className="text-sm text-muted-foreground">
-            Make sure <code className="bg-muted px-1 py-0.5 rounded">mimic host</code> is running first.
+      <div className="full-center">
+        <div className="stack">
+          <div className="glyph err">error</div>
+          <div className="msg">{error}</div>
+          <div className="hint">
+            Make sure <code>mimic host</code> is running first.
           </div>
         </div>
       </div>
     );
   }
 
+  const activePersona =
+    page.type === 'data' ? page.persona : config!.personas[0]?.name;
+  const activePersonaData = activePersona ? personaData[activePersona] : undefined;
+  const sessionFacts = activePersonaData?.facts ?? [];
+
+  // Drift on dashboard = pg-only + st-only entity counts in first persona's data
+  let driftInfo: { count: number; surfaces: number } | undefined;
+  if (page.type === 'dashboard' && activePersonaData) {
+    const tableKeys = Object.keys(activePersonaData.tables);
+    const firstApi = Object.keys(activePersonaData.apiResponses)[0];
+    if (tableKeys.length > 0 && firstApi) {
+      const apiKeys = Object.keys(activePersonaData.apiResponses[firstApi].responses);
+      const norm = (s: string) => s.toLowerCase().replace(/^.*\//, '').replace(/s$/, '');
+      const tableNorms = new Set(tableKeys.map(norm));
+      const apiNorms = new Set(apiKeys.map(norm));
+      let diff = 0;
+      for (const n of tableNorms) if (!apiNorms.has(n)) diff++;
+      for (const n of apiNorms) if (!tableNorms.has(n)) diff++;
+      if (diff > 0) driftInfo = { count: diff, surfaces: 2 };
+    }
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar
+    <div className="app">
+      <Rail
         config={config!}
         adapters={adapters}
         dataSummary={dataSummary}
         page={page}
-        onNavigate={setPage}
+        onNavigate={navigate}
       />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header config={config!} page={page} onNavigate={setPage} />
-        <main className="flex-1 overflow-auto p-6">
+      <main className="main">
+        <StatusBar session={activePersona} facts={sessionFacts} drift={driftInfo} />
+        <div className="content">
           {page.type === 'dashboard' && (
             <Dashboard
               config={config!}
               adapters={adapters}
               dataSummary={dataSummary}
-              onNavigate={setPage}
+              personaData={activePersonaData}
+              onNavigate={navigate}
             />
           )}
-          {page.type === 'adapter' && (
-            <AdapterView
-              adapter={adapters.find((a) => a.id === page.adapterId)!}
-              onNavigate={setPage}
-            />
-          )}
+          {page.type === 'adapter' &&
+            (adapters.find((a) => a.id === page.adapterId) ? (
+              <AdapterView
+                adapter={adapters.find((a) => a.id === page.adapterId)!}
+                onNavigate={navigate}
+              />
+            ) : (
+              <div className="content-inner">
+                <div className="page-eyebrow"><span className="dash" /> adapter</div>
+                <h1 className="display">not found</h1>
+                <p className="lede">No adapter with id <span className="mono dim">{page.adapterId}</span>.</p>
+              </div>
+            ))}
           {page.type === 'data' && (
             <DataView
               persona={page.persona}
@@ -103,14 +157,21 @@ export function App() {
               loadPersonaData={loadPersonaData}
             />
           )}
-          {page.type === 'tester' && (
-            <EndpointTester
-              adapter={adapters.find((a) => a.id === page.adapterId)!}
-              initialEndpoint={page.endpoint}
-            />
-          )}
-        </main>
-      </div>
+          {page.type === 'tester' &&
+            (adapters.find((a) => a.id === page.adapterId) ? (
+              <EndpointTester
+                adapter={adapters.find((a) => a.id === page.adapterId)!}
+                initialEndpoint={page.endpoint}
+              />
+            ) : (
+              <div className="content-inner">
+                <div className="page-eyebrow"><span className="dash" /> tester</div>
+                <h1 className="display">not found</h1>
+                <p className="lede">No adapter with id <span className="mono dim">{page.adapterId}</span>.</p>
+              </div>
+            ))}
+        </div>
+      </main>
     </div>
   );
 }

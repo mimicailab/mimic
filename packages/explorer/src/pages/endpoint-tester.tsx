@@ -1,237 +1,276 @@
-import { useState, useMemo } from 'react';
-import { cn } from '@/lib/utils';
+import { useMemo, useState } from 'react';
 import type { AdapterInfo } from '@/lib/api';
-import { RawJsonViewer } from '@/components/explorer/json-viewer';
 import { groupEndpoints } from '@/lib/group-endpoints';
+import { FormattedPath } from '@/components/formatted-path';
+import { JsonView } from '@/components/json-view';
 
 interface EndpointTesterProps {
   adapter: AdapterInfo;
   initialEndpoint?: { method: string; path: string };
 }
 
-const METHOD_COLORS: Record<string, string> = {
-  GET: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
-  POST: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
-  PUT: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
-  PATCH: 'bg-orange-500/10 text-orange-500 border-orange-500/30',
-  DELETE: 'bg-red-500/10 text-red-500 border-red-500/30',
+interface SelectedEp {
+  group: string;
+  method: string;
+  path: string;
+}
+
+interface ResponseState {
+  status: number;
+  statusText: string;
+  ms: number;
+  bytes: number;
+  body: unknown;
+}
+
+const STATUS_TEXT: Record<number, string> = {
+  200: 'OK',
+  201: 'Created',
+  204: 'No Content',
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  402: 'Payment Required',
+  403: 'Forbidden',
+  404: 'Not Found',
+  409: 'Conflict',
+  422: 'Unprocessable Entity',
+  429: 'Too Many Requests',
+  500: 'Internal Server Error',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
 };
 
 export function EndpointTester({ adapter, initialEndpoint }: EndpointTesterProps) {
-  const [selectedEndpoint, setSelectedEndpoint] = useState(
-    initialEndpoint ?? adapter.endpoints[0] ?? null,
+  const groups = useMemo(
+    () => groupEndpoints(adapter.endpoints, adapter.basePath),
+    [adapter],
   );
-  const [requestBody, setRequestBody] = useState('{}');
-  const [response, setResponse] = useState<{
-    status: number;
-    headers: Record<string, string>;
-    body: unknown;
-    duration: number;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<Record<string, boolean>>({});
-  const groups = useMemo(() => groupEndpoints(adapter.endpoints, adapter.basePath), [adapter]);
 
-  // Find which group the initial/selected endpoint belongs to, keep that expanded
-  const initialGroup = useMemo(() => {
-    if (!selectedEndpoint) return null;
-    return groups.find((g) =>
-      g.endpoints.some((ep) => ep.method === selectedEndpoint.method && ep.path === selectedEndpoint.path),
-    )?.label ?? null;
-  }, []);
-
-  // Start with all groups collapsed except the one containing the selected endpoint
-  const [sidebarInited] = useState(() => {
-    const init: Record<string, boolean> = {};
-    for (const g of groups) {
-      init[g.label] = g.label !== initialGroup;
+  const initial: SelectedEp = useMemo(() => {
+    if (initialEndpoint) {
+      const g = groups.find((g) =>
+        g.endpoints.some(
+          (e) => e.method === initialEndpoint.method && e.path === initialEndpoint.path,
+        ),
+      );
+      if (g) {
+        return { group: g.label, method: initialEndpoint.method, path: initialEndpoint.path };
+      }
     }
-    return init;
-  });
+    const g = groups[0];
+    if (g && g.endpoints[0]) {
+      return { group: g.label, method: g.endpoints[0].method, path: g.endpoints[0].path };
+    }
+    return { group: '', method: 'GET', path: '/' };
+  }, [groups, initialEndpoint]);
 
-  const getCollapsed = (label: string) => sidebarCollapsed[label] ?? sidebarInited[label] ?? true;
-  const toggleSidebar = (label: string) =>
-    setSidebarCollapsed((prev) => ({ ...prev, [label]: !getCollapsed(label) }));
+  const [sel, setSel] = useState<SelectedEp>(initial);
+  const [query, setQuery] = useState('');
+  const [body, setBody] = useState('{\n  \n}');
+  const [sending, setSending] = useState(false);
+  const [resp, setResp] = useState<ResponseState | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [open, setOpen] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(groups.map((g) => [g.label, g.label === initial.group])),
+  );
 
-  const handleSend = async () => {
-    if (!selectedEndpoint || !adapter.port) return;
-
-    setLoading(true);
+  const send = async () => {
+    if (!adapter.port) return;
+    setSending(true);
     setError(null);
-    setResponse(null);
-
+    setResp(null);
     const start = performance.now();
     try {
-      const res = await fetch(`http://localhost:${adapter.port}${selectedEndpoint.path}`, {
-        method: selectedEndpoint.method,
+      const init: RequestInit = {
+        method: sel.method,
         headers: { 'Content-Type': 'application/json' },
-        ...(selectedEndpoint.method !== 'GET' && requestBody.trim()
-          ? { body: requestBody }
-          : {}),
-      });
-      const duration = Math.round(performance.now() - start);
-      const body = await res.json().catch(() => null);
-      setResponse({
-        status: res.status,
-        headers: Object.fromEntries(res.headers.entries()),
-        body,
-        duration,
+      };
+      if (sel.method !== 'GET' && sel.method !== 'DELETE' && body.trim()) {
+        init.body = body;
+      }
+      const r = await fetch(`http://localhost:${adapter.port}${sel.path}`, init);
+      const text = await r.text();
+      let parsed: unknown = text;
+      try {
+        parsed = text ? JSON.parse(text) : null;
+      } catch {
+        // keep as string
+      }
+      const ms = Math.round(performance.now() - start);
+      setResp({
+        status: r.status,
+        statusText: STATUS_TEXT[r.status] ?? r.statusText ?? '',
+        ms,
+        bytes: new Blob([text]).size,
+        body: parsed,
       });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Request failed. Is mimic host running?',
-      );
+      setError(err instanceof Error ? err.message : 'Request failed. Is mimic host running?');
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{adapter.name} — Endpoint Tester</h1>
-        <p className="mt-1 text-muted-foreground">
-          Send requests to the running mock server on port {adapter.port ?? 'N/A'}
-        </p>
-      </div>
+  const lineCount = body.split('\n').length;
+  const hasBody = sel.method !== 'GET' && sel.method !== 'DELETE';
 
-      <div className="flex gap-6">
-        {/* Endpoint list (grouped) */}
-        <div className="w-72 shrink-0 space-y-0.5 overflow-y-auto max-h-[calc(100vh-12rem)]">
-          {groups.map(({ label, endpoints }) => {
-            const isCollapsed = getCollapsed(label);
-            const hasSelected = endpoints.some(
-              (ep) => ep.method === selectedEndpoint?.method && ep.path === selectedEndpoint?.path,
-            );
-            return (
-              <div key={label}>
-                <button
-                  onClick={() => toggleSidebar(label)}
-                  className={cn(
-                    'flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-accent',
-                    hasSelected && isCollapsed && 'text-accent-foreground',
-                  )}
-                >
-                  <span className={cn('text-[10px] text-muted-foreground transition-transform', !isCollapsed && 'rotate-90')}>
-                    ▶
-                  </span>
-                  <span className="font-medium truncate">{label}</span>
-                  <span className="ml-auto text-[10px] text-muted-foreground">{endpoints.length}</span>
-                </button>
-                {!isCollapsed &&
-                  endpoints.map((ep, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setSelectedEndpoint(ep);
-                        setResponse(null);
-                        setError(null);
-                      }}
-                      className={cn(
-                        'flex w-full items-center gap-2 rounded-md px-3 pl-6 py-1.5 text-sm transition-colors',
-                        'hover:bg-accent',
-                        selectedEndpoint?.path === ep.path && selectedEndpoint?.method === ep.method
-                          ? 'bg-accent text-accent-foreground'
-                          : 'text-muted-foreground',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold',
-                          METHOD_COLORS[ep.method] ?? 'bg-muted',
-                        )}
-                      >
-                        {ep.method}
-                      </span>
-                      <span className="truncate font-mono text-xs">{ep.path}</span>
-                    </button>
-                  ))}
-              </div>
-            );
-          })}
+  return (
+    <div className="content-inner" style={{ paddingBottom: 32 }}>
+      <div className="page-eyebrow"><span className="dash" /> tester</div>
+      <h1 className="display">Probe</h1>
+      <p className="lede">
+        Send real requests at the running mock on{' '}
+        <span className="mono" style={{ color: 'var(--stripe)' }}>
+          localhost:{adapter.port ?? '—'}
+        </span>
+        . Responses come from the persona's generated data.
+      </p>
+
+      <div className="tester2" style={{ marginTop: 40 }}>
+        <div className="t-list">
+          <div className="t-search">
+            <span className="muted">⌕</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter endpoints…"
+            />
+            <span className="muted">/</span>
+          </div>
+          <div className="t-list-scroll">
+            {groups.map((g) => {
+              const filt = g.endpoints.filter(
+                (e) =>
+                  !query ||
+                  e.path.toLowerCase().includes(query.toLowerCase()) ||
+                  e.method.toLowerCase().includes(query.toLowerCase()),
+              );
+              if (filt.length === 0) return null;
+              return (
+                <div key={g.label} className="t-group">
+                  <button
+                    className="t-group-head"
+                    onClick={() => setOpen({ ...open, [g.label]: !open[g.label] })}
+                  >
+                    <span>{g.label}</span>
+                    <span className="c">{filt.length}</span>
+                  </button>
+                  {open[g.label] &&
+                    filt.map((e, i) => {
+                      const id = `${g.label}::${e.method} ${e.path}`;
+                      const selId = `${sel.group}::${sel.method} ${sel.path}`;
+                      return (
+                        <button
+                          key={i}
+                          className={'t-ep ' + (selId === id ? 'active' : '')}
+                          onClick={() => {
+                            setSel({ group: g.label, method: e.method, path: e.path });
+                            setResp(null);
+                            setError(null);
+                          }}
+                        >
+                          <span className={'method ' + e.method}>{e.method}</span>
+                          <span className="path">
+                            <FormattedPath p={e.path} />
+                          </span>
+                        </button>
+                      );
+                    })}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Request / Response */}
-        <div className="flex-1 space-y-4">
-          {selectedEndpoint && (
-            <>
-              {/* Request bar */}
-              <div className="flex items-center gap-3">
-                <span
-                  className={cn(
-                    'shrink-0 rounded border px-3 py-1.5 text-sm font-bold',
-                    METHOD_COLORS[selectedEndpoint.method] ?? 'bg-muted',
-                  )}
-                >
-                  {selectedEndpoint.method}
-                </span>
-                <div className="flex-1 rounded-md border bg-muted/50 px-3 py-1.5 font-mono text-sm">
-                  http://localhost:{adapter.port}{selectedEndpoint.path}
-                </div>
-                <button
-                  onClick={handleSend}
-                  disabled={loading || !adapter.port}
-                  className={cn(
-                    'rounded-md bg-primary px-6 py-1.5 text-sm font-medium text-primary-foreground',
-                    'hover:bg-primary/90 transition-colors',
-                    'disabled:opacity-50 disabled:cursor-not-allowed',
-                  )}
-                >
-                  {loading ? 'Sending...' : 'Send'}
-                </button>
-              </div>
+        <div className="t-main">
+          <div className="t-bar">
+            <span
+              className={'method ' + sel.method}
+              style={{
+                fontSize: 13,
+                padding: '6px 10px',
+                border: '1px solid currentColor',
+              }}
+            >
+              {sel.method}
+            </span>
+            <div className="t-url">
+              <span className="host">localhost:{adapter.port}</span>
+              <span className="path">
+                <FormattedPath p={sel.path} />
+              </span>
+            </div>
+            <button className="btn-send" onClick={send} disabled={sending || !adapter.port}>
+              {sending ? 'Sending' : 'Send'}
+            </button>
+          </div>
 
-              {/* Request body (for POST/PUT/PATCH) */}
-              {selectedEndpoint.method !== 'GET' &&
-                selectedEndpoint.method !== 'DELETE' && (
-                  <div>
-                    <div className="mb-2 text-xs font-medium text-muted-foreground">
-                      Request Body
+          <div className="t-pane">
+            <div className="t-col">
+              <div className="t-col-head">
+                <span>Request body</span>
+                <span className="right">
+                  <span className="mono">{sel.group}</span>
+                </span>
+              </div>
+              <div className="t-col-body">
+                {hasBody ? (
+                  <div className="t-editor">
+                    <div className="gutter">
+                      {Array.from({ length: lineCount }).map((_, i) => (
+                        <div key={i}>{i + 1}</div>
+                      ))}
                     </div>
                     <textarea
-                      value={requestBody}
-                      onChange={(e) => setRequestBody(e.target.value)}
-                      className="w-full rounded-md border bg-muted/30 p-3 font-mono text-sm resize-y min-h-[100px] focus:outline-none focus:ring-1 focus:ring-ring"
-                      placeholder="{}"
+                      value={body}
+                      onChange={(e) => setBody(e.target.value)}
+                      spellCheck={false}
                     />
                   </div>
+                ) : (
+                  <div style={{ padding: 24, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                    No body for {sel.method} requests.
+                  </div>
                 )}
+              </div>
+            </div>
 
-              {/* Error */}
-              {error && (
-                <div className="rounded-md border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-500">
-                  {error}
+            <div className="t-col">
+              {resp && (
+                <div className={'t-status-strip ' + (resp.status >= 400 ? 'err' : '')}>
+                  <span className="code">{resp.status}</span>
+                  <span className="text">{resp.statusText}</span>
+                  <span className="timings">
+                    <span>
+                      <span className="k">time </span>
+                      {resp.ms}ms
+                    </span>
+                    <span>
+                      <span className="k">size </span>
+                      {resp.bytes}b
+                    </span>
+                  </span>
                 </div>
               )}
-
-              {/* Response */}
-              {response && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <span
-                      className={cn(
-                        'rounded px-2 py-0.5 text-sm font-bold',
-                        response.status < 300
-                          ? 'bg-emerald-500/10 text-emerald-500'
-                          : response.status < 500
-                            ? 'bg-amber-500/10 text-amber-500'
-                            : 'bg-red-500/10 text-red-500',
-                      )}
-                    >
-                      {response.status}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {response.duration}ms
-                    </span>
+              <div className="t-col-head">
+                <span>Response</span>
+                <span className="right">application/json</span>
+              </div>
+              <div className="t-col-body">
+                {error && (
+                  <div style={{ padding: 24, color: 'var(--critical)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                    {error}
                   </div>
-                  <div className="rounded-lg border bg-card overflow-auto max-h-[600px] p-4">
-                    <RawJsonViewer data={response.body} />
+                )}
+                {!error && !resp && (
+                  <div style={{ padding: 24, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                    Send a request to see the response.
                   </div>
-                </div>
-              )}
-            </>
-          )}
+                )}
+                {resp && <JsonView data={resp.body} />}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
