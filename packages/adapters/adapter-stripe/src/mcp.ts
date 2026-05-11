@@ -35,6 +35,89 @@ function text(msg: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Pagination
+//
+// The mock server caps each `/v1/<resource>` page at 100 records (Stripe's real
+// limit) and returns `{ data, has_more }`. The agent expects to see correct
+// totals without reasoning about cursor pagination of a mock server, so by
+// default every `list_*` tool here auto-paginates: it walks `starting_after`
+// until `has_more === false`, up to a 1000-record safety cap. Callers wanting
+// single-page semantics can pass `limit` or `starting_after` explicitly.
+// ---------------------------------------------------------------------------
+
+const PAGE_SIZE = 100;
+const MAX_PAGES = 10; // 10 × 100 = 1000 records cap
+
+interface StripeListPage {
+  data: any[];
+  has_more?: boolean;
+}
+
+async function listAll(
+  call: (method: string, path: string) => Promise<unknown>,
+  basePath: string,
+  extraQuery: Record<string, string | number | undefined> = {},
+  opts: { limit?: number; starting_after?: string } = {},
+): Promise<{ data: any[]; capped: boolean }> {
+  // Single-page mode: caller asked for an explicit limit or cursor.
+  if (opts.limit !== undefined || opts.starting_after !== undefined) {
+    const page = (await call(
+      'GET',
+      `${basePath}${qs({ ...extraQuery, limit: opts.limit, starting_after: opts.starting_after })}`,
+    )) as StripeListPage;
+    return { data: page.data ?? [], capped: Boolean(page.has_more) };
+  }
+
+  // Auto-paginate.
+  const all: any[] = [];
+  let cursor: string | undefined;
+  for (let i = 0; i < MAX_PAGES; i++) {
+    const page = (await call(
+      'GET',
+      `${basePath}${qs({ ...extraQuery, limit: PAGE_SIZE, starting_after: cursor })}`,
+    )) as StripeListPage;
+    const rows = page.data ?? [];
+    all.push(...rows);
+    if (!page.has_more || rows.length === 0) {
+      return { data: all, capped: false };
+    }
+    cursor = rows[rows.length - 1].id;
+  }
+  return { data: all, capped: true };
+}
+
+function formatListResponse(
+  label: string,
+  data: any[],
+  capped: boolean,
+  renderLine: (item: any) => string,
+  sampleSize = 20,
+): string {
+  if (data.length === 0) return `No ${label} found.`;
+  const samples = data.slice(0, sampleSize).map(renderLine);
+  const footer = capped
+    ? ` (showing first ${sampleSize}, capped at ${MAX_PAGES * PAGE_SIZE} — pass starting_after to continue)`
+    : data.length > sampleSize
+      ? ` (showing first ${sampleSize} of ${data.length})`
+      : '';
+  return `${label} (${data.length}${capped ? '+' : ''})${footer}:\n${samples.join('\n')}`;
+}
+
+const PAGINATION_PARAMS = {
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .describe('Single-page mode: max records returned (1-100). Omit to auto-paginate up to 1000.'),
+  starting_after: z
+    .string()
+    .optional()
+    .describe('Cursor for single-page mode: last ID from the previous page. Omit to auto-paginate.'),
+} as const;
+
+// ---------------------------------------------------------------------------
 // Factory — Official Stripe MCP parity (26 tools)
 // ---------------------------------------------------------------------------
 
@@ -79,14 +162,12 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   });
 
   // 4. list_coupons
-  server.tool('list_coupons', 'List all coupons', {}, async () => {
-    const data = await call('GET', '/v1/coupons') as any;
-    if (!data.data?.length) return text('No coupons found.');
-    const lines = data.data.map((c: any) => {
+  server.tool('list_coupons', 'List all coupons (auto-paginates by default; pass limit or starting_after for single-page mode)', PAGINATION_PARAMS, async (opts) => {
+    const { data, capped } = await listAll(call, '/v1/coupons', {}, opts);
+    return text(formatListResponse('Coupons', data, capped, (c: any) => {
       const desc = c.percent_off ? `${c.percent_off}% off` : `${(c.amount_off / 100).toFixed(2)} ${c.currency} off`;
       return `• ${c.id} — ${desc} (${c.duration})`;
-    });
-    return text(`Coupons (${data.data.length}):\n${lines.join('\n')}`);
+    }));
   });
 
   // 5. create_customer
@@ -102,22 +183,22 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   });
 
   // 6. list_customers
-  server.tool('list_customers', 'List Stripe customers, optionally filtered by email', {
+  server.tool('list_customers', 'List Stripe customers, optionally filtered by email (auto-paginates by default; pass limit or starting_after for single-page mode)', {
     email: z.string().optional().describe('Filter by email address'),
-    limit: z.number().int().min(1).max(100).optional().describe('Max results (default 10)'),
-  }, async ({ email, limit }) => {
-    const data = await call('GET', `/v1/customers${qs({ email, limit: limit ?? 10 })}`) as any;
-    if (!data.data?.length) return text('No customers found.');
-    const lines = data.data.map((c: any) => `• ${c.id} — ${c.name ?? '(no name)'} (${c.email ?? 'no email'})`);
-    return text(`Customers (${data.data.length}):\n${lines.join('\n')}`);
+    ...PAGINATION_PARAMS,
+  }, async ({ email, limit, starting_after }) => {
+    const { data, capped } = await listAll(call, '/v1/customers', { email }, { limit, starting_after });
+    return text(formatListResponse('Customers', data, capped, (c: any) =>
+      `• ${c.id} — ${c.name ?? '(no name)'} (${c.email ?? 'no email'})`,
+    ));
   });
 
   // 7. list_disputes
-  server.tool('list_disputes', 'List all disputes', {}, async () => {
-    const data = await call('GET', '/v1/disputes') as any;
-    if (!data.data?.length) return text('No disputes found.');
-    const lines = data.data.map((d: any) => `• ${d.id} — ${(d.amount / 100).toFixed(2)} ${d.currency} [${d.status}]`);
-    return text(`Disputes (${data.data.length}):\n${lines.join('\n')}`);
+  server.tool('list_disputes', 'List all disputes (auto-paginates by default; pass limit or starting_after for single-page mode)', PAGINATION_PARAMS, async (opts) => {
+    const { data, capped } = await listAll(call, '/v1/disputes', {}, opts);
+    return text(formatListResponse('Disputes', data, capped, (d: any) =>
+      `• ${d.id} — ${(d.amount / 100).toFixed(2)} ${d.currency} [${d.status}]`,
+    ));
   });
 
   // 8. update_dispute
@@ -163,14 +244,15 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   });
 
   // 12. list_invoices
-  server.tool('list_invoices', 'List invoices', {
+  server.tool('list_invoices', 'List invoices (auto-paginates by default; pass limit or starting_after for single-page mode)', {
     customer: z.string().optional().describe('Filter by customer ID'),
     status: z.enum(['draft', 'open', 'paid', 'uncollectible', 'void']).optional().describe('Filter by status'),
-  }, async ({ customer, status }) => {
-    const data = await call('GET', `/v1/invoices${qs({ customer, status })}`) as any;
-    if (!data.data?.length) return text('No invoices found.');
-    const lines = data.data.map((inv: any) => `• ${inv.id} — customer ${inv.customer} [${inv.status}]`);
-    return text(`Invoices (${data.data.length}):\n${lines.join('\n')}`);
+    ...PAGINATION_PARAMS,
+  }, async ({ customer, status, limit, starting_after }) => {
+    const { data, capped } = await listAll(call, '/v1/invoices', { customer, status }, { limit, starting_after });
+    return text(formatListResponse('Invoices', data, capped, (inv: any) =>
+      `• ${inv.id} — customer ${inv.customer} [${inv.status}]`,
+    ));
   });
 
   // 13. create_payment_link
@@ -186,14 +268,14 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   });
 
   // 14. list_payment_intents
-  server.tool('list_payment_intents', 'List payment intents', {
+  server.tool('list_payment_intents', 'List payment intents (auto-paginates by default; pass limit or starting_after for single-page mode)', {
     customer: z.string().optional().describe('Filter by customer ID'),
-    limit: z.number().int().min(1).max(100).optional().describe('Max results'),
-  }, async ({ customer, limit }) => {
-    const data = await call('GET', `/v1/payment_intents${qs({ customer, limit })}`) as any;
-    if (!data.data?.length) return text('No payment intents found.');
-    const lines = data.data.map((pi: any) => `• ${pi.id} — ${(pi.amount / 100).toFixed(2)} ${pi.currency} [${pi.status}]`);
-    return text(`Payment intents (${data.data.length}):\n${lines.join('\n')}`);
+    ...PAGINATION_PARAMS,
+  }, async ({ customer, limit, starting_after }) => {
+    const { data, capped } = await listAll(call, '/v1/payment_intents', { customer }, { limit, starting_after });
+    return text(formatListResponse('Payment intents', data, capped, (pi: any) =>
+      `• ${pi.id} — ${(pi.amount / 100).toFixed(2)} ${pi.currency} [${pi.status}]`,
+    ));
   });
 
   // 15. create_price
@@ -211,13 +293,14 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   });
 
   // 16. list_prices
-  server.tool('list_prices', 'List prices', {
+  server.tool('list_prices', 'List prices (auto-paginates by default; pass limit or starting_after for single-page mode)', {
     product: z.string().optional().describe('Filter by product ID'),
-  }, async ({ product }) => {
-    const data = await call('GET', `/v1/prices${qs({ product })}`) as any;
-    if (!data.data?.length) return text('No prices found.');
-    const lines = data.data.map((p: any) => `• ${p.id} — ${(p.unit_amount / 100).toFixed(2)} ${p.currency}`);
-    return text(`Prices (${data.data.length}):\n${lines.join('\n')}`);
+    ...PAGINATION_PARAMS,
+  }, async ({ product, limit, starting_after }) => {
+    const { data, capped } = await listAll(call, '/v1/prices', { product }, { limit, starting_after });
+    return text(formatListResponse('Prices', data, capped, (p: any) =>
+      `• ${p.id} — ${(p.unit_amount / 100).toFixed(2)} ${p.currency}`,
+    ));
   });
 
   // 17. create_product
@@ -231,11 +314,11 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   });
 
   // 18. list_products
-  server.tool('list_products', 'List products', {}, async () => {
-    const data = await call('GET', '/v1/products') as any;
-    if (!data.data?.length) return text('No products found.');
-    const lines = data.data.map((p: any) => `• ${p.id} — ${p.name} (${p.active ? 'active' : 'inactive'})`);
-    return text(`Products (${data.data.length}):\n${lines.join('\n')}`);
+  server.tool('list_products', 'List products (auto-paginates by default; pass limit or starting_after for single-page mode)', PAGINATION_PARAMS, async (opts) => {
+    const { data, capped } = await listAll(call, '/v1/products', {}, opts);
+    return text(formatListResponse('Products', data, capped, (p: any) =>
+      `• ${p.id} — ${p.name} (${p.active ? 'active' : 'inactive'})`,
+    ));
   });
 
   // 19. create_refund
@@ -258,14 +341,15 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
   });
 
   // 21. list_subscriptions
-  server.tool('list_subscriptions', 'List subscriptions, optionally filtered by customer or status', {
+  server.tool('list_subscriptions', 'List subscriptions, optionally filtered by customer or status (auto-paginates by default; pass limit or starting_after for single-page mode)', {
     customer: z.string().optional().describe('Filter by customer ID'),
     status: z.enum(['active', 'past_due', 'canceled', 'unpaid', 'trialing']).optional().describe('Filter by status'),
-  }, async ({ customer, status }) => {
-    const data = await call('GET', `/v1/subscriptions${qs({ customer, status })}`) as any;
-    if (!data.data?.length) return text('No subscriptions found.');
-    const lines = data.data.map((s: any) => `• ${s.id} — customer ${s.customer} [${s.status}]`);
-    return text(`Subscriptions (${data.data.length}):\n${lines.join('\n')}`);
+    ...PAGINATION_PARAMS,
+  }, async ({ customer, status, limit, starting_after }) => {
+    const { data, capped } = await listAll(call, '/v1/subscriptions', { customer, status }, { limit, starting_after });
+    return text(formatListResponse('Subscriptions', data, capped, (s: any) =>
+      `• ${s.id} — customer ${s.customer} [${s.status}]`,
+    ));
   });
 
   // 22. update_subscription
@@ -307,9 +391,9 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
 
     for (const type of types) {
       try {
-        const data = await call('GET', `/v1/${type}`) as any;
-        if (!data.data?.length) continue;
-        const matches = data.data.filter((item: any) => {
+        const { data } = await listAll(call, `/v1/${type}`);
+        if (!data.length) continue;
+        const matches = data.filter((item: any) => {
           const str = JSON.stringify(item).toLowerCase();
           return str.includes(query.toLowerCase());
         });
@@ -325,15 +409,19 @@ export function registerStripeTools(server: McpServer, baseUrl: string = 'http:/
 
   // 25. fetch_stripe_resources — generic GET /v1/<type> or GET /v1/<type>/<id>.
   // Open to any Stripe resource type. Pass `resource_id` to fetch one entity,
-  // or omit it to list. This is the canonical fallback for resources without
-  // a dedicated list_* tool (payouts, webhook_endpoints, etc.).
-  server.tool('fetch_stripe_resources', 'Fetch a Stripe resource — either a specific entity by ID, or list all entities for a resource type. Accepts ANY Stripe resource type (customers, subscriptions, invoices, payment_intents, charges, refunds, disputes, payouts, transfers, balance_transactions, webhook_endpoints, products, prices, coupons, files, mandates, …).', {
+  // or omit it to list (auto-paginated). This is the canonical fallback for
+  // resources without a dedicated list_* tool (payouts, webhook_endpoints, etc.).
+  server.tool('fetch_stripe_resources', 'Fetch a Stripe resource — either a specific entity by ID, or list all entities for a resource type. Accepts ANY Stripe resource type (customers, subscriptions, invoices, payment_intents, charges, refunds, disputes, payouts, transfers, balance_transactions, webhook_endpoints, products, prices, coupons, files, mandates, …). List mode auto-paginates up to 1000 records.', {
     resource_type: z.string().describe('Stripe resource type, e.g. "payouts", "webhook_endpoints", "charges". Maps to /v1/<type>.'),
     resource_id: z.string().optional().describe('Optional resource ID — omit to list all entities for this type.'),
-  }, async ({ resource_type, resource_id }) => {
-    const path = resource_id ? `/v1/${resource_type}/${resource_id}` : `/v1/${resource_type}`;
-    const data = await call('GET', path) as any;
-    return text(JSON.stringify(data, null, 2));
+    ...PAGINATION_PARAMS,
+  }, async ({ resource_type, resource_id, limit, starting_after }) => {
+    if (resource_id) {
+      const single = await call('GET', `/v1/${resource_type}/${resource_id}`);
+      return text(JSON.stringify(single, null, 2));
+    }
+    const { data, capped } = await listAll(call, `/v1/${resource_type}`, {}, { limit, starting_after });
+    return text(JSON.stringify({ object: 'list', data, has_more: capped, count: data.length }, null, 2));
   });
 
   // 26. search_stripe_documentation (informational — returns static guidance)
