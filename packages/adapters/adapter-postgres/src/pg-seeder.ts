@@ -334,6 +334,46 @@ export class PgSeeder implements DatabaseAdapter<PostgresConfig> {
   }
 
   // -----------------------------------------------------------------------
+  // Readback — return current DB state as a tables map
+  // -----------------------------------------------------------------------
+
+  /**
+   * Pull every table named in `schema.insertionOrder` and return rows as a
+   * `{ [tableName]: Row[] }` map reflecting the live DB state.
+   *
+   * Why `row_to_json` instead of `SELECT *`: pg-node's default type parser
+   * for `timestamp without time zone` (oid 1114) constructs a `Date` from
+   * the value interpreted in the process's local timezone, then `JSON.stringify`
+   * emits a UTC ISO string — so the value written to disk drifts from what's
+   * actually in the column when the seeder ran in a non-UTC TZ. Letting
+   * Postgres itself produce the JSON keeps each timestamp formatted exactly
+   * how the server holds it (`timestamp` → `"2026-04-16T14:00:00.000"`,
+   * `timestamptz` → ISO with offset), with no client-side TZ shift.
+   *
+   * Rows are ordered by primary key when one exists, so snapshots are
+   * deterministic across runs.
+   */
+  async readBackTables(schema: SchemaModel): Promise<Record<string, Row[]>> {
+    const pool = await this.getPool();
+    const tables: Record<string, Row[]> = {};
+
+    for (const tableName of schema.insertionOrder) {
+      const tableInfo = schema.tables.find((t) => t.name === tableName);
+      const pk = tableInfo?.primaryKey ?? [];
+      const orderBy =
+        pk.length > 0 ? ` ORDER BY ${pk.map((c) => `"${c}"`).join(', ')}` : '';
+
+      const result = await pool.query<{ r: Row }>(
+        `SELECT row_to_json(t) AS r FROM "${tableName}" t${orderBy}`,
+      );
+      tables[tableName] = result.rows.map((row) => row.r);
+      debug(`Readback "${tableName}" → ${tables[tableName].length} rows`);
+    }
+
+    return tables;
+  }
+
+  // -----------------------------------------------------------------------
   // Disconnect
   // -----------------------------------------------------------------------
 
