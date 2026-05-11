@@ -435,7 +435,7 @@ export class BlueprintExpander {
     // ==================================================================
     // PHASE F: Cross-reference API ↔ DB (bidirectional sync)
     // ==================================================================
-    this.crossReferenceApiWithDb(tables, apiResponses);
+    this.crossReferenceApiWithDb(tables, apiResponses, tableIndex);
 
     // ==================================================================
     // PHASE F.5: Backfill missing cross-surface API entities
@@ -1351,7 +1351,18 @@ export class BlueprintExpander {
   private crossReferenceApiWithDb(
     tables: Record<string, Row[]>,
     apiResponses: Record<string, ApiResponseSet>,
+    tableIndex: Map<string, TableInfo>,
   ): void {
+    // Build a per-table column-name set so we never write a field onto a row
+    // whose table doesn't have a column for it. Without this guard, the
+    // API → DB sync below silently injects API-only fields (phone, currency,
+    // ...) into rows on tables that lack those columns; the seeder drops them
+    // before INSERT but they're visible to stats / facts / inspection, which
+    // makes facts cite "DB" data that isn't actually in the DB.
+    const tableColumns = new Map<string, Set<string>>();
+    for (const [name, info] of tableIndex) {
+      tableColumns.set(name, new Set(info.columns.map(c => c.name)));
+    }
     // ── Phase 1: Build lookup maps from DB tables ────────────────────
     // Map: idValue → { tableName, row, colName }
     const SEQ_ID = /^[a-z_]+p\d+_\d+$/;
@@ -1407,7 +1418,8 @@ export class BlueprintExpander {
     // Phase 2a: API → DB sync
     // API data is authoritative for overlapping fields (name, email, status, etc.)
     // because identity table rows are derived from API entities.
-    for (const [_tableName, rows] of Object.entries(tables)) {
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const allowedCols = tableColumns.get(tableName);
       for (const row of rows) {
         for (const [_colName, value] of Object.entries(row)) {
           if (typeof value !== 'string' || !SEQ_ID.test(value)) continue;
@@ -1415,6 +1427,12 @@ export class BlueprintExpander {
           if (!apiBody) continue;
 
           for (const field of API_TO_DB_FIELDS) {
+            // Only sync fields that actually exist as columns on this DB
+            // table. Without this guard, fields like `phone` / `currency`
+            // get written onto rows whose tables have no such column —
+            // they end up in expanded.tables (visible to stats / facts /
+            // inspection) and are silently dropped by the seeder.
+            if (allowedCols && !allowedCols.has(field)) continue;
             const apiVal = apiBody[field];
             if (apiVal === undefined || apiVal === null) continue;
             const dbVal = row[field];
