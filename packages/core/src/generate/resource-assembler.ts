@@ -35,6 +35,12 @@ export interface ArchetypeDistribution {
    * declared in `data.anchors`.
    */
   anchor?: string;
+  /**
+   * Claim ids (from data.claims) this archetype is responsible for satisfying.
+   * Propagated onto the assembled EntityArchetype so the auditor can map a
+   * failed claim back to the archetypes that promised to satisfy it.
+   */
+  cites?: string[];
 }
 
 export interface ResourceDistribution {
@@ -184,6 +190,24 @@ function buildArchetype(
   const fields: Record<string, unknown> = {};
   const vary: Record<string, FieldVariation> = {};
 
+  // Separate nested-path overrides from top-level overrides. Nested paths
+  // like "unit_price.amount" are applied after the top-level field is
+  // populated (either from override, default, or assembler derivation),
+  // so they can target the resulting object.
+  const nestedOverrides: Array<{ topKey: string; rest: string; value: unknown }> = [];
+  if (dist.fieldOverrides) {
+    for (const [path, value] of Object.entries(dist.fieldOverrides)) {
+      const dot = path.indexOf('.');
+      if (dot > 0) {
+        nestedOverrides.push({
+          topKey: path.slice(0, dot),
+          rest: path.slice(dot + 1),
+          value,
+        });
+      }
+    }
+  }
+
   for (const [fieldName, fieldSpec] of Object.entries(spec.fields)) {
     if (fieldSpec.auto && isExpanderAutoField(fieldName)) continue;
 
@@ -206,9 +230,23 @@ function buildArchetype(
       if (variation) {
         vary[fieldName] = variation;
       } else if (fieldSpec.default !== undefined) {
-        fields[fieldName] = fieldSpec.default;
+        // Object/array defaults are shared by reference across archetypes —
+        // clone so a nested-path override on one archetype doesn't bleed
+        // into the others.
+        fields[fieldName] = cloneDeep(fieldSpec.default);
       }
     }
+  }
+
+  // Apply nested-path overrides (e.g. "unit_price.amount" → 2900). These
+  // mutate the object value the assembler stamped from the default, giving
+  // the LLM a way to pin nested-object amount/currency fields that the
+  // string-only fieldOverrides channel can't otherwise reach.
+  for (const { topKey, rest, value } of nestedOverrides) {
+    if (fields[topKey] == null || typeof fields[topKey] !== 'object') {
+      fields[topKey] = {};
+    }
+    setNestedField(fields[topKey] as Record<string, unknown>, rest, value);
   }
 
   return {
@@ -219,7 +257,24 @@ function buildArchetype(
     ...(dist.apiOnly ? { apiOnly: true } : {}),
     ...(dist.count !== undefined ? { count: dist.count } : {}),
     ...(dist.anchor ? { anchor: dist.anchor } : {}),
+    ...(dist.cites && dist.cites.length > 0 ? { cites: dist.cites } : {}),
   };
+}
+
+function cloneDeep<T>(v: T): T {
+  if (v == null || typeof v !== 'object') return v;
+  return JSON.parse(JSON.stringify(v));
+}
+
+function setNestedField(obj: Record<string, unknown>, path: string, value: unknown): void {
+  const parts = path.split('.');
+  let cur: Record<string, unknown> = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const k = parts[i]!;
+    if (cur[k] == null || typeof cur[k] !== 'object') cur[k] = {};
+    cur = cur[k] as Record<string, unknown>;
+  }
+  cur[parts[parts.length - 1]!] = value;
 }
 
 /**
@@ -283,8 +338,19 @@ function deriveVariation(
       return { type: 'phone' };
     case 'uuid':
       return { type: 'uuid' };
-    case 'currency_code':
-      return spec.default ? null : { type: 'pick', values: ['usd', 'eur', 'gbp'] };
+    case 'currency_code': {
+      // Always emit a pick. Previously this was gated on `!spec.default`,
+      // which silently stamped the spec default (e.g. "AUD" for GoCardless,
+      // "USD" for Paddle) onto every archetype the LLM didn't explicitly
+      // override — defeating persona-level invariants like "UK business →
+      // GBP". The auditor's pinned_field claim now catches violations, but
+      // emitting a real variation lets the assembler honor enum-aware
+      // picks where available.
+      const enumValues = spec.enum && spec.enum.length > 0
+        ? spec.enum.map((v) => String(v).toLowerCase())
+        : ['usd', 'eur', 'gbp'];
+      return { type: 'pick', values: enumValues };
+    }
     case 'country_code':
       return { type: 'pick', values: ['US', 'GB', 'DE', 'FR', 'CA', 'AU'] };
     default:

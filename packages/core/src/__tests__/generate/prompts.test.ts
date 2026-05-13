@@ -52,14 +52,14 @@ describe('prompts: date-driven archetype rules', () => {
     expect(system).toMatch(/sent_at|created_at|closed_at/);
   });
 
-  it('buildPrompt system prompt still has RULE H (numbers) — date rule is additive', () => {
+  it('buildPrompt system prompt still has RULE H (claims) — date rule is additive', () => {
     const { system } = buildPrompt({
       schema: EMPTY_SCHEMA,
       persona: PERSONA,
       domain: 'sales-operations',
       currentDate: '2026-05-02',
     });
-    expect(system).toContain('RULE H — FACT-DRIVEN ARCHETYPES');
+    expect(system).toContain('RULE H — STRUCTURED CLAIMS');
   });
 
   // ── DISTRIBUTION_SYSTEM_PROMPT (distribution-only) ─────────────────────────
@@ -77,14 +77,14 @@ describe('prompts: date-driven archetype rules', () => {
     expect(system).toContain("type: 'range'");
   });
 
-  it('buildDistributionPrompt system prompt still has the FACT-DRIVEN section', () => {
+  it('buildDistributionPrompt system prompt still has the CLAIMS section', () => {
     const { system } = buildDistributionPrompt({
       persona: PERSONA,
       domain: 'sales-operations',
       resourceSpecs: {},
       currentDate: '2026-05-02',
     });
-    expect(system).toContain('CRITICAL — FACT-DRIVEN DISTRIBUTIONS');
+    expect(system).toContain('CLAIMS ARE HARD CONSTRAINTS');
   });
 
   // ── Sanity: persona description still reaches the user prompt ──────────────

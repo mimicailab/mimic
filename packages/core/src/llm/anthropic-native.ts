@@ -41,11 +41,29 @@ export interface NativeAnthropicCallOptions<T extends z.ZodTypeAny> {
   label: string;
 }
 
-export interface NativeAnthropicResult<T> {
-  object: T;
+export interface NativeAnthropicAttempt {
+  /** Label for this individual attempt — `<label>` for the first, `<label>:repair-N` for repairs. */
+  label: string;
   promptTokens: number;
   completionTokens: number;
 }
+
+export interface NativeAnthropicResult<T> {
+  object: T;
+  /** Summed prompt tokens across all attempts (original + any repairs). */
+  promptTokens: number;
+  /** Summed completion tokens across all attempts. */
+  completionTokens: number;
+  /** Per-attempt token usage, so callers can record cost with distinct labels. */
+  attempts: NativeAnthropicAttempt[];
+}
+
+/**
+ * Hard cap on repair attempts after a Zod validation failure. The first call
+ * + this many repairs = total attempts before we give up. Models almost always
+ * converge within 1 repair; we keep the cap small to bound cost.
+ */
+const MAX_REPAIRS = 2;
 
 /**
  * Walk a JSON Schema tree and replace `additionalProperties: false` on object
@@ -175,59 +193,117 @@ export async function callAnthropicStructured<T extends z.ZodTypeAny>(
 
   const expectedTopKeys = Object.keys((inputSchema.properties as Record<string, unknown>) ?? {});
 
-  debugFile(`ANTHROPIC NATIVE REQUEST [${opts.label}]`, {
-    model: opts.model,
-    system: opts.system?.slice(0, 500),
-    prompt: opts.prompt,
-    inputSchemaTopKeys: expectedTopKeys,
-    isReasoning: opts.isReasoning,
-    maxOutputTokens: opts.maxOutputTokens,
-  });
+  // Conversation history — grows across repair attempts so the model sees its
+  // own prior tool_use and the tool_result feedback explaining what to fix.
+  const messages: Anthropic.MessageParam[] = [
+    { role: 'user', content: opts.prompt },
+  ];
 
-  const response = await client.messages.create({
-    model: opts.model,
-    max_tokens: opts.maxOutputTokens,
-    ...(opts.system ? { system: opts.system } : {}),
-    ...(opts.isReasoning ? {} : { temperature: opts.temperature ?? 0.7 }),
-    tools: [tool],
-    tool_choice: { type: 'tool', name: toolName },
-    messages: [{ role: 'user', content: opts.prompt }],
-  });
+  const attempts: NativeAnthropicAttempt[] = [];
+  let lastIssues = '';
 
-  const toolUse = response.content.find(
-    (b: Anthropic.ContentBlock): b is Anthropic.ToolUseBlock => b.type === 'tool_use',
-  );
-  if (!toolUse) {
-    throw new Error(`Anthropic returned no tool_use block. stop_reason=${response.stop_reason}`);
-  }
+  for (let attempt = 0; attempt <= MAX_REPAIRS; attempt++) {
+    const attemptLabel = attempt === 0 ? opts.label : `${opts.label}:repair-${attempt}`;
 
-  const promptTokens = response.usage?.input_tokens ?? 0;
-  const completionTokens = response.usage?.output_tokens ?? 0;
+    debugFile(`ANTHROPIC NATIVE REQUEST [${attemptLabel}]`, {
+      model: opts.model,
+      system: opts.system?.slice(0, 500),
+      prompt: attempt === 0 ? opts.prompt : '<repair attempt — see prior messages>',
+      inputSchemaTopKeys: expectedTopKeys,
+      isReasoning: opts.isReasoning,
+      maxOutputTokens: opts.maxOutputTokens,
+      attempt,
+    });
 
-  const unwrapped = unwrapToolInput(toolUse.input, expectedTopKeys);
-  debugFile(`ANTHROPIC NATIVE RESPONSE [${opts.label}]`, {
-    promptTokens,
-    completionTokens,
-    rawTopKeys: Object.keys((toolUse.input as Record<string, unknown>) ?? {}),
-    unwrappedTopKeys: Object.keys((unwrapped as Record<string, unknown>) ?? {}),
-    output: unwrapped,
-  });
+    const response = await client.messages.create({
+      model: opts.model,
+      max_tokens: opts.maxOutputTokens,
+      ...(opts.system ? { system: opts.system } : {}),
+      ...(opts.isReasoning ? {} : { temperature: opts.temperature ?? 0.7 }),
+      tools: [tool],
+      tool_choice: { type: 'tool', name: toolName },
+      messages,
+    });
 
-  const validation = opts.schema.safeParse(unwrapped);
-  if (!validation.success) {
-    const issues = validation.error.issues
+    const toolUse = response.content.find(
+      (b: Anthropic.ContentBlock): b is Anthropic.ToolUseBlock => b.type === 'tool_use',
+    );
+    if (!toolUse) {
+      throw new Error(`Anthropic returned no tool_use block. stop_reason=${response.stop_reason}`);
+    }
+
+    const promptTokens = response.usage?.input_tokens ?? 0;
+    const completionTokens = response.usage?.output_tokens ?? 0;
+    attempts.push({ label: attemptLabel, promptTokens, completionTokens });
+
+    const unwrapped = unwrapToolInput(toolUse.input, expectedTopKeys);
+    debugFile(`ANTHROPIC NATIVE RESPONSE [${attemptLabel}]`, {
+      promptTokens,
+      completionTokens,
+      rawTopKeys: Object.keys((toolUse.input as Record<string, unknown>) ?? {}),
+      unwrappedTopKeys: Object.keys((unwrapped as Record<string, unknown>) ?? {}),
+      output: unwrapped,
+    });
+
+    const validation = opts.schema.safeParse(unwrapped);
+    if (validation.success) {
+      if (attempts.length > 1) {
+        logger.info(
+          `✓ [${opts.label}] schema-repaired in ${attempts.length - 1} attempt${attempts.length > 2 ? 's' : ''}`,
+        );
+      }
+      return {
+        object: validation.data as z.infer<T>,
+        promptTokens: attempts.reduce((s, a) => s + a.promptTokens, 0),
+        completionTokens: attempts.reduce((s, a) => s + a.completionTokens, 0),
+        attempts,
+      };
+    }
+
+    lastIssues = validation.error.issues
       .slice(0, 20)
       .map((i: { path: unknown[]; message: string }) =>
         `${(i.path as string[]).join('.')}: ${i.message}`,
       )
       .join('\n  ');
-    logger.debug(`Anthropic native [${opts.label}] zod validation failed:\n  ${issues}`);
-    throw new Error(`No object generated: response did not match schema. Issues: ${issues}`);
+
+    logger.debug(`Anthropic native [${attemptLabel}] zod validation failed:\n  ${lastIssues}`);
+
+    // No more repairs left — break out and throw below.
+    if (attempt >= MAX_REPAIRS) break;
+
+    // Surface the repair to the CLI so the user sees what's happening (and why
+    // the next call is being billed).
+    logger.warn(
+      `⚠ [${opts.label}] schema validation failed (attempt ${attempt + 1}/${MAX_REPAIRS + 1}) — requesting repair from model`,
+    );
+
+    // Append the model's prior turn (including the offending tool_use) and a
+    // tool_result block with is_error: true, explaining what was wrong. Anthropic
+    // treats this as a normal tool-error round-trip and the model emits a fresh
+    // tool_use response we'll validate on the next loop iteration.
+    messages.push({ role: 'assistant', content: response.content });
+    messages.push({
+      role: 'user',
+      content: [
+        {
+          type: 'tool_result',
+          tool_use_id: toolUse.id,
+          content:
+            `Your previous tool call failed schema validation at these paths:\n  ${lastIssues}\n\n` +
+            `Re-emit the COMPLETE tool input with every required field present. ` +
+            `Do not omit any field the schema marks as required — set it explicitly ` +
+            `(e.g. weight: 0 when count is the emitter). ` +
+            `Keep all valid content from your previous attempt; only fix the failing paths.`,
+          is_error: true,
+        },
+      ],
+    });
   }
 
-  return {
-    object: validation.data as z.infer<T>,
-    promptTokens,
-    completionTokens,
-  };
+  throw new Error(
+    `No object generated: response did not match schema after ${attempts.length} attempt(s) ` +
+    `(1 original + ${attempts.length - 1} repair${attempts.length === 2 ? '' : 's'}). ` +
+    `Final issues: ${lastIssues}`,
+  );
 }

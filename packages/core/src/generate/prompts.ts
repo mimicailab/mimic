@@ -1,4 +1,4 @@
-import type { SchemaModel, TableInfo, ColumnInfo, PromptContext, AdapterResourceSpecs } from '../types/index.js';
+import type { SchemaModel, TableInfo, ColumnInfo, PromptContext, AdapterResourceSpecs, ResourceSpec } from '../types/index.js';
 import type { SchemaMapping } from '../types/blueprint.js';
 import { getPersonaIdPrefix, getResourceIdPrefix } from './identity-prefix.js';
 
@@ -435,23 +435,145 @@ If the parent table has 40 rows and the date range is 6 months, this produces 40
 Examine the schema foreign keys. For EVERY child table where the business relationship is "each parent has many of these over time", you MUST use \`forEachParent\` pointing to the parent entity table. Without it, your patterns will produce unrealistically few rows. The expander infers the FK column from the schema automatically — you only need to set \`forEachParent.table\` and include a \`{{parentTable.pk}}\` placeholder in the pattern fields for that FK column.
 
 ##############################################################################
-# FACT-DRIVEN DATA GENERATION — PERSONA CLAIMS ARE HARD CONSTRAINTS
+# CLAIM-DRIVEN DATA GENERATION — PERSONA CLAIMS ARE HARD CONSTRAINTS
 ##############################################################################
 
-**RULE H — FACT-DRIVEN ARCHETYPES (MANDATORY):**
-The persona description contains specific numeric claims about the data (e.g., "3 overdue invoices totalling £12,400", "847 free-tier users", "14 pro customers who haven't logged in for 30+ days"). These are NOT suggestions — they are **hard constraints** that your archetypes MUST satisfy after expansion.
+**RULE H — STRUCTURED CLAIMS (MANDATORY):**
+The persona description contains specific numeric and factual claims about the data (e.g., "3 overdue invoices totalling £12,400", "847 free-tier users", "14 pro customers who haven't logged in for 30+ days", "starter plan costs £29"). These are NOT suggestions — they are **hard constraints** that the data MUST satisfy after expansion. The auditor will evaluate every claim you emit and FAIL generation (after a bounded repair loop) if any predicate doesn't hold.
 
-**How to honour fact claims:**
-1. **Parse every number** in the persona description — counts, totals, percentages, amounts.
-2. **Design archetypes so expansion produces those exact numbers.** For example:
-   - "3 overdue invoices totalling £12,400" → create an archetype with \`count: 3\` (not as a weight fraction — as a dedicated archetype), status "payment_due"/"overdue", and amounts that sum to 1240000 (in pence/cents).
-   - "847 free-tier users" → create a "free-tier" archetype in \`entityArchetypes\` for the users table with the right count/weight to produce exactly 847 rows.
-   - "14 Pro customers who haven't logged in for 30+ days" → create a "pro-inactive" archetype with count matching 14, plan "pro", and \`last_login_at\` set to a timestamp >30 days ago.
-   - "~2,847 paying customers" → total customer count across all paid archetypes = 2847.
-   - "£127k MRR" → archetype amounts × counts must sum to ~£127,000.
-3. **Use dedicated small archetypes for specific claims.** If the persona says "3 overdue invoices", create a separate archetype with weight that produces exactly 3 entities — do NOT rely on random status distribution from a larger pool. **Never inline persona-specific events as static \`entities\` rows when the target table has cross-surface FK columns** (\`stripe_*_id\`, etc.) — that bypasses cross-surface derivation and produces dangling FKs. Use anchor-bound archetypes instead (see ANCHORS section).
-4. **For percentage claims**, compute the exact count from the total and create appropriately weighted archetypes.
-5. **Include all claimed facts** in the \`facts\` array with structured \`data\` fields matching the claim.
+**Your two-step responsibility:**
+
+**Step 1 — Extract every claim as a structured predicate** in \`data.claims\`. Each entry names a precise check the auditor will run. Use the right \`kind\` for the claim's shape:
+
+  - **row_count** — "1,200 Stripe customers", "847 free-tier users". A count of rows matching a filter.
+    \`\`\`json
+    { "id": "claim_stripe_customers", "quote": "1,200 customers paying via Stripe",
+      "kind": "row_count", "target": { "surface": "db", "name": "customers",
+        "filter": { "billing_platform": "stripe" } }, "expected": 1200 }
+    \`\`\`
+
+  - **aggregate_sum** — "3 overdue invoices totalling £12,400". A sum across a field, in the field's native units (cents/pence for integer_cents, decimal for decimal_string).
+    \`\`\`json
+    { "id": "claim_overdue_total", "quote": "3 overdue invoices totalling £12,400",
+      "kind": "aggregate_sum", "target": { "surface": "api", "name": "chargebee.invoice",
+        "filter": { "status": "payment_due" } }, "field": "total", "expected": 1240000 }
+    \`\`\`
+
+  - **pinned_field** — "starter plan costs £29", "all UK customers in GBP". A field's value pinned per row (perRow:true) or at least one row (perRow:false).
+    \`\`\`json
+    { "id": "claim_starter_price", "quote": "starter plan £29/mo",
+      "kind": "pinned_field", "target": { "surface": "api", "name": "stripe.price",
+        "filter": { "nickname": "starter-monthly" } },
+      "field": "unit_amount", "expected": 2900, "perRow": true }
+    \`\`\`
+
+  - **distribution_pct** — "61% of MRR via Stripe", "split 50/30/20 across plans". A percentage distribution over field values.
+
+  - **date_window** — "8 failed charges this week", "47 messages on Apr 22". Count of rows whose date field falls in [min, max].
+
+  - **orphans_exactly** — "3 deliberate Stripe-only orphans from a botched import". API rows whose id has no DB identity row.
+
+  - **no_row_with** — "no Pro user with last_login within 30 days" (when combined with a separate row_count claim for the 14 inactive ones).
+
+**Filter operators** in the \`filter\` map:
+- Bare value = equality: \`{ status: "active" }\`
+- \`{ in: [...] }\` / \`{ nin: [...] }\` — membership
+- \`{ gte: N }\` / \`{ lte: N }\` / \`{ gt: N }\` / \`{ lt: N }\` — comparison
+- \`{ is_null: true|false }\` — null check (also matches "")
+- \`{ age_days_gte: N }\` / \`{ age_days_lte: N }\` — for date/timestamp fields, today − row[field] in days
+
+**Step 2 — Cite every claim from at least one archetype.** Every archetype that is responsible for producing rows that satisfy a claim MUST include \`cites: ["claim_id_1", "claim_id_2"]\`. Ambient archetypes (broad distribution archetypes that fill the rest of the count) can omit \`cites\`.
+
+**Why cites matter:** when the auditor flags a claim as failed, it lists the archetypes that cited it. The repair LLM sees only those archetypes (not the whole blueprint) and proposes a fix. An uncited claim is a sign that no archetype was designed to satisfy it — the auditor will still evaluate it, but the repair LLM has no specific target to fix.
+
+**Design pattern — per-tier pinned amounts:**
+\`\`\`json
+"claims": [
+  { "id": "starter_price", "quote": "starter $29/mo", "kind": "pinned_field",
+    "target": {"surface": "api", "name": "stripe.price",
+               "filter": {"lookup_key": "starter-monthly"}},
+    "field": "unit_amount", "expected": 2900, "perRow": true }
+],
+"apiEntityArchetypes": {
+  "stripe": {
+    "price": {
+      "count": 6,
+      "archetypes": [
+        { "label": "starter-monthly", "weight": 0,
+          "count": 1,
+          "fields": { "lookup_key": "starter-monthly", "unit_amount": 2900,
+                      "currency": "usd", "type": "recurring" },
+          "vary": { "id": {"type": "sequence", "prefix": "price_p1_"} },
+          "cites": ["starter_price"] },
+        ...
+      ]
+    }
+  }
+}
+\`\`\`
+
+**Design pattern — narrow archetype for "N rows with property X":**
+\`\`\`json
+"claims": [
+  { "id": "pro_inactive_14", "quote": "14 Pro customers haven't logged in for 30+ days",
+    "kind": "row_count", "target": {"surface": "db", "name": "users",
+      "filter": {"plan": "pro", "last_login_at": {"age_days_gte": 30}}}, "expected": 14 }
+],
+"entityArchetypes": {
+  "users": {
+    "count": 934,
+    "archetypes": [
+      { "label": "pro-active", "weight": 0.99,
+        "fields": {"plan": "pro", "status": "active"},
+        "vary": { "last_login_at": {"type": "range",
+          "min": <today - 30d epoch>, "max": <today epoch>} } },
+      { "label": "pro-inactive-churn-risk", "weight": 0, "count": 14,
+        "fields": {"plan": "pro", "status": "active"},
+        "vary": { "last_login_at": {"type": "range",
+          "min": <today - 180d epoch>, "max": <today - 31d epoch>} },
+        "cites": ["pro_inactive_14"] }
+    ]
+  }
+}
+\`\`\`
+
+**Design pattern — aggregate sum spread across N archetypes:**
+"3 overdue invoices totalling £12,400" → one claim, three archetypes each with \`count: 1\` and a pinned \`total\` field summing to 1240000:
+\`\`\`json
+"claims": [
+  { "id": "overdue_12400", "quote": "3 overdue invoices totalling £12,400",
+    "kind": "aggregate_sum",
+    "target": {"surface": "api", "name": "chargebee.invoice",
+               "filter": {"status": "payment_due"}},
+    "field": "total", "expected": 1240000 },
+  { "id": "overdue_count_3", "quote": "3 overdue invoices",
+    "kind": "row_count",
+    "target": {"surface": "api", "name": "chargebee.invoice",
+               "filter": {"status": "payment_due"}}, "expected": 3 }
+],
+"apiEntityArchetypes": {
+  "chargebee": {
+    "invoice": {
+      "count": 50,
+      "archetypes": [
+        { "label": "overdue-oldest", "weight": 0, "count": 1,
+          "fields": {"status": "payment_due", "total": 480000},
+          "cites": ["overdue_12400", "overdue_count_3"] },
+        { "label": "overdue-mid",    "weight": 0, "count": 1,
+          "fields": {"status": "payment_due", "total": 420000},
+          "cites": ["overdue_12400", "overdue_count_3"] },
+        { "label": "overdue-recent", "weight": 0, "count": 1,
+          "fields": {"status": "payment_due", "total": 340000},
+          "cites": ["overdue_12400", "overdue_count_3"] },
+        { "label": "paid",           "weight": 1.0,
+          "fields": {"status": "paid"},
+          "vary": { "total": {"type": "range", "min": 2900, "max": 49900} } }
+      ]
+    }
+  }
+}
+\`\`\`
+480000 + 420000 + 340000 = 1240000. Three archetypes, three rows, claim audited and satisfied.
 
 **Example — encoding "3 overdue invoices totalling £12,400":**
 \`\`\`json
@@ -471,6 +593,16 @@ The persona description contains specific numeric claims about the data (e.g., "
 Here weight 0.06 × count 50 = 3 overdue invoices. The amount 413333 × 3 ≈ £12,400.
 
 **CRITICAL:** Do NOT generate random distributions and hope they match the persona. The persona description IS your specification — treat every specific number as a requirement.
+
+**BRIDGE TABLES — DO TWO THINGS:**
+
+The user prompt has a "BRIDGE TABLES" block listing DB tables whose rows the mirror flow produces from API resources. For each one:
+
+1. **Do NOT add it as a key in \`entityArchetypes\`.** The mirror produces its rows; a DB archetype DOUBLES the count.
+
+2. **Re-route every claim about that table to the API surface.** The block shows the concrete \`api.<adapter>.<resource>\` targets per bridge table. Re-emit each persona fact as an API claim on the right adapter — do NOT leave the claim with \`target.surface = "db"\` and a \`filter.billing_platform\` (the auditor will see mirrored row counts and the repair loop cannot fix the wrong target without re-introducing duplication).
+
+3. Internal-only DB tables (NOT in the bridge-tables list) use \`entityArchetypes\` normally.
 
 **RULE I — DATE-DRIVEN ARCHETYPES (MANDATORY):**
 The persona description contains specific date references for events ("on Apr 22 the SOC 2 package arrived from Sarah", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp/date field you generate (\`sent_at\`, \`created_at\`, \`closed_at\`, \`paid_at\`, \`occurred_at\`, etc.).
@@ -638,6 +770,8 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
     'phase1',
   );
 
+  const bridgeTablesBlock = formatBridgeTables(schemaMapping);
+
   const dateRange = startDate
     ? `⚠ DATE RANGE: ${startDate} → ${today}. ALL generated dates MUST fall within this range. No exceptions.`
     : `⚠ Current date: ${today}. ALL generated dates must be relative to this date.`;
@@ -665,6 +799,7 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
     ...(apiSection ? [apiSection, ''] : []),
     ...(platformHint ? [platformHint, ''] : []),
     ...(identityContract ? [identityContract, ''] : []),
+    ...(bridgeTablesBlock ? [bridgeTablesBlock, ''] : []),
     ...(apiOnlyMode
       ? [
           '⚠ API-ONLY MODE: There is NO database schema. Do NOT generate `entities`, `entityArchetypes`, or `patterns`. ' +
@@ -707,6 +842,63 @@ function formatRequiredColumns(schema: SchemaModel): string {
     '⚠ REQUIRED COLUMNS — you MUST provide values for these in every entity seed and pattern field:',
     ...sections,
   ].join('\n');
+}
+
+/**
+ * Render the schema-mapping's bridge-table list as a loud block at the top of
+ * the Phase 1 user prompt. Bridge tables are DB tables whose rows the mirror
+ * flow derives from API customer/subscription/invoice/etc. data. Emitting DB
+ * archetypes for them produces silent ~2× row counts because the API-mirrored
+ * rows AND the DB archetype rows BOTH land in the table.
+ *
+ * The Phase 1 system prompt's BRIDGE TABLES rule references this block — the
+ * rule is generic; this block lists the concrete table names the LLM must
+ * route around. Returns "" when no bridge tables exist so the section is
+ * omitted from the prompt.
+ */
+function formatBridgeTables(schemaMapping?: SchemaMapping): string {
+  const bridgeTables = schemaMapping?.bridgeTables ?? [];
+  if (bridgeTables.length === 0) return '';
+
+  // Group api targets (adapter.resource) per bridge table from the mappings.
+  // Adapter names come from the mapping data, not hardcoded — so this section
+  // is correct for every persona+adapter combination.
+  const targetsByTable = new Map<string, Set<string>>();
+  for (const m of schemaMapping?.mappings ?? []) {
+    if (!bridgeTables.includes(m.dbTable)) continue;
+    if (!m.adapterId || !m.apiResource) continue;
+    const key = m.dbTable;
+    const set = targetsByTable.get(key) ?? new Set<string>();
+    set.add(`${m.adapterId}.${m.apiResource}`);
+    targetsByTable.set(key, set);
+  }
+
+  const lines: string[] = [
+    '--- BRIDGE TABLES (DB tables produced by the API → DB mirror flow) ---',
+    '⚠ MANDATORY: Do NOT emit `entityArchetypes` entries for any table listed below.',
+    'Rows for these tables come from the API mirror; a DB archetype DOUBLES the count.',
+    '',
+    'ROUTE CLAIMS TO THE API SURFACE for these tables. Use the concrete api.<adapter>.<resource>',
+    'target names shown for each table below — NOT db.<bridge_table>.',
+    '',
+    'PATTERN:',
+    '  Instead of: { kind: "row_count", target: { surface: "db", name: "<bridge>", filter: { billing_platform: "<X>" } }, expected: N }',
+    '  Emit:       { kind: "row_count", target: { surface: "api", name: "<X>.<resource>" }, expected: N }',
+    '',
+    'The API claim is the same persona fact, routed correctly. The mirror flow then',
+    'produces N matching <bridge_table> rows tagged billing_platform=<X> automatically.',
+    '',
+  ];
+  for (const t of bridgeTables) {
+    const targets = targetsByTable.get(t);
+    if (targets && targets.size > 0) {
+      lines.push(`  - ${t}   →   route claims via:  ${[...targets].sort().join(', ')}`);
+    } else {
+      lines.push(`  - ${t}   (no API target found in schema mapping — fallback: emit DB archetype, accept 2× risk)`);
+    }
+  }
+  lines.push('--- END BRIDGE TABLES ---');
+  return lines.join('\n');
 }
 
 function formatSchema(schema: SchemaModel): string {
@@ -1320,27 +1512,65 @@ export interface BuildDistributionPromptOptions {
    * Per-adapter prompt context (idPrefix lookups) for the identity contract.
    */
   promptContexts?: Record<string, PromptContext>;
+  /**
+   * Anchors declared in the Phase 1 blueprint's `data.anchors`. Phase 2 must
+   * see the concrete anchor ids so it can bind any anchor whose persona event
+   * belongs to this adapter's domain (e.g. an "App Store outage" anchor on
+   * revenuecat, a "Monday direct-debit collection" anchor on gocardless).
+   *
+   * Without this surface, the system prompt's generic rules about binding
+   * anchors are unactionable — the LLM has no way to know which anchor ids
+   * exist or what they represent.
+   */
+  anchors?: ReadonlyArray<{
+    id: string;
+    dates?: Record<string, string>;
+    customer?: { match?: string };
+  }>;
+  /**
+   * Persona claims declared in Phase 1 (`data.claims`). Phase 2 emitters
+   * that produce rows satisfying one of these claims MUST cite it via
+   * `cites: ["claim_id"]`. The auditor uses citations to identify which
+   * archetypes the repair LLM should patch on failure.
+   *
+   * Only claims whose `target.surface === 'api'` and whose adapter prefix
+   * matches an adapter in THIS Phase 2 call are surfaced — DB claims are
+   * not actionable from Phase 2.
+   */
+  claims?: ReadonlyArray<{
+    id: string;
+    quote: string;
+    kind: string;
+    target: { surface: string; name: string; filter?: Record<string, unknown> };
+    [extra: string]: unknown;
+  }>;
 }
 
-const DISTRIBUTION_SYSTEM_PROMPT = `You are a synthetic data architect. Your ONLY task is to decide the distribution of API entity data for a given persona.
+const DISTRIBUTION_SYSTEM_PROMPT = `You are a synthetic data architect. Your task is to decide the distribution of API entity data for a given persona and ensure the data satisfies every claim Phase 1 extracted from the persona.
 
-You will be given a set of API platform resource specifications. For each resource type, decide:
+You will be given:
+1. The persona description
+2. API platform resource specifications (every field, not just required — money/currency fields are listed loudly because the assembler will randomize them if you don't pin them)
+3. Phase 1's extracted **claims** — structured predicates the auditor will evaluate after expansion. Your archetypes MUST satisfy them.
+
+For each resource type, decide:
 1. **count** — how many entities of this type to generate (use the volume hint and persona context)
-2. **archetypes** — 2-8 representative sub-groups with labels, weights, and field overrides
-3. **facts** — testable facts about the distribution choices (anomalies, overdue items, risk signals)
+2. **archetypes** — 2-8 representative sub-groups with labels, weights, field overrides, and CITES for any archetype designed to satisfy a Phase 1 claim
 
 ## Output format
 Return a JSON object with:
 - "resources": array of { "resource": "<type>", "distribution": { count, archetypes } }
-- "facts": optional array of testable facts about the generated data
+- "facts": optional legacy-only — keep empty unless you need a descriptive note (claims are the validated channel)
 
 Each archetype has:
 - "label": human-readable name
 - "weight": fraction 0-1 (matched-archetype weights sum to ~1.0; apiOnly weights are additive)
-- "fieldOverrides": array of { "field", "value" } pairs for CONSTANT values (value is always a string)
+- "fieldOverrides": array of { "field", "value" } pairs for CONSTANT values. \`value\` is a string, but the assembler coerces numerics. **Dotted paths target nested-object fields** — { "field": "unit_price.amount", "value": "2900" } sets the nested amount in Paddle's price object.
 - "vary": optional array of { "field", "type", ... } for fields where you want a SPECIFIC variation strategy
 - "apiOnly": optional boolean. Set true when entities have NO database counterpart (see API-ONLY ARCHETYPES section below).
-- "count": optional integer. Only meaningful when apiOnly:true — explicit additive count for this orphan archetype.
+- "count": optional integer. Explicit row count for the archetype (required when weight is 0 and the archetype is not anchor-bound).
+- "anchor": optional anchor id (from Phase 1's data.anchors) this archetype is bound to.
+- "cites": optional array of claim ids. Every archetype designed to satisfy a Phase 1 claim MUST include it here. The auditor uses cites to identify which archetypes to patch on failure.
 
 ## When to use vary
 Most fields are auto-varied by the assembler from the spec (IDs, timestamps, emails, names, etc.).
@@ -1350,13 +1580,27 @@ Use "vary" ONLY when you have a specific opinion the assembler cannot infer:
 - Derived templates: { "field": "description", "type": "derived", "template": "Invoice for {{name}}" }
 Do NOT include vary for: IDs (assembler handles prefixes), timestamps, emails, names, phones.
 
-## CRITICAL — FACT-DRIVEN DISTRIBUTIONS
-The persona description contains specific numeric claims (counts, totals, percentages, amounts).
-These are HARD CONSTRAINTS — your archetype distributions MUST produce those exact numbers.
-- "3 overdue invoices totalling £12,400" → create an archetype with weight producing exactly 3 entities, status "payment_due"/"overdue", amounts summing to the total
-- "8% churn rate" → canceled archetype weight = 0.08
-- Do NOT generate random distributions and hope they match. Encode every persona claim directly into archetype weights, counts, and field values.
-- Do NOT include a "facts" array — facts are generated automatically after expansion from actual data.
+## CRITICAL — CLAIMS ARE HARD CONSTRAINTS, NOT SUGGESTIONS
+Every claim Phase 1 declared will be evaluated by the auditor after expansion. Unsatisfied claims trigger a bounded repair loop and ultimately FAIL generation with the persona quote shown to the user.
+
+For each claim whose \`target.surface === 'api'\` and whose adapter is one of THIS call's adapters:
+1. Identify which archetype(s) will produce rows that satisfy the predicate.
+2. Set \`fieldOverrides\` (or \`vary\` for ranges) on those archetypes so the predicate holds.
+3. Add the claim's \`id\` to the archetype's \`cites\` array.
+
+Common claim shapes and the archetype pattern they require:
+
+- **row_count** "1,200 Stripe customers" → ensure matched archetype counts sum to 1200. Use \`count\` on a dedicated archetype when the filter is narrow ("14 inactive Pro users") rather than relying on weight × total.
+
+- **aggregate_sum** "3 overdue invoices totalling £12,400" → THREE archetypes each with \`count: 1\` and \`fieldOverrides: [{field:"total", value:"480000"}]\` etc., amounts summing to 1240000. Single archetype with \`vary: range\` WILL FAIL the sum check.
+
+- **pinned_field** (perRow:true) "starter plan £29/mo" → \`fieldOverrides: [{field:"unit_amount", value:"2900"}]\` on the tier archetype. NEVER leave a persona-named amount to the assembler's random range.
+
+- **distribution_pct** "61% of MRR via Stripe" → make sure archetype weights produce the right per-platform splits.
+
+- **date_window** "8 failed charges this week" → \`vary: [{field:"created", type:"range", min:<this_week_start_epoch>, max:<this_week_end_epoch>}]\` on a count-8 archetype, NOT generic timestamps.
+
+- **orphans_exactly** → use \`apiOnly: true, count: N\` on a dedicated archetype.
 
 ## CRITICAL — DATE-DRIVEN DISTRIBUTIONS
 The persona description ALSO contains specific date references for events ("on Apr 22 the SOC 2 package arrived", "demo call last week", "after the kickoff on March 6"). These are HARD CONSTRAINTS for any timestamp field on entities created by the expander.
@@ -1505,6 +1749,90 @@ export function buildDistributionPrompt(
     lines.push('--- END CONSTRAINTS ---');
   }
 
+  // Anchors declared in Phase 1. The system prompt's ANCHOR BINDING section
+  // describes the mechanism generically; this section lists the concrete ids
+  // the model must consider so binding becomes actionable. Without this, the
+  // anchor list is invisible at the per-adapter call site and no archetype
+  // ever sets `anchor: <id>` — even when the persona event is squarely in
+  // this adapter's domain.
+  const anchors = options.anchors;
+  if (anchors && anchors.length > 0) {
+    lines.push('');
+    lines.push('--- ANCHORS DECLARED IN PHASE 1 (data.anchors) ---');
+    lines.push('⚠ MANDATORY: Every anchor below MUST be bound by at least one archetype somewhere');
+    lines.push('across the full run. If an anchor was not bound DB-side in Phase 1, it MUST be bound');
+    lines.push('API-side here. Generation fails with a clear error if any anchor is left unbound.');
+    lines.push('');
+    lines.push('⚠ EXACT ID MATCHING: When you bind an anchor, the value of the archetype\'s `anchor`');
+    lines.push('field MUST be the id string from the list below, copied character-for-character.');
+    lines.push('Do NOT pluralize ("collect" → "collection"), normalize ("appstore" → "apple"),');
+    lines.push('expand abbreviations ("tue" → "tuesday"), reorder words, change case, add or remove');
+    lines.push('underscores, or otherwise paraphrase. The id is a stable token, not a label. The');
+    lines.push('validator does literal-string comparison; a paraphrased id is an orphan reference');
+    lines.push('and the declared anchor still registers as unbound.');
+    lines.push('');
+    lines.push('For EACH anchor, decide whether the persona event it represents belongs to THIS adapter');
+    lines.push('(based on the anchor id, dates, customer.match, and the persona narrative). If yes,');
+    lines.push('create an archetype with `anchor: "<id-exact-from-list>"` plus an explicit `count`.');
+    lines.push('Bind on the resource that semantically owns the event (e.g. App Store / mobile outage');
+    lines.push('→ revenuecat subscriptions / purchases; direct-debit collection → gocardless payments;');
+    lines.push('double-charge → stripe payment_intents). If no, do nothing — another adapter will pick');
+    lines.push('it up. NEVER invent a new anchor id for an event that already has one declared.');
+    lines.push('');
+    for (const a of anchors) {
+      const dateStr = a.dates
+        ? '{ ' + Object.entries(a.dates).map(([k, v]) => `${k}: "${v}"`).join(', ') + ' }'
+        : '<none>';
+      const matchStr = a.customer?.match ? `"${a.customer.match}"` : '<none>';
+      lines.push(`  - id (use VERBATIM): "${a.id}"`);
+      lines.push(`      dates: ${dateStr}`);
+      lines.push(`      customer.match: ${matchStr}`);
+    }
+    lines.push('');
+    lines.push('When binding, set `weight: 0` (anchor archetypes are additive, not weighted) and an');
+    lines.push('explicit `count` matching the persona narrative. For TIME-WINDOW events, also set');
+    lines.push('`vary: [{ field: "<timestamp_field>", type: "anchor_date", anchor: "<id-exact>", key:');
+    lines.push('"event", format: "epoch_seconds" }]` (or `iso` per the spec\'s timestamp format).');
+    lines.push('--- END ANCHORS ---');
+  }
+
+  // Phase 1 claims relevant to THIS Phase 2 call. The auditor will evaluate
+  // every claim against the expanded data; failures trigger a 2-attempt
+  // repair loop and ultimately fail generation. Filter to API claims whose
+  // adapter prefix matches one of the adapters in this call — DB claims
+  // aren't actionable here.
+  const claims = options.claims ?? [];
+  const adapterIdsForCall = new Set(Object.keys(resourceSpecs));
+  const relevantClaims = claims.filter((c) => {
+    if (c.target.surface === 'db') return false; // DB claims handled Phase 1
+    const dot = c.target.name.indexOf('.');
+    if (dot < 0) return false;
+    return adapterIdsForCall.has(c.target.name.slice(0, dot));
+  });
+  if (relevantClaims.length > 0) {
+    lines.push('');
+    lines.push('--- CLAIMS DECLARED IN PHASE 1 (data.claims) — HARD CONSTRAINTS ---');
+    lines.push('⚠ MANDATORY: Every claim below has a predicate the auditor will evaluate after');
+    lines.push('expansion. Design archetypes whose rows make each predicate true, and add the');
+    lines.push('claim id to those archetypes\' `cites` array. Unsatisfied claims trigger a repair');
+    lines.push('loop; after 2 failed repair attempts generation aborts with the persona quote.');
+    lines.push('');
+    for (const c of relevantClaims) {
+      const filter = c.target.filter ? ` filter=${JSON.stringify(c.target.filter)}` : '';
+      lines.push(`  - id: "${c.id}"  (cite this in archetypes that satisfy it)`);
+      lines.push(`      quote:  "${c.quote}"`);
+      lines.push(`      kind:   ${c.kind}`);
+      lines.push(`      target: ${c.target.surface}.${c.target.name}${filter}`);
+      // Echo predicate-specific extras in raw JSON for the model
+      const { id: _id, quote: _q, kind: _k, target: _t, ...extras } = c;
+      void _id; void _q; void _k; void _t;
+      if (Object.keys(extras).length > 0) {
+        lines.push(`      predicate: ${JSON.stringify(extras)}`);
+      }
+    }
+    lines.push('--- END CLAIMS ---');
+  }
+
   lines.push('', '--- API PLATFORM RESOURCES ---', '');
 
   for (const [adapterId, specs] of Object.entries(resourceSpecs)) {
@@ -1516,18 +1844,42 @@ export function buildDistributionPrompt(
     for (const [resourceType, spec] of Object.entries(specs.resources)) {
       lines.push(`  Resource: ${resourceType} (${spec.volumeHint})`);
 
-      const requiredFields = Object.entries(spec.fields)
-        .filter(([, f]) => f.required && !f.auto)
-        .map(([name, f]) => {
-          const details: string[] = [f.type];
-          if (f.enum) details.push(`enum[${f.enum.join('|')}]`);
-          if (f.ref) details.push(`→ ${f.ref}`);
-          if (f.isAmount) details.push('amount');
-          if (f.idPrefix) details.push(`prefix:${f.idPrefix}`);
-          return `${name}(${details.join(', ')})`;
-        });
+      // Build full field listing. Required fields first, then optional money/
+      // currency fields (those are NOT safely optional — the assembler stamps
+      // random ranges or stale defaults when they're not pinned). Other
+      // optional fields are listed last so the LLM sees the full surface and
+      // can pin per-tier values when the persona names them.
+      const required: string[] = [];
+      const sensitive: string[] = [];
+      const otherOptional: string[] = [];
 
-      lines.push(`    Required fields: ${requiredFields.join(', ')}`);
+      for (const [name, f] of Object.entries(spec.fields)) {
+        if (f.auto) continue;
+        const details: string[] = [f.type];
+        if (f.enum) details.push(`enum[${f.enum.join('|')}]`);
+        if (f.ref) details.push(`→ ${f.ref}`);
+        if (f.isAmount) details.push(`amount in ${specs.platform.amountFormat}`);
+        if (f.semanticType === 'currency_code') details.push('currency_code');
+        if (f.idPrefix) details.push(`prefix:${f.idPrefix}`);
+        if (f.nullable) details.push('nullable');
+        if (!f.required) details.push('optional');
+        const formatted = `${name}(${details.join(', ')})`;
+
+        if (f.required) required.push(formatted);
+        else if (f.isAmount || f.semanticType === 'currency_code') sensitive.push(formatted);
+        else otherOptional.push(formatted);
+      }
+
+      if (required.length > 0) lines.push(`    Required fields: ${required.join(', ')}`);
+      if (sensitive.length > 0) {
+        lines.push(
+          `    Money/currency fields (assembler RANDOMIZES if not pinned — pin per-tier when persona names a price/region): ${sensitive.join(', ')}`,
+        );
+      }
+      if (otherOptional.length > 0) {
+        // Keep this terse — full list aids the LLM but is mostly informational
+        lines.push(`    Other optional fields: ${otherOptional.join(', ')}`);
+      }
 
       if (spec.refs && spec.refs.length > 0) {
         lines.push(`    References: ${spec.refs.join(', ')}`);
@@ -1580,4 +1932,903 @@ function formatColumn(col: ColumnInfo): string {
   }
 
   return parts.join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// Repair prompt — used when the claim auditor reports failures.
+//
+// The repair LLM receives only the failed claims and the archetypes that
+// cited them (plus any uncited claims, with the full archetype index so it
+// can pick the right insertion target). Output is a BlueprintPatch — a
+// structured list of ops applied deterministically to the blueprint.
+// ---------------------------------------------------------------------------
+
+const REPAIR_SYSTEM_PROMPT = `You are a synthetic data architect performing a TARGETED REPAIR of a blueprint that failed claim audit.
+
+You are given:
+1. The persona description (for context)
+2. The list of FAILED CLAIMS — each with the persona quote, the predicate, the actual value observed, and the archetypes that cited the claim
+3. The current state of the cited archetypes
+4. A repair budget — this is attempt N of 2
+
+Your job: emit a BlueprintPatch — an ordered list of \`ops\` that, when applied to the blueprint, will make every failed claim pass after re-expansion.
+
+## Available ops
+
+- \`set_field\` — write a value into a field at a dotted path. Use for pinning archetype fields.
+  \`{ "op": "set_field", "path": "data.apiEntityArchetypes.stripe.price[starter-monthly].fields.unit_amount", "value": 2900 }\`
+
+- \`set_vary\` — replace an archetype's vary entry for a field.
+  \`{ "op": "set_vary", "path": "data.entityArchetypes.users.archetypes[pro-inactive].vary.last_login_at", "variation": { "type": "range", "min": 1700000000, "max": 1730000000 } }\`
+
+- \`set_count\` — write \`count\` on an archetype (or on an EntityArchetypeConfig).
+  \`{ "op": "set_count", "path": "data.entityArchetypes.users.archetypes[pro-inactive]", "count": 14 }\`
+
+- \`add_archetype\` — push a NEW archetype onto a config. Use this when no existing archetype is responsible for satisfying the claim.
+  \`{ "op": "add_archetype", "surface": "db", "target": "users",
+     "archetype": { "label": "pro-inactive-churn-risk", "weight": 0, "count": 14,
+       "fields": {"plan": "pro"},
+       "vary": { "last_login_at": { "type": "range", "min": ..., "max": ... } },
+       "cites": ["claim_pro_inactive"] } }\`
+
+- \`remove_archetype\` — drop an archetype by label. Use sparingly — usually patching is better than deleting.
+  \`{ "op": "remove_archetype", "surface": "api", "target": "stripe.charges", "label": "duplicate-archetype" }\`
+
+## Dotted paths
+
+- Object keys join with \`.\`: \`data.entityArchetypes.users\`
+- Archetypes are looked up by label, in \`[brackets]\`: \`...archetypes[starter-monthly]\` or, more compactly, \`...users[starter-monthly]\`. Both forms work.
+- Nested object fields use further \`.\` segments: \`...fields.unit_price.amount\` writes into the nested object.
+
+## Repair strategy
+
+- Make the SMALLEST patch that satisfies the failed claims. Don't redesign — patch.
+- For aggregate_sum failures: if the cited archetypes have count=1 each, pin their amount fields so the sum is correct. If they share one archetype with a vary range, split into per-row archetypes.
+- For row_count failures: if a narrow filter has too few matches, add a dedicated archetype with explicit \`count\` AND the right field values. If too many matches, narrow the broad archetype's vary range or add a count override.
+- For pinned_field (perRow:true) failures: set the field via \`set_field\` on every cited archetype.
+- For date_window failures: narrow the timestamp vary range on the cited archetype, OR add a dedicated archetype with a tight \`vary.range\` for the window.
+- For orphans_exactly failures: add or remove apiOnly archetypes to match the expected orphan count.
+
+If this is attempt 2 (the previous attempt didn't fix the issue), READ THE PREVIOUS ATTEMPT LOG carefully and use a DIFFERENT strategy. Don't repeat the same fix.
+
+Output ONLY valid JSON matching the BlueprintPatch schema. Include a \`rationale\` field with 1-2 sentences explaining the strategy.`;
+
+export interface BuildRepairPromptOptions {
+  persona: { name: string; description: string };
+  attempt: number;
+  failures: Array<{
+    claim: { id: string; quote: string; kind: string; [k: string]: unknown };
+    predicate: string;
+    actual: unknown;
+    sampleRows?: unknown[];
+    citedBy?: string[];
+  }>;
+  /**
+   * The current state of every archetype cited by at least one failed claim,
+   * plus any archetype config that's a plausible insertion target for new
+   * archetypes (the LLM may not know which adapter to add to without context).
+   */
+  citedArchetypes: Array<{
+    surface: 'db' | 'api';
+    target: string;
+    config: unknown;
+  }>;
+  /** Patch log from prior attempts, if any */
+  priorAttempts?: Array<{
+    attempt: number;
+    patch: { ops: unknown[]; rationale: string };
+    /** What still failed after applying that patch */
+    stillFailing: string[];
+  }>;
+}
+
+// =============================================================================
+// V2 prompts — claim extraction + per-slot content generation
+//
+// V2 splits the monolithic Phase 1 prompt into two narrow prompts that
+// each ask the LLM to do exactly one job. Determinism owns everything in
+// between (bridge rewrite, topology, count solving).
+// =============================================================================
+
+// ---------------------------------------------------------------------------
+// Claim extraction system prompt (V2 layer 2)
+// ---------------------------------------------------------------------------
+
+const CLAIM_EXTRACTION_SYSTEM_PROMPT = `You are a synthetic data architect. Your single job is to translate a persona description in natural language into a structured contract of checkable claims plus the persona profile. You do NOT generate archetypes, counts, weights, or content. Those are produced downstream by a deterministic solver and per-slot content generators.
+
+##############################################################################
+# OUTPUT
+##############################################################################
+
+Return a JSON object matching the provided schema, with:
+  - personaId: kebab-case unique id (e.g. "sarah-chen", "klein-records").
+  - domain: the domain string from the user prompt, verbatim.
+  - persona: a coherent profile { name, age, occupation, location, salary?, description }.
+    Pick realistic name/age/location matching the description. salary may be null.
+  - claims: every checkable predicate the persona narrative makes about the data.
+  - anchors: persona-narrated events that pin a customer + named date(s) and
+    imply coherent rows across multiple tables/surfaces.
+
+##############################################################################
+# CLAIMS — THE PERSONA CONTRACT
+##############################################################################
+
+Every numeric or factual statement in the persona description is a HARD
+CONSTRAINT on the seeded data. After expansion, an auditor evaluates every
+claim against materialized rows; unsatisfied claims trigger a bounded repair
+loop and ultimately fail generation with the persona quote shown to the user.
+
+Your job is to read the persona carefully and emit a claim for every
+checkable predicate it makes. Be thorough — uncited persona facts become
+silent data drift downstream.
+
+## Claim kinds
+
+Pick the right \`kind\` for each predicate's shape:
+
+- **row_count** — "1,200 Stripe customers", "847 free-tier users". A count of rows matching a filter.
+  \`\`\`json
+  { "id": "claim_stripe_customers", "quote": "1,200 customers paying via Stripe",
+    "kind": "row_count",
+    "target": { "surface": "api", "name": "stripe.customer" },
+    "expected": 1200 }
+  \`\`\`
+
+- **aggregate_sum** — "3 overdue invoices totalling £12,400". A sum across a field, in
+  the field's native units (cents/pence for integer cents, decimal for decimal strings).
+  \`\`\`json
+  { "id": "claim_overdue_total", "quote": "3 overdue invoices totalling £12,400",
+    "kind": "aggregate_sum",
+    "target": { "surface": "api", "name": "chargebee.invoice",
+                "filter": { "status": "payment_due" } },
+    "field": "total", "expected": 1240000 }
+  \`\`\`
+
+- **aggregate_avg** — "average ARPU £127" or "mean MRR around £85/customer".
+
+- **pinned_field** — "starter plan costs £29", "all UK customers in GBP". A field's value
+  pinned per row (perRow:true) or at least one row (perRow:false).
+  \`\`\`json
+  { "id": "claim_starter_price", "quote": "starter plan £29/mo",
+    "kind": "pinned_field",
+    "target": { "surface": "api", "name": "stripe.price",
+                "filter": { "nickname": "starter-monthly" } },
+    "field": "unit_amount", "expected": 2900, "perRow": true }
+  \`\`\`
+
+- **distribution_pct** — "61% of MRR via Stripe", "split 50/30/20 across plans". A
+  percentage distribution over field values. Use percentages 0-100.
+
+- **date_window** — "8 failed charges this week", "47 messages on Apr 22". Count of
+  rows whose date field falls in [min, max] (inclusive ISO date or full timestamp).
+
+- **orphans_exactly** — "3 deliberate Stripe-only orphans from a botched import". API
+  rows whose id has no corresponding DB identity row.
+
+- **no_row_with** — "no Pro user with last_login within 30 days" (often combined with a
+  separate row_count claim that pins the inactive ones).
+
+## Targets
+
+A target names the surface and resource the predicate runs against:
+
+- \`{ "surface": "db",  "name": "<table_name>" }\` — e.g. "users", "invoices".
+- \`{ "surface": "api", "name": "<adapter>.<resource>" }\` — e.g. "stripe.customer",
+  "chargebee.invoice", "paddle.subscription".
+
+Use the schema and adapter resource lists below to choose names that match
+exactly what's available. For tables flagged in the BRIDGE TABLES section,
+target the API surface directly (see the bridge-table rule below).
+
+## Filters
+
+Filters narrow the predicate to a subset of rows. The filter is a conjunction of
+per-field predicates. Bare value = equality; operators wrap the value:
+
+- \`{ field: "value" }\` — equality
+- \`{ field: { in: [...] } }\` / \`{ field: { nin: [...] } }\` — membership
+- \`{ field: { gte: N | "iso" } }\` / lte / gt / lt — comparison (numbers or dates)
+- \`{ field: { is_null: true } }\` — null/empty check
+- \`{ field: { age_days_gte: N } }\` / \`{ field: { age_days_lte: N } }\` — today − row[field] in days
+
+Example: \`{ "plan": "pro", "status": { "in": ["active", "past_due"] }, "last_login_at": { "age_days_gte": 30 } }\`
+
+## Tolerance (linguistic hedging)
+
+When the persona uses hedged language, set \`tolerance\` on the claim:
+- "exactly 14" / "14" → tolerance 0 (or omit)
+- "approximately 2,847" → tolerance ~1% of expected
+- "around £127k MRR" → tolerance ~5% of expected
+- "roughly 8 platforms" or numbers without specifics → omit a precise expected; either skip the claim or give it generous tolerance
+
+If a persona statement is genuinely vague ("a handful", "a bunch") with no
+specific number, do NOT invent a number — skip the claim or capture it as a
+qualitative pinned_field on a status/tag column.
+
+##############################################################################
+# BRIDGE TABLES — ROUTE CLAIMS TO THE API SURFACE
+##############################################################################
+
+The user prompt lists DB tables produced by the API → DB mirror flow. For
+each one, the mirror generates the DB rows from API data. If you emit a
+claim against the DB surface with \`filter.billing_platform = "<X>"\` for
+such a table, downstream rewriting will re-route it to the API surface
+automatically. To minimise that round-trip, prefer to target the API
+surface directly when the persona names a platform.
+
+Example: persona says "1,200 customers paying via Stripe" and "users" is a
+bridge table that mirrors stripe.customer. Emit the claim with
+\`target = { surface: "api", name: "stripe.customer" }, expected: 1200\` rather
+than \`target = { surface: "db", name: "users", filter: { billing_platform: "stripe" } }\`.
+
+For claims that DON'T pin a single platform (e.g. "no Pro user is inactive",
+"users on the free plan = 847"), keep the DB surface — those are
+cross-cutting attributes the mirror doesn't decide.
+
+##############################################################################
+# ANCHORS — CROSS-TABLE PERSONA EVENTS
+##############################################################################
+
+When the persona describes a concrete event that implicates rows on multiple
+tables AND a specific customer + date, declare an anchor. Anchors keep
+cross-table coherence O(events) instead of O(rows).
+
+Use an anchor when the persona pins a (customer, date) pair to a coherent
+event: "Klein Records double-charge on Apr 29", "the SOC 2 thread on Apr 22",
+"Larkspur's Stripe sub canceled while DB still shows active", "8 failed charges
+this week — 4 card_expired, 2 insufficient_funds, 2 lost_card".
+
+Anchor structure:
+\`\`\`json
+{
+  "id": "klein_double_charge",
+  "customer": { "match": "Klein Records" },
+  "dates": { "event": "2026-04-29T00:00:00Z" }
+}
+\`\`\`
+
+- \`id\`: stable, deterministic kebab/snake-case string. Downstream content
+  generators reference this id verbatim. Never paraphrase later.
+- \`customer.match\`: exact-or-substring lookup against \`name\` / \`company\`
+  on the identity customer table. If the persona doesn't name a specific
+  customer (e.g. "8 failed charges this week" with no per-customer detail),
+  omit \`customer\` — only the dates apply.
+- \`dates\`: ISO strings, named. Use \`event\` for the canonical date. Resolve
+  relative dates ("last week", "two weeks ago") against the Current Date in
+  the user prompt.
+
+DO NOT create anchors for ambient distributions ("60% starter / 40% pro") —
+those are claims, not events. One anchor per concrete persona event.
+
+##############################################################################
+# DATE NORMALISATION
+##############################################################################
+
+The user prompt specifies an exact date range and a current date. Convert
+every persona date reference to an absolute ISO date or timestamp:
+
+- "Apr 22" / "April 22nd" → "2026-04-22" (year from current date / volume)
+- "last week" → today − 7d, ISO date
+- "yesterday" → today − 1d
+- "two weeks ago" → today − 14d
+- "the kickoff on March 6" → "2026-03-06"
+- "this week" → use today − 3d (midpoint) for the event, or specify min/max for date_window claims
+
+For date_window claims, provide both \`min\` and \`max\` as ISO dates/timestamps.
+
+##############################################################################
+# RULES
+##############################################################################
+
+- Emit a claim for EVERY checkable predicate. Persona facts you skip
+  produce silent drift downstream.
+- Claim ids must be stable, kebab-case or snake_case, and descriptive (e.g.
+  "claim_stripe_customers", not "c1").
+- \`quote\` is the EXACT persona text — copy it verbatim, even punctuation.
+- For aggregate sums on amount fields, convert currency to integer minor
+  units when the API stores integer_cents (£12,400 → 1240000). When the
+  amount format is decimal_string or decimal_float, use the natural form.
+- For pinned_field claims with perRow:true, only set the field if the
+  persona pins it on every matched row. Mixed-value distributions are
+  distribution_pct claims, not pinned_field.
+- Do NOT emit duplicate claims. Two predicates that constrain the exact
+  same {target, filter, field} should be one claim.
+- Output ONLY valid JSON matching the schema. No markdown, no commentary.`;
+
+// ---------------------------------------------------------------------------
+// Claim extraction prompt builder
+// ---------------------------------------------------------------------------
+
+export interface BuildClaimExtractionPromptOptions {
+  schema: SchemaModel;
+  persona: { name: string; description: string };
+  domain: string;
+  /** Configured API adapters → array of resource names */
+  adapterResources?: Record<string, string[]>;
+  /** Schema mapping — drives the BRIDGE TABLES block */
+  schemaMapping?: SchemaMapping;
+  /** Current date (ISO YYYY-MM-DD) */
+  currentDate?: string;
+  /** Volume string from config (e.g. "6 months") */
+  volume?: string;
+  /** 1-based persona index */
+  personaIndex?: number;
+  /** Total personas in this batch */
+  totalPersonas?: number;
+}
+
+/**
+ * Build the prompt pair for the claim-extraction LLM call.
+ *
+ * The system prompt is fixed and narrow — it asks for claims + anchors +
+ * persona profile only. The user prompt grounds the LLM with the
+ * persona description, the schema/adapter surface so it can pick correct
+ * targets, and the bridge-table list so it routes platform-pinned claims
+ * to the API surface from the start.
+ */
+export function buildClaimExtractionPrompt(
+  options: BuildClaimExtractionPromptOptions,
+): PromptPair {
+  const {
+    schema,
+    persona,
+    domain,
+    adapterResources,
+    schemaMapping,
+    currentDate,
+    volume,
+    personaIndex,
+    totalPersonas,
+  } = options;
+
+  const today = currentDate ?? new Date().toISOString().split('T')[0]!;
+  const startDate = volume ? computeStartDate(today, volume) : undefined;
+
+  const tableSummary = schema.tables.length > 0 ? formatTableSummary(schema) : '';
+  const adapterSummary = adapterResources && Object.keys(adapterResources).length > 0
+    ? formatAdapterSummary(adapterResources)
+    : '';
+  const bridgeBlock = schemaMapping ? formatClaimExtractionBridges(schemaMapping) : '';
+
+  const dateRange = startDate
+    ? `Date range: ${startDate} → ${today} (every date you produce MUST fall within this range — resolve relative dates against ${today})`
+    : `Current date: ${today}`;
+
+  const personaHint = personaIndex !== undefined
+    ? `Persona index: ${personaIndex}${totalPersonas ? ` of ${totalPersonas}` : ''}`
+    : '';
+
+  const user = [
+    `Domain: ${domain}`,
+    '',
+    `Persona: "${persona.name}"`,
+    persona.description,
+    '',
+    dateRange,
+    ...(personaHint ? ['', personaHint] : []),
+    ...(tableSummary ? ['', tableSummary] : []),
+    ...(adapterSummary ? ['', adapterSummary] : []),
+    ...(bridgeBlock ? ['', bridgeBlock] : []),
+    '',
+    'Extract the persona contract. Emit one claim per checkable predicate and one anchor per concrete persona event. Return ONLY the JSON object.',
+  ].join('\n');
+
+  return { system: CLAIM_EXTRACTION_SYSTEM_PROMPT, user };
+}
+
+/** Compact one-line-per-table schema summary — enough grounding for target selection */
+function formatTableSummary(schema: SchemaModel): string {
+  const lines: string[] = ['--- DATABASE TABLES (for claim targets) ---'];
+  for (const t of schema.tables) {
+    const cols = t.columns.map((c) => c.name).join(', ');
+    lines.push(`  ${t.name}: ${cols}`);
+  }
+  lines.push('--- END TABLES ---');
+  return lines.join('\n');
+}
+
+function formatAdapterSummary(adapterResources: Record<string, string[]>): string {
+  const lines: string[] = ['--- API ADAPTERS (for api.<adapter>.<resource> claim targets) ---'];
+  for (const [adapter, resources] of Object.entries(adapterResources)) {
+    lines.push(`  ${adapter}: ${resources.join(', ')}`);
+  }
+  lines.push('--- END ADAPTERS ---');
+  return lines.join('\n');
+}
+
+function formatClaimExtractionBridges(schemaMapping: SchemaMapping): string {
+  const bridgeTables = schemaMapping.bridgeTables;
+  if (!bridgeTables || bridgeTables.length === 0) return '';
+
+  // Group api targets per bridge table
+  const targetsByTable = new Map<string, Set<string>>();
+  for (const m of schemaMapping.mappings) {
+    if (!bridgeTables.includes(m.dbTable)) continue;
+    if (m.apiField !== 'id') continue;
+    if (!m.adapterId || !m.apiResource) continue;
+    const set = targetsByTable.get(m.dbTable) ?? new Set();
+    set.add(`${m.adapterId}.${m.apiResource}`);
+    targetsByTable.set(m.dbTable, set);
+  }
+
+  const lines: string[] = [
+    '--- BRIDGE TABLES (DB tables produced by the API → DB mirror) ---',
+    '⚠ For these tables, prefer api.<adapter>.<resource> targets when the persona pins a',
+    'specific platform. A db.<bridge> claim with filter.billing_platform = "<X>" will be',
+    'auto-rewritten to api.<X>.<resource>, but emitting the api claim directly is cleaner.',
+    'Claims without a platform filter (e.g. plan/status only) stay on the DB surface.',
+    '',
+  ];
+  for (const t of bridgeTables) {
+    const targets = targetsByTable.get(t);
+    if (targets && targets.size > 0) {
+      lines.push(`  - ${t}  →  ${[...targets].sort().join(', ')}`);
+    } else {
+      lines.push(`  - ${t}`);
+    }
+  }
+  lines.push('--- END BRIDGE TABLES ---');
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Per-slot content system prompt (V2 layer 4)
+// ---------------------------------------------------------------------------
+
+const CONTENT_SYSTEM_PROMPT = `You are a synthetic data architect. You are generating ARCHETYPES for ONE resource slot — a single DB table or a single API resource. The persona, the claims this slot must satisfy, and the slot's exact schema/spec are provided. Your only job is to emit a small set of representative archetypes whose rows will collectively satisfy the slot's claims and look realistic for the persona.
+
+##############################################################################
+# WHAT YOU EMIT
+##############################################################################
+
+A JSON object \`{ "archetypes": [...] }\` matching the provided schema. Each
+archetype has:
+  - label: human-readable, kebab-case (e.g. "starter-monthly", "pro-churn-risk").
+  - fields / fieldOverrides: constant values shared by every row in this archetype.
+  - vary: per-row variation rules (names, ids, dates, ranges, etc).
+  - cites: claim ids this archetype is responsible for satisfying.
+  - anchor: id of a persona anchor this archetype is bound to (only when listed).
+  - apiOnly: true for API-only orphan archetypes (API slots only).
+
+You do NOT emit count or weight. The count solver assigns counts deterministically
+from the cites graph downstream; you control distribution by:
+  1. Citing the right claims (the solver pins counts on cited archetypes).
+  2. Splitting persona-narrated states into separate archetypes (one per
+     reason, one per tier, one per cluster).
+
+##############################################################################
+# CLAIM SATISFACTION — THE PRIMARY OBJECTIVE
+##############################################################################
+
+For every claim in the slot's claim list:
+
+1. Decide which archetype(s) will produce rows that satisfy the predicate.
+2. Pin the relevant fields so the predicate holds:
+   - row_count: emit a dedicated archetype; cite the claim. The solver
+     assigns count = expected.
+   - aggregate_sum N rows totalling X: emit N archetypes EACH citing the
+     claim, each pinning a portion of the field that sums to X. ONE
+     archetype with a vary range WILL fail the sum check.
+   - pinned_field (perRow:true): set the field as a CONSTANT in fields/fieldOverrides
+     on the cited archetype(s). Never leave persona-named amounts to a random range.
+   - distribution_pct: emit archetypes labelled per bucket. The solver uses
+     cites + the persona's percentages to redistribute.
+   - date_window: emit a dedicated archetype with vary.<date_field> as a
+     range whose [min, max] are inside the claim window.
+   - orphans_exactly: emit an apiOnly archetype (API slots only).
+3. Add the claim id to the archetype's \`cites\` array. Every claim in the
+   slot's list MUST be cited by at least one archetype.
+
+##############################################################################
+# DESIGN RULES
+##############################################################################
+
+**Labels imply field values.** If your label says "failed-expired-card", the
+fields/fieldOverrides MUST set both \`status="failed"\` AND \`failure_code="card_expired"\`
+(and \`failure_message\` if the resource has one). Labels without matching field
+values produce silently broken datasets — agents can't categorize the rows.
+
+**Per-tier archetypes for correlated amounts.** When the persona names a
+plan + price ("$29 starter plan"), set both in the SAME archetype's
+fields/fieldOverrides. Do NOT split plan and price across separate archetypes;
+the assembler generates fields independently and you'll get pro customers
+billed at the starter price.
+
+**Per-reason archetypes for narrated counts.** When the persona says "8 failed
+charges — 4 card_expired, 2 insufficient_funds, 2 lost_card", emit THREE
+archetypes (one per reason), each citing the relevant per-reason row_count
+claim. Do NOT lump them into one archetype with a vary.pick over reasons.
+
+**Per-cluster archetypes for date windows.** "47-message SOC 2 thread on Apr 22"
+gets its own archetype with a tight vary range around Apr 22 — NOT scattered
+across the full date range. Distinct narrative clusters get distinct archetypes
+with distinct field values.
+
+**Narrative-named entities get exact strings.** When the persona names a thread
+("the SOC 2 review thread") or channel ("#deals"), the corresponding
+fields (\`thread_subject\`, \`channel.name\`) must use the EXACT persona string.
+Marshallers group entities by these strings — collisions cause unwanted merges.
+
+**Cross-surface identity (people).** When the persona names a person ("Priya
+Shah", "the AE Sarah"), use IDENTICAL strings on every surface that
+references them — email, name, handle. Different surfaces with different
+spellings break the join keys that agents use to navigate between systems.
+
+##############################################################################
+# ANCHORS — CONCRETE PERSONA EVENTS
+##############################################################################
+
+The slot may include a list of anchors (persona events with a customer + date).
+For each anchor whose event lives in THIS slot's domain (e.g. an
+"App Store outage" anchor on revenuecat subscriptions, a "double-charge"
+anchor on stripe payment_intents):
+
+- Emit a dedicated archetype with \`anchor: "<id-exact-from-list>"\`.
+- Add the matching cites if any claim references the event.
+- For MIRROR events (DB and API agree): bind on the API side only.
+  The mirror flow propagates the resulting row to DB. Do NOT also bind
+  on the DB side — that would emit duplicate rows with mismatched ids.
+- For DRIFT events (DB and API intentionally diverge): bind on both
+  sides AND hardcode the cross-surface id in fields so both surfaces
+  land on the same id.
+- For TIME-WINDOW events: bind with vary on the timestamp field using
+  \`{ type: "anchor_date", anchor: "<id>", key: "event" }\` (plus
+  \`format: "epoch_seconds"\` for APIs that store dates as integers).
+
+If an anchor doesn't belong to this slot, ignore it — another slot will
+pick it up. NEVER invent a new anchor id; copy from the list verbatim.
+
+##############################################################################
+# VARY — WHEN TO USE IT
+##############################################################################
+
+For DB slots, the \`vary\` object directly drives per-row randomization. For
+every NOT NULL column that varies per row (names, ids, dates, amounts within
+a range), emit a vary entry. For columns the schema marks as DEFAULT now()
+on a timestamp, you can omit vary unless the persona narrows the window.
+
+For API slots, the assembler auto-derives vary for IDs (sequence prefixes),
+timestamps (within the volume range), emails, and names. ONLY emit vary
+when you have a specific opinion the assembler can't infer:
+  - Amount ranges within a tier
+  - Specific status/category pick lists
+  - Anchored timestamps for time-window events
+  - Derived templates ({{firstName}}.{{lastName}}@company.com)
+
+##############################################################################
+# CRITICAL — DO NOT EMIT
+##############################################################################
+
+- count / weight: the solver owns these. Omit them.
+- anchors that aren't in the slot's anchor list (NEVER invent new anchors).
+- archetypes for empty slots: if the slot has no claims and the schema
+  doesn't require rows, return \`{ "archetypes": [] }\`.
+- claims, persona profile, schema mapping — none of these are your output.
+
+Output ONLY valid JSON matching the provided schema. No markdown, no commentary.`;
+
+// ---------------------------------------------------------------------------
+// Per-slot content prompt builder
+// ---------------------------------------------------------------------------
+
+export interface SlotPromptClaim {
+  id: string;
+  quote: string;
+  kind: string;
+  /** Echoed back as JSON so the LLM sees the predicate exactly */
+  target: { surface: string; name: string; filter?: Record<string, unknown> };
+  [k: string]: unknown;
+}
+
+export interface SlotPromptAnchor {
+  id: string;
+  customer?: { match: string };
+  dates: Record<string, string>;
+}
+
+export interface BuildContentPromptOptions {
+  persona: { name: string; description: string };
+  domain: string;
+  /** The slot's surface */
+  surface: 'db' | 'api';
+  /** Slot name — table or "<adapter>.<resource>" */
+  name: string;
+  /** For DB slots: the table info to render to the LLM */
+  dbTable?: TableInfo;
+  /** For API slots: the platform metadata */
+  apiPlatform?: AdapterResourceSpecs['platform'];
+  /** For API slots: the resource spec */
+  apiResource?: ResourceSpec;
+  /**
+   * Claims this slot must satisfy (post-bridge-rewrite, filtered by
+   * topology to match surface+name).
+   */
+  claims: SlotPromptClaim[];
+  /** All persona anchors — the LLM filters to those belonging to this slot */
+  anchors: SlotPromptAnchor[];
+  /** Identity contract pin for this slot (e.g. id prefix the DB side uses) */
+  identityContractEntries: IdentityContractEntry[];
+  currentDate?: string;
+  volume?: string;
+  personaIndex?: number;
+  totalPersonas?: number;
+  /** Default count hint — informational, not load-bearing */
+  defaultCountHint?: number;
+}
+
+/**
+ * Build a per-slot content prompt. Each call produces archetypes for ONE
+ * slot only; the orchestrator fans these calls out in parallel.
+ */
+export function buildContentPrompt(options: BuildContentPromptOptions): PromptPair {
+  const {
+    persona,
+    domain,
+    surface,
+    name,
+    dbTable,
+    apiPlatform,
+    apiResource,
+    claims,
+    anchors,
+    identityContractEntries,
+    currentDate,
+    volume,
+    personaIndex,
+    totalPersonas,
+    defaultCountHint,
+  } = options;
+
+  const today = currentDate ?? new Date().toISOString().split('T')[0]!;
+  const startDate = volume ? computeStartDate(today, volume) : undefined;
+
+  const dateRange = startDate
+    ? `Date range: ${startDate} → ${today}. All generated dates MUST fall within this range.`
+    : `Current date: ${today}.`;
+
+  const slotHeader = `Slot: ${surface}.${name}`;
+  const slotSchema = surface === 'db' && dbTable
+    ? formatTable(dbTable)
+    : surface === 'api' && apiResource && apiPlatform
+      ? formatApiResourceForSlot(name, apiResource, apiPlatform)
+      : '';
+
+  const personaIdSection =
+    personaIndex !== undefined
+      ? [
+          `Persona index: ${personaIndex}${totalPersonas ? ` of ${totalPersonas}` : ''}`,
+          `String IDs MUST use the "<prefix>_p${personaIndex}_NNN" format (e.g. cus_p${personaIndex}_001, sub_p${personaIndex}_001).`,
+        ]
+      : [];
+
+  const claimsBlock = formatClaimsForSlot(claims);
+  const anchorsBlock = formatAnchorsForSlot(anchors);
+  const identityBlock = formatIdentityForSlot(identityContractEntries);
+
+  const userLines: string[] = [
+    `Domain: ${domain}`,
+    '',
+    `Persona: "${persona.name}"`,
+    persona.description,
+    '',
+    dateRange,
+    ...personaIdSection,
+    '',
+    '--- SLOT ---',
+    slotHeader,
+    ...(typeof defaultCountHint === 'number'
+      ? [
+          `Default total row count hint: ~${defaultCountHint} (informational; the count solver overrides this from your cites — emit archetypes that collectively cover this volume).`,
+        ]
+      : []),
+    ...(slotSchema ? ['', slotSchema] : []),
+    '--- END SLOT ---',
+    '',
+    claimsBlock,
+    ...(anchorsBlock ? ['', anchorsBlock] : []),
+    ...(identityBlock ? ['', identityBlock] : []),
+    '',
+    `Emit a JSON object { "archetypes": [...] } for this slot only. Each claim above must be cited by at least one archetype. Return ONLY the JSON object.`,
+  ];
+
+  return { system: CONTENT_SYSTEM_PROMPT, user: userLines.join('\n') };
+}
+
+function formatApiResourceForSlot(
+  resourceName: string,
+  spec: ResourceSpec,
+  platform: AdapterResourceSpecs['platform'],
+): string {
+  const lines: string[] = [];
+  lines.push(`Resource: ${resourceName} (${spec.volumeHint})`);
+  lines.push(`Timestamps: ${platform.timestampFormat}`);
+  lines.push(`Amounts: ${platform.amountFormat}`);
+  if (spec.refs && spec.refs.length > 0) {
+    lines.push(`References: ${spec.refs.join(', ')}`);
+  }
+
+  const required: string[] = [];
+  const sensitive: string[] = [];
+  const otherOptional: string[] = [];
+
+  for (const [fieldName, f] of Object.entries(spec.fields)) {
+    if (f.auto) continue;
+    const details: string[] = [f.type];
+    if (f.enum) details.push(`enum[${f.enum.join('|')}]`);
+    if (f.ref) details.push(`→ ${f.ref}`);
+    if (f.isAmount) details.push(`amount (${platform.amountFormat})`);
+    if (f.semanticType === 'currency_code') details.push('currency_code');
+    if (f.idPrefix) details.push(`prefix:${f.idPrefix}`);
+    if (f.nullable) details.push('nullable');
+    if (!f.required) details.push('optional');
+    const formatted = `${fieldName}(${details.join(', ')})`;
+    if (f.required) required.push(formatted);
+    else if (f.isAmount || f.semanticType === 'currency_code') sensitive.push(formatted);
+    else otherOptional.push(formatted);
+  }
+
+  if (required.length > 0) lines.push(`Required fields: ${required.join(', ')}`);
+  if (sensitive.length > 0) {
+    lines.push(
+      `Money/currency fields (assembler RANDOMIZES if not pinned): ${sensitive.join(', ')}`,
+    );
+  }
+  if (otherOptional.length > 0) lines.push(`Other optional fields: ${otherOptional.join(', ')}`);
+  return lines.join('\n');
+}
+
+function formatClaimsForSlot(claims: SlotPromptClaim[]): string {
+  if (claims.length === 0) {
+    return [
+      '--- CLAIMS FOR THIS SLOT ---',
+      '(none — this slot has no persona-narrated predicates. Emit ambient archetypes ' +
+        'that fit the persona\'s overall narrative and the schema/spec; do NOT invent ' +
+        'specific numbers that would create unrealistic patterns.)',
+      '--- END CLAIMS ---',
+    ].join('\n');
+  }
+  const lines: string[] = [
+    '--- CLAIMS FOR THIS SLOT (every claim MUST be cited by at least one archetype) ---',
+  ];
+  for (const c of claims) {
+    const filter = c.target.filter ? ` filter=${JSON.stringify(c.target.filter)}` : '';
+    lines.push('');
+    lines.push(`  id (cite this verbatim): "${c.id}"`);
+    lines.push(`    quote:  "${c.quote}"`);
+    lines.push(`    kind:   ${c.kind}`);
+    lines.push(`    target: ${c.target.surface}.${c.target.name}${filter}`);
+    const { id: _id, quote: _q, kind: _k, target: _t, ...rest } = c;
+    void _id; void _q; void _k; void _t;
+    if (Object.keys(rest).length > 0) {
+      lines.push(`    predicate extras: ${JSON.stringify(rest)}`);
+    }
+  }
+  lines.push('--- END CLAIMS ---');
+  return lines.join('\n');
+}
+
+function formatAnchorsForSlot(anchors: SlotPromptAnchor[]): string {
+  if (!anchors || anchors.length === 0) return '';
+  const lines: string[] = [
+    '--- ANCHORS (verbatim ids — pick the ones whose event belongs to this slot) ---',
+  ];
+  for (const a of anchors) {
+    const dates = Object.entries(a.dates).map(([k, v]) => `${k}=${v}`).join(', ');
+    const match = a.customer?.match ? ` customer="${a.customer.match}"` : '';
+    lines.push(`  id="${a.id}"  dates={${dates}}${match}`);
+  }
+  lines.push('--- END ANCHORS ---');
+  return lines.join('\n');
+}
+
+function formatIdentityForSlot(entries: IdentityContractEntry[]): string {
+  if (!entries || entries.length === 0) return '';
+  const lines: string[] = [
+    '--- IDENTITY CONTRACT (cross-surface ID prefixes — informational) ---',
+    'These IDs are auto-pinned after generation; you do not need to emit a vary rule for them.',
+    'When other fields REFERENCE these IDs (FKs, narrative strings), use the same prefix.',
+    '',
+  ];
+  for (const e of entries) {
+    lines.push(
+      `  ${e.dbTable}.${e.dbColumn}  ↔  ${e.adapterId}.${e.apiResource}.${e.apiField}  →  prefix "${e.prefix}"`,
+    );
+  }
+  lines.push('--- END IDENTITY CONTRACT ---');
+  return lines.join('\n');
+}
+
+// =============================================================================
+// (End V2 prompts)
+// =============================================================================
+
+export function buildRepairPrompt(options: BuildRepairPromptOptions): PromptPair {
+  // Pre-compute date/epoch anchors so the repair LLM doesn't have to do
+  // Unix-timestamp arithmetic. Past runs have repeatedly miscalculated
+  // "today − 30d" as last year, producing vary.timestamp ranges that don't
+  // satisfy age_days_gte:30 claims. Including ready-to-paste epoch values
+  // eliminates that class of error.
+  const now = new Date();
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const dayInSec = 24 * 3600;
+  const d = (days: number) => nowSec - days * dayInSec;
+  const iso = (s: number) => new Date(s * 1000).toISOString().split('T')[0];
+
+  const lines: string[] = [
+    `Persona: "${options.persona.name}"`,
+    options.persona.description,
+    '',
+    `Repair attempt: ${options.attempt} of 2`,
+    `Current date (UTC): ${iso(nowSec)} (epoch ${nowSec})`,
+    '',
+    '--- TIMESTAMP ANCHORS (use these in vary.timestamp / vary.range) ---',
+    `  today                : ${nowSec}  (${iso(nowSec)})`,
+    `  7 days ago           : ${d(7)}  (${iso(d(7))})`,
+    `  30 days ago          : ${d(30)}  (${iso(d(30))})`,
+    `  60 days ago          : ${d(60)}  (${iso(d(60))})`,
+    `  90 days ago          : ${d(90)}  (${iso(d(90))})`,
+    `  180 days ago         : ${d(180)}  (${iso(d(180))})`,
+    `  365 days ago         : ${d(365)}  (${iso(d(365))})`,
+    '',
+    'To satisfy "age_days_gte:30", a row\'s timestamp field must be ≤ 30-days-ago epoch.',
+    'To satisfy "age_days_lte:30" (recent activity), the field must be ≥ 30-days-ago epoch.',
+    'Use these anchors verbatim in vary specs — do NOT recompute. Past attempts have',
+    'miscalculated "30 days ago" as much as a full year earlier; copy from this list.',
+    '--- END TIMESTAMP ANCHORS ---',
+    '',
+  ];
+
+  if (options.priorAttempts && options.priorAttempts.length > 0) {
+    lines.push('--- PRIOR REPAIR ATTEMPTS (these did NOT fix the failures) ---');
+    for (const a of options.priorAttempts) {
+      lines.push(`Attempt ${a.attempt}:`);
+      lines.push(`  rationale: ${a.patch.rationale}`);
+      lines.push(`  ops: ${JSON.stringify(a.patch.ops)}`);
+      lines.push(`  still failing: ${a.stillFailing.join(', ')}`);
+    }
+    lines.push('--- END PRIOR ATTEMPTS ---');
+    lines.push('');
+    lines.push('⚠ Use a DIFFERENT strategy this time. The prior approach failed — try a new shape (e.g. add_archetype instead of set_field, or per-row count overrides instead of weight changes).');
+    lines.push('');
+  }
+
+  lines.push('--- FAILED CLAIMS ---');
+  for (const f of options.failures) {
+    lines.push('');
+    lines.push(`Claim id: "${f.claim.id}"`);
+    lines.push(`  quote:     "${f.claim.quote}"`);
+    lines.push(`  predicate: ${f.predicate}`);
+    lines.push(`  actual:    ${typeof f.actual === 'object' ? JSON.stringify(f.actual) : String(f.actual)}`);
+    if (f.citedBy && f.citedBy.length > 0) {
+      lines.push(`  cited by:  ${f.citedBy.join(', ')}`);
+    } else {
+      lines.push(`  cited by:  (no archetype cited this claim — you may need to add_archetype)`);
+    }
+    if (f.sampleRows && f.sampleRows.length > 0) {
+      lines.push(`  sample rows (up to 5):`);
+      for (const row of f.sampleRows) {
+        lines.push(`    ${JSON.stringify(row)}`);
+      }
+    }
+    // Echo predicate-specific fields raw
+    const { id: _id, quote: _q, kind: _k, ...extras } = f.claim;
+    void _id; void _q; void _k;
+    if (Object.keys(extras).length > 0) {
+      lines.push(`  claim raw: ${JSON.stringify({ kind: f.claim.kind, ...extras })}`);
+    }
+  }
+  lines.push('--- END FAILED CLAIMS ---');
+  lines.push('');
+
+  lines.push('--- CITED ARCHETYPES (current state) ---');
+  for (const c of options.citedArchetypes) {
+    lines.push('');
+    lines.push(`${c.surface}.${c.target}:`);
+    lines.push(JSON.stringify(c.config, null, 2));
+  }
+  lines.push('--- END CITED ARCHETYPES ---');
+  lines.push('');
+  lines.push('Emit a BlueprintPatch JSON: { "ops": [...], "rationale": "..." }.');
+
+  return { system: REPAIR_SYSTEM_PROMPT, user: lines.join('\n') };
 }

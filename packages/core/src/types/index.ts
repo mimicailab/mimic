@@ -72,3 +72,17 @@ export type {
   EvaluationDetail,
   TestReport,
 } from './test.js';
+
+export type {
+  Claim,
+  ClaimKind,
+  ClaimEvaluation,
+  AuditResult,
+  ResourceTarget,
+  Filter,
+  FilterOp,
+  BlueprintPath,
+  PatchOp,
+  BlueprintPatch,
+  RepairAttempt,
+} from './claim.js';

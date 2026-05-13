@@ -12,7 +12,6 @@ import {
   MimicError,
   parseSchema,
   BlueprintEngine,
-  BlueprintExpander,
   BlueprintCache,
   LLMClient,
   CostTracker,
@@ -21,6 +20,7 @@ import {
   classifyTables,
   derivePromptContext,
   deriveDataSpec,
+  expandAndAudit,
 } from '@mimicai/core';
 import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, SchemaMapping, Fact, FactManifest, PromptContext, DataSpec, AdapterResourceSpecs, ApiMockAdapter, TableClassification } from '@mimicai/core';
 import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
@@ -234,25 +234,52 @@ async function runGenerate(opts: RunOptions): Promise<void> {
       } else if (!opts.generate && (await fileExists(cachedPath))) {
         blueprint = await readJson<Blueprint>(cachedPath);
       } else {
-        blueprint = await engine.generateBatched(
-          schema,
-          { name: persona.name, description: persona.description },
-          config.domain,
-          {
-            force: opts.generate,
-            personaIndex,
-            totalPersonas: targetPersonas.length,
-            volume: config.generate.volume,
-            adapterBatchSize: config.generate.adapterBatchSize,
-            adapterBatchConcurrency: config.generate.adapterBatchConcurrency,
-            identityTableNames,
-          },
-          config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
-          promptContexts,
-          resourceSpecs,
-          tableClassifications,
-          schemaMapping,
-        );
+        // V2 pipeline: claim-extract → bridge-rewrite → topology → per-slot
+        // content. The downstream expandAndAudit step runs bridge-rewriter
+        // (idempotent) and the count solver before expansion.
+        //
+        // Falls back to the legacy generateBatched path only when no
+        // resourceSpecs are available — V2 requires them for API slots, and
+        // pure-DB personas without adapters keep working on the old path.
+        if (resourceSpecs && Object.keys(resourceSpecs).length > 0) {
+          blueprint = await engine.generateV2(
+            schema,
+            { name: persona.name, description: persona.description },
+            config.domain,
+            {
+              force: opts.generate,
+              personaIndex,
+              totalPersonas: targetPersonas.length,
+              volume: config.generate.volume,
+              adapterBatchConcurrency: config.generate.adapterBatchConcurrency,
+              identityTableNames,
+            },
+            config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
+            promptContexts,
+            resourceSpecs,
+            schemaMapping,
+          );
+        } else {
+          blueprint = await engine.generateBatched(
+            schema,
+            { name: persona.name, description: persona.description },
+            config.domain,
+            {
+              force: opts.generate,
+              personaIndex,
+              totalPersonas: targetPersonas.length,
+              volume: config.generate.volume,
+              adapterBatchSize: config.generate.adapterBatchSize,
+              adapterBatchConcurrency: config.generate.adapterBatchConcurrency,
+              identityTableNames,
+            },
+            config.apis as Record<string, { adapter?: string; config?: Record<string, unknown> }> | undefined,
+            promptContexts,
+            resourceSpecs,
+            tableClassifications,
+            schemaMapping,
+          );
+        }
 
         if (!opts.dryRun) {
           await writeJson(cachedPath, blueprint);
@@ -273,12 +300,9 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     throw err;
   }
 
-  // ── Phase 2: Expand blueprints (sequential, deterministic) ───────────
+  // ── Phase 2: Expand blueprints + audit claims (sequential, deterministic) ───────────
   for (const { persona, blueprint, personaIndex } of blueprintResults) {
     logger.step(`Expanding: ${chalk.bold(persona.name)}`);
-
-    // Each persona gets its own expander with a derived seed for independence
-    const expander = new BlueprintExpander(seed + personaIndex);
 
     const expandSpin = logger.spinner('Expanding blueprint into rows...');
     try {
@@ -286,10 +310,29 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         | { fieldMappings?: Record<string, Record<string, Record<string, string>>>; identityLinks?: Record<string, Record<string, { column: string; identityTable: string; apiField: string; platformColumn: string; externalIdColumn: string }[]>> }
         | undefined;
 
-      const expanded = expander.expand(
-        blueprint, schema, config.generate.volume, promptContexts,
-        schemaMapping, tableClassifications, modelingConfig, resourceSpecs,
-      );
+      // Expand + audit claims with bounded repair loop. If the persona has no
+      // claims (legacy blueprints, pre-v3 cache), this degrades to a plain
+      // expand. The repair LLM patches the blueprint up to 2 times before
+      // generation hard-fails with the persona quote.
+      const auditResult = await expandAndAudit(llmClient, blueprint, schema, {
+        seed: seed + personaIndex,
+        volume: config.generate.volume,
+        promptContexts,
+        schemaMapping,
+        tableClassifications,
+        modelingConfig,
+        resourceSpecs,
+        persona: { name: persona.name, description: persona.description },
+      });
+      const expanded = auditResult.expanded;
+
+      if (auditResult.repairAttempts.length > 0 && !opts.dryRun) {
+        // The repair loop mutated the blueprint — write the new version back to
+        // cache so re-runs start from the repaired state.
+        const cachedPath = join(blueprintDir, `${persona.name}.json`);
+        await writeJson(cachedPath, auditResult.blueprint);
+        logger.debug(`Updated cached blueprint after repair: ${cachedPath}`);
+      }
 
       // Log expansion output summary
       const expandedTableSummary: Record<string, number> = {};

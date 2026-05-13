@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Blueprint, SchemaModel, PromptContext, AdapterResourceSpecs, TableClassification } from '../types/index.js';
+import type { EntityArchetypeConfig } from '../types/blueprint.js';
 import type { LLMClient } from '../llm/client.js';
 import type { CostTracker } from '../llm/cost-tracker.js';
 import { BlueprintCache } from './blueprint-cache.js';
@@ -32,6 +33,11 @@ import {
 import { assembleResourceArchetypes } from './resource-assembler.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { extractClaims } from './claim-extractor.js';
+import { rewriteClaimsForBridges } from './bridge-rewriter.js';
+import { deriveSlots } from './topology.js';
+import { generateAllSlots, type SlotContentResult } from './content-generator.js';
+import type { Claim } from '../types/claim.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -384,6 +390,20 @@ export class BlueprintEngine {
         identityEntityCounts: identityEntityCounts[adapterId],
         schemaMapping,
         promptContexts,
+        // Surface declared anchors so per-adapter calls can bind any whose
+        // persona event lives in their domain. Without this, anchors that
+        // weren't bound DB-side in Phase 1 stay unbound everywhere and the
+        // post-merge validator aborts the run.
+        anchors: phase1Blueprint.data.anchors,
+        // Pass Phase 1 claims forward so Phase 2 can cite them when an API
+        // archetype is responsible for satisfying a persona-narrated number.
+        // The prompt builder filters to claims targeting this adapter.
+        claims: phase1Blueprint.data.claims as unknown as ReadonlyArray<{
+          id: string;
+          quote: string;
+          kind: string;
+          target: { surface: string; name: string; filter?: Record<string, unknown> };
+        }> | undefined,
       });
 
       const result = await this.llmClient.generateObject({
@@ -466,6 +486,150 @@ export class BlueprintEngine {
     }
 
     return mergedBlueprint;
+  }
+
+  // =====================================================================
+  // V2 — claim-extract → bridge-rewrite → topology → per-slot content
+  // =====================================================================
+
+  /**
+   * V2 blueprint generation.
+   *
+   * Pipeline:
+   *   1. Cache check (same key as legacy path; bumped schemaVersion guards against shape drift).
+   *   2. Claim extraction (one narrow LLM call) → { personaProfile, claims, anchors }.
+   *   3. Bridge rewrite on claims (deterministic) — re-route bridge-table
+   *      claims to api.<adapter>.<resource>.
+   *   4. Topology — derive a ResourceSlot per generation surface (DB tables
+   *      minus bridges + API resources), filtering claims per slot.
+   *   5. Per-slot content generation (N parallel LLM calls). Each call sees
+   *      only its slot's schema/spec, claims, anchors, and the persona.
+   *      Output: archetypes with no count/weight — those come from the
+   *      count solver downstream.
+   *   6. Assemble the Blueprint and write to cache.
+   *
+   * The blueprint produced here is fed to `expandAndAudit`, which runs the
+   * (idempotent) bridge rewriter again, then the count solver, then expand
+   * + audit + repair as in the legacy pipeline. Bridge rewriter and solver
+   * are designed to be safe on V2-generated blueprints.
+   */
+  async generateV2(
+    schema: SchemaModel,
+    persona: PersonaInput,
+    domain: string,
+    options: GenerateOptions = {},
+    apis?: Record<string, { adapter?: string; config?: Record<string, unknown> }>,
+    promptContexts?: Record<string, PromptContext>,
+    resourceSpecs?: Record<string, AdapterResourceSpecs>,
+    schemaMapping?: SchemaMapping,
+  ): Promise<Blueprint> {
+    const cacheKey = this.computeCacheKey(schema, persona, domain, apis);
+
+    if (!options.force) {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) {
+        logger.step(
+          `Blueprint for "${persona.name}" loaded from cache (${cacheKey.slice(0, 8)}...)`,
+        );
+        return cached;
+      }
+    }
+
+    logger.step(
+      `Generating blueprint (V2) for "${persona.name}" in domain "${domain}"...`,
+    );
+
+    // ── Step 1: claim + anchor extraction ────────────────────────────────
+    const extraction = await extractClaims(
+      this.llmClient,
+      { name: persona.name, description: persona.description },
+      domain,
+      schema,
+      promptContexts,
+      resourceSpecs,
+      schemaMapping,
+      {
+        temperature: options.temperature,
+        maxRetries: options.maxRetries,
+        currentDate: new Date().toISOString().split('T')[0],
+        volume: options.volume,
+        personaIndex: options.personaIndex,
+        totalPersonas: options.totalPersonas,
+      },
+    );
+
+    // ── Step 2: bridge rewrite (deterministic; idempotent) ───────────────
+    const { claims: rewrittenClaims, rewritten } = rewriteClaimsForBridges(
+      extraction.claims,
+      schemaMapping,
+    );
+    if (rewritten.length > 0) {
+      logger.info(
+        `Bridge rewrite (claims): re-routed ${rewritten.length} bridge-table claim${rewritten.length === 1 ? '' : 's'} to the API surface.`,
+      );
+      for (const r of rewritten) {
+        logger.debug(
+          `  - ${r.claimId}: ${r.from.surface}.${r.from.name} → ${r.to.surface}.${r.to.name}`,
+        );
+      }
+    }
+
+    // ── Step 3: topology — derive slots ──────────────────────────────────
+    const slots = deriveSlots({
+      schema,
+      resourceSpecs,
+      schemaMapping,
+      tableClassifications: undefined, // engine receives via expandAndAudit downstream
+      claims: rewrittenClaims,
+      volume: options.volume,
+    });
+    logger.step(
+      `Derived ${slots.length} resource slot${slots.length === 1 ? '' : 's'} ` +
+        `(${slots.filter((s) => s.surface === 'db').length} db, ${slots.filter((s) => s.surface === 'api').length} api)`,
+    );
+
+    // ── Step 4: per-slot content (parallel) ──────────────────────────────
+    const slotResults = await generateAllSlots(this.llmClient, slots, {
+      persona: { name: persona.name, description: persona.description },
+      domain,
+      anchors: extraction.anchors,
+      promptContexts,
+      resourceSpecs,
+      schemaMapping,
+      concurrency: options.adapterBatchConcurrency ?? 4,
+      temperature: options.temperature,
+      maxRetries: options.maxRetries,
+      currentDate: new Date().toISOString().split('T')[0],
+      volume: options.volume,
+      personaIndex: options.personaIndex,
+      totalPersonas: options.totalPersonas,
+    });
+
+    // ── Step 5: assemble the Blueprint ───────────────────────────────────
+    const blueprint = assembleBlueprintFromSlots({
+      persona,
+      personaId: extraction.personaId,
+      domain: extraction.domain,
+      personaProfile: extraction.persona,
+      claims: rewrittenClaims,
+      anchors: extraction.anchors,
+      slotResults,
+      modelId: this.llmClient.getModelId(),
+    });
+
+    // ── Step 6: write to cache ───────────────────────────────────────────
+    try {
+      await this.cache.set(cacheKey, blueprint);
+      logger.success(
+        `Blueprint for "${persona.name}" cached (${cacheKey.slice(0, 8)}...)`,
+      );
+    } catch (error) {
+      logger.warn(
+        `Failed to cache blueprint: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    return blueprint;
   }
 
   // -----------------------------------------------------------------------
@@ -559,7 +723,10 @@ export class BlueprintEngine {
       // would silently produce data that violates the new contract.
       // v2: added EntityArchetype.apiOnly + EntityArchetype.count for
       //     cross-platform asymmetry (Stripe-only orphans etc.).
-      schemaVersion: 2,
+      // v3: added structured claims (data.claims) + EntityArchetype.cites
+      //     for the persona-contract architecture. Old caches won't include
+      //     claims/cites and would skip the auditor entirely.
+      schemaVersion: 3,
       schema: {
         tables: schema.tables.map((t) => ({
           name: t.name,
@@ -808,6 +975,57 @@ function extractIdentityEntityCounts(
     return result;
   }
 
+  // ── Path A: claim-driven counts (preferred, structural backstop) ────────
+  //
+  // Phase 1 should put bridge-table claims on the API surface (e.g.
+  //   { kind: "row_count", target: { surface: "api", name: "stripe.customer" }, expected: 1200 }
+  // ). When it does, we lock the per-resource count directly. This works
+  // EVEN IF the LLM forgot to also emit DB archetypes for that table
+  // (which it should, under the bridge-table rule).
+  //
+  // We also handle the half-compliance case: a row_count claim still on
+  // db.<bridge_table> with filter.billing_platform=<X> — translate it to
+  // the matching api.<X>.<resource> count via the classification's sources.
+  for (const claim of blueprint.data.claims ?? []) {
+    if (claim.kind !== 'row_count') continue;
+    const expected = claim.expected;
+
+    if (claim.target.surface === 'api') {
+      // "<adapter>.<resource>"
+      const dot = claim.target.name.indexOf('.');
+      if (dot < 0) continue;
+      const adapter = claim.target.name.slice(0, dot);
+      const resource = claim.target.name.slice(dot + 1);
+      if (!result[adapter]) result[adapter] = {};
+      result[adapter]![resource] = expected;
+      continue;
+    }
+
+    // surface === 'db' — only useful for bridge-table claims with a
+    // platform filter that points at one of the table's sources.
+    if (claim.target.surface !== 'db') continue;
+    const classification = tableClassifications.find((c) => c.table === claim.target.name);
+    if (!classification || classification.role !== 'identity') continue;
+    if (!classification.sources || classification.sources.length === 0) continue;
+
+    const filter = claim.target.filter as Record<string, unknown> | undefined;
+    const platformFilter = filter?.billing_platform;
+    const platform = typeof platformFilter === 'string' ? platformFilter : undefined;
+    if (!platform) continue;
+
+    const source = classification.sources.find((s) => s.adapter === platform);
+    if (!source) continue;
+    if (!result[source.adapter]) result[source.adapter] = {};
+    result[source.adapter]![source.resource] = expected;
+  }
+
+  // ── Path B: legacy DB-archetype-driven counts (fallback) ────────────────
+  //
+  // For each identity table that DOES have DB archetypes (i.e. either it's
+  // not a bridge table OR the LLM ignored the bridge-table rule), derive
+  // per-platform counts from archetype billing_platform weights. Path A's
+  // claim-derived counts take precedence — Path B only fills in adapter/
+  // resource pairs Path A didn't cover.
   for (const classification of tableClassifications) {
     if (classification.role !== 'identity') continue;
     if (!classification.sources || classification.sources.length === 0) continue;
@@ -817,12 +1035,8 @@ function extractIdentityEntityCounts(
     const staticRows = blueprint.data.entities?.[tableName] ?? [];
     if (!dbArchetypes && staticRows.length === 0) continue;
 
-    // Total identity-table count = archetype-driven rows + narrative-named
-    // static entities. Without the static count, Phase 2 generates too few
-    // API entities and DB↔API overlap is short by the narrative count.
     const totalCount = (dbArchetypes?.count ?? 0) + staticRows.length;
 
-    // Determine per-platform distribution from archetype billing_platform weights
     const platformWeights: Record<string, number> = {};
     for (const arch of dbArchetypes?.archetypes ?? []) {
       const platform = arch.fields.billing_platform as string | undefined;
@@ -836,16 +1050,17 @@ function extractIdentityEntityCounts(
     if (platformNames.length > 0) {
       const totalWeight = Object.values(platformWeights).reduce((s, w) => s + w, 0);
       for (const source of classification.sources) {
+        if (result[source.adapter]?.[source.resource] != null) continue; // Path A wins
         const weight = platformWeights[source.adapter] ?? (1 / platformNames.length);
         const count = Math.max(1, Math.round((weight / totalWeight) * totalCount));
         if (!result[source.adapter]) result[source.adapter] = {};
         result[source.adapter]![source.resource] = count;
       }
     } else {
-      // No explicit billing_platform split — distribute evenly across sources
       const sources = classification.sources;
       const countPerSource = Math.max(1, Math.round(totalCount / sources.length));
       for (const source of sources) {
+        if (result[source.adapter]?.[source.resource] != null) continue; // Path A wins
         if (!result[source.adapter]) result[source.adapter] = {};
         result[source.adapter]![source.resource] = countPerSource;
       }
@@ -853,6 +1068,66 @@ function extractIdentityEntityCounts(
   }
 
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// V2 blueprint assembly
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a complete Blueprint from V2 layer outputs.
+ *
+ * Merges per-slot archetype configs into entityArchetypes /
+ * apiEntityArchetypes, carries claims and anchors forward, and computes
+ * the checksum. The output is ready for `expandAndAudit`.
+ */
+function assembleBlueprintFromSlots(input: {
+  persona: PersonaInput;
+  personaId: string;
+  domain: string;
+  personaProfile: import('../types/blueprint.js').PersonaProfile;
+  claims: Claim[];
+  anchors: import('../types/blueprint.js').Anchor[];
+  slotResults: SlotContentResult[];
+  modelId: string;
+}): Blueprint {
+  void input.persona; // name retained for telemetry/cache key only
+  const entityArchetypes: Record<string, EntityArchetypeConfig> = {};
+  const apiEntityArchetypes: Record<string, Record<string, EntityArchetypeConfig>> = {};
+
+  for (const result of input.slotResults) {
+    if (result.slot.surface === 'db') {
+      entityArchetypes[result.slot.name] = result.config;
+    } else {
+      const adapter = result.slot.adapterId!;
+      const resource = result.slot.resourceType!;
+      apiEntityArchetypes[adapter] = apiEntityArchetypes[adapter] ?? {};
+      apiEntityArchetypes[adapter][resource] = result.config;
+    }
+  }
+
+  const now = new Date().toISOString();
+  const blueprint: Blueprint = {
+    version: '1.0',
+    personaId: input.personaId,
+    domain: input.domain,
+    generatedAt: now,
+    generatedBy: `mimic/${input.modelId}`,
+    checksum: '',
+    persona: input.personaProfile,
+    data: {
+      entities: {},
+      patterns: [],
+      annotations: {},
+      claims: input.claims,
+      ...(input.anchors.length > 0 ? { anchors: input.anchors } : {}),
+      ...(Object.keys(entityArchetypes).length > 0 ? { entityArchetypes } : {}),
+      ...(Object.keys(apiEntityArchetypes).length > 0 ? { apiEntityArchetypes } : {}),
+    },
+  };
+
+  blueprint.checksum = computeChecksum(blueprint);
+  return blueprint;
 }
 
 /**

@@ -72,6 +72,14 @@ export interface GenerateObjectResult<T> {
   object: T;
   promptTokens: number;
   completionTokens: number;
+  /**
+   * Per-attempt breakdown when the underlying provider supports schema repair
+   * retries (currently the native Anthropic path). Each entry carries its own
+   * label — `<label>` for the first attempt, `<label>:repair-N` for repairs —
+   * so the cost tracker can record each call distinctly. Undefined on
+   * providers that don't expose this granularity.
+   */
+  attempts?: ReadonlyArray<{ label: string; promptTokens: number; completionTokens: number }>;
 }
 
 export interface GenerateTextResult {
@@ -173,15 +181,33 @@ export class LLMClient {
           isReasoning,
           label,
         });
-        this.costTracker.record({
-          label,
-          category,
-          model: this.config.model,
-          promptTokens: result.promptTokens,
-          completionTokens: result.completionTokens,
-        });
+        // If the native call exposed per-attempt usage (with distinct labels
+        // for repair attempts), record each one separately so the cost summary
+        // shows repairs as their own line items. Otherwise fall back to a
+        // single record using the call's overall totals.
+        const attempts = result.attempts;
+        if (attempts && attempts.length > 0) {
+          for (const a of attempts) {
+            this.costTracker.record({
+              label: a.label,
+              category,
+              model: this.config.model,
+              promptTokens: a.promptTokens,
+              completionTokens: a.completionTokens,
+            });
+          }
+        } else {
+          this.costTracker.record({
+            label,
+            category,
+            model: this.config.model,
+            promptTokens: result.promptTokens,
+            completionTokens: result.completionTokens,
+          });
+        }
         logger.debug(
-          `LLM [${label}] done — ${result.promptTokens} prompt + ${result.completionTokens} completion tokens`,
+          `LLM [${label}] done — ${result.promptTokens} prompt + ${result.completionTokens} completion tokens` +
+          (attempts && attempts.length > 1 ? ` over ${attempts.length} attempt(s)` : ''),
         );
         return result;
       } catch (error) {

@@ -132,6 +132,27 @@ export { FkResolutionError, resolveMirroredFks } from './generate/fk-resolver.js
 export { assembleResourceArchetypes } from './generate/resource-assembler.js';
 export type { AssembleOptions } from './generate/resource-assembler.js';
 export { generateFacts, buildDataStats } from './generate/fact-generator.js';
+export { auditClaims, formatAuditFailures } from './generate/claim-auditor.js';
+export { applyBlueprintPatch } from './generate/blueprint-patch.js';
+export { expandAndAudit } from './generate/audit-and-repair.js';
+export type { ExpandAndAuditOptions, ExpandAndAuditResult } from './generate/audit-and-repair.js';
+export { rewriteBridgeTables, rewriteClaimsForBridges, formatBridgeRewrite } from './generate/bridge-rewriter.js';
+export type { BridgeRewriteResult } from './generate/bridge-rewriter.js';
+export { solveCounts, formatConflicts } from './generate/count-solver.js';
+export type { SolveResult, SolverConflict, SolverTraceEntry } from './generate/count-solver.js';
+export { deterministicRepair, formatRepairDecisions } from './generate/deterministic-repair.js';
+export type { DeterministicRepairResult, RepairDecision } from './generate/deterministic-repair.js';
+
+// V2 — layered, narrow-LLM pipeline (claim-extract → bridge-rewrite → topology → per-slot content)
+export { extractClaims } from './generate/claim-extractor.js';
+export type { ExtractClaimsOptions, ExtractClaimsResult } from './generate/claim-extractor.js';
+export { deriveSlots } from './generate/topology.js';
+export type { ResourceSlot, DeriveSlotsOptions } from './generate/topology.js';
+export { generateAllSlots } from './generate/content-generator.js';
+export type {
+  GenerateSlotContentOptions,
+  SlotContentResult,
+} from './generate/content-generator.js';
 export { derivePromptContext, deriveDataSpec } from './types/adapter.js';
 
 // Seed (adapters are now in @mimicai/adapter-* packages)

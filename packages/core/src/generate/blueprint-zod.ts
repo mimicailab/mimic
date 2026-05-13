@@ -113,6 +113,7 @@ const EntityArchetypeSchema = z
     anchor: z.string().optional().describe('Anchor id this archetype is bound to. Causes the archetype to emit exactly `count` rows tied to the resolved anchor (no weight redistribution).'),
     count: z.number().int().optional().describe('Explicit row count. Required when weight is 0 (or omitted) on a non-anchor, non-apiOnly archetype. For anchor-bound archetypes, defaults to 1 if omitted. For apiOnly archetypes, additive on top of the matched count.'),
     apiOnly: z.boolean().optional().describe('When true, this archetype emits API-only rows with no DB counterpart (e.g. Stripe-only orphans). Pair with explicit `count`.'),
+    cites: z.array(z.string()).optional().describe('Claim ids (from data.claims) this archetype is responsible for satisfying. Archetypes that satisfy a persona-narrated number MUST cite the claim id; ambient archetypes (broad distributions filling capacity) can omit cites.'),
   })
   .refine(
     (a) => {
@@ -148,7 +149,7 @@ const EntityArchetypeConfigSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Fact schema — testable facts about the generated data
+// Fact schema (legacy — descriptive only, not validated by the auditor)
 // ---------------------------------------------------------------------------
 
 const FactSchema = z.object({
@@ -163,15 +164,127 @@ const FactSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Claim schema — checkable predicates extracted from the persona NL.
+//
+// The LLM extracts these in Phase 1; the auditor evaluates them after
+// expansion. Unsatisfied claims trigger the repair loop and ultimately
+// fail generation with the persona quote shown back to the user.
+//
+// Filter operators support equality, membership, comparison, null check,
+// and date-age (today − row[field] >= N days). See types/claim.ts.
+// ---------------------------------------------------------------------------
+
+const FilterOpSchema = z.union([
+  z.object({ eq: z.unknown() }),
+  z.object({ neq: z.unknown() }),
+  z.object({ in: z.array(z.unknown()) }),
+  z.object({ nin: z.array(z.unknown()) }),
+  z.object({ gte: z.union([z.number(), z.string()]) }),
+  z.object({ lte: z.union([z.number(), z.string()]) }),
+  z.object({ gt: z.union([z.number(), z.string()]) }),
+  z.object({ lt: z.union([z.number(), z.string()]) }),
+  z.object({ is_null: z.boolean() }),
+  z.object({ age_days_gte: z.number() }),
+  z.object({ age_days_lte: z.number() }),
+]);
+
+const FilterSchema = z.record(z.unknown()).describe(
+  'Conjunction of per-field predicates. Bare value = equality. ' +
+  'Use { op: value } for operators: eq, neq, in, nin, gte/lte/gt/lt, is_null, age_days_gte, age_days_lte. ' +
+  'Example: { plan: "pro", status: { in: ["active", "past_due"] }, last_login_at: { age_days_gte: 30 } }',
+);
+
+const ResourceTargetSchema = z.object({
+  surface: z.enum(['db', 'api']).describe('"db" for DB tables, "api" for API resources'),
+  name: z.string().describe('DB table name (e.g. "users") OR "<adapter>.<resource>" (e.g. "stripe.charges")'),
+  filter: FilterSchema.optional(),
+});
+
+const ClaimBaseSchema = {
+  id: z.string().describe('Stable claim id (e.g. "claim_overdue_total"). Archetypes cite this id in their `cites` array.'),
+  quote: z.string().describe('Exact persona text this claim was extracted from. Quoted back in audit errors.'),
+};
+
+const ClaimSchema = z.union([
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('row_count'),
+    target: ResourceTargetSchema,
+    expected: z.number().int(),
+    tolerance: z.number().optional(),
+  }),
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('aggregate_sum'),
+    target: ResourceTargetSchema,
+    field: z.string(),
+    expected: z.number(),
+    tolerance: z.number().optional(),
+  }),
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('aggregate_avg'),
+    target: ResourceTargetSchema,
+    field: z.string(),
+    expected: z.number(),
+    tolerance: z.number().optional(),
+  }),
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('pinned_field'),
+    target: ResourceTargetSchema,
+    field: z.string(),
+    expected: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+    perRow: z.boolean().describe('true: every selected row must hold this value. false: at least one row must.'),
+  }),
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('distribution_pct'),
+    target: ResourceTargetSchema,
+    field: z.string(),
+    values: z.record(z.number()),
+    tolerance: z.number().optional(),
+  }),
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('date_window'),
+    target: ResourceTargetSchema,
+    field: z.string(),
+    min: z.string().describe('ISO date or ISO timestamp — inclusive lower bound'),
+    max: z.string().describe('ISO date or ISO timestamp — inclusive upper bound'),
+    expected: z.number().int(),
+    tolerance: z.number().optional(),
+  }),
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('orphans_exactly'),
+    target: ResourceTargetSchema,
+    expected: z.number().int(),
+  }),
+  z.object({
+    ...ClaimBaseSchema,
+    kind: z.literal('no_row_with'),
+    target: ResourceTargetSchema,
+  }),
+]);
+// Quiet unused-var warning — FilterOpSchema is the documented shape for
+// FilterSchema operators but Zod accepts the record at parse time.
+void FilterOpSchema;
+
+// ---------------------------------------------------------------------------
 
 const PersonaDataSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
   annotations: z.record(z.unknown()).optional().default({}),
+  claims: z
+    .array(ClaimSchema)
+    .optional()
+    .describe('Structured persona claims — checkable predicates extracted from the persona NL. Each claim names a `target` (db table or api resource), a `kind` (row_count, aggregate_sum, pinned_field, distribution_pct, date_window, orphans_exactly, no_row_with), and the expected value. Archetypes that satisfy a claim MUST cite it via `cites: [claim_id]`. The auditor evaluates every claim after expansion; unsatisfied claims trigger a 2-attempt repair loop and ultimately fail generation with the persona quote.'),
   facts: z
     .array(FactSchema)
     .optional()
-    .describe('Testable facts about the generated data — anomalies, overdue items, pending settlements, integrity issues, growth trends, risk signals. Used to auto-generate test scenarios.'),
+    .describe('Legacy descriptive facts — kept for the post-hoc test-scenario generator. New work should use `claims` instead.'),
   apiEntities: z
     .record(z.record(z.array(z.record(z.unknown()))))
     .optional()
@@ -195,10 +308,14 @@ const PersonaDataWithApisSchema = z.object({
   entities: z.record(z.array(z.record(z.unknown()))),
   patterns: z.array(DataPatternSchema),
   annotations: z.record(z.unknown()).optional().default({}),
+  claims: z
+    .array(ClaimSchema)
+    .optional()
+    .describe('Structured persona claims — checkable predicates extracted from the persona NL. Each claim names a `target` (db table or api resource), a `kind` (row_count, aggregate_sum, pinned_field, distribution_pct, date_window, orphans_exactly, no_row_with), and the expected value. Archetypes that satisfy a claim MUST cite it via `cites: [claim_id]`. The auditor evaluates every claim after expansion; unsatisfied claims trigger a 2-attempt repair loop and ultimately fail generation with the persona quote.'),
   facts: z
     .array(FactSchema)
     .optional()
-    .describe('Testable facts about the generated data — anomalies, overdue items, pending settlements, integrity issues, growth trends, risk signals. Used to auto-generate test scenarios.'),
+    .describe('Legacy descriptive facts — kept for the post-hoc test-scenario generator. New work should use `claims` instead.'),
   apiEntities: z
     .record(z.record(z.array(z.record(z.unknown()))))
     .optional()
@@ -351,7 +468,7 @@ const ArchetypeDistributionSchema = z.object({
   fieldOverrides: z
     .array(FieldOverrideEntrySchema)
     .optional()
-    .describe('Constant field values that define this archetype (e.g. {field:"status", value:"active"})'),
+    .describe('Constant field values that define this archetype. Use dotted paths for nested-object fields: {field:"unit_price.amount", value:"2900"} sets unit_price.amount=2900 in the nested object.'),
   vary: z
     .array(VaryEntrySchema)
     .optional()
@@ -369,6 +486,10 @@ const ArchetypeDistributionSchema = z.object({
     .string()
     .optional()
     .describe('Anchor id this archetype is bound to. Causes the archetype to emit exactly `count` rows tied to the resolved anchor (no weight redistribution). Use for persona events declared in `data.anchors`.'),
+  cites: z
+    .array(z.string())
+    .optional()
+    .describe('Claim ids (from data.claims, set in Phase 1) this archetype is responsible for satisfying. Persona-pinned archetypes MUST cite the claim(s) they satisfy; ambient archetypes can omit cites.'),
 });
 
 const DistributionFactSchema = z.object({
@@ -451,6 +572,7 @@ export function toDistributionOutput(raw: DistributionOutputRaw): DistributionOu
         apiOnly: a.apiOnly,
         count: a.count,
         anchor: a.anchor,
+        cites: a.cites,
       })),
     };
   }
@@ -490,5 +612,229 @@ export type DistributionOutput = Record<string, {
     apiOnly?: boolean;
     count?: number;
     anchor?: string;
+    cites?: string[];
   }[];
 }>;
+
+// ---------------------------------------------------------------------------
+// BlueprintPatch schema — repair LLM output
+//
+// The repair LLM emits structured ops against the existing blueprint. The
+// applier walks the ops list and mutates the blueprint in place; the result
+// is then re-expanded and re-audited.
+// ---------------------------------------------------------------------------
+
+const PatchSetFieldSchema = z.object({
+  op: z.literal('set_field'),
+  path: z.string().describe('Dotted path to the field, e.g. "data.apiEntityArchetypes.stripe.price[starter-monthly].fields.unit_amount"'),
+  value: z.unknown().describe('New value. Number/string/boolean/object/null — whatever the field type expects.'),
+});
+
+const PatchSetVarySchema = z.object({
+  op: z.literal('set_vary'),
+  path: z.string().describe('Dotted path to the vary entry, e.g. "data.entityArchetypes.users.archetypes[pro-churn-risk].vary.last_login_at"'),
+  variation: FieldVariationSchema,
+});
+
+const PatchSetCountSchema = z.object({
+  op: z.literal('set_count'),
+  path: z.string().describe('Dotted path to an archetype, e.g. "data.entityArchetypes.users.archetypes[pro-churn-risk]". `count` field is updated on that archetype.'),
+  count: z.number().int(),
+});
+
+const PatchAddArchetypeSchema = z.object({
+  op: z.literal('add_archetype'),
+  target: z.string().describe('DB table name OR "<adapter>.<resource>" — where to insert the archetype'),
+  surface: z.enum(['db', 'api']),
+  archetype: EntityArchetypeSchema,
+});
+
+const PatchRemoveArchetypeSchema = z.object({
+  op: z.literal('remove_archetype'),
+  target: z.string().describe('DB table name OR "<adapter>.<resource>"'),
+  surface: z.enum(['db', 'api']),
+  label: z.string().describe('Label of the archetype to remove'),
+});
+
+const PatchOpSchema = z.union([
+  PatchSetFieldSchema,
+  PatchSetVarySchema,
+  PatchSetCountSchema,
+  PatchAddArchetypeSchema,
+  PatchRemoveArchetypeSchema,
+]);
+
+export const BlueprintPatchSchema = z.object({
+  ops: z.array(PatchOpSchema).describe('Ordered list of patch operations. Applied in order, deterministically.'),
+  rationale: z.string().describe('1-2 sentence explanation of the fix strategy. Goes to telemetry; not data.'),
+});
+
+export type BlueprintPatchOutput = z.infer<typeof BlueprintPatchSchema>;
+
+// =============================================================================
+// V2 — narrow, layered schemas
+//
+// V2 splits the monolithic Phase 1 LLM call into three focused calls:
+//   1. Claim extraction  — persona NL → claims + anchors + persona profile
+//   2. Per-slot content  — slot spec → archetypes (no count/weight; solver
+//                           assigns counts via the cites graph downstream)
+//
+// Bridge rewrite, topology slot derivation, and count solving are
+// deterministic (no LLM) and run between/after these calls. The legacy
+// schemas above are retained for backwards compatibility with cached
+// blueprints; they will be removed once V2 is the default in all entry
+// points.
+// =============================================================================
+
+// ---------------------------------------------------------------------------
+// V2: Claim Extraction output schema
+// ---------------------------------------------------------------------------
+
+/**
+ * Output of the narrow claim-extraction LLM call. Contains only the
+ * structured persona contract — no archetypes, no counts, no weights.
+ *
+ * Downstream layers (bridge rewriter, topology, content generator, count
+ * solver) consume this output deterministically or by routing each claim
+ * to its target slot.
+ */
+export const ClaimExtractionOutputSchema = z.object({
+  personaId: z
+    .string()
+    .describe('A kebab-case unique identifier for this persona, e.g. "sarah-chen"'),
+  domain: z
+    .string()
+    .describe('The domain this data belongs to, e.g. "personal-finance" or "billing-ops"'),
+  persona: PersonaProfileSchema.describe(
+    'A coherent persona profile — name, age, occupation, location, salary (or null), description',
+  ),
+  claims: z
+    .array(ClaimSchema)
+    .describe(
+      'Every checkable predicate extracted from the persona NL. Each entry names a target ' +
+        '(db table or api adapter.resource), a kind, and the expected value. Include ALL ' +
+        'numeric claims, pinned fields, and distribution statements the persona makes.',
+    ),
+  anchors: z
+    .array(AnchorSchema)
+    .optional()
+    .describe(
+      'Persona-narrated events that imply coherent rows across multiple tables/surfaces ' +
+        '("Klein\'s double-charge on Apr 29"). Use one anchor per concrete event — not ' +
+        'per ambient distribution. Each anchor names a customer + named dates.',
+    ),
+});
+
+export type ClaimExtractionOutput = z.infer<typeof ClaimExtractionOutputSchema>;
+
+// ---------------------------------------------------------------------------
+// V2: Per-slot Content schema
+//
+// Content archetypes drop `count` and `weight` from the LLM-facing surface —
+// the count solver assigns counts deterministically from the cites graph
+// downstream, and weight defaults to a uniform 1/N at orchestrator-assembly
+// time. The LLM's job is reduced to: label, fields, vary, citations,
+// optional anchor binding, optional apiOnly flag.
+//
+// Two flavors:
+//   - DbContentArchetypeSchema   — used for DB slots; emitted as-is into
+//                                   blueprint.data.entityArchetypes
+//   - ApiContentArchetypeSchema  — used for API slots; transformed through
+//                                   the existing resource-assembler so spec-
+//                                   derived auto-vary stays a single concern
+// ---------------------------------------------------------------------------
+
+const DbContentArchetypeSchema = z.object({
+  label: z.string().describe('Human-readable label, e.g. "free-tier", "pro-churn-risk".'),
+  fields: z
+    .record(z.unknown())
+    .describe('Constant fields shared by every row of this archetype.'),
+  vary: z
+    .record(FieldVariationSchema)
+    .optional()
+    .describe('Fields that get randomized per cloned row (names, emails, ids, dates, ranges).'),
+  cites: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Claim ids this archetype is responsible for satisfying. The solver uses cites to ' +
+        'assign exact row counts; ambient archetypes filling capacity can omit cites.',
+    ),
+  anchor: z
+    .string()
+    .optional()
+    .describe(
+      'Anchor id this archetype is bound to. When set, the expander emits rows tied to ' +
+        'the resolved anchor (no weight redistribution). Use for persona events declared ' +
+        'in the anchors list.',
+    ),
+});
+
+const ApiContentArchetypeSchema = z.object({
+  label: z.string().describe('Human-readable label, e.g. "starter-monthly", "overdue-oldest".'),
+  fieldOverrides: z
+    .array(FieldOverrideEntrySchema)
+    .optional()
+    .describe(
+      'Constant field values that define this archetype. Use dotted paths for nested ' +
+        'object fields ({field:"unit_price.amount", value:"2900"}). Values are strings ' +
+        '— the assembler coerces numerics.',
+    ),
+  vary: z
+    .array(VaryEntrySchema)
+    .optional()
+    .describe(
+      'Per-archetype variation overrides — emit only when the spec\'s auto-derivation is ' +
+        'wrong for this archetype (e.g. amount must range 500-2000 instead of the spec default).',
+    ),
+  cites: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Claim ids this archetype is responsible for satisfying.',
+    ),
+  anchor: z
+    .string()
+    .optional()
+    .describe(
+      'Anchor id this archetype is bound to. For MIRROR events, bind on the API side only; ' +
+        'the mirror flow propagates the resulting row to DB.',
+    ),
+  apiOnly: z
+    .boolean()
+    .optional()
+    .describe(
+      'Set true when entities of this archetype have NO database counterpart (e.g. ' +
+        '"3 deliberate Stripe-only orphans from a botched import"). Use ONLY for ' +
+        'persona-declared cross-platform asymmetry.',
+    ),
+});
+
+/**
+ * LLM output schema for a DB slot's content. Returns archetypes only —
+ * count/weight are assigned by the solver and orchestrator downstream.
+ */
+export const DbSlotContentOutputSchema = z.object({
+  archetypes: z
+    .array(DbContentArchetypeSchema)
+    .describe(
+      'Two to ten representative archetypes for this table. Each archetype is a coherent ' +
+        'sub-group with its own field values; the expander clones each into many rows.',
+    ),
+});
+
+/**
+ * LLM output schema for an API slot's content.
+ */
+export const ApiSlotContentOutputSchema = z.object({
+  archetypes: z
+    .array(ApiContentArchetypeSchema)
+    .describe(
+      'Two to ten representative archetypes for this resource. Constant values go in ' +
+        'fieldOverrides; let the assembler auto-derive ids, timestamps, and emails ' +
+        'unless you have a specific opinion.',
+    ),
+});
+
+export type DbSlotContentOutput = z.infer<typeof DbSlotContentOutputSchema>;
+export type ApiSlotContentOutput = z.infer<typeof ApiSlotContentOutputSchema>;

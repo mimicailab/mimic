@@ -25,7 +25,17 @@ export interface PersonaData {
   entities: Record<string, EntityData[]>;
   patterns: DataPattern[];
   annotations?: Record<string, unknown>;
-  /** Testable facts about the generated data — used for auto-scenario generation */
+  /**
+   * Structured persona claims — checkable predicates extracted from the
+   * persona NL. Replaces the legacy `facts` array; the claim auditor
+   * evaluates these against the expanded data and triggers the repair loop
+   * if any fail. See types/claim.ts for the Claim shape.
+   */
+  claims?: import('./claim.js').Claim[];
+  /**
+   * @deprecated Legacy field — descriptive prose, not validated. Retained for
+   * fact-manifest test-scenario generation only. New work should emit `claims`.
+   */
   facts?: import('./fact-manifest.js').Fact[];
   /** API entity seeds, keyed by adapter ID then resource type */
   apiEntities?: Record<string, Record<string, EntityData[]>>;
@@ -242,6 +252,15 @@ export interface EntityArchetype {
    * customer, date, and (with a shared sequence prefix) ids.
    */
   anchor?: string;
+  /**
+   * Claim ids this archetype is responsible for satisfying. The auditor uses
+   * these when a claim fails — it surfaces the offending archetype in the
+   * error and the repair LLM is shown only the cited archetypes.
+   *
+   * An archetype with no `cites` is "ambient" — it fills row capacity but
+   * isn't bound to any specific persona claim.
+   */
+  cites?: string[];
 }
 
 /** Per-table archetype configuration */

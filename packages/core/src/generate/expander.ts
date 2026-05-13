@@ -414,10 +414,23 @@ export class BlueprintExpander {
       reassignSequentialIds(rows, tableInfo, idTracker, tableName);
     }
 
+    // Resolve unique-constraint violations by mutating (not dropping). For PK
+    // collisions, cascade the regenerated PK through every child FK so the
+    // relationship graph stays intact. This is the safety net for any value
+    // that slipped past FieldGenerator's per-(table, column) uniqueness pass
+    // — e.g. LLM-literal `fieldOverrides`, or imports from anchor archetypes.
     for (const [tableName, rows] of Object.entries(tables)) {
       const tableInfo = tableIndex.get(tableName);
       if (tableInfo && rows.length > 1) {
-        tables[tableName] = deduplicateByUniqueConstraints(rows, tableInfo);
+        const { rows: kept, pkRemap } = uniquifyByConstraints(rows, tableInfo);
+        tables[tableName] = kept;
+        if (pkRemap.size > 0 && tableInfo.primaryKey.length === 1) {
+          const pkCol = tableInfo.primaryKey[0]!;
+          const cascaded = cascadeFkRewrites(tables, schema, tableName, pkCol, pkRemap);
+          logger.debug(
+            `Cascaded ${cascaded} FK reference(s) after ${pkRemap.size} PK regen in "${tableName}"`,
+          );
+        }
       }
     }
 
@@ -891,6 +904,16 @@ export class BlueprintExpander {
       weighted.length > 0 ? distributeByWeight(weighted, remainingForWeighted) : [];
     const rows: Row[] = [];
 
+    // Single-column `@unique` columns get uniqueness enforced at generation
+    // time inside `applyVariations` — values are mutated before the row
+    // leaves the field generator. Composite unique constraints (length > 1)
+    // are left for the dedup safety net since they can't always be resolved
+    // by changing one column.
+    const uniqueColumns = new Set<string>();
+    for (const cs of tableInfo?.uniqueConstraints ?? []) {
+      if (cs.length === 1 && cs[0]) uniqueColumns.add(cs[0]);
+    }
+
     logger.debug(
       `Expanding entities for "${tableName}": ${count} target ` +
         `(${explicitTotal} explicit-count across ${explicitCount.length} archetype(s)` +
@@ -907,6 +930,7 @@ export class BlueprintExpander {
         archetype.fields,
         i,
         tableName,
+        uniqueColumns.size > 0 ? uniqueColumns : undefined,
       );
 
       assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
@@ -1704,6 +1728,14 @@ export class BlueprintExpander {
     // counters and FK lookups stay coherent with mirror-derived rows.
     const dbArchetypes = blueprint.data.entityArchetypes?.[tableName];
     if (dbArchetypes && tableInfo) {
+      // Same single-column @unique set as the main archetype expander —
+      // ensures anchor-bound and explicit-count rows participate in the
+      // shared uniqueness index, so a "Klein Records" anchor row doesn't
+      // collide with a weighted-archetype row that drew the same email.
+      const uniqueColumns = new Set<string>();
+      for (const cs of tableInfo.uniqueConstraints ?? []) {
+        if (cs.length === 1 && cs[0]) uniqueColumns.add(cs[0]);
+      }
       for (const archetype of dbArchetypes.archetypes) {
         const isAnchorBound =
           !!archetype.anchor && !!anchorResolver?.has(archetype.anchor);
@@ -1732,6 +1764,7 @@ export class BlueprintExpander {
             archetype.fields,
             i,
             tableName,
+            uniqueColumns.size > 0 ? uniqueColumns : undefined,
           );
           assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
           resolveReferences(row, idTracker, this.rng);
@@ -1957,9 +1990,13 @@ export class BlueprintExpander {
     if (allRows.length > 0) {
       tables[tableName] = [...(tables[tableName] ?? []), ...allRows];
 
-      // Dedup + fill mirrored tables immediately
+      // Resolve unique violations + fill required columns immediately. Child
+      // tables haven't been wired up yet at this point, so any PK remap here
+      // is harmless; the final-pass cascade in `expand` is the authoritative
+      // FK propagation step.
       if (tableInfo) {
-        tables[tableName] = deduplicateByUniqueConstraints(tables[tableName]!, tableInfo);
+        const { rows: kept } = uniquifyByConstraints(tables[tableName]!, tableInfo);
+        tables[tableName] = kept;
         fillMissingRequiredColumns(tables[tableName]!, tableInfo, this.rng);
       }
 
@@ -2032,6 +2069,7 @@ export class BlueprintExpander {
       // Skip sequence/uuid — those generate fresh IDs that would collide with
       // mirror-populated cross-surface columns.
       for (const [field, variation] of Object.entries(archetype.vary)) {
+        if (!variation || typeof variation !== 'object' || typeof variation.type !== 'string') continue;
         if (row[field] !== undefined && row[field] !== null) continue;
         if (!dbColumnNames.has(field)) continue;
         if (variation.type === 'sequence' || variation.type === 'uuid') continue;
@@ -2276,6 +2314,7 @@ export class BlueprintExpander {
           }
 
           for (const [field, variation] of Object.entries(template.vary)) {
+            if (!variation || typeof variation !== 'object' || typeof variation.type !== 'string') continue;
             if (row[field] !== undefined) continue;
             if (field === 'billing_platform' || field === 'external_id') continue;
             if (dbColumnNames.size > 0 && !dbColumnNames.has(field)) continue;
@@ -2311,8 +2350,16 @@ export class BlueprintExpander {
         return true;
       });
       if (nonApiArchetypes.length > 0) {
+        // Budget = explicit-count contributions + weight-distributed share.
+        // Without the explicit part, narrow archetypes that use explicit
+        // count + weight:0 (the persona-pinned-claim pattern) get scaled to
+        // zero by the weight-only formula and never emit any rows.
+        const explicitContribution = nonApiArchetypes
+          .filter(a => typeof a.count === 'number' && a.count > 0)
+          .reduce((s, a) => s + (a.count ?? 0), 0);
         const totalNonApiWeight = nonApiArchetypes.reduce((s, a) => s + a.weight, 0);
-        const nonApiCount = Math.round(dbArchetypes.count * totalNonApiWeight);
+        const weightedContribution = Math.round(dbArchetypes.count * totalNonApiWeight);
+        const nonApiCount = explicitContribution + weightedContribution;
         if (nonApiCount > 0) {
           const nonApiConfig = { count: nonApiCount, archetypes: nonApiArchetypes };
           const dbOnlyRows = this.expandArchetypes(
@@ -2320,7 +2367,7 @@ export class BlueprintExpander {
           );
           allRows.push(...dbOnlyRows);
           logger.debug(
-            `Identity table "${tableName}": expanded ${dbOnlyRows.length} non-API-linked rows from ${nonApiArchetypes.length} archetype(s)`,
+            `Identity table "${tableName}": expanded ${dbOnlyRows.length} non-API-linked rows from ${nonApiArchetypes.length} archetype(s) (explicit=${explicitContribution}, weighted=${weightedContribution})`,
           );
         }
       }
@@ -2329,9 +2376,12 @@ export class BlueprintExpander {
     if (allRows.length > 0) {
       tables[tableName] = [...(tables[tableName] ?? []), ...allRows];
 
-      // Dedup + fill identity tables immediately
+      // Resolve unique violations + fill required columns immediately. As with
+      // the mirrored-tables path, child FKs aren't wired yet, so PK remaps
+      // here are harmless and the final cascade in `expand` handles propagation.
       if (tableInfo) {
-        tables[tableName] = deduplicateByUniqueConstraints(tables[tableName]!, tableInfo);
+        const { rows: kept } = uniquifyByConstraints(tables[tableName]!, tableInfo);
+        tables[tableName] = kept;
         fillMissingRequiredColumns(tables[tableName]!, tableInfo, this.rng);
       }
 
@@ -3534,6 +3584,7 @@ function rewriteAnchorVaryRules(
   resolved: ResolvedAnchor,
 ): void {
   for (const [colName, rule] of Object.entries(archetype.vary)) {
+    if (!rule || typeof rule !== 'object' || typeof rule.type !== 'string') continue;
     if (rule.type === 'anchor_date') {
       const dateKey = rule.key ?? 'event';
       const ts = resolved.dates[dateKey];
@@ -3921,59 +3972,209 @@ function generateColumnValue(col: ColumnInfo, rng: SeededRandom): unknown {
 }
 
 /**
- * Remove rows that would violate unique constraints defined in the schema.
- * For each unique constraint (including PK), build a composite key from the
- * row values and keep only the first occurrence.  Works for any schema.
+ * Resolve unique-constraint violations by mutating the offending column
+ * instead of dropping the row.
+ *
+ * Previous behaviour (`deduplicateByUniqueConstraints`) silently filtered
+ * duplicates, which orphaned any child rows whose FKs pointed at the
+ * dropped parent's PK. That produced Postgres FK violations at seed time
+ * for every persona generating ≥~1k users (faker name collisions on email
+ * are essentially guaranteed at that scale).
+ *
+ * Two cases handled:
+ *   1. **Non-PK unique collision** (e.g. duplicate `email`) → mutate the
+ *      colliding column to a unique variant. The row's PK is untouched, so
+ *      every FK pointing at this row stays valid.
+ *   2. **PK collision** → regenerate the PK (UUID-shaped PKs get a fresh
+ *      crypto UUID; other types fall back to the same variant-mutation
+ *      logic) and return a remap so the caller can cascade FK rewrites
+ *      via `cascadeFkRewrites`. This mirrors the pattern `coerceUuidColumns`
+ *      already implements for malformed UUIDs.
+ *
+ * Row count is preserved. No FK is ever orphaned by this pass.
  */
-function deduplicateByUniqueConstraints(
+function uniquifyByConstraints(
   rows: Row[],
   tableInfo: TableInfo,
-): Row[] {
-  // Collect all unique key sets: explicit unique constraints + primary key.
-  // Skip PK if any PK column is missing from rows (e.g. UUID PKs that
-  // haven't been generated yet — they'll be unique once assigned later).
+): { rows: Row[]; pkRemap: Map<string, string> } {
+  const pkRemap = new Map<string, string>();
+
   const uniqueKeySets: string[][] = [
     ...(tableInfo.uniqueConstraints ?? []),
   ];
 
   const pkCols = tableInfo.primaryKey;
+  // Track which constraint index, if any, corresponds to the PK — so when a
+  // collision lands on it we can record the remap for FK cascade.
+  let pkConstraintIdx = -1;
   if (pkCols.length > 0) {
     const pkPresent = rows.length === 0 ||
       pkCols.every((c) => rows[0]![c] !== undefined);
     if (pkPresent) {
+      pkConstraintIdx = uniqueKeySets.length;
       uniqueKeySets.push(pkCols);
     }
   }
 
-  if (uniqueKeySets.length === 0) return rows;
+  if (uniqueKeySets.length === 0) return { rows, pkRemap };
 
-  // One Set per unique constraint to track seen composite keys
+  // Identify FK columns on this table. Critical: a composite unique that
+  // includes an FK column (e.g. usage_metrics has @@unique([user_id, period]))
+  // must NEVER have its FK mutated — that would break referential integrity
+  // wholesale (every mutated FK becomes an orphan pointing at no parent).
+  // Instead, mutate the non-FK column of the composite (e.g. `period`).
+  const fkColumns = new Set<string>();
+  for (const fk of tableInfo.foreignKeys ?? []) {
+    for (const c of fk.columns) fkColumns.add(c);
+  }
+
   const seenSets = uniqueKeySets.map(() => new Set<string>());
-  const before = rows.length;
+  const kept: Row[] = [];
+  let mutations = 0;
+  let dropped = 0;
 
-  const result = rows.filter((row) => {
+  rowLoop:
+  for (const row of rows) {
     for (let i = 0; i < uniqueKeySets.length; i++) {
       const cols = uniqueKeySets[i]!;
-      // SQL semantics: NULL doesn't equal NULL, so a row with any NULL in the
-      // unique key doesn't conflict with anything (Postgres, MySQL, SQLite all
-      // behave this way). Without this, e.g. 100 rows with NULL `stripe_pi_id`
-      // would collapse to 1 here even though Postgres would happily accept all.
-      const hasNull = cols.some(c => row[c] === undefined || row[c] === null);
-      if (hasNull) continue;
-      const key = cols.map((c) => String(row[c])).join('\x00');
-      if (seenSets[i]!.has(key)) return false;
+      // SQL semantics: NULL ≠ NULL — a row with any NULL in the unique key
+      // doesn't conflict with anything in Postgres / MySQL / SQLite.
+      if (cols.some((c) => row[c] === undefined || row[c] === null)) continue;
+
+      let key = cols.map((c) => String(row[c])).join('\x00');
+      if (!seenSets[i]!.has(key)) {
+        seenSets[i]!.add(key);
+        continue;
+      }
+
+      // Collision — try to mutate. Strategy depends on which constraint
+      // it landed on:
+      if (i === pkConstraintIdx && pkCols.length === 1) {
+        // PK collision: regenerate. UUID-shaped PKs get a fresh crypto UUID
+        // (matches the `coerceUuidColumns` pattern). Cascade to children
+        // happens at the call site via cascadeFkRewrites.
+        const pkCol = pkCols[0]!;
+        const oldVal = String(row[pkCol]);
+        const candidate = crypto.randomUUID();
+        row[pkCol] = candidate;
+        pkRemap.set(oldVal, candidate);
+        mutations++;
+      } else {
+        // Non-PK unique collision. Pick a mutable column from the composite —
+        // prefer the first non-FK column. Mutating an FK column would break
+        // referential integrity (the FK would point at a non-existent parent),
+        // so FK columns are off-limits here.
+        const mutCol = cols.find((c) => !fkColumns.has(c));
+        if (!mutCol) {
+          // Every column in the composite is an FK. The row is a true
+          // referential duplicate (same combination of parents); no safe
+          // mutation exists. Drop it.
+          dropped++;
+          continue rowLoop;
+        }
+        const oldVal = row[mutCol];
+        row[mutCol] = nextUniqueVariant(oldVal, seenSets[i]!, cols, row, mutCol);
+        mutations++;
+      }
+
+      key = cols.map((c) => String(row[c])).join('\x00');
       seenSets[i]!.add(key);
     }
-    return true;
-  });
+    kept.push(row);
+  }
 
-  if (result.length < before) {
+  if (mutations > 0 || dropped > 0) {
     logger.debug(
-      `Deduped "${tableInfo.name}" by unique constraints: ${before} → ${result.length} rows`,
+      `Uniquified "${tableInfo.name}": ${mutations} mutation(s) ` +
+      `(${pkRemap.size} PK regen with cascade, ${mutations - pkRemap.size} value mutation), ` +
+      `${dropped} drop(s) of all-FK-composite duplicates`,
     );
   }
 
-  return result;
+  return { rows: kept, pkRemap };
+}
+
+/**
+ * Find a unique variant of `oldVal` that doesn't collide with anything in
+ * `takenComposite` when substituted into `row` under `mutCol`. Mirrors
+ * `FieldGenerator.uniquifyValue`'s logic so collision handling looks
+ * consistent across the generation and safety-net layers.
+ *
+ * `mutCol` is the specific column being mutated — for composite unique
+ * constraints this is the caller's choice of which column to disambiguate
+ * on (typically the first non-FK column).
+ */
+function nextUniqueVariant(
+  oldVal: unknown,
+  takenComposite: Set<string>,
+  cols: string[],
+  row: Row,
+  mutCol: string,
+): unknown {
+  const compose = (v: unknown): string =>
+    cols.map((c) => (c === mutCol ? String(v) : String(row[c]))).join('\x00');
+
+  if (typeof oldVal === 'string' && oldVal.includes('@')) {
+    const at = oldVal.indexOf('@');
+    const local = oldVal.slice(0, at);
+    const domain = oldVal.slice(at + 1);
+    for (let n = 2; n < 100_000; n++) {
+      const cand = `${local}+${n}@${domain}`;
+      if (!takenComposite.has(compose(cand))) return cand;
+    }
+  }
+  if (typeof oldVal === 'string') {
+    for (let n = 2; n < 100_000; n++) {
+      const cand = `${oldVal}-${n}`;
+      if (!takenComposite.has(compose(cand))) return cand;
+    }
+  }
+  if (typeof oldVal === 'number') {
+    let cand = oldVal + 1;
+    while (takenComposite.has(compose(cand))) cand++;
+    return cand;
+  }
+  // Opaque value — random suffix on the stringified form. Won't collide.
+  return `${String(oldVal)}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+/**
+ * After a PK column has been remapped (oldId → newId) on a parent table,
+ * rewrite every FK column on every child table that points at that parent
+ * column. Same pattern `coerceUuidColumns` uses for invalid-UUID swaps —
+ * extracted here so dedup-time PK regens can reuse it.
+ */
+function cascadeFkRewrites(
+  tables: Record<string, Row[]>,
+  schema: SchemaModel,
+  changedTable: string,
+  changedColumn: string,
+  remap: Map<string, string>,
+): number {
+  if (remap.size === 0) return 0;
+  let count = 0;
+  for (const tableInfo of schema.tables) {
+    const rows = tables[tableInfo.name];
+    if (!rows || rows.length === 0) continue;
+    for (const fk of tableInfo.foreignKeys) {
+      if (fk.referencedTable !== changedTable) continue;
+      for (let i = 0; i < fk.columns.length; i++) {
+        const fkCol = fk.columns[i];
+        const refCol = fk.referencedColumns[i];
+        if (refCol !== changedColumn || !fkCol) continue;
+        for (const row of rows) {
+          const v = row[fkCol];
+          if (typeof v !== 'string') continue;
+          const next = remap.get(v);
+          if (next) {
+            row[fkCol] = next;
+            count++;
+          }
+        }
+      }
+    }
+  }
+  return count;
 }
 
 // ---------------------------------------------------------------------------
