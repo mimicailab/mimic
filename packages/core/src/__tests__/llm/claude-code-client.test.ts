@@ -5,18 +5,53 @@ import { CostTracker } from '../../llm/cost-tracker.js';
 
 // Stub the Claude Agent SDK so tests don't need it installed or hit the network.
 // Each test resets `responses` to control what the fake SDK emits per call.
-let responses: Array<string | { error: string }> = [];
+// A response can be:
+//   - a string: emitted as both the assistant text and result.result (text fallback path)
+//   - { structured: object }: emitted on result.structured_output (native path)
+//   - { error: string }: emitted as an error-subtype result
+let responses: Array<StubResponse> = [];
+
+type StubResponse =
+  | string
+  | { structured: unknown }
+  | { error: string }
+  | { successButError: string };
 
 vi.mock('@anthropic-ai/claude-agent-sdk', () => {
   const query = () => {
-    const next = responses.shift();
-    if (!next) throw new Error('no stubbed response queued');
+    const next = responses.shift() as StubResponse | undefined;
+    if (next === undefined) throw new Error('no stubbed response queued');
     async function* stream() {
-      if (typeof next === 'object' && 'error' in next) {
-        yield { type: 'result', subtype: 'error', usage: { input_tokens: 10, output_tokens: 0 } };
+      if (typeof next === 'object' && next !== null && 'error' in next) {
+        yield { type: 'result', subtype: 'error_during_execution', usage: { input_tokens: 10, output_tokens: 0 } };
         return;
       }
-      // Emit one assistant text block, then the success result with usage.
+      if (typeof next === 'object' && next !== null && 'successButError' in next) {
+        // Real-world envelope from the SDK on auth failure: subtype=success
+        // BUT is_error=true with the error string in `result`.
+        yield {
+          type: 'result',
+          subtype: 'success',
+          is_error: true,
+          result: (next as { successButError: string }).successButError,
+          usage: { input_tokens: 0, output_tokens: 0 },
+        };
+        return;
+      }
+      if (typeof next === 'object' && next !== null && 'structured' in next) {
+        // Native structured-output path — SDK parses the schema server-side
+        // and emits the object on result.structured_output.
+        yield {
+          type: 'result',
+          subtype: 'success',
+          is_error: false,
+          result: '',
+          structured_output: (next as { structured: unknown }).structured,
+          usage: { input_tokens: 42, output_tokens: 7 },
+        };
+        return;
+      }
+      // Plain-text path: emit assistant text + success result.
       yield {
         type: 'assistant',
         message: { content: [{ type: 'text', text: next as string }] },
@@ -24,6 +59,7 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => {
       yield {
         type: 'result',
         subtype: 'success',
+        is_error: false,
         result: next as string,
         usage: { input_tokens: 42, output_tokens: 7 },
       };
@@ -41,6 +77,22 @@ describe('ClaudeCodeClient.generateObject', () => {
   const schema = z.object({
     name: z.string(),
     age: z.number(),
+  });
+
+  it('uses the SDK native structured_output when present', async () => {
+    responses = [{ structured: { name: 'alice', age: 30 } }];
+    const tracker = new CostTracker();
+    const client = new ClaudeCodeClient({ model: 'claude-opus-4-7' }, tracker);
+
+    const result = await client.generateObject({
+      schema,
+      prompt: 'make a person',
+      label: 'mk',
+    });
+
+    expect(result.object).toEqual({ name: 'alice', age: 30 });
+    expect(tracker.getSummary().entries).toHaveLength(1);
+    expect(tracker.getSummary().entries[0]!.runtime).toBe('claude-code');
   });
 
   it('parses a plain JSON response on first try', async () => {
@@ -111,6 +163,16 @@ describe('ClaudeCodeClient.generateObject', () => {
     expect(entries).toHaveLength(2);
     expect(entries.map((e) => e.label)).toEqual(['mk', 'mk:repair-1']);
     expect(entries.every((e) => e.runtime === 'claude-code')).toBe(true);
+  });
+
+  it('throws when the SDK emits subtype=success but is_error=true (auth failure shape)', async () => {
+    responses = [{ successButError: 'Invalid API key · Please run /login' }];
+    const tracker = new CostTracker();
+    const client = new ClaudeCodeClient({ model: 'claude-opus-4-7' }, tracker);
+
+    await expect(
+      client.generateObject({ schema, prompt: 'p', label: 'mk' }),
+    ).rejects.toThrow(/Invalid API key/);
   });
 
   it('throws after exhausting repair budget', async () => {
