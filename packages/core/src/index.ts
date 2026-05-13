@@ -115,8 +115,12 @@ export { parseSchema } from './schema/index.js';
 
 // LLM
 export { LLMClient } from './llm/client.js';
-export type { LLMClientConfig } from './llm/client.js';
+export type { ILLMClient, LLMClientConfig } from './llm/client.js';
+export { ClaudeCodeClient } from './llm/claude-code-client.js';
+export type { ClaudeCodeClientConfig } from './llm/claude-code-client.js';
+export { createLLMClient } from './llm/factory.js';
 export { CostTracker } from './llm/cost-tracker.js';
+export type { LLMRuntime, TokenUsageEntry, CostSummary, CostCategory } from './llm/cost-tracker.js';
 export { providerConfigFromMimic } from './llm/providers.js';
 export type { ProviderConfig } from './llm/providers.js';
 

@@ -39,6 +39,14 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
+  "peerDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/claude-agent-sdk": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.76",
     "@ai-sdk/openai": "^3.0.41",

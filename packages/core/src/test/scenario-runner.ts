@@ -1,4 +1,4 @@
-import type { LLMClient } from '../llm/index.js';
+import type { ILLMClient } from '../llm/index.js';
 import type { CostTracker } from '../llm/index.js';
 import type {
   TestScenario,
@@ -51,14 +51,14 @@ const DEFAULT_TIMEOUT_MS = 30_000;
  * responses by marking the scenario as failed with a descriptive error.
  */
 export class ScenarioRunner {
-  private readonly llmClient: LLMClient;
+  private readonly llmClient: ILLMClient;
   private readonly evaluator: Evaluator;
   private readonly reporter: Reporter;
   private readonly costTracker: CostTracker;
   private readonly personaSim: PersonaSimulator;
 
   constructor(
-    llmClient: LLMClient,
+    llmClient: ILLMClient,
     evaluator: Evaluator,
     reporter: Reporter,
     costTracker: CostTracker,

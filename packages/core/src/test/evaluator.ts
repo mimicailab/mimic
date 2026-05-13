@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { LLMClient } from '../llm/index.js';
+import type { ILLMClient } from '../llm/index.js';
 import type { CostTracker } from '../llm/index.js';
 import type {
   TestScenario,
@@ -58,10 +58,10 @@ const ConfirmationJudgmentSchema = z.object({
  *   - `confirms_before_action` — ensures destructive actions are confirmed
  */
 export class Evaluator {
-  private readonly llmClient: LLMClient;
+  private readonly llmClient: ILLMClient;
   private readonly costTracker: CostTracker;
 
-  constructor(llmClient: LLMClient, costTracker: CostTracker) {
+  constructor(llmClient: ILLMClient, costTracker: CostTracker) {
     this.llmClient = llmClient;
     this.costTracker = costTracker;
   }
