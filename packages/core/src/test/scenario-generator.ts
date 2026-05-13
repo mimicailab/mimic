@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { LLMClient } from '../llm/client.js';
+import type { ILLMClient } from '../llm/client.js';
 import type { CostTracker } from '../llm/cost-tracker.js';
 import type {
   Fact,
@@ -59,10 +59,10 @@ const TIER_TO_LATENCY: Record<ScenarioTier, number> = {
 // ---------------------------------------------------------------------------
 
 export class ScenarioGenerator {
-  private readonly llmClient: LLMClient;
+  private readonly llmClient: ILLMClient;
   private readonly costTracker: CostTracker;
 
-  constructor(llmClient: LLMClient, costTracker: CostTracker) {
+  constructor(llmClient: ILLMClient, costTracker: CostTracker) {
     this.llmClient = llmClient;
     this.costTracker = costTracker;
   }

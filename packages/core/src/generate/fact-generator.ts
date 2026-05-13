@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { LLMClient } from '../llm/client.js';
+import type { ILLMClient } from '../llm/client.js';
 import type { ExpandedData, Row } from '../types/dataset.js';
 import type { Fact } from '../types/fact-manifest.js';
 import { logger, debugFile } from '../utils/logger.js';
@@ -498,7 +498,7 @@ function resolveFact(
 // ---------------------------------------------------------------------------
 
 export async function generateFacts(
-  llmClient: LLMClient,
+  llmClient: ILLMClient,
   expanded: ExpandedData,
   persona: { name: string; description: string },
   domain: string,

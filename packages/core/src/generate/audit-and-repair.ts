@@ -7,7 +7,7 @@ import type {
   BlueprintPatch,
   RepairAttempt,
 } from '../types/claim.js';
-import type { LLMClient } from '../llm/client.js';
+import type { ILLMClient } from '../llm/client.js';
 import { BlueprintExpander } from './expander.js';
 import { auditClaims, formatAuditFailures } from './claim-auditor.js';
 import { applyBlueprintPatch } from './blueprint-patch.js';
@@ -88,7 +88,7 @@ export interface ExpandAndAuditResult {
  * with an empty audit — backward compatible with pre-claims blueprints.
  */
 export async function expandAndAudit(
-  llm: LLMClient,
+  llm: ILLMClient,
   blueprint: Blueprint,
   schema: SchemaModel,
   options: ExpandAndAuditOptions,
@@ -248,7 +248,7 @@ function expand(
 }
 
 async function callRepairLLM(
-  llm: LLMClient,
+  llm: ILLMClient,
   persona: { name: string; description: string },
   audit: AuditResult,
   blueprint: Blueprint,

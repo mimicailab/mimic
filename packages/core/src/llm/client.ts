@@ -88,6 +88,21 @@ export interface GenerateTextResult {
   completionTokens: number;
 }
 
+/**
+ * Surface contract every LLM runtime must implement. The blueprint engine,
+ * content generator, claim extractor, etc. depend on this — not on a concrete
+ * class — so alternate runtimes (Claude Agent SDK, batch API) can be swapped
+ * in without touching the pipeline.
+ */
+export interface ILLMClient {
+  generateObject<T extends z.ZodTypeAny>(
+    opts: GenerateObjectOptions<T>,
+  ): Promise<GenerateObjectResult<z.infer<T>>>;
+  generateText(opts: GenerateTextOptions): Promise<GenerateTextResult>;
+  getModelId(): string;
+  getCostTracker(): CostTracker;
+}
+
 // ---------------------------------------------------------------------------
 // LLMClient
 // ---------------------------------------------------------------------------
@@ -99,7 +114,7 @@ export interface GenerateTextResult {
  *   3. Records every call's token usage via `CostTracker`.
  *   4. Maps SDK errors into `BlueprintGenerationError`.
  */
-export class LLMClient {
+export class LLMClient implements ILLMClient {
   private readonly model: ReturnType<typeof createProvider>;
   private readonly costTracker: CostTracker;
   private readonly config: LLMClientConfig;
@@ -429,7 +444,7 @@ const PERIODIC_FREQ_MAP: Record<string, string> = {
  * - `data.patterns[].periodic.frequency` as object → string enum
  * - `data.entityArchetypes` entries that are arrays instead of `{ count, archetypes }`
  */
-function normalizeLLMOutput(raw: unknown): unknown {
+export function normalizeLLMOutput(raw: unknown): unknown {
   if (!raw || typeof raw !== 'object') return raw;
   const obj = raw as Record<string, unknown>;
 

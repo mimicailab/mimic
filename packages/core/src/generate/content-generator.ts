@@ -24,7 +24,7 @@ import type {
 } from '../types/blueprint.js';
 import type { Claim } from '../types/claim.js';
 import type { ResourceSlot } from './topology.js';
-import type { LLMClient } from '../llm/client.js';
+import type { ILLMClient } from '../llm/client.js';
 import type { AdapterResourceSpecs, PromptContext } from '../types/index.js';
 import {
   DbSlotContentOutputSchema,
@@ -93,7 +93,7 @@ export interface SlotContentResult {
  * - Each call is labelled with the slot's key for cost tracking.
  */
 export async function generateAllSlots(
-  llm: LLMClient,
+  llm: ILLMClient,
   slots: ResourceSlot[],
   options: GenerateSlotContentOptions,
 ): Promise<SlotContentResult[]> {
@@ -128,7 +128,7 @@ export async function generateAllSlots(
 // ---------------------------------------------------------------------------
 
 async function generateOneSlot(
-  llm: LLMClient,
+  llm: ILLMClient,
   slot: ResourceSlot,
   options: GenerateSlotContentOptions,
 ): Promise<SlotContentResult> {
@@ -139,7 +139,7 @@ async function generateOneSlot(
 }
 
 async function generateDbSlot(
-  llm: LLMClient,
+  llm: ILLMClient,
   slot: ResourceSlot,
   options: GenerateSlotContentOptions,
 ): Promise<SlotContentResult> {
@@ -211,7 +211,7 @@ async function generateDbSlot(
 }
 
 async function generateApiSlot(
-  llm: LLMClient,
+  llm: ILLMClient,
   slot: ResourceSlot,
   options: GenerateSlotContentOptions,
 ): Promise<SlotContentResult> {

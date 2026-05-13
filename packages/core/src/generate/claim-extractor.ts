@@ -15,7 +15,7 @@
 import type { SchemaModel, AdapterResourceSpecs, PromptContext } from '../types/index.js';
 import type { SchemaMapping, PersonaProfile, Anchor } from '../types/blueprint.js';
 import type { Claim } from '../types/claim.js';
-import type { LLMClient } from '../llm/client.js';
+import type { ILLMClient } from '../llm/client.js';
 import { ClaimExtractionOutputSchema } from './blueprint-zod.js';
 import type { ClaimExtractionOutput } from './blueprint-zod.js';
 import { buildClaimExtractionPrompt } from './prompts.js';
@@ -55,7 +55,7 @@ export interface ExtractClaimsResult {
  * can trust that `claims` is a Claim[] and `anchors` is an Anchor[].
  */
 export async function extractClaims(
-  llm: LLMClient,
+  llm: ILLMClient,
   persona: { name: string; description: string },
   domain: string,
   schema: SchemaModel,

@@ -13,15 +13,15 @@ import {
   parseSchema,
   BlueprintEngine,
   BlueprintCache,
-  LLMClient,
   CostTracker,
-  providerConfigFromMimic,
+  createLLMClient,
   DataValidator,
   classifyTables,
   derivePromptContext,
   deriveDataSpec,
   expandAndAudit,
 } from '@mimicai/core';
+import type { LLMRuntime } from '@mimicai/core';
 import type { Blueprint, MimicConfig, ExpandedData, SchemaModel, SchemaMapping, Fact, FactManifest, PromptContext, DataSpec, AdapterResourceSpecs, ApiMockAdapter, TableClassification } from '@mimicai/core';
 import { loadBlueprint, isBuiltinBlueprint } from '@mimicai/blueprints';
 import { resolveEnvVars } from '../utils/env.js';
@@ -39,6 +39,10 @@ export function registerRunCommand(program: Command): void {
     .option('-d, --dry-run', 'show what would be generated without writing files')
     .option('-p, --persona <names...>', 'limit to specific personas')
     .option('-s, --seed <number>', 'override random seed', parseInt)
+    .option(
+      '--llm-runtime <runtime>',
+      'route LLM calls via api | claude-code | batch (overrides config.llm.runtime)',
+    )
     .option('--verbose', 'enable verbose logging')
     .action(async (opts) => {
       await runGenerate(opts);
@@ -54,6 +58,7 @@ interface RunOptions {
   dryRun?: boolean;
   persona?: string[];
   seed?: number;
+  llmRuntime?: string;
   verbose?: boolean;
 }
 
@@ -155,7 +160,20 @@ async function runGenerate(opts: RunOptions): Promise<void> {
 
   // ── Create shared core instances ───────────────────────────────────────
   const costTracker = new CostTracker();
-  const llmClient = new LLMClient(providerConfigFromMimic(config), costTracker);
+  const runtimeOverride = resolveRuntimeOverride(opts.llmRuntime);
+  const llmClient = createLLMClient(config, costTracker, runtimeOverride);
+  const resolvedRuntime = runtimeOverride ?? config.llm.runtime ?? 'api';
+  if (resolvedRuntime === 'claude-code') {
+    logger.info(
+      chalk.dim(
+        'LLM runtime: claude-code — calls billed against your Claude subscription, not per-token API charges',
+      ),
+    );
+  } else if (resolvedRuntime === 'batch') {
+    logger.warn(
+      'LLM runtime: batch — BatchClient not implemented yet, falling back to api runtime at full price',
+    );
+  }
   const cache = new BlueprintCache(blueprintDir);
   const engine = new BlueprintEngine(llmClient, cache, costTracker);
 
@@ -578,4 +596,16 @@ async function resolveSchema(config: MimicConfig, cwd: string): Promise<SchemaMo
 
   // prisma or sql — no pool needed
   return parseSchema({ schema: schemaConfig, basePath: cwd });
+}
+
+function resolveRuntimeOverride(flag: string | undefined): LLMRuntime | undefined {
+  if (!flag) return undefined;
+  if (flag !== 'api' && flag !== 'claude-code' && flag !== 'batch') {
+    throw new MimicError(
+      `Unknown --llm-runtime value: "${flag}"`,
+      'CONFIG_INVALID',
+      'Valid values: api, claude-code, batch',
+    );
+  }
+  return flag;
 }

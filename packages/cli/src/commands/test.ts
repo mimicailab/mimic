@@ -13,9 +13,8 @@ import {
   ScenarioRunner,
   Evaluator,
   Reporter,
-  LLMClient,
   CostTracker,
-  providerConfigFromMimic,
+  createLLMClient,
   ScenarioGenerator,
   PromptFooExporter,
   BraintrustExporter,
@@ -24,6 +23,7 @@ import {
   MimicExporter,
   ClaudeSkillExporter,
 } from '@mimicai/core';
+import type { LLMRuntime } from '@mimicai/core';
 import type {
   MimicConfig,
   ExpandedData,
@@ -72,6 +72,10 @@ export function registerTestCommand(program: Command): void {
       '--force-install-skill',
       'when --export claude-skill, overwrite an existing skills/mimic-eval/SKILL.md',
     )
+    .option(
+      '--llm-runtime <runtime>',
+      'route LLM calls via api | claude-code | batch (overrides config.llm.runtime)',
+    )
     .action(async (opts) => {
       await runTest(opts);
     });
@@ -94,6 +98,7 @@ interface TestOptions {
   export?: string;
   inspect?: boolean;
   forceInstallSkill?: boolean;
+  llmRuntime?: string;
 }
 
 interface ScenarioConfig {
@@ -171,7 +176,20 @@ async function runTest(opts: TestOptions): Promise<void> {
 
   // ── Create core test infrastructure ─────────────────────────────────────
   const costTracker = new CostTracker();
-  const llmClient = new LLMClient(providerConfigFromMimic(config), costTracker);
+  const runtimeOverride = resolveRuntimeOverride(opts.llmRuntime);
+  const llmClient = createLLMClient(config, costTracker, runtimeOverride);
+  const resolvedRuntime = runtimeOverride ?? config.llm.runtime ?? 'api';
+  if (resolvedRuntime === 'claude-code') {
+    logger.info(
+      chalk.dim(
+        'LLM runtime: claude-code — calls billed against your Claude subscription, not per-token API charges',
+      ),
+    );
+  } else if (resolvedRuntime === 'batch') {
+    logger.warn(
+      'LLM runtime: batch — BatchClient not implemented yet, falling back to api runtime at full price',
+    );
+  }
 
   // ── Auto-scenario generation from fact manifest ─────────────────────────
   const exportFormat = opts.inspect ? 'inspect' : (opts.export ?? config.test?.export);
@@ -597,4 +615,16 @@ function toJUnit(report: TestReport): string {
   lines.push('  </testsuite>');
   lines.push('</testsuites>');
   return lines.join('\n');
+}
+
+function resolveRuntimeOverride(flag: string | undefined): LLMRuntime | undefined {
+  if (!flag) return undefined;
+  if (flag !== "api" && flag !== "claude-code" && flag !== "batch") {
+    throw new MimicError(
+      `Unknown --llm-runtime value: "${flag}"`,
+      "CONFIG_INVALID",
+      "Valid values: api, claude-code, batch",
+    );
+  }
+  return flag;
 }

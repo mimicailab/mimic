@@ -1,4 +1,4 @@
-import type { LLMClient } from '../llm/index.js';
+import type { ILLMClient } from '../llm/index.js';
 import type { TestScenario, PersonaProfile } from '../types/index.js';
 
 // ---------------------------------------------------------------------------
@@ -43,9 +43,9 @@ function buildUserPrompt(scenario: TestScenario, persona: PersonaProfile): strin
  * skipped entirely and the provided input is returned as-is.
  */
 export class PersonaSimulator {
-  private readonly llmClient: LLMClient;
+  private readonly llmClient: ILLMClient;
 
-  constructor(llmClient: LLMClient) {
+  constructor(llmClient: ILLMClient) {
     this.llmClient = llmClient;
   }
 

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Blueprint, SchemaModel, PromptContext, AdapterResourceSpecs, TableClassification } from '../types/index.js';
 import type { EntityArchetypeConfig } from '../types/blueprint.js';
-import type { LLMClient } from '../llm/client.js';
+import type { ILLMClient } from '../llm/client.js';
 import type { CostTracker } from '../llm/cost-tracker.js';
 import { BlueprintCache } from './blueprint-cache.js';
 import type { SchemaMapping } from '../types/blueprint.js';
@@ -97,12 +97,12 @@ export interface PersonaInput {
  *   Zod validation  ->  metadata assembly  ->  cache write.
  */
 export class BlueprintEngine {
-  private readonly llmClient: LLMClient;
+  private readonly llmClient: ILLMClient;
   private readonly cache: BlueprintCache;
   private readonly costTracker: CostTracker;
 
   constructor(
-    llmClient: LLMClient,
+    llmClient: ILLMClient,
     cache: BlueprintCache,
     costTracker: CostTracker,
   ) {
