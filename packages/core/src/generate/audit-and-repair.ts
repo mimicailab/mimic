@@ -16,7 +16,7 @@ import { BlueprintPatchSchema } from './blueprint-zod.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { rewriteBridgeTables, formatBridgeRewrite } from './bridge-rewriter.js';
-import { solveCounts, formatConflicts } from './count-solver.js';
+import { solveCounts, formatConflicts, type SolverConflict } from './count-solver.js';
 import { deterministicRepair, formatRepairDecisions } from './deterministic-repair.js';
 
 // ---------------------------------------------------------------------------
@@ -53,6 +53,15 @@ export interface ExpandAndAuditOptions {
   maxRepairAttempts?: number;
   /** Persona context for the repair prompt */
   persona: { name: string; description: string };
+  /**
+   * Strict mode. When true, persona contradictions (count solver conflicts)
+   * and exhausted repair budgets abort with a thrown error — the legacy V2
+   * behaviour. When false (default), the pipeline always seeds the best-
+   * effort data it has and surfaces remaining gaps via `complianceReport`.
+   * V2.5: aborting the whole run because a persona's claims didn't perfectly
+   * satisfy is a bad tradeoff for callers that want SOMETHING to inspect.
+   */
+  strict?: boolean;
 }
 
 export interface ExpandAndAuditResult {
@@ -65,6 +74,13 @@ export interface ExpandAndAuditResult {
    * input blueprint if bridge rewrite, solver, or repair patches were applied.
    */
   blueprint: Blueprint;
+  /**
+   * Markdown-formatted persona-compliance report. Populated only when the
+   * pipeline finished in soft-fail mode with unresolved issues (solver
+   * conflicts or residual claim failures after repair). Callers typically
+   * write this alongside the expanded data so a human can inspect the gap.
+   */
+  complianceReport?: string;
 }
 
 /**
@@ -94,7 +110,9 @@ export async function expandAndAudit(
   options: ExpandAndAuditOptions,
 ): Promise<ExpandAndAuditResult> {
   const maxAttempts = options.maxRepairAttempts ?? 2;
+  const strict = options.strict ?? false;
   const repairAttempts: RepairAttempt[] = [];
+  let solverConflicts: SolverConflict[] = [];
 
   // ── Step 1: Bridge rewrite (deterministic, structural) ────────────────────
   let current = blueprint;
@@ -108,12 +126,22 @@ export async function expandAndAudit(
   if ((current.data.claims?.length ?? 0) > 0) {
     const solveResult = solveCounts(current);
     if (solveResult.conflicts.length > 0) {
-      // Over-constrained persona — surface BEFORE expansion. The user has
-      // contradictory claims; no amount of generation will satisfy them.
-      throw new BlueprintGenerationError(
-        formatConflicts(solveResult.conflicts),
-        'Either revise the persona to remove the contradiction, or add tolerance to the affected claims. The count solver detected this before any LLM call or expansion happened — it is a persona-internal contradiction, not a generation failure.',
+      // Over-constrained persona. In strict mode we abort; otherwise we
+      // record the conflicts for the compliance report and apply the best-
+      // effort patch the solver produced so we can still seed data.
+      if (strict) {
+        throw new BlueprintGenerationError(
+          formatConflicts(solveResult.conflicts),
+          'Either revise the persona to remove the contradiction, or add tolerance to the affected claims. The count solver detected this before any LLM call or expansion happened — it is a persona-internal contradiction, not a generation failure.',
+        );
+      }
+      solverConflicts = solveResult.conflicts;
+      logger.warn(
+        `Count solver detected ${solveResult.conflicts.length} infeasible constraint${solveResult.conflicts.length === 1 ? '' : 's'} — proceeding with best-effort counts (a compliance report will be written).`,
       );
+      for (const c of solveResult.conflicts) {
+        logger.debug(`  conflict: ${c.message}`);
+      }
     }
     if (solveResult.patch.ops.length > 0) {
       const { failures: solveApplyFailures } = applyBlueprintPatch(current, solveResult.patch);
@@ -143,22 +171,52 @@ export async function expandAndAudit(
           `Claim audit passed (${audit.evaluations.length} claims).`,
         );
       }
-      return { expanded, audit, repairAttempts, blueprint: current };
+      const result: ExpandAndAuditResult = { expanded, audit, repairAttempts, blueprint: current };
+      if (solverConflicts.length > 0) {
+        // Solver conflicts but the data still passed audit (counts landed
+        // within tolerance after expansion). Surface the conflict so the
+        // caller can decide whether the persona text needs a rewrite.
+        result.complianceReport = buildComplianceReport({
+          persona: options.persona,
+          solverConflicts,
+          finalAudit: audit,
+          repairAttempts,
+          maxAttempts,
+          outcome: 'passed-with-solver-conflicts',
+        });
+      }
+      return result;
     }
 
     if (attempt === maxAttempts) {
-      // Out of repair budget — fail loudly.
-      const report = formatAuditFailures(audit);
-      const priorPatches = repairAttempts
-        .map(
-          (a) =>
-            `\nAttempt ${a.attempt} rationale: ${a.patch.rationale}\n  ops: ${JSON.stringify(a.patch.ops)}`,
-        )
-        .join('');
-      throw new BlueprintGenerationError(
-        `Claim audit FAILED after ${maxAttempts} repair attempt${maxAttempts > 1 ? 's' : ''}.\n\n${report}${priorPatches ? `\n\nPrior repair attempts (none fixed the issues):${priorPatches}` : ''}`,
-        'Each failed claim is quoted from the persona above. Either revise the persona to make the claim achievable within the volume/schema, or open the blueprint cache and inspect why the cited archetypes did not produce satisfying rows.',
+      // Out of repair budget. In strict mode: fail loudly (legacy V2). In
+      // soft mode (default): seed best-effort data and return the
+      // compliance report so a human can see the gap.
+      if (strict) {
+        const report = formatAuditFailures(audit);
+        const priorPatches = repairAttempts
+          .map(
+            (a) =>
+              `\nAttempt ${a.attempt} rationale: ${a.patch.rationale}\n  ops: ${JSON.stringify(a.patch.ops)}`,
+          )
+          .join('');
+        throw new BlueprintGenerationError(
+          `Claim audit FAILED after ${maxAttempts} repair attempt${maxAttempts > 1 ? 's' : ''}.\n\n${report}${priorPatches ? `\n\nPrior repair attempts (none fixed the issues):${priorPatches}` : ''}`,
+          'Each failed claim is quoted from the persona above. Either revise the persona to make the claim achievable within the volume/schema, or open the blueprint cache and inspect why the cited archetypes did not produce satisfying rows.',
+        );
+      }
+      logger.warn(
+        `Claim audit failed after ${maxAttempts} repair attempt${maxAttempts > 1 ? 's' : ''} — emitting best-effort seed data with a persona-compliance report.`,
       );
+      const complianceReport = buildComplianceReport({
+        persona: options.persona,
+        solverConflicts,
+        finalAudit: audit,
+        repairAttempts,
+        maxAttempts,
+        outcome: 'failed-after-repair-budget',
+      });
+      return { expanded, audit, repairAttempts, blueprint: current, complianceReport };
     }
 
     // Log the failures we're about to repair.
@@ -264,6 +322,7 @@ async function callRepairLLM(
   }));
 
   const citedArchetypes = collectCitedArchetypes(audit, blueprint);
+  const leakageHints = collectLeakageHints(audit, blueprint);
 
   const priorAttemptsForPrompt = priorAttempts.map((a) => ({
     attempt: a.attempt,
@@ -276,6 +335,7 @@ async function callRepairLLM(
     attempt: attemptNumber,
     failures,
     citedArchetypes,
+    leakageHints,
     priorAttempts: priorAttemptsForPrompt,
   });
 
@@ -356,4 +416,160 @@ function configFor(
   const adapter = target.slice(0, dot);
   const resource = target.slice(dot + 1);
   return blueprint.data.apiEntityArchetypes?.[adapter]?.[resource];
+}
+
+/**
+ * For each row_count failure whose overcount can't be explained by the cited
+ * archetype counts alone, collect the non-cited archetypes on the same surface
+ * whose fields/vary state could leak into the predicate. Threaded into the
+ * repair LLM prompt so the model knows where to narrow.
+ */
+function collectLeakageHints(
+  audit: AuditResult,
+  blueprint: Blueprint,
+): NonNullable<Parameters<typeof buildRepairPrompt>[0]['leakageHints']> {
+  const out: NonNullable<Parameters<typeof buildRepairPrompt>[0]['leakageHints']> = [];
+  for (const f of audit.failures) {
+    if (f.claim.kind !== 'row_count') continue;
+    const claim = f.claim as Extract<typeof f.claim, { kind: 'row_count' }>;
+    const filter = claim.target.filter;
+    if (!filter || Object.keys(filter).length === 0) continue;
+
+    const actual = typeof f.actual === 'number' ? f.actual : Number(f.actual);
+    if (!Number.isFinite(actual)) continue;
+    if (actual <= claim.expected) continue; // only overcount needs leakage analysis
+
+    // Find cited archetype paths on the same surface as the claim.
+    const surface = claim.target.surface;
+    const target = claim.target.name;
+    const config = configFor(blueprint, surface, target);
+    if (!config) continue;
+
+    const citedLabels = new Set<string>();
+    for (const ref of f.citedBy ?? []) {
+      const m = ref.match(/^(?:db|api)\.[^\[]+\[(.+)\]$/);
+      if (m) citedLabels.add(m[1]!);
+    }
+
+    const leakers: Array<{ ref: string; fields: Record<string, unknown>; vary: Record<string, unknown> }> = [];
+    for (const a of config.archetypes) {
+      if (citedLabels.has(a.label)) continue;
+      // Conservative: an archetype "could leak" when none of its constant
+      // fields rule out the filter. (Same heuristic as deterministic-repair.)
+      if (!couldArchetypeLeak(a, filter as Record<string, unknown>)) continue;
+      leakers.push({
+        ref: `${surface}:${target}:${a.label}`,
+        fields: a.fields,
+        vary: a.vary as Record<string, unknown>,
+      });
+    }
+    if (leakers.length === 0) continue;
+    out.push({
+      claimId: claim.id,
+      filter: filter as Record<string, unknown>,
+      leakingArchetypes: leakers,
+    });
+  }
+  return out;
+}
+
+function couldArchetypeLeak(
+  archetype: { fields: Record<string, unknown>; vary: Record<string, unknown> },
+  filter: Record<string, unknown>,
+): boolean {
+  for (const [field, predicate] of Object.entries(filter)) {
+    const fieldValue = archetype.fields[field];
+    const varyValue = archetype.vary[field];
+    if (fieldValue === undefined || varyValue !== undefined) continue;
+    // Constant field present and no vary — evaluate directly.
+    if (!constantSatisfiesPredicate(fieldValue, predicate)) return false;
+  }
+  return true;
+}
+
+function constantSatisfiesPredicate(value: unknown, predicate: unknown): boolean {
+  if (predicate === null || typeof predicate !== 'object' || Array.isArray(predicate)) {
+    return value === predicate;
+  }
+  const op = predicate as Record<string, unknown>;
+  if ('eq' in op) return value === op.eq;
+  if ('neq' in op) return value !== op.neq;
+  if ('in' in op && Array.isArray(op.in)) return op.in.includes(value);
+  if ('nin' in op && Array.isArray(op.nin)) return !op.nin.includes(value);
+  if ('is_null' in op) {
+    const isNull = value === null || value === undefined || value === '';
+    return isNull === op.is_null;
+  }
+  return true; // numeric/date comparisons on constants — conservatively allow
+}
+
+// ---------------------------------------------------------------------------
+// Persona compliance report (soft-fail mode)
+// ---------------------------------------------------------------------------
+
+interface ComplianceReportInput {
+  persona: { name: string; description: string };
+  solverConflicts: SolverConflict[];
+  finalAudit: AuditResult;
+  repairAttempts: RepairAttempt[];
+  maxAttempts: number;
+  outcome: 'passed-with-solver-conflicts' | 'failed-after-repair-budget';
+}
+
+function buildComplianceReport(input: ComplianceReportInput): string {
+  const { persona, solverConflicts, finalAudit, repairAttempts, maxAttempts, outcome } = input;
+  const lines: string[] = [];
+  lines.push(`# Persona compliance report — "${persona.name}"`);
+  lines.push('');
+  lines.push(`Outcome: **${outcome === 'passed-with-solver-conflicts' ? 'audit passed but solver flagged contradictions' : `audit failed after ${maxAttempts} repair attempt${maxAttempts === 1 ? '' : 's'}`}**`);
+  lines.push('');
+  lines.push('Data was still seeded on a best-effort basis. Re-run with `--strict` (CLI) or `strict: true` (engine option) to abort instead of producing partial data.');
+  lines.push('');
+
+  if (solverConflicts.length > 0) {
+    lines.push('## Solver contradictions');
+    lines.push('');
+    lines.push('The count solver detected claims whose `expected` row counts cannot all be satisfied simultaneously. Revise the persona to remove the contradiction, or add `tolerance` to the affected claim(s).');
+    lines.push('');
+    for (const c of solverConflicts) {
+      lines.push(`- **${c.claimId}** — expected ${c.expected}${c.tolerance > 0 ? ` (±${c.tolerance})` : ''}, citers sum to ${c.assignedSum}.`);
+      lines.push(`  ${c.message}`);
+    }
+    lines.push('');
+  }
+
+  if (finalAudit.failures.length > 0) {
+    lines.push(`## Claim audit failures (${finalAudit.failures.length} of ${finalAudit.evaluations.length})`);
+    lines.push('');
+    lines.push('Each entry below is quoted directly from the persona description. The cited archetypes were the ones the LLM bound responsibility to; if the cite list is empty, no archetype took responsibility for the claim.');
+    lines.push('');
+    for (const f of finalAudit.failures) {
+      lines.push(`### ${f.claim.id}`);
+      lines.push('');
+      lines.push(`> ${f.claim.quote}`);
+      lines.push('');
+      lines.push(`- predicate: \`${f.predicate}\``);
+      lines.push(`- actual: \`${typeof f.actual === 'object' ? JSON.stringify(f.actual) : String(f.actual)}\``);
+      if (f.citedBy && f.citedBy.length > 0) {
+        lines.push(`- cited by: ${f.citedBy.map((c) => `\`${c}\``).join(', ')}`);
+      } else {
+        lines.push('- cited by: _(no archetype cited this claim — generator skipped binding)_');
+      }
+      lines.push('');
+    }
+  }
+
+  if (repairAttempts.length > 0) {
+    lines.push(`## Repair attempts (${repairAttempts.length})`);
+    lines.push('');
+    for (const a of repairAttempts) {
+      lines.push(`- Attempt ${a.attempt}: ${a.patch.rationale}`);
+      lines.push(`  - ops: \`${JSON.stringify(a.patch.ops)}\``);
+    }
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('Generated by mimic\'s claim-audit pipeline. See `private/v2.md` for the architecture.');
+  return lines.join('\n');
 }

@@ -166,6 +166,23 @@ export function solveCounts(blueprint: Blueprint): SolveResult {
     applyDistribution(claim, archetypes, assignments, trace);
   }
 
+  // Pass 3b — aggregate_sum: pin per-citer field values so the sum matches
+  // the persona total. Emits `set_field` / `set_vary` ops (not counts).
+  // Two shapes are handled:
+  //   1. ONE citer with count > 1 + numeric field → set vary.range with a
+  //      tight band centred on (expected / count).
+  //   2. N citers each with count = 1 (line-item style) → split `expected`
+  //      across them and pin each archetype's field to its share.
+  // Anything more complex stays for the LLM repair pass.
+  const aggregateSumOps: PatchOp[] = [];
+  const aggregateSumClaims = claims.filter(
+    (c): c is Extract<Claim, { kind: 'aggregate_sum' }> => c.kind === 'aggregate_sum',
+  );
+  for (const claim of aggregateSumClaims) {
+    const ops = solveAggregateSum(claim, archetypes, assignments);
+    aggregateSumOps.push(...ops);
+  }
+
   // Pass 4 — orphan archetypes (cite nothing or cite only claims we couldn't
   // satisfy): fill from parent config's count minus assigned siblings.
   for (const a of archetypes) {
@@ -247,20 +264,106 @@ export function solveCounts(blueprint: Blueprint): SolveResult {
       count: target,
     });
   }
+  // Append aggregate_sum ops (set_field / set_vary on cited archetypes).
+  ops.push(...aggregateSumOps);
 
   return {
     patch: {
       ops,
       rationale:
-        `Solver assigned ${ops.length} archetype count${ops.length === 1 ? '' : 's'} ` +
-        `from ${rowCountClaims.length} row_count and ${distributionClaims.length} distribution_pct claim${
-          rowCountClaims.length + distributionClaims.length === 1 ? '' : 's'
+        `Solver assigned ${ops.length - aggregateSumOps.length} count${ops.length - aggregateSumOps.length === 1 ? '' : 's'} ` +
+        `and ${aggregateSumOps.length} aggregate-sum pin${aggregateSumOps.length === 1 ? '' : 's'} ` +
+        `from ${rowCountClaims.length} row_count, ${distributionClaims.length} distribution_pct, ` +
+        `${aggregateSumClaims.length} aggregate_sum claim${
+          rowCountClaims.length + distributionClaims.length + aggregateSumClaims.length === 1 ? '' : 's'
         }. ${conflicts.length} conflict${conflicts.length === 1 ? '' : 's'} detected.`,
     },
     assignments,
     conflicts,
     trace,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Aggregate-sum solving — pins per-archetype amounts so Σ field × count ≈ expected
+// ---------------------------------------------------------------------------
+
+function solveAggregateSum(
+  claim: Extract<Claim, { kind: 'aggregate_sum' }>,
+  archetypes: ArchetypeRecord[],
+  assignments: Map<string, number>,
+): PatchOp[] {
+  const citers = archetypes.filter((a) => a.archetype.cites?.includes(claim.id));
+  if (citers.length === 0) return [];
+
+  // Resolve effective count per citer (assigned or explicit on the archetype).
+  const records = citers.map((c) => ({
+    record: c,
+    count: assignments.get(c.ref) ?? c.archetype.count ?? 0,
+  }));
+
+  const totalRows = records.reduce((s, r) => s + r.count, 0);
+  if (totalRows <= 0) return [];
+
+  // Shape 1: one citer with count > 1 — set a tight vary range around the
+  // per-row average so the auditor's sum-check passes.
+  if (records.length === 1) {
+    const only = records[0]!;
+    if (only.count > 0) {
+      const perRow = Math.round(claim.expected / only.count);
+      // ±2% band so the auditor (which sums exact integers) still passes if
+      // the row generator's RNG draws are uniform.
+      const span = Math.max(1, Math.round(perRow * 0.02));
+      const min = Math.max(0, perRow - span);
+      const max = perRow + span;
+      return [
+        {
+          op: 'set_vary',
+          path: `${only.record.path}.vary.${claim.field}`,
+          variation: { type: 'range', min, max },
+        },
+      ];
+    }
+    return [];
+  }
+
+  // Shape 2: N citers each with count = 1 (line items, e.g. 3 overdue
+  // invoices). Split `expected` across them and pin each archetype's field.
+  const allSingletons = records.every((r) => r.count === 1);
+  if (allSingletons) {
+    const n = records.length;
+    const base = Math.floor(claim.expected / n);
+    const leftover = claim.expected - base * n;
+    const ops: PatchOp[] = [];
+    for (let i = 0; i < n; i++) {
+      const value = base + (i < leftover ? 1 : 0);
+      ops.push({
+        op: 'set_field',
+        path: `${records[i]!.record.path}.fields.${claim.field}`,
+        value,
+      });
+    }
+    return ops;
+  }
+
+  // Shape 3: mixed counts — distribute proportionally by count so each
+  // archetype's per-row average is consistent (expected / totalRows). Use
+  // a vary range on each archetype so the assembler can still randomise
+  // within tolerance.
+  const perRow = Math.round(claim.expected / totalRows);
+  const span = Math.max(1, Math.round(perRow * 0.02));
+  const min = Math.max(0, perRow - span);
+  const max = perRow + span;
+  const ops: PatchOp[] = [];
+  for (const r of records) {
+    if (r.count === 0) continue;
+    ops.push({
+      op: 'set_vary',
+      path: `${r.record.path}.vary.${claim.field}`,
+      variation: { type: 'range', min, max },
+    });
+  }
+  return ops;
 }
 
 // ---------------------------------------------------------------------------

@@ -836,5 +836,44 @@ export const ApiSlotContentOutputSchema = z.object({
     ),
 });
 
+// ---------------------------------------------------------------------------
+// V2.5 — Batched content output schemas
+//
+// Each adapter's resources are generated in one LLM call so the LLM can wire
+// per-tier prices, subscriptions, and customers coherently. DB tables are
+// likewise generated in one call. The output is keyed by the slot name the
+// LLM was told to emit (resource type for API, table name for DB).
+// ---------------------------------------------------------------------------
+
+export const AdapterBatchOutputSchema = z.object({
+  resources: z
+    .record(
+      z.object({
+        archetypes: z.array(ApiContentArchetypeSchema),
+      }),
+    )
+    .describe(
+      'One entry per API resource in the batch — keyed by the resource name ' +
+        '(e.g. "customer", "subscription"). Every slot listed in the prompt MUST ' +
+        'appear as a key; empty resources may use { archetypes: [] }.',
+    ),
+});
+
+export const DbBatchOutputSchema = z.object({
+  tables: z
+    .record(
+      z.object({
+        archetypes: z.array(DbContentArchetypeSchema),
+      }),
+    )
+    .describe(
+      'One entry per DB table in the batch — keyed by table name. Every slot ' +
+        'listed in the prompt MUST appear as a key; empty tables may use { archetypes: [] }.',
+    ),
+});
+
+export type AdapterBatchOutput = z.infer<typeof AdapterBatchOutputSchema>;
+export type DbBatchOutput = z.infer<typeof DbBatchOutputSchema>;
+
 export type DbSlotContentOutput = z.infer<typeof DbSlotContentOutputSchema>;
 export type ApiSlotContentOutput = z.infer<typeof ApiSlotContentOutputSchema>;

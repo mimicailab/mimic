@@ -34,6 +34,7 @@ import { assembleResourceArchetypes } from './resource-assembler.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { extractClaims } from './claim-extractor.js';
+import { sanitiseClaims } from './claim-sanitiser.js';
 import { rewriteClaimsForBridges } from './bridge-rewriter.js';
 import { deriveSlots } from './topology.js';
 import { generateAllSlots, type SlotContentResult } from './content-generator.js';
@@ -558,9 +559,12 @@ export class BlueprintEngine {
       },
     );
 
+    // ── Step 1b: claim sanitiser (pure code; drops malformed shapes) ─────
+    const sanitised = sanitiseClaims(extraction.claims);
+
     // ── Step 2: bridge rewrite (deterministic; idempotent) ───────────────
     const { claims: rewrittenClaims, rewritten } = rewriteClaimsForBridges(
-      extraction.claims,
+      sanitised.claims,
       schemaMapping,
     );
     if (rewritten.length > 0) {

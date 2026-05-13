@@ -72,10 +72,33 @@ const MAPPING: SchemaMapping = {
 };
 
 describe('topology — deriveSlots', () => {
-  it('creates a DB slot for every non-bridge table', () => {
+  it('prunes DB slots with no claims and no structural need (V2.5)', () => {
+    // V2.5 stops emitting slots for tables the persona doesn't mention and
+    // that nothing else needs (no FK target, no identity classification).
     const slots = deriveSlots({ schema: SCHEMA, claims: [], schemaMapping: MAPPING });
     const dbSlots = slots.filter((s) => s.surface === 'db');
-    expect(dbSlots.map((s) => s.name)).toEqual(['events']);
+    expect(dbSlots).toEqual([]);
+  });
+
+  it('keeps a DB slot when a claim targets the table', () => {
+    const claims: Claim[] = [
+      { id: 'c1', quote: '', kind: 'row_count', target: { surface: 'db', name: 'events' }, expected: 100 },
+    ];
+    const slots = deriveSlots({ schema: SCHEMA, claims, schemaMapping: MAPPING });
+    expect(slots.find((s) => s.surface === 'db' && s.name === 'events')).toBeDefined();
+  });
+
+  it('keeps a DB slot when classification marks it identity (structurally required)', () => {
+    const classifications: TableClassification[] = [
+      { table: 'events', role: 'identity' },
+    ];
+    const slots = deriveSlots({
+      schema: SCHEMA,
+      claims: [],
+      schemaMapping: { bridgeTables: [], mappings: [] },
+      tableClassifications: classifications,
+    });
+    expect(slots.find((s) => s.surface === 'db' && s.name === 'events')).toBeDefined();
   });
 
   it('excludes bridge tables from DB slots', () => {
@@ -96,15 +119,31 @@ describe('topology — deriveSlots', () => {
     expect(slots.find((s) => s.surface === 'db' && s.name === 'events')).toBeUndefined();
   });
 
-  it('creates one API slot per adapter.resource', () => {
+  it('prunes all API slots when no claim engages the adapter (V2.5)', () => {
     const slots = deriveSlots({
       schema: SCHEMA,
       resourceSpecs: STRIPE_SPECS,
       schemaMapping: MAPPING,
       claims: [],
     });
-    const apiSlots = slots.filter((s) => s.surface === 'api');
-    expect(apiSlots.map((s) => s.name).sort()).toEqual(['stripe.customer', 'stripe.price']);
+    expect(slots.filter((s) => s.surface === 'api')).toEqual([]);
+  });
+
+  it('when an adapter is engaged, includes its claim-cited resources plus structural primaries', () => {
+    // A claim on stripe.customer engages the adapter. The customer slot is
+    // included (claim-cited); the price slot is included as a structural
+    // primary sibling so FK/coherence holds.
+    const claims: Claim[] = [
+      { id: 'c1', quote: '', kind: 'row_count', target: { surface: 'api', name: 'stripe.customer' }, expected: 50 },
+    ];
+    const slots = deriveSlots({
+      schema: SCHEMA,
+      resourceSpecs: STRIPE_SPECS,
+      schemaMapping: MAPPING,
+      claims,
+    });
+    const apiSlots = slots.filter((s) => s.surface === 'api').map((s) => s.name).sort();
+    expect(apiSlots).toContain('stripe.customer');
   });
 
   it('attaches db claims to their matching db slot', () => {
@@ -161,19 +200,36 @@ describe('topology — deriveSlots', () => {
     expect(stripeCustomer?.suggestedCount).toBe(1200);
   });
 
-  it('falls back to reference default for reference-volume resources without claims', () => {
+  it('falls back to reference default for reference-volume sibling resources kept as structural primaries', () => {
+    // stripe.customer claim engages the adapter; stripe.price has no claim
+    // but rides along as a structural sibling. Its suggestedCount should
+    // fall back to the reference default.
+    const claims: Claim[] = [
+      { id: 'c1', quote: '', kind: 'row_count', target: { surface: 'api', name: 'stripe.customer' }, expected: 50 },
+    ];
     const slots = deriveSlots({
       schema: { tables: [], enums: [], insertionOrder: [] },
       resourceSpecs: STRIPE_SPECS,
       schemaMapping: MAPPING,
-      claims: [],
+      claims,
     });
     const price = slots.find((s) => s.name === 'stripe.price');
-    expect(price?.suggestedCount).toBe(5); // DEFAULT_REFERENCE_COUNT
+    // price is reference-volume and has no claim itself — but topology only
+    // keeps it if it's a structural primary OR cited. With the current
+    // heuristic price doesn't qualify, so it's pruned (V2.5 behaviour).
+    expect(price).toBeUndefined();
   });
 
-  it('falls back to default DB count when no claims target the table', () => {
-    const slots = deriveSlots({ schema: SCHEMA, claims: [], schemaMapping: MAPPING });
+  it('falls back to default DB count when an identity-classified table has no claims', () => {
+    const classifications: TableClassification[] = [
+      { table: 'events', role: 'identity' },
+    ];
+    const slots = deriveSlots({
+      schema: SCHEMA,
+      claims: [],
+      schemaMapping: MAPPING,
+      tableClassifications: classifications,
+    });
     const events = slots.find((s) => s.name === 'events');
     expect(events?.suggestedCount).toBe(50);
   });

@@ -2013,6 +2013,22 @@ export interface BuildRepairPromptOptions {
     target: string;
     config: unknown;
   }>;
+  /**
+   * Predicate-leakage hints — for each row_count failure where the cited
+   * archetype counts can't explain the overcount, list the non-cited
+   * archetypes on the same surface whose field/vary state could match the
+   * filter. The LLM should narrow their fields/vary so they stop satisfying
+   * the predicate.
+   */
+  leakageHints?: Array<{
+    claimId: string;
+    filter: Record<string, unknown>;
+    leakingArchetypes: Array<{
+      ref: string;
+      fields: Record<string, unknown>;
+      vary: Record<string, unknown>;
+    }>;
+  }>;
   /** Patch log from prior attempts, if any */
   priorAttempts?: Array<{
     attempt: number;
@@ -2738,6 +2754,254 @@ function formatIdentityForSlot(entries: IdentityContractEntry[]): string {
   return lines.join('\n');
 }
 
+// ---------------------------------------------------------------------------
+// V2.5 — Batched content prompts
+//
+// One LLM call covers ALL slots for an adapter (or all DB tables) so the LLM
+// can wire archetypes coherently across resources (per-tier prices linked to
+// subscriptions linked to customers). The output is keyed by slot name so
+// the orchestrator can demux back into per-slot configs.
+// ---------------------------------------------------------------------------
+
+export interface BatchSlotEntry {
+  /** Local slot key inside the batch (e.g. "customer", "price"; or table name for DB) */
+  key: string;
+  /** Full slot identifier — "<adapter>.<resource>" or "<table>" */
+  slotName: string;
+  /** For DB slots: table info */
+  dbTable?: TableInfo;
+  /** For API slots: spec + platform metadata */
+  apiResource?: ResourceSpec;
+  apiPlatform?: AdapterResourceSpecs['platform'];
+  /** Per-slot claims (filtered upstream) */
+  claims: SlotPromptClaim[];
+  /** Per-slot identity contract entries */
+  identityContractEntries: IdentityContractEntry[];
+  /** Default count hint passed through to the LLM */
+  defaultCountHint?: number;
+  /** True when this is a bridge-table DB-only slot (cross-cutting archetypes only) */
+  dbOnlyBridge?: boolean;
+}
+
+export interface BuildAdapterBatchPromptOptions {
+  persona: { name: string; description: string };
+  domain: string;
+  adapterId: string;
+  apiPlatform: AdapterResourceSpecs['platform'];
+  /** API resources in this batch — every one must appear in the output. */
+  slots: BatchSlotEntry[];
+  /** All persona anchors — LLM picks the relevant ones per resource. */
+  anchors: SlotPromptAnchor[];
+  currentDate?: string;
+  volume?: string;
+  personaIndex?: number;
+  totalPersonas?: number;
+}
+
+export interface BuildDbBatchPromptOptions {
+  persona: { name: string; description: string };
+  domain: string;
+  /** DB tables in this batch. */
+  slots: BatchSlotEntry[];
+  anchors: SlotPromptAnchor[];
+  currentDate?: string;
+  volume?: string;
+  personaIndex?: number;
+  totalPersonas?: number;
+}
+
+/**
+ * Build a prompt covering all API resources for ONE adapter in a single LLM
+ * call. The LLM emits `{ resources: { <key>: { archetypes: [...] }, ... } }`,
+ * where every `<key>` must match a slot in the prompt.
+ */
+export function buildAdapterBatchPrompt(
+  options: BuildAdapterBatchPromptOptions,
+): PromptPair {
+  const {
+    persona, domain, adapterId, apiPlatform, slots, anchors,
+    currentDate, volume, personaIndex, totalPersonas,
+  } = options;
+
+  const today = currentDate ?? new Date().toISOString().split('T')[0]!;
+  const startDate = volume ? computeStartDate(today, volume) : undefined;
+  const dateRange = startDate
+    ? `Date range: ${startDate} → ${today}. All generated dates MUST fall within this range.`
+    : `Current date: ${today}.`;
+
+  const personaIdSection =
+    personaIndex !== undefined
+      ? [
+          `Persona index: ${personaIndex}${totalPersonas ? ` of ${totalPersonas}` : ''}`,
+          `String IDs MUST use the "<prefix>_p${personaIndex}_NNN" format (e.g. cus_p${personaIndex}_001, sub_p${personaIndex}_001).`,
+        ]
+      : [];
+
+  // Combine all identity-contract entries across the batch, keep them once.
+  const seenIdentity = new Set<string>();
+  const identityEntries: IdentityContractEntry[] = [];
+  for (const s of slots) {
+    for (const e of s.identityContractEntries) {
+      const key = `${e.dbTable}.${e.dbColumn}<->${e.adapterId}.${e.apiResource}.${e.apiField}`;
+      if (seenIdentity.has(key)) continue;
+      seenIdentity.add(key);
+      identityEntries.push(e);
+    }
+  }
+  const identityBlock = formatIdentityForSlot(identityEntries);
+  const anchorsBlock = formatAnchorsForSlot(anchors);
+
+  // Per-resource sections.
+  const resourceBlocks: string[] = [];
+  for (const s of slots) {
+    if (!s.apiResource) continue;
+    const sectionLines: string[] = [
+      '',
+      `### RESOURCE: ${s.key}  (slot id "${s.slotName}")`,
+      ...(typeof s.defaultCountHint === 'number'
+        ? [`Default row count hint: ~${s.defaultCountHint} (the solver overrides via cites).`]
+        : []),
+      '',
+      formatApiResourceForSlot(s.slotName, s.apiResource, apiPlatform),
+      '',
+      formatClaimsForSlot(s.claims),
+    ];
+    resourceBlocks.push(sectionLines.join('\n'));
+  }
+
+  const resourceKeysList = slots.map((s) => `"${s.key}"`).join(', ');
+
+  const userLines: string[] = [
+    `Domain: ${domain}`,
+    '',
+    `Persona: "${persona.name}"`,
+    persona.description,
+    '',
+    dateRange,
+    ...personaIdSection,
+    '',
+    `--- ADAPTER BATCH: ${adapterId} ---`,
+    `Timestamps: ${apiPlatform.timestampFormat}`,
+    `Amounts: ${apiPlatform.amountFormat}`,
+    `Resources in this batch (keys you MUST emit in the output): ${resourceKeysList}`,
+    '',
+    'IMPORTANT: design archetypes ACROSS resources coherently. If the persona names',
+    'per-tier prices, pin those prices in the price resource AND make sure your',
+    'subscription archetypes reference the same tier (via fields that link to the',
+    'price/plan). Tier-named customer archetypes MUST imply the subscription tier',
+    'they belong to. Currency, language, and country choices stay consistent across',
+    'every resource in this adapter.',
+    ...resourceBlocks,
+    ...(anchorsBlock ? ['', anchorsBlock] : []),
+    ...(identityBlock ? ['', identityBlock] : []),
+    '',
+    'Emit a JSON object shaped:',
+    '  { "resources": { "<key>": { "archetypes": [ ... ] }, ... } }',
+    `Every key listed (${resourceKeysList}) MUST appear, even if archetypes is [].`,
+    'Each archetype obeys ApiContentArchetypeSchema (label, fieldOverrides, vary,',
+    'cites, anchor, apiOnly). Cite every claim listed for its resource at least once.',
+    'Return ONLY the JSON object — no markdown, no commentary.',
+  ];
+
+  return { system: CONTENT_SYSTEM_PROMPT, user: userLines.join('\n') };
+}
+
+/**
+ * Build a prompt covering all DB tables in a single LLM call.
+ */
+export function buildDbBatchPrompt(
+  options: BuildDbBatchPromptOptions,
+): PromptPair {
+  const {
+    persona, domain, slots, anchors,
+    currentDate, volume, personaIndex, totalPersonas,
+  } = options;
+
+  const today = currentDate ?? new Date().toISOString().split('T')[0]!;
+  const startDate = volume ? computeStartDate(today, volume) : undefined;
+  const dateRange = startDate
+    ? `Date range: ${startDate} → ${today}. All generated dates MUST fall within this range.`
+    : `Current date: ${today}.`;
+
+  const personaIdSection =
+    personaIndex !== undefined
+      ? [
+          `Persona index: ${personaIndex}${totalPersonas ? ` of ${totalPersonas}` : ''}`,
+          `String IDs MUST use the "<prefix>_p${personaIndex}_NNN" format.`,
+        ]
+      : [];
+
+  const seenIdentity = new Set<string>();
+  const identityEntries: IdentityContractEntry[] = [];
+  for (const s of slots) {
+    for (const e of s.identityContractEntries) {
+      const key = `${e.dbTable}.${e.dbColumn}<->${e.adapterId}.${e.apiResource}.${e.apiField}`;
+      if (seenIdentity.has(key)) continue;
+      seenIdentity.add(key);
+      identityEntries.push(e);
+    }
+  }
+  const identityBlock = formatIdentityForSlot(identityEntries);
+  const anchorsBlock = formatAnchorsForSlot(anchors);
+
+  const tableBlocks: string[] = [];
+  for (const s of slots) {
+    if (!s.dbTable) continue;
+    const sectionLines: string[] = [
+      '',
+      `### TABLE: ${s.key}`,
+      ...(typeof s.defaultCountHint === 'number'
+        ? [`Default row count hint: ~${s.defaultCountHint} (the solver overrides via cites).`]
+        : []),
+      ...(s.dbOnlyBridge
+        ? [
+            '⚠ BRIDGE TABLE — DB-ONLY ARCHETYPES ONLY.',
+            'The mirror flow already produces platform-tagged rows (Stripe, Paddle, etc.)',
+            'for this table from API content. Emit ONLY cross-cutting archetypes',
+            '(free-tier, billing_platform is_null, plan=free, paid-but-no-platform-record).',
+            'Do NOT emit per-platform archetypes here — that would create duplicates.',
+          ]
+        : []),
+      '',
+      formatTable(s.dbTable),
+      '',
+      formatClaimsForSlot(s.claims),
+    ];
+    tableBlocks.push(sectionLines.join('\n'));
+  }
+
+  const tableKeysList = slots.map((s) => `"${s.key}"`).join(', ');
+
+  const userLines: string[] = [
+    `Domain: ${domain}`,
+    '',
+    `Persona: "${persona.name}"`,
+    persona.description,
+    '',
+    dateRange,
+    ...personaIdSection,
+    '',
+    `--- DB BATCH ---`,
+    `Tables in this batch (keys you MUST emit): ${tableKeysList}`,
+    '',
+    'Design DB archetypes coherently across tables. Where two tables share an',
+    'identity (users.email and subscriptions.email, for example), the same name/',
+    'company/tier strings appear on both sides so joins succeed.',
+    ...tableBlocks,
+    ...(anchorsBlock ? ['', anchorsBlock] : []),
+    ...(identityBlock ? ['', identityBlock] : []),
+    '',
+    'Emit a JSON object shaped:',
+    '  { "tables": { "<table>": { "archetypes": [ ... ] }, ... } }',
+    `Every key listed (${tableKeysList}) MUST appear, even if archetypes is [].`,
+    'Each archetype obeys DbContentArchetypeSchema (label, fields, vary, cites, anchor).',
+    'Cite every claim listed for its table at least once.',
+    'Return ONLY the JSON object — no markdown, no commentary.',
+  ];
+
+  return { system: CONTENT_SYSTEM_PROMPT, user: userLines.join('\n') };
+}
+
 // =============================================================================
 // (End V2 prompts)
 // =============================================================================
@@ -2828,6 +3092,33 @@ export function buildRepairPrompt(options: BuildRepairPromptOptions): PromptPair
   }
   lines.push('--- END CITED ARCHETYPES ---');
   lines.push('');
+
+  if (options.leakageHints && options.leakageHints.length > 0) {
+    lines.push('--- PREDICATE LEAKAGE (non-cited archetypes accidentally matching the filter) ---');
+    lines.push('');
+    lines.push('When a row_count overshoots and the cited archetype counts alone cannot explain the overcount, the overflow is coming from NON-CITED archetypes whose `fields` or `vary` ranges incidentally satisfy the predicate. Narrowing the CITED archetype\'s count will NOT fix this — you must change the LEAKING archetypes so they fall outside the filter.');
+    lines.push('');
+    lines.push('Strategy per filter operator:');
+    lines.push('  - `age_days_gte: N` on field F → set leakers\' vary[F] = { type:"range", min:(now − (N−1)d), max:now } so timestamps fall WITHIN the last N days.');
+    lines.push('  - `age_days_lte: N` on field F → set leakers\' vary[F] = { type:"range", min:(now − 365d), max:(now − (N+1)d) } so timestamps fall OUTSIDE the last N days.');
+    lines.push('  - `is_null: true` on field F → set leakers\' fields.F to a non-null sentinel (an id derived from a sibling field, or a literal string) and remove any vary[F].');
+    lines.push('  - `eq: X` on field F → set leakers\' fields.F to something other than X.');
+    lines.push('  - `in: [X, Y]` on field F → set leakers\' fields.F to a value NOT in the list.');
+    lines.push('');
+    for (const hint of options.leakageHints) {
+      lines.push(`Claim "${hint.claimId}" — filter ${JSON.stringify(hint.filter)}`);
+      lines.push('  Leaking archetypes (must be narrowed):');
+      for (const a of hint.leakingArchetypes) {
+        lines.push(`    - ${a.ref}`);
+        lines.push(`        fields: ${JSON.stringify(a.fields)}`);
+        lines.push(`        vary:   ${JSON.stringify(a.vary)}`);
+      }
+      lines.push('');
+    }
+    lines.push('--- END PREDICATE LEAKAGE ---');
+    lines.push('');
+  }
+
   lines.push('Emit a BlueprintPatch JSON: { "ops": [...], "rationale": "..." }.');
 
   return { system: REPAIR_SYSTEM_PROMPT, user: lines.join('\n') };

@@ -43,6 +43,10 @@ export function registerRunCommand(program: Command): void {
       '--llm-runtime <runtime>',
       'route LLM calls via api | claude-code | batch (overrides config.llm.runtime)',
     )
+    .option(
+      '--strict',
+      'abort on persona contradictions or unfixable claim failures (default: write a compliance report and proceed)',
+    )
     .option('--verbose', 'enable verbose logging')
     .action(async (opts) => {
       await runGenerate(opts);
@@ -59,6 +63,7 @@ interface RunOptions {
   persona?: string[];
   seed?: number;
   llmRuntime?: string;
+  strict?: boolean;
   verbose?: boolean;
 }
 
@@ -341,6 +346,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         modelingConfig,
         resourceSpecs,
         persona: { name: persona.name, description: persona.description },
+        strict: opts.strict,
       });
       const expanded = auditResult.expanded;
 
@@ -350,6 +356,15 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         const cachedPath = join(blueprintDir, `${persona.name}.json`);
         await writeJson(cachedPath, auditResult.blueprint);
         logger.debug(`Updated cached blueprint after repair: ${cachedPath}`);
+      }
+
+      if (auditResult.complianceReport && !opts.dryRun) {
+        const { writeFile } = await import('node:fs/promises');
+        const reportPath = join(dataDir, `${persona.name}.compliance-report.md`);
+        await writeFile(reportPath, auditResult.complianceReport, 'utf8');
+        logger.warn(
+          `Persona compliance gap — wrote report to ${chalk.cyan(reportPath)} (re-run with --strict to abort instead).`,
+        );
       }
 
       // Log expansion output summary

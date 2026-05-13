@@ -19,6 +19,7 @@ import type {
   BlueprintPatch,
   Claim,
   ClaimEvaluation,
+  Filter,
   PatchOp,
 } from '../types/claim.js';
 
@@ -122,6 +123,18 @@ function repairRowCount(
     return defer(claim.id, 'no archetype cites this claim — cannot mechanically adjust');
   }
 
+  // Predicate-leakage detection. When the actual count is much larger than
+  // what the cited archetypes alone could explain, the overcount is leaking
+  // from NON-CITED archetypes whose fields/vary incidentally satisfy the
+  // filter (e.g. pro-paying-active timestamps drifting into the 30+-day-old
+  // band, or non-orphan archetypes leaving external_id as null). Naively
+  // zeroing the cited archetype doesn't help — the leak stays.
+  const totalCiterCount = citers.reduce((s, c) => s + (c.archetype.count ?? 0), 0);
+  const hasFilter = claim.target.filter && Object.keys(claim.target.filter).length > 0;
+  if (hasFilter && delta < 0 && Math.abs(delta) > totalCiterCount) {
+    return repairRowCountLeakage(blueprint, claim, citers, actual);
+  }
+
   // Pick the citing archetype with the highest current count and adjust it.
   // For grow: bump the largest citer (more headroom for variation).
   // For shrink: same — clamp at 0.
@@ -144,6 +157,225 @@ function repairRowCount(
       `row_count delta=${delta}; bumped ${target.ref} from ${target.archetype.count ?? 0} to ${newCount}`,
     ops: [op],
   };
+}
+
+/**
+ * Repair a row_count claim whose overcount comes from predicate leakage —
+ * non-cited archetypes whose field/vary state satisfies the filter.
+ *
+ * Two-pronged fix:
+ *   1. ANCHOR the cited archetypes at exactly `claim.expected` (split evenly)
+ *      so the cited rows contribute the right number.
+ *   2. NARROW non-cited archetypes that target the same surface and could
+ *      match the filter. For `age_days_gte/lte` filters, this is mechanical:
+ *      we can rewrite the vary timestamp/range so the non-cited rows fall on
+ *      the opposite side of the threshold. For `is_null:true` or `eq` style
+ *      leakage, we mark the archetype but leave the actual narrowing to the
+ *      LLM repair (the right non-null value is semantic).
+ */
+function repairRowCountLeakage(
+  blueprint: Blueprint,
+  claim: Extract<Claim, { kind: 'row_count' }>,
+  citers: CitingArchetype[],
+  actual: number,
+): RepairDecision {
+  const ops: PatchOp[] = [];
+
+  // 1) Anchor citers at exactly the expected count, distributed across them.
+  const expected = claim.expected;
+  const perCiter = Math.floor(expected / citers.length);
+  const remainder = expected - perCiter * citers.length;
+  citers.forEach((c, i) => {
+    const newCount = perCiter + (i < remainder ? 1 : 0);
+    if (c.archetype.count !== newCount) {
+      ops.push({ op: 'set_count', path: c.path, count: newCount });
+    }
+  });
+
+  // 2) Find non-cited archetypes on the same surface/table that could match
+  //    the filter and try to narrow them.
+  const leakers = findLeakingArchetypes(blueprint, claim, citers);
+  const narrowedRefs: string[] = [];
+  const unfixableRefs: string[] = [];
+  for (const leaker of leakers) {
+    const narrowOps = narrowToExcludeFilter(leaker, claim.target.filter!);
+    if (narrowOps.length > 0) {
+      ops.push(...narrowOps);
+      narrowedRefs.push(leaker.ref);
+    } else {
+      unfixableRefs.push(leaker.ref);
+    }
+  }
+
+  const parts: string[] = [];
+  parts.push(`row_count overcount: actual=${actual} expected=${expected}, citer-sum=${citers.reduce((s, c) => s + (c.archetype.count ?? 0), 0)}`);
+  parts.push(`anchored ${citers.length} cited archetype${citers.length === 1 ? '' : 's'} to total ${expected}`);
+  if (narrowedRefs.length > 0) {
+    parts.push(`narrowed ${narrowedRefs.length} leaking archetype${narrowedRefs.length === 1 ? '' : 's'} (${narrowedRefs.join(', ')})`);
+  }
+  if (unfixableRefs.length > 0) {
+    parts.push(`${unfixableRefs.length} leak${unfixableRefs.length === 1 ? '' : 's'} need LLM (${unfixableRefs.join(', ')})`);
+  }
+
+  return {
+    claimId: claim.id,
+    status: 'patched',
+    reason: parts.join('; '),
+    ops,
+  };
+}
+
+/**
+ * Find archetypes on the same surface/table as `claim.target` that DON'T cite
+ * the claim but whose fields/vary could satisfy the filter — i.e. predicate
+ * leakage candidates.
+ */
+function findLeakingArchetypes(
+  blueprint: Blueprint,
+  claim: Extract<Claim, { kind: 'row_count' }>,
+  citers: CitingArchetype[],
+): CitingArchetype[] {
+  const citerPaths = new Set(citers.map((c) => c.path));
+  const filter = claim.target.filter ?? {};
+  const surface = claim.target.surface;
+  const name = claim.target.name;
+
+  const collected: CitingArchetype[] = [];
+
+  if (surface === 'db') {
+    const config = blueprint.data.entityArchetypes?.[name];
+    if (!config) return [];
+    for (const a of config.archetypes) {
+      const path = `data.entityArchetypes.${name}.archetypes[${a.label}]`;
+      if (citerPaths.has(path)) continue;
+      if (couldMatchFilter(a, filter)) {
+        collected.push({
+          ref: `db:${name}:${a.label}`,
+          path,
+          archetype: a,
+        });
+      }
+    }
+  } else {
+    // api: "<adapter>.<resource>"
+    const dot = name.indexOf('.');
+    if (dot < 0) return [];
+    const adapter = name.slice(0, dot);
+    const resource = name.slice(dot + 1);
+    const config = blueprint.data.apiEntityArchetypes?.[adapter]?.[resource];
+    if (!config) return [];
+    for (const a of config.archetypes) {
+      const path = `data.apiEntityArchetypes.${adapter}.${resource}.archetypes[${a.label}]`;
+      if (citerPaths.has(path)) continue;
+      if (couldMatchFilter(a, filter)) {
+        collected.push({
+          ref: `api:${adapter}.${resource}:${a.label}`,
+          path,
+          archetype: a,
+        });
+      }
+    }
+  }
+
+  return collected;
+}
+
+/**
+ * Conservatively decide whether an archetype's fields/vary state CAN satisfy
+ * the filter. Returns true when no per-field check rules it out — i.e. the
+ * archetype "could" leak into the predicate. False positives are acceptable
+ * (we'll just emit redundant narrowing ops); false negatives are NOT (we'd
+ * miss the leak entirely).
+ */
+function couldMatchFilter(archetype: EntityArchetype, filter: Filter): boolean {
+  for (const [field, predicate] of Object.entries(filter)) {
+    const fieldValue = archetype.fields[field];
+    const varyValue = archetype.vary[field];
+
+    // If the archetype has a constant field value, evaluate directly.
+    if (fieldValue !== undefined && varyValue === undefined) {
+      if (!constantCanSatisfy(fieldValue, predicate)) return false;
+      continue;
+    }
+    // Otherwise the field varies (or is unset → treated as null). We can't
+    // rule it out at this layer; assume it could match.
+  }
+  return true;
+}
+
+function constantCanSatisfy(value: unknown, predicate: unknown): boolean {
+  // Bare-value equality
+  if (predicate === null || typeof predicate !== 'object' || Array.isArray(predicate)) {
+    return value === predicate;
+  }
+  const op = predicate as Record<string, unknown>;
+  if ('eq' in op) return value === op.eq;
+  if ('neq' in op) return value !== op.neq;
+  if ('in' in op && Array.isArray(op.in)) return op.in.includes(value);
+  if ('nin' in op && Array.isArray(op.nin)) return !op.nin.includes(value);
+  if ('is_null' in op) {
+    const isNull = value === null || value === undefined || value === '';
+    return isNull === op.is_null;
+  }
+  // For numeric/date comparisons on constants, conservatively allow.
+  return true;
+}
+
+/**
+ * Emit ops that make the given archetype STOP matching the filter. Only
+ * handles cases that are mechanically obvious; returns [] when the right
+ * non-matching value is a semantic call best left to the LLM.
+ *
+ * Currently handled:
+ *   - `age_days_gte: N` on field F → set vary[F] = timestamp within last N days
+ *   - `age_days_lte: N` on field F → set vary[F] = timestamp older than N days
+ */
+function narrowToExcludeFilter(leaker: CitingArchetype, filter: Filter): PatchOp[] {
+  const ops: PatchOp[] = [];
+  for (const [field, predicate] of Object.entries(filter)) {
+    if (predicate === null || typeof predicate !== 'object' || Array.isArray(predicate)) {
+      continue; // bare-value equality leakage needs LLM
+    }
+    const op = predicate as Record<string, unknown>;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const day = 86_400;
+
+    if ('age_days_gte' in op && typeof op.age_days_gte === 'number') {
+      // Filter matches rows older than N days. Make non-cited rows YOUNGER
+      // than N days: vary[F] = range(now - (N-1) days, now).
+      const days = op.age_days_gte;
+      const newVary: FieldVariation = {
+        type: 'range',
+        min: nowSec - (days - 1) * day,
+        max: nowSec,
+      };
+      ops.push({
+        op: 'set_vary',
+        path: `${leaker.path}.vary.${field}`,
+        variation: newVary,
+      });
+      continue;
+    }
+    if ('age_days_lte' in op && typeof op.age_days_lte === 'number') {
+      // Filter matches rows YOUNGER than N days. Make non-cited rows OLDER
+      // than N days: vary[F] = range(start_of_year, now - (N+1) days).
+      const days = op.age_days_lte;
+      const newVary: FieldVariation = {
+        type: 'range',
+        min: nowSec - 365 * day,
+        max: nowSec - (days + 1) * day,
+      };
+      ops.push({
+        op: 'set_vary',
+        path: `${leaker.path}.vary.${field}`,
+        variation: newVary,
+      });
+      continue;
+    }
+    // Other ops (is_null, eq, in, ...) require choosing a sensible
+    // non-matching value, which is semantic — defer to LLM.
+  }
+  return ops;
 }
 
 // ---------------------------------------------------------------------------
