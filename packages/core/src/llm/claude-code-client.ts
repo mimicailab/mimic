@@ -40,21 +40,15 @@ export interface ClaudeCodeClientConfig {
  *     wipe out hundreds of dollars per month.
  *   - Reuses whatever auth the user already has set up for Claude Code.
  *
- * Tradeoffs vs the native API client:
- *   - No forced tool_use. We prompt the agent to emit raw JSON matching the
- *     schema, then parse + Zod-validate + retry on failure. Less reliable
- *     than the API's tool_choice path on big schemas.
- *   - Higher per-call latency than the raw HTTP path.
- *   - No batch mode — Claude Code uses the regular Messages API under the hood.
+ * Structured output goes through the SDK's native `outputFormat: json_schema`
+ * mode — the agent enforces the schema server-side and surfaces the parsed
+ * object on the result message's `structured_output` field. That's the same
+ * reliability tier as the native API's forced tool_use; we don't have to do
+ * the prompt-injection + JSON-extraction dance.
  *
- * Structured output flow:
- *   1. Convert Zod → JSON Schema, open records (same trick as anthropic-native).
- *   2. Inject the schema into the system prompt with strict
- *      "emit only JSON, no fences" instructions.
- *   3. Spawn a 1-turn `query()` with empty tool allowlist and a permissive
- *      permission mode so the SDK runs headless.
- *   4. Drain the message stream, pick the final assistant text, parse JSON.
- *   5. On Zod failure, re-prompt with the failing paths up to `maxRetries`.
+ * Tradeoffs vs the native API client:
+ *   - Higher per-call latency than the raw HTTP path.
+ *   - No batch mode — the SDK uses the regular Messages API under the hood.
  */
 export class ClaudeCodeClient implements ILLMClient {
   private readonly costTracker: CostTracker;
@@ -88,16 +82,14 @@ export class ClaudeCodeClient implements ILLMClient {
     const category = opts.category ?? 'generation';
     const maxRetries = opts.maxRetries ?? this.config.maxRetries ?? 2;
 
-    // Build the JSON Schema the agent must respect. Reuses
-    // `openRecordsInJsonSchema` so `z.record(z.unknown())` fields stay open
-    // — same fix as the native client.
+    // JSON Schema — opened so `z.record(...)` fields don't get
+    // additionalProperties: false (same fix as anthropic-native.ts).
     const rawJsonSchema = zodToJsonSchema(opts.schema, { $refStrategy: 'none' }) as Record<string, unknown>;
     delete rawJsonSchema.$schema;
     const inputSchema = openRecordsInJsonSchema(rawJsonSchema) as Record<string, unknown>;
     const expectedTopKeys = Object.keys((inputSchema.properties as Record<string, unknown>) ?? {});
 
     const baseSystem = opts.system ?? '';
-    const structuredInstruction = buildStructuredOutputInstruction(inputSchema, opts.schemaName, opts.schemaDescription);
 
     let lastIssues = '';
     let userPrompt = opts.prompt;
@@ -113,30 +105,36 @@ export class ClaudeCodeClient implements ILLMClient {
         attempt,
       });
 
-      let assistantText: string;
-      let promptTokens = 0;
-      let completionTokens = 0;
+      let result: OneShotResult;
       try {
-        const result = await this.runOneShot({
-          system: baseSystem ? `${baseSystem}\n\n${structuredInstruction}` : structuredInstruction,
+        result = await this.runOneShot({
+          system: baseSystem || undefined,
           prompt: userPrompt,
           temperature: opts.temperature ?? this.config.temperature,
+          outputFormat: { type: 'json_schema', schema: inputSchema },
         });
-        assistantText = result.text;
-        promptTokens = result.promptTokens;
-        completionTokens = result.completionTokens;
       } catch (error) {
         throw this.wrapError(error, attemptLabel);
       }
 
-      attempts.push({ label: attemptLabel, promptTokens, completionTokens });
+      attempts.push({
+        label: attemptLabel,
+        promptTokens: result.promptTokens,
+        completionTokens: result.completionTokens,
+      });
 
-      const parsed = extractJson(assistantText);
-      if (parsed === undefined) {
-        debugFile(`CLAUDE-CODE JSON PARSE FAILED [${attemptLabel}]`, assistantText.slice(0, 2000));
+      // Prefer the SDK's parsed structured_output; fall back to parsing the
+      // assistant text in case an older SDK or model didn't populate it.
+      const raw =
+        result.structuredOutput !== undefined
+          ? result.structuredOutput
+          : extractJson(result.text);
+
+      if (raw === undefined) {
+        debugFile(`CLAUDE-CODE JSON PARSE FAILED [${attemptLabel}]`, result.text.slice(0, 2000));
         lastIssues = 'response was not valid JSON';
       } else {
-        const unwrapped = unwrapToolInput(parsed, expectedTopKeys);
+        const unwrapped = unwrapToolInput(raw, expectedTopKeys);
         const normalized = normalizeLLMOutput(unwrapped);
         const validation = opts.schema.safeParse(normalized);
         if (validation.success) {
@@ -151,7 +149,7 @@ export class ClaudeCodeClient implements ILLMClient {
             });
           }
           logger.debug(
-            `LLM [${label}] (claude-code) done — ${promptTokens} prompt + ${completionTokens} completion tokens` +
+            `LLM [${label}] (claude-code) done — ${result.promptTokens} prompt + ${result.completionTokens} completion tokens` +
             (attempts.length > 1 ? ` over ${attempts.length} attempt(s)` : ''),
           );
           return {
@@ -166,7 +164,10 @@ export class ClaudeCodeClient implements ILLMClient {
           .map((i: { path: unknown[]; message: string }) =>
             `${(i.path as string[]).join('.')}: ${i.message}`)
           .join('\n  ');
-        debugFile(`CLAUDE-CODE VALIDATION FAILED [${attemptLabel}]`, { issues: lastIssues, rawKeys: Object.keys((normalized as Record<string, unknown>) ?? {}) });
+        debugFile(`CLAUDE-CODE VALIDATION FAILED [${attemptLabel}]`, {
+          issues: lastIssues,
+          rawKeys: Object.keys((normalized as Record<string, unknown>) ?? {}),
+        });
       }
 
       if (attempt >= maxRetries) break;
@@ -178,8 +179,7 @@ export class ClaudeCodeClient implements ILLMClient {
       userPrompt =
         `${opts.prompt}\n\n` +
         `Your previous response failed schema validation at these paths:\n  ${lastIssues}\n\n` +
-        `Re-emit the COMPLETE JSON object with every required field present. ` +
-        `Output ONLY the JSON object — no prose, no code fences.`;
+        `Re-emit the COMPLETE JSON object with every required field present.`;
     }
 
     // Record token usage even on failure so the user sees what they were charged.
@@ -198,9 +198,7 @@ export class ClaudeCodeClient implements ILLMClient {
       `LLM call "${label}" (claude-code runtime) failed: ` +
       `response did not match schema after ${attempts.length} attempt(s). ` +
       `Final issues: ${lastIssues}`,
-      'The Claude Agent SDK does not support forced tool_use, so structured ' +
-      'output relies on prompt instructions + retry. If failures persist on a ' +
-      'specific schema, switch to `--llm-runtime api` for the affected run.',
+      'If failures persist on a specific schema, switch to `--llm-runtime api` for the affected run.',
     );
   }
 
@@ -250,7 +248,8 @@ export class ClaudeCodeClient implements ILLMClient {
     system?: string;
     prompt: string;
     temperature?: number;
-  }): Promise<{ text: string; promptTokens: number; completionTokens: number }> {
+    outputFormat?: { type: 'json_schema'; schema: Record<string, unknown> };
+  }): Promise<OneShotResult> {
     const query = await this.loadSdk();
 
     const stream = query({
@@ -258,29 +257,46 @@ export class ClaudeCodeClient implements ILLMClient {
       options: {
         model: this.config.model,
         ...(args.system ? { systemPrompt: args.system } : {}),
-        // Pure inference — no file access, no bash, no MCP.
-        allowedTools: [],
-        // One round-trip; agentic looping is not what this client is for.
-        maxTurns: 1,
-        // Headless: don't prompt for permission, don't read user/project settings.
-        permissionMode: 'bypassPermissions',
+        ...(args.outputFormat ? { outputFormat: args.outputFormat } : {}),
+        // Pure inference — disable all built-in tools (Bash/Read/Edit/etc.).
+        // `tools: []` removes them from the model's context entirely;
+        // `allowedTools` is for auto-approval, which is different.
+        // Because tools is empty there's nothing for the agent to ever ask
+        // about, so we stay on the default permission mode — `bypassPermissions`
+        // requires `allowDangerouslySkipPermissions: true`, which the SDK
+        // refuses under root.
+        tools: [],
+        // No `maxTurns` here. The SDK uses internal turns when
+        // `outputFormat: json_schema` is set so the model can self-correct
+        // schema violations; capping at 1 produces `error_max_turns`. With
+        // `tools: []` the agent has nothing else it could do with extra
+        // turns, so leaving it unbounded is safe.
+        permissionMode: 'default',
+        // Headless: don't read user/project settings files.
         settingSources: [],
+        persistSession: false,
       },
     });
 
     let assistantText = '';
     let promptTokens = 0;
     let completionTokens = 0;
-    let finalErrored: string | undefined;
+    let structuredOutput: unknown | undefined;
+    let errorReason: string | undefined;
 
     const timeoutMs = this.config.timeoutMs ?? 600_000;
+    let timedOut = false;
     const timer = setTimeout(() => {
-      finalErrored = `claude-agent-sdk timed out after ${timeoutMs}ms`;
+      timedOut = true;
     }, timeoutMs);
 
+    let gotSuccessResult = false;
     try {
       for await (const message of stream) {
-        if (finalErrored) break;
+        if (timedOut) {
+          errorReason = `claude-agent-sdk timed out after ${timeoutMs}ms`;
+          break;
+        }
         if (message.type === 'assistant' && message.message) {
           for (const block of message.message.content ?? []) {
             if (block.type === 'text' && typeof block.text === 'string') {
@@ -288,31 +304,49 @@ export class ClaudeCodeClient implements ILLMClient {
             }
           }
         } else if (message.type === 'result') {
-          if (message.subtype === 'success') {
-            // `result` is the final assistant text; prefer it over our accumulator
-            // if present (it's already de-deduplicated by the SDK).
+          promptTokens = message.usage?.input_tokens ?? 0;
+          completionTokens = message.usage?.output_tokens ?? 0;
+          // The SDK can mark `subtype: 'success'` while also setting
+          // `is_error: true` (e.g. auth failures surface as a success-shaped
+          // result with an error message in `result`). Both must be checked.
+          if (message.subtype === 'success' && !message.is_error) {
+            gotSuccessResult = true;
             if (typeof message.result === 'string' && message.result.length > 0) {
               assistantText = message.result;
             }
+            if (message.structured_output !== undefined) {
+              structuredOutput = message.structured_output;
+            }
+          } else if (message.subtype === 'success' && message.is_error) {
+            // Auth / billing / etc. failure dressed up as success.
+            errorReason = typeof message.result === 'string' && message.result.length > 0
+              ? `claude-agent-sdk error: ${message.result}`
+              : `claude-agent-sdk error result (subtype=success, is_error=true)`;
           } else {
-            finalErrored = `claude-agent-sdk returned subtype=${message.subtype}`;
+            errorReason = `claude-agent-sdk failed: subtype=${message.subtype}`;
           }
-          promptTokens = message.usage?.input_tokens ?? 0;
-          completionTokens = message.usage?.output_tokens ?? 0;
         }
+      }
+    } catch (streamError) {
+      // The SDK throws on the spawned process's non-zero exit even when a
+      // result message has already been emitted (success OR error). Prefer
+      // the meaningful error from the result message; only propagate the
+      // generic exit-code error when we got nothing useful.
+      if (!gotSuccessResult && !errorReason) {
+        throw streamError;
       }
     } finally {
       clearTimeout(timer);
     }
 
-    if (finalErrored) {
-      throw new Error(finalErrored);
+    if (errorReason) {
+      throw new Error(errorReason);
     }
-    if (!assistantText) {
-      throw new Error('claude-agent-sdk returned no assistant text');
+    if (!assistantText && structuredOutput === undefined) {
+      throw new Error('claude-agent-sdk returned no assistant text or structured output');
     }
 
-    return { text: assistantText, promptTokens, completionTokens };
+    return { text: assistantText, promptTokens, completionTokens, structuredOutput };
   }
 
   private async loadSdk(): Promise<(params: ClaudeAgentQueryParams) => AsyncIterable<ClaudeAgentMessage>> {
@@ -321,8 +355,6 @@ export class ClaudeCodeClient implements ILLMClient {
       // Dynamic import: keeps the SDK an optional dep — users who stay on the
       // 'api' or 'batch' runtime don't need the package resolvable.
       const mod = await import('@anthropic-ai/claude-agent-sdk');
-      // The SDK exports `query`; cast to our minimal local shape so we don't
-      // import its types at compile time (keeps the dep optional in tsc too).
       this.querySdk = (mod as unknown as { query: (params: ClaudeAgentQueryParams) => AsyncIterable<ClaudeAgentMessage> }).query;
       return this.querySdk;
     } catch (error) {
@@ -350,34 +382,20 @@ export class ClaudeCodeClient implements ILLMClient {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function buildStructuredOutputInstruction(
-  jsonSchema: Record<string, unknown>,
-  schemaName?: string,
-  schemaDescription?: string,
-): string {
-  const header = schemaName
-    ? `You must respond with a single JSON object named "${schemaName}".`
-    : 'You must respond with a single JSON object.';
-  const desc = schemaDescription ? `\n${schemaDescription}\n` : '';
-  return [
-    header,
-    desc,
-    'Output ONLY the JSON object. No prose before or after. No markdown code fences.',
-    'Every required field in the schema must be present. Open record fields (no properties listed) accept any keys — fill them with rich content rather than leaving them empty.',
-    '',
-    'JSON Schema:',
-    JSON.stringify(jsonSchema),
-  ].join('\n');
+interface OneShotResult {
+  text: string;
+  promptTokens: number;
+  completionTokens: number;
+  structuredOutput?: unknown;
 }
 
 /**
- * Best-effort JSON extraction from agent text. Tries: raw parse, then
- * extracting the largest `{...}` substring (handles cases where the agent
- * adds a sentence despite the instruction).
+ * Fallback JSON extraction for the rare case the SDK does not populate
+ * `structured_output` (e.g. when `outputFormat` was not provided). Tries:
+ * raw parse, fence stripping, then largest `{...}` / `[...]` substring.
  */
 function extractJson(text: string): unknown | undefined {
   const trimmed = text.trim();
-  // Strip ```json … ``` and ``` … ``` fences if the agent insisted.
   const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
   const candidate = fenceMatch ? fenceMatch[1]! : trimmed;
 
@@ -385,7 +403,6 @@ function extractJson(text: string): unknown | undefined {
     return JSON.parse(candidate);
   } catch { /* fall through */ }
 
-  // Greedy: find the outermost JSON object/array.
   const first = candidate.indexOf('{');
   const last = candidate.lastIndexOf('}');
   if (first >= 0 && last > first) {
@@ -415,10 +432,13 @@ interface ClaudeAgentQueryParams {
   options?: {
     model?: string;
     systemPrompt?: string;
+    tools?: string[];
     allowedTools?: string[];
     maxTurns?: number;
-    permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
+    permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan' | 'dontAsk';
     settingSources?: ('user' | 'project' | 'local')[];
+    persistSession?: boolean;
+    outputFormat?: { type: 'json_schema'; schema: Record<string, unknown> };
   };
 }
 
@@ -429,5 +449,7 @@ interface ClaudeAgentMessage {
     content?: Array<{ type: string; text?: string }>;
   };
   result?: string;
+  is_error?: boolean;
+  structured_output?: unknown;
   usage?: { input_tokens?: number; output_tokens?: number };
 }
