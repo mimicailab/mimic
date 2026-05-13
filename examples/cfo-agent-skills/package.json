@@ -1,0 +1,21 @@
+{
+  "name": "cfo-agent-skills-example",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "@mimicai/adapter-chargebee": "^0.13.0",
+    "@mimicai/adapter-gocardless": "^0.13.0",
+    "@mimicai/adapter-lemonsqueezy": "^0.13.0",
+    "@mimicai/adapter-paddle": "^0.13.0",
+    "@mimicai/adapter-postgres": "^0.13.0",
+    "@mimicai/adapter-recurly": "^0.13.0",
+    "@mimicai/adapter-revenuecat": "^0.13.0",
+    "@mimicai/adapter-stripe": "^0.13.0",
+    "@mimicai/adapter-zuora": "^0.13.0",
+    "@mimicai/cli": "^0.13.0"
+  },
+  "devDependencies": {
+    "@prisma/client": "^7.5.0",
+    "prisma": "^7.5.0"
+  }
+}

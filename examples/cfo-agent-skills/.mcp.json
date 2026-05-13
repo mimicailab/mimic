@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mimic-postgres":     { "type": "http", "url": "http://localhost:4201/mcp" },
+    "mimic-stripe":       { "type": "http", "url": "http://localhost:4202/mcp" },
+    "mimic-paddle":       { "type": "http", "url": "http://localhost:4203/mcp" },
+    "mimic-chargebee":    { "type": "http", "url": "http://localhost:4204/mcp" },
+    "mimic-gocardless":   { "type": "http", "url": "http://localhost:4205/mcp" },
+    "mimic-revenuecat":   { "type": "http", "url": "http://localhost:4206/mcp" },
+    "mimic-lemonsqueezy": { "type": "http", "url": "http://localhost:4207/mcp" },
+    "mimic-zuora":        { "type": "http", "url": "http://localhost:4208/mcp" },
+    "mimic-recurly":      { "type": "http", "url": "http://localhost:4209/mcp" }
+  }
+}
