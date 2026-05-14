@@ -2249,6 +2249,15 @@ For date_window claims, provide both \`min\` and \`max\` as ISO dates/timestamps
   distribution_pct claims, not pinned_field.
 - Do NOT emit duplicate claims. Two predicates that constrain the exact
   same {target, filter, field} should be one claim.
+- **FIELD GROUNDING (HARD RULE)**: Every key inside a claim's \`target.filter\`
+  and every \`field\` reference in pinned_field / aggregate_sum / aggregate_avg /
+  date_window claims MUST be a field listed for the target resource in the
+  "API RESOURCES + FIELDS" or "DATABASE TABLES" block below. If the persona
+  narrates a fact whose natural filter key is NOT on the resource you'd
+  reach for, retarget to a sibling resource that DOES expose it (e.g. tier
+  filters belong on \`subscription\` or \`price\`, NOT on \`customer\`; line-item
+  amounts belong on \`invoice_line_item\`, NOT on \`invoice\`). Never invent
+  fields and never assume a field exists because it would be convenient.
 - Output ONLY valid JSON matching the schema. No markdown, no commentary.`;
 
 // ---------------------------------------------------------------------------
@@ -2261,6 +2270,13 @@ export interface BuildClaimExtractionPromptOptions {
   domain: string;
   /** Configured API adapters → array of resource names */
   adapterResources?: Record<string, string[]>;
+  /**
+   * V3 Layer 1 — full ResourceSpecs for field-grounded extraction. When
+   * provided, the prompt renders the exact field list for every adapter
+   * resource so the LLM can't invent filter keys (e.g. "plan=starter" on
+   * stripe.customer, which has no `plan` field).
+   */
+  resourceSpecs?: Record<string, AdapterResourceSpecs>;
   /** Schema mapping — drives the BRIDGE TABLES block */
   schemaMapping?: SchemaMapping;
   /** Current date (ISO YYYY-MM-DD) */
@@ -2290,6 +2306,7 @@ export function buildClaimExtractionPrompt(
     persona,
     domain,
     adapterResources,
+    resourceSpecs,
     schemaMapping,
     currentDate,
     volume,
@@ -2301,9 +2318,14 @@ export function buildClaimExtractionPrompt(
   const startDate = volume ? computeStartDate(today, volume) : undefined;
 
   const tableSummary = schema.tables.length > 0 ? formatTableSummary(schema) : '';
-  const adapterSummary = adapterResources && Object.keys(adapterResources).length > 0
-    ? formatAdapterSummary(adapterResources)
-    : '';
+  // Prefer the field-grounded summary when resourceSpecs is available
+  // (V3 Layer 1) — otherwise fall back to the lighter resource-name list.
+  const adapterSummary =
+    resourceSpecs && Object.keys(resourceSpecs).length > 0
+      ? formatAdapterFieldSummary(resourceSpecs)
+      : adapterResources && Object.keys(adapterResources).length > 0
+        ? formatAdapterSummary(adapterResources)
+        : '';
   const bridgeBlock = schemaMapping ? formatClaimExtractionBridges(schemaMapping) : '';
 
   const dateRange = startDate
@@ -2350,6 +2372,60 @@ function formatAdapterSummary(adapterResources: Record<string, string[]>): strin
   }
   lines.push('--- END ADAPTERS ---');
   return lines.join('\n');
+}
+
+/**
+ * V3 Layer 1 — field-grounded adapter summary for claim extraction.
+ *
+ * Lists every resource per adapter together with the exact fields that
+ * resource exposes. The LLM is told that filter keys in claim targets MUST
+ * match one of these fields — preventing bugs like `stripe.customer where
+ * plan=starter` (Stripe customers have no `plan` field; tier lives on
+ * subscription / price.metadata).
+ *
+ * Nested object fields are flattened with dot notation (one level deep)
+ * so the LLM can see addressable filter paths like `unit_amount.amount`.
+ */
+function formatAdapterFieldSummary(
+  resourceSpecs: Record<string, AdapterResourceSpecs>,
+): string {
+  const lines: string[] = [
+    '--- API RESOURCES + FIELDS (claim filter keys MUST exist in this list) ---',
+    '',
+    'Each line: api.<adapter>.<resource> → fields available for filters and',
+    'pinned_field/aggregate_sum predicates. If the persona narrates a fact',
+    'whose natural filter key is NOT listed for the resource, retarget to a',
+    'sibling resource that DOES expose it (e.g. tier/plan filters belong on',
+    'subscription, NOT on customer). Never invent fields.',
+    '',
+  ];
+  for (const [adapterId, specs] of Object.entries(resourceSpecs)) {
+    for (const [resourceName, spec] of Object.entries(specs.resources)) {
+      const fields = listResourceFilterableFields(spec);
+      lines.push(`  api.${adapterId}.${resourceName}: ${fields.join(', ')}`);
+    }
+  }
+  lines.push('--- END API RESOURCES + FIELDS ---');
+  return lines.join('\n');
+}
+
+/**
+ * List the fields on a ResourceSpec that are legal filter targets. Nested
+ * object fields are flattened one level (e.g. `unit_amount.amount`). Array
+ * fields are surfaced as the bare name (filters on arrays are rare and the
+ * auditor evaluates them as JSON-equality only).
+ */
+function listResourceFilterableFields(spec: ResourceSpec): string[] {
+  const out: string[] = [];
+  for (const [field, fieldSpec] of Object.entries(spec.fields)) {
+    out.push(field);
+    if (fieldSpec.type === 'object' && fieldSpec.properties) {
+      for (const inner of Object.keys(fieldSpec.properties)) {
+        out.push(`${field}.${inner}`);
+      }
+    }
+  }
+  return out;
 }
 
 function formatClaimExtractionBridges(schemaMapping: SchemaMapping): string {

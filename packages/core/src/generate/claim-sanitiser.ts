@@ -17,7 +17,8 @@
  * Pure function — no LLM, no I/O. Run between extraction and bridge rewrite.
  */
 
-import type { Claim } from '../types/claim.js';
+import type { Claim, Filter } from '../types/claim.js';
+import type { AdapterResourceSpecs, SchemaModel } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 
 export interface SanitiseResult {
@@ -32,7 +33,17 @@ export interface SanitiseDecision {
   reason: string;
 }
 
-export function sanitiseClaims(input: ReadonlyArray<Claim>): SanitiseResult {
+export interface SanitiseOptions {
+  /** Database schema — used to validate db.<table> filter/field keys */
+  schema?: SchemaModel;
+  /** Adapter resource specs — used to validate api.<adapter>.<resource> filter/field keys */
+  resourceSpecs?: Record<string, AdapterResourceSpecs>;
+}
+
+export function sanitiseClaims(
+  input: ReadonlyArray<Claim>,
+  options: SanitiseOptions = {},
+): SanitiseResult {
   const decisions: SanitiseDecision[] = [];
   const out: Claim[] = [];
 
@@ -45,7 +56,24 @@ export function sanitiseClaims(input: ReadonlyArray<Claim>): SanitiseResult {
     }
   }
 
+  // Build the field-existence index up front (cheap; bounded by adapter+table count).
+  const fieldIndex = buildFieldIndex(options);
+
   for (const claim of input) {
+    // V3 Layer 1 — field grounding. Reject claims whose filter keys or
+    // field/aggregate references target fields that don't exist on the
+    // resource. Predicates against missing fields are unsatisfiable by
+    // definition (auditor returns 0 / null) and become permanent noise.
+    const groundingVerdict = checkFieldGrounding(claim, fieldIndex);
+    if (groundingVerdict) {
+      decisions.push({
+        claimId: claim.id,
+        action: groundingVerdict.action,
+        reason: groundingVerdict.reason,
+      });
+      if (groundingVerdict.action === 'dropped') continue;
+    }
+
     const verdict = inspectClaim(claim, distributionTargets);
     decisions.push({ claimId: claim.id, action: verdict.action, reason: verdict.reason });
     if (verdict.action === 'dropped') continue;
@@ -70,6 +98,138 @@ export function sanitiseClaims(input: ReadonlyArray<Claim>): SanitiseResult {
   }
 
   return { claims: out, decisions };
+}
+
+// ---------------------------------------------------------------------------
+// Field-existence checking (V3 Layer 1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Index of legal field paths per target. Key: `<surface>:<name>` (e.g.
+ * `db:users`, `api:stripe.subscription`). Value: set of legal field paths
+ * (top-level field names plus one level of dotted-object paths). When a
+ * target isn't in the index, field grounding is skipped (no data to check
+ * against — usually means schema/specs weren't passed in).
+ */
+type FieldIndex = Map<string, Set<string>>;
+
+function buildFieldIndex(options: SanitiseOptions): FieldIndex {
+  const index: FieldIndex = new Map();
+
+  if (options.schema) {
+    for (const table of options.schema.tables) {
+      const fields = new Set<string>();
+      for (const col of table.columns) fields.add(col.name);
+      index.set(`db:${table.name}`, fields);
+    }
+  }
+
+  if (options.resourceSpecs) {
+    for (const [adapterId, specs] of Object.entries(options.resourceSpecs)) {
+      for (const [resourceName, spec] of Object.entries(specs.resources)) {
+        const fields = new Set<string>();
+        for (const [field, fieldSpec] of Object.entries(spec.fields)) {
+          fields.add(field);
+          if (fieldSpec.type === 'object' && fieldSpec.properties) {
+            for (const inner of Object.keys(fieldSpec.properties)) {
+              fields.add(`${field}.${inner}`);
+            }
+          }
+        }
+        // Register both spec key and a permissive plural alias — the
+        // auditor accepts plural target names too.
+        index.set(`api:${adapterId}.${resourceName}`, fields);
+      }
+    }
+  }
+
+  return index;
+}
+
+function checkFieldGrounding(
+  claim: Claim,
+  index: FieldIndex,
+): { action: 'dropped' | 'kept'; reason: string } | null {
+  // Find the resource entry. Try the literal target first, then a singularised
+  // alias for permissive plural names like "stripe.customers".
+  const key = `${claim.target.surface}:${claim.target.name}`;
+  let fields = index.get(key);
+  if (!fields && claim.target.surface === 'api') {
+    const singular = singulariseApiTarget(claim.target.name);
+    if (singular) fields = index.get(`api:${singular}`);
+  }
+  // No entry → we have nothing to validate against; let the claim through.
+  // This intentionally fails open rather than rejecting claims when the
+  // calling site didn't pass schema/specs.
+  if (!fields) return null;
+
+  const missing: string[] = [];
+
+  // Filter keys
+  if (claim.target.filter) {
+    for (const fkey of Object.keys(claim.target.filter as Filter)) {
+      if (!fieldExists(fields, fkey)) missing.push(`filter.${fkey}`);
+    }
+  }
+
+  // Field reference on kinds that carry one
+  const fieldRef = readFieldReference(claim);
+  if (fieldRef !== undefined && !fieldExists(fields, fieldRef)) {
+    missing.push(`field=${fieldRef}`);
+  }
+
+  if (missing.length === 0) {
+    return { action: 'kept', reason: '' };
+  }
+
+  return {
+    action: 'dropped',
+    reason:
+      `field grounding: target ${claim.target.surface}.${claim.target.name} has no field(s) [${missing.join(', ')}]. ` +
+      `Auditor would always return 0 / null. Retarget the claim to a sibling resource that exposes the required field(s).`,
+  };
+}
+
+/**
+ * Match `field` against the index, allowing both exact match and prefix
+ * match on the head of a dotted path (e.g. `metadata.tier` is acceptable if
+ * `metadata` is a registered object field — we may have only enumerated one
+ * level of nesting in the spec).
+ */
+function fieldExists(fields: Set<string>, field: string): boolean {
+  if (fields.has(field)) return true;
+  const dot = field.indexOf('.');
+  if (dot > 0) {
+    const head = field.slice(0, dot);
+    if (fields.has(head)) return true;
+  }
+  return false;
+}
+
+function readFieldReference(claim: Claim): string | undefined {
+  switch (claim.kind) {
+    case 'aggregate_sum':
+    case 'aggregate_avg':
+    case 'pinned_field':
+    case 'distribution_pct':
+    case 'date_window':
+      return (claim as Claim & { field: string }).field;
+    default:
+      return undefined;
+  }
+}
+
+function singulariseApiTarget(name: string): string | null {
+  const dot = name.indexOf('.');
+  if (dot < 0) return null;
+  const adapter = name.slice(0, dot);
+  const resource = name.slice(dot + 1);
+  let singular = resource;
+  if (resource.endsWith('ies')) singular = resource.slice(0, -3) + 'y';
+  else if (resource.endsWith('ses') || resource.endsWith('xes') || resource.endsWith('zes')) singular = resource.slice(0, -2);
+  else if (resource.endsWith('s') && !resource.endsWith('ss')) singular = resource.slice(0, -1);
+  if (singular === resource) return null;
+  return `${adapter}.${singular}`;
 }
 
 type Verdict =

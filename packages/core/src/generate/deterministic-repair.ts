@@ -132,7 +132,7 @@ function repairRowCount(
   const totalCiterCount = citers.reduce((s, c) => s + (c.archetype.count ?? 0), 0);
   const hasFilter = claim.target.filter && Object.keys(claim.target.filter).length > 0;
   if (hasFilter && delta < 0 && Math.abs(delta) > totalCiterCount) {
-    return repairRowCountLeakage(blueprint, claim, citers, actual);
+    return repairRowCountLeakage(blueprint, claim, citers, actual, failure.provenanceBreakdown);
   }
 
   // Pick the citing archetype with the highest current count and adjust it.
@@ -178,6 +178,7 @@ function repairRowCountLeakage(
   claim: Extract<Claim, { kind: 'row_count' }>,
   citers: CitingArchetype[],
   actual: number,
+  provenanceBreakdown: Record<string, number> | undefined,
 ): RepairDecision {
   const ops: PatchOp[] = [];
 
@@ -192,9 +193,17 @@ function repairRowCountLeakage(
     }
   });
 
-  // 2) Find non-cited archetypes on the same surface/table that could match
-  //    the filter and try to narrow them.
-  const leakers = findLeakingArchetypes(blueprint, claim, citers);
+  // 2) Find non-cited archetypes that could match the filter and try to narrow
+  //    them. Two sources:
+  //    - Same-surface static analysis (`findLeakingArchetypes`).
+  //    - Cross-surface provenance: when matched rows came from an archetype on
+  //      a different surface via mirror or fk-backfill, the same-surface scan
+  //      misses it. Provenance attribution exposes the real leaker.
+  const sameSurfaceLeakers = findLeakingArchetypes(blueprint, claim, citers);
+  const crossSurfaceLeakers = findLeakersFromProvenance(
+    blueprint, claim, citers, provenanceBreakdown,
+  );
+  const leakers = dedupeLeakersByPath([...sameSurfaceLeakers, ...crossSurfaceLeakers]);
   const narrowedRefs: string[] = [];
   const unfixableRefs: string[] = [];
   for (const leaker of leakers) {
@@ -278,6 +287,92 @@ function findLeakingArchetypes(
   }
 
   return collected;
+}
+
+/**
+ * Find leaking archetypes by following the auditor's runtime provenance
+ * breakdown. Unlike `findLeakingArchetypes`, this can identify cross-surface
+ * leakers: a `db.users` overcount whose rows trace back to an API archetype
+ * via the mirror flow surfaces here as `api.<adapter>.<resource>[label]
+ * (via mirror)`. Without this, the same-surface static scan would miss the
+ * real culprit and the repair would keep clamping the wrong archetype.
+ *
+ * Conservative: only archetypes with a non-zero contribution to the matched
+ * rows are returned. We ignore static / pattern / fk-backfill buckets (they
+ * have no corresponding archetype to patch).
+ */
+function findLeakersFromProvenance(
+  blueprint: Blueprint,
+  claim: Extract<Claim, { kind: 'row_count' }>,
+  citers: CitingArchetype[],
+  breakdown: Record<string, number> | undefined,
+): CitingArchetype[] {
+  if (!breakdown) return [];
+  const citerLabels = new Set(citers.map((c) => `${c.archetype.label}`));
+  const out: CitingArchetype[] = [];
+  // Match "<surface>.<target>[<label>]" optionally followed by " (via <kind>)".
+  const KEY_RE = /^(db|api)\.(.+?)\[(.+?)\](?: \(via ([\w-]+)\))?$/;
+  for (const [key, count] of Object.entries(breakdown)) {
+    if (count <= 0) continue;
+    const match = key.match(KEY_RE);
+    if (!match) continue;
+    const surface = match[1] as 'db' | 'api';
+    const target = match[2]!;
+    const label = match[3]!;
+    const via = match[4];
+    // Static rows / pattern rows / fk-backfill have no archetype to patch.
+    if (via === 'static' || via === 'pattern' || via === 'fk-backfill') continue;
+    // Don't relabel a citing archetype as a leaker.
+    if (citerLabels.has(label) &&
+        surface === claim.target.surface &&
+        target === claim.target.name) continue;
+    const archetype = lookupArchetype(blueprint, surface, target, label);
+    if (!archetype) continue;
+    const path = archetypePath(surface, target, label);
+    if (citers.some((c) => c.path === path)) continue;
+    out.push({ ref: `${surface}:${target}:${label}`, path, archetype });
+  }
+  return out;
+}
+
+function lookupArchetype(
+  blueprint: Blueprint,
+  surface: 'db' | 'api',
+  target: string,
+  label: string,
+): EntityArchetype | undefined {
+  if (surface === 'db') {
+    const config = blueprint.data.entityArchetypes?.[target];
+    return config?.archetypes.find((a) => a.label === label);
+  }
+  const dot = target.indexOf('.');
+  if (dot < 0) return undefined;
+  const adapter = target.slice(0, dot);
+  const resource = target.slice(dot + 1);
+  const config = blueprint.data.apiEntityArchetypes?.[adapter]?.[resource];
+  return config?.archetypes.find((a) => a.label === label);
+}
+
+function archetypePath(surface: 'db' | 'api', target: string, label: string): string {
+  if (surface === 'db') {
+    return `data.entityArchetypes.${target}.archetypes[${label}]`;
+  }
+  const dot = target.indexOf('.');
+  if (dot < 0) return '';
+  const adapter = target.slice(0, dot);
+  const resource = target.slice(dot + 1);
+  return `data.apiEntityArchetypes.${adapter}.${resource}.archetypes[${label}]`;
+}
+
+function dedupeLeakersByPath(items: CitingArchetype[]): CitingArchetype[] {
+  const seen = new Set<string>();
+  const out: CitingArchetype[] = [];
+  for (const item of items) {
+    if (seen.has(item.path)) continue;
+    seen.add(item.path);
+    out.push(item);
+  }
+  return out;
 }
 
 /**

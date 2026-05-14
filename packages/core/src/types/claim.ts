@@ -164,6 +164,16 @@ export interface ClaimEvaluation {
   sampleRows?: unknown[];
   /** When passed=false: which archetype labels cited this claim, if any */
   citedBy?: string[];
+  /**
+   * When passed=false on a count-style claim: distribution of the *matched*
+   * rows by the producing archetype (via the provenance stamp on each row).
+   * Cross-surface mirrored / fk-backfilled rows are attributed to the source
+   * archetype, not the materialised surface — so a leak on `db.users` that
+   * came from `api.stripe.customer[starter-monthly]` via the mirror flow shows
+   * up under `api.stripe.customer[starter-monthly] (via mirror)`. The repair
+   * loop uses this to identify the right archetype to narrow.
+   */
+  provenanceBreakdown?: Record<string, number>;
 }
 
 export interface AuditResult {

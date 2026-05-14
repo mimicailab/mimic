@@ -82,6 +82,7 @@ export async function extractClaims(
     persona,
     domain,
     adapterResources: Object.keys(adapterResources).length > 0 ? adapterResources : undefined,
+    resourceSpecs,
     schemaMapping,
     currentDate: options.currentDate,
     volume: options.volume,

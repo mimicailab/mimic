@@ -40,6 +40,7 @@ jobs:
           # otherwise CI on main fails next push with ERR_PNPM_OUTDATED_LOCKFILE.
           version: pnpm changeset version && pnpm install --lockfile-only
           publish: pnpm release
+          createGithubReleases: false
           title: 'chore: version packages'
           commit: 'chore: version packages'
         env:

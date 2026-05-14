@@ -559,12 +559,14 @@ export class BlueprintEngine {
       },
     );
 
-    // ── Step 1b: claim sanitiser (pure code; drops malformed shapes) ─────
-    const sanitised = sanitiseClaims(extraction.claims);
-
     // ── Step 2: bridge rewrite (deterministic; idempotent) ───────────────
-    const { claims: rewrittenClaims, rewritten } = rewriteClaimsForBridges(
-      sanitised.claims,
+    // Run BEFORE field-grounding sanitiser so claims targeting bridge tables
+    // (e.g. db.users where billing_platform=stripe) get re-routed to the API
+    // surface (api.stripe.customer with the platform filter stripped) first.
+    // Otherwise the sanitiser would reject them as field-not-found, since
+    // the platform discriminator column is structural / not always present.
+    const { claims: bridgeRewrittenClaims, rewritten } = rewriteClaimsForBridges(
+      extraction.claims,
       schemaMapping,
     );
     if (rewritten.length > 0) {
@@ -577,6 +579,17 @@ export class BlueprintEngine {
         );
       }
     }
+
+    // ── Step 1b → 2b: claim sanitiser (pure code; drops malformed shapes) ─
+    // V3 Layer 1 — pass schema + resourceSpecs so the sanitiser can reject
+    // claims whose filter keys reference fields that don't exist on the
+    // target resource (e.g. plan=starter on stripe.customer, which has no
+    // plan field — tier lives on subscription/price.metadata).
+    const sanitised = sanitiseClaims(bridgeRewrittenClaims, {
+      schema,
+      resourceSpecs,
+    });
+    const rewrittenClaims = sanitised.claims;
 
     // ── Step 3: topology — derive slots ──────────────────────────────────
     const slots = deriveSlots({

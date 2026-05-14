@@ -8,6 +8,7 @@ import type {
 } from '../types/claim.js';
 import type { ExpandedData, Row } from '../types/dataset.js';
 import type { Blueprint } from '../types/blueprint.js';
+import { groupRowsByProvenance } from './provenance.js';
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -35,6 +36,19 @@ export function auditClaims(
   };
 }
 
+/**
+ * Group matched rows by their producing archetype (via provenance stamps).
+ * Cross-surface rows (mirrored DB rows, fk-backfilled API entities) are
+ * attributed to the source archetype, not the materialised surface, so the
+ * repair loop can find the actual leaker.
+ */
+function buildProvenanceBreakdown(rows: Row[]): Record<string, number> {
+  const buckets = groupRowsByProvenance(rows);
+  const out: Record<string, number> = {};
+  for (const [key, group] of buckets) out[key] = group.length;
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Per-claim evaluation
 // ---------------------------------------------------------------------------
@@ -58,6 +72,7 @@ function evaluateClaim(
         actual,
         sampleRows: rows.slice(0, 5),
         citedBy,
+        provenanceBreakdown: passed ? undefined : buildProvenanceBreakdown(rows),
       };
     }
     case 'aggregate_sum': {
@@ -155,6 +170,7 @@ function evaluateClaim(
         actual: inWindow.length,
         sampleRows: inWindow.slice(0, 5),
         citedBy,
+        provenanceBreakdown: passed ? undefined : buildProvenanceBreakdown(inWindow),
       };
     }
     case 'orphans_exactly': {
@@ -180,6 +196,7 @@ function evaluateClaim(
         actual: rows.length,
         sampleRows: rows.slice(0, 5),
         citedBy,
+        provenanceBreakdown: passed ? undefined : buildProvenanceBreakdown(rows),
       };
     }
   }
@@ -413,6 +430,13 @@ export function formatAuditFailures(result: AuditResult): string {
       lines.push(`    cited by:  ${f.citedBy.join(', ')}`);
     } else {
       lines.push(`    cited by:  (no archetype cited this claim)`);
+    }
+    if (f.provenanceBreakdown && Object.keys(f.provenanceBreakdown).length > 0) {
+      lines.push('    matched rows by source archetype:');
+      const entries = Object.entries(f.provenanceBreakdown).sort((a, b) => b[1] - a[1]);
+      for (const [ref, count] of entries) {
+        lines.push(`      ${count.toString().padStart(4)}  ${ref}`);
+      }
     }
   }
   return lines.join('\n');

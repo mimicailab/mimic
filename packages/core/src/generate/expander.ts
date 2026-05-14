@@ -26,6 +26,7 @@ import { FieldGenerator } from './field-generators.js';
 import { classifyTables } from './table-classifier.js';
 import { resolveMirroredFks } from './fk-resolver.js';
 import type { FkResolutionContext } from './fk-resolver.js';
+import { stampProvenance, getProvenance, type RowProvenance } from './provenance.js';
 import { logger } from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
@@ -248,6 +249,12 @@ export class BlueprintExpander {
           resolveInlineVariations(row, tableName, this.fieldGen, i);
           assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
           resolveReferences(row, idTracker);
+          stampProvenance(row, {
+            surface: 'db',
+            target: tableName,
+            label: 'static',
+            via: 'static',
+          });
           rows.push(row);
           trackRow(row, tableInfo, idTracker, tableName);
         }
@@ -569,12 +576,19 @@ export class BlueprintExpander {
     tables: Record<string, Row[]>,
     tableIndex: Map<string, TableInfo>,
   ): Row[] {
-    if (pattern.forEachParent) {
-      return this.expandPatternPerParent(
-        pattern, range, tableInfo, idTracker, tables, tableIndex,
-      );
-    }
-    return this.expandPatternCore(pattern, range, tableInfo, idTracker);
+    const rows = pattern.forEachParent
+      ? this.expandPatternPerParent(
+          pattern, range, tableInfo, idTracker, tables, tableIndex,
+        )
+      : this.expandPatternCore(pattern, range, tableInfo, idTracker);
+    const provenance: RowProvenance = {
+      surface: 'db',
+      target: pattern.targetTable,
+      label: `pattern:${pattern.type}`,
+      via: 'pattern',
+    };
+    for (const row of rows) stampProvenance(row, provenance);
+    return rows;
   }
 
   /**
@@ -935,6 +949,12 @@ export class BlueprintExpander {
 
       assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
       resolveReferences(row, idTracker, this.rng);
+      stampProvenance(row, {
+        surface: 'db',
+        target: tableName,
+        label: archetype.label,
+        via: 'direct',
+      });
       rows.push(row);
       trackRow(row, tableInfo, idTracker, tableName);
     };
@@ -1076,6 +1096,13 @@ export class BlueprintExpander {
         if (typeof id === 'string') bucket.orphanIdSet.add(id);
       }
 
+      stampProvenance(row, {
+        surface: 'api',
+        target: `${adapterId}.${bucket.resourceType}`,
+        label: archetype.label,
+        via: 'direct',
+      });
+
       bucket.expanded.push({
         statusCode: 200,
         headers: { 'content-type': 'application/json' },
@@ -1211,6 +1238,13 @@ export class BlueprintExpander {
         if (body.created === undefined && body.created_at === undefined) {
           body.created = Math.floor(Date.now() / 1000);
         }
+
+        stampProvenance(body as Row, {
+          surface: 'api',
+          target: `${adapterId}.${resourceType}`,
+          label: 'static',
+          via: 'static',
+        });
 
         expanded.push({
           statusCode: 200,
@@ -1696,6 +1730,12 @@ export class BlueprintExpander {
         resolveInlineVariations(row, tableName, this.fieldGen, i);
         assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
         resolveReferences(row, idTracker);
+        stampProvenance(row, {
+          surface: 'db',
+          target: tableName,
+          label: 'static',
+          via: 'static',
+        });
         allRows.push(row);
         trackRow(row, tableInfo, idTracker, tableName);
       }
@@ -1780,6 +1820,13 @@ export class BlueprintExpander {
           if (isAnchorBound) {
             row[ANCHOR_TAG_KEY] = archetype.anchor;
           }
+
+          stampProvenance(row, {
+            surface: 'db',
+            target: tableName,
+            label: archetype.label,
+            via: 'direct',
+          });
 
           allRows.push(row);
           trackRow(row, tableInfo, idTracker, tableName);
@@ -1921,6 +1968,22 @@ export class BlueprintExpander {
         }
 
         assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+
+        // Stamp provenance carrying the source API archetype's label so the
+        // auditor can later attribute leakage on the DB side back to the API
+        // archetype that drove it (mirror flow). When the source has no
+        // provenance (legacy path), fall back to a generic mirror stamp.
+        const sourceProv = getProvenance(body as Row);
+        stampProvenance(row, {
+          surface: 'db',
+          target: tableName,
+          label: sourceProv?.label ?? 'mirror',
+          via: 'mirror',
+          sourceSurface: 'api',
+          sourceTarget: sourceProv?.target ?? sourceKey,
+          sourceLabel: sourceProv?.label,
+        });
+
         sourceRows.push(row);
         trackRow(row, tableInfo, idTracker, tableName);
       }
@@ -2022,9 +2085,22 @@ export class BlueprintExpander {
   ): void {
     const dbArchetypes = blueprint.data.entityArchetypes?.[tableName];
     const all = dbArchetypes?.archetypes ?? [];
-    // Skip anchor-bound archetypes — they're meant to emit dedicated rows, not
-    // enrich mirrored ones.
-    const candidates = all.filter((a) => !a.anchor);
+    // Skip archetypes that own their row budget:
+    //   - anchor-bound: emit dedicated rows tied to a persona event.
+    //   - explicit-count plain: emit exactly N dedicated rows (via the mirror
+    //     flow's DB-archetype pass at the top of deriveMirroredTableRows).
+    // Both have a fixed row contribution. Using them as enrichment templates
+    // broadcasts their vary rules across far more rows than they emit — e.g.
+    // a `pro-churn-risk` archetype with count=5 and a 30+-day-old
+    // `last_login_at` vary range would paint every mirrored pro row with that
+    // range, blowing the persona's "5 churn-risk pro users" claim to 165.
+    // Enrichment is for weight-distributed templates (the "shape" of generic
+    // mirrored rows); explicit-count archetypes are about precise cohorts.
+    const candidates = all.filter((a) => {
+      if (a.anchor) return false;
+      if (typeof a.count === 'number' && a.count > 0) return false;
+      return true;
+    });
     if (candidates.length === 0) return;
 
     const dbColumnNames = new Set(tableInfo.columns.map((c) => c.name));
@@ -2180,6 +2256,12 @@ export class BlueprintExpander {
         resolveInlineVariations(row, tableName, this.fieldGen, i);
         assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
         resolveReferences(row, idTracker);
+        stampProvenance(row, {
+          surface: 'db',
+          target: tableName,
+          label: 'static',
+          via: 'static',
+        });
         allRows.push(row);
         trackRow(row, tableInfo, idTracker, tableName);
       }
@@ -2325,6 +2407,22 @@ export class BlueprintExpander {
         }
 
         assignAutoIncrementIds(row, tableInfo, idTracker, tableName);
+
+        // Stamp provenance carrying the source API archetype's label so
+        // cross-surface leakage (a DB row that overshoots a claim because the
+        // API archetype it mirrored from over-emitted) can be traced back to
+        // the right archetype during repair.
+        const sourceProv = getProvenance(body as Row);
+        stampProvenance(row, {
+          surface: 'db',
+          target: tableName,
+          label: sourceProv?.label ?? 'mirror',
+          via: 'mirror',
+          sourceSurface: 'api',
+          sourceTarget: sourceProv?.target ?? `${source.adapter}.${source.resource}`,
+          sourceLabel: sourceProv?.label,
+        });
+
         allRows.push(row);
         trackRow(row, tableInfo, idTracker, tableName);
       }
@@ -3673,6 +3771,17 @@ function backfillMissingCrossSurfaceEntities(
         schemaMapping,
       );
       if (!body) continue;
+
+      const dbProv = getProvenance(dbRow);
+      stampProvenance(body as Row, {
+        surface: 'api',
+        target: `${mapping.adapterId}.${mapping.apiResource}`,
+        label: dbProv?.label ?? 'fk-backfill',
+        via: 'fk-backfill',
+        sourceSurface: 'db',
+        sourceTarget: mapping.dbTable,
+        sourceLabel: dbProv?.label,
+      });
 
       synthesized.push({
         statusCode: 200,
@@ -5177,6 +5286,17 @@ function ensureSymmetricCrossSurfacePresence(
         schemaMapping,
       );
       if (!body) continue;
+
+      const dbProv = getProvenance(dbRow);
+      stampProvenance(body as Row, {
+        surface: 'api',
+        target: `${mapping.adapterId}.${mapping.apiResource}`,
+        label: dbProv?.label ?? 'fk-backfill',
+        via: 'fk-backfill',
+        sourceSurface: 'db',
+        sourceTarget: mapping.dbTable,
+        sourceLabel: dbProv?.label,
+      });
 
       minted.push({
         statusCode: 200,
