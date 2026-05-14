@@ -150,6 +150,52 @@ export type { DeterministicRepairResult, RepairDecision } from './generate/deter
 // V2 — layered, narrow-LLM pipeline (claim-extract → bridge-rewrite → topology → per-slot content)
 export { extractClaims } from './generate/claim-extractor.js';
 export type { ExtractClaimsOptions, ExtractClaimsResult } from './generate/claim-extractor.js';
+
+// V4.5 — Contract compiler → coverage planner → lowering → V2/V3 core → fidelity validator
+export {
+  compileContract,
+  CONTRACT_COMPILER_VERSION,
+} from './contract/contract-compiler.js';
+export type { CompileContractOptions } from './contract/contract-compiler.js';
+export {
+  planCoverage,
+  formatCoverageReport,
+  CAPABILITY_REGISTRY_VERSION,
+  LOWERING_TARGETS,
+  HELPER_TARGETS,
+} from './contract/coverage-planner.js';
+export { lowerContract, formatLoweringResult } from './contract/lowering.js';
+export type { LoweringResult } from './contract/lowering.js';
+export type {
+  PersonaContract,
+  CoverageStatus,
+  CoverageDecision,
+  CoverageReport,
+} from './contract/persona-contract.js';
+export type {
+  Clause,
+  ClauseFamily,
+  ClauseStrength,
+  ClauseId,
+  CountClause,
+  AggregateClause,
+  DistributionClause,
+  TemporalClause,
+  AnchorClause,
+  CrossSurfaceClause,
+  ReconciliationClause,
+  NarrativeClause,
+} from './contract/clause-types.js';
+export {
+  runFidelity,
+  formatFidelityFailures,
+} from './validation/fidelity-validator.js';
+export type {
+  FidelityResult,
+  FidelityEvaluation,
+  FidelityFailureSource,
+} from './validation/fidelity-validator.js';
+export { readV45Annotations } from './generate/blueprint-engine.js';
 export { deriveSlots } from './generate/topology.js';
 export type { ResourceSlot, DeriveSlotsOptions } from './generate/topology.js';
 export { generateAllSlots } from './generate/content-generator.js';

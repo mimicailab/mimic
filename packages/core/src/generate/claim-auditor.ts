@@ -76,7 +76,7 @@ function evaluateClaim(
       };
     }
     case 'aggregate_sum': {
-      const sum = rows.reduce((acc, r) => acc + toNumber(r[claim.field]), 0);
+      const sum = rows.reduce((acc, r) => acc + toNumber(readRowField(r, claim.field)), 0);
       const passed = withinTolerance(sum, claim.expected, claim.tolerance);
       return {
         claim,
@@ -88,7 +88,7 @@ function evaluateClaim(
       };
     }
     case 'aggregate_avg': {
-      const sum = rows.reduce((acc, r) => acc + toNumber(r[claim.field]), 0);
+      const sum = rows.reduce((acc, r) => acc + toNumber(readRowField(r, claim.field)), 0);
       const avg = rows.length === 0 ? 0 : sum / rows.length;
       const passed = withinTolerance(avg, claim.expected, claim.tolerance);
       return {
@@ -103,7 +103,7 @@ function evaluateClaim(
     case 'pinned_field': {
       const expected = claim.expected;
       if (claim.perRow) {
-        const bad = rows.filter((r) => !valueEquals(r[claim.field], expected));
+        const bad = rows.filter((r) => !valueEquals(readRowField(r, claim.field), expected));
         const passed = bad.length === 0 && rows.length > 0;
         return {
           claim,
@@ -116,7 +116,7 @@ function evaluateClaim(
           citedBy,
         };
       } else {
-        const hit = rows.some((r) => valueEquals(r[claim.field], expected));
+        const hit = rows.some((r) => valueEquals(readRowField(r, claim.field), expected));
         return {
           claim,
           passed: hit,
@@ -131,7 +131,7 @@ function evaluateClaim(
       const total = rows.length;
       const counts: Record<string, number> = {};
       for (const r of rows) {
-        const v = String(r[claim.field] ?? '');
+        const v = String(firstScalar(readRowField(r, claim.field)) ?? '');
         counts[v] = (counts[v] ?? 0) + 1;
       }
       const actualPct: Record<string, number> = {};
@@ -159,7 +159,7 @@ function evaluateClaim(
       const min = parseDateBound(claim.min);
       const max = parseDateBound(claim.max);
       const inWindow = rows.filter((r) => {
-        const ts = toMillis(r[claim.field]);
+        const ts = toMillis(readRowField(r, claim.field));
         return ts != null && ts >= min && ts <= max;
       });
       const passed = withinTolerance(inWindow.length, claim.expected, claim.tolerance);
@@ -206,7 +206,12 @@ function evaluateClaim(
 // Row selection — target + filter → row[]
 // ---------------------------------------------------------------------------
 
-function selectRows(target: ResourceTarget, expanded: ExpandedData): Row[] {
+/**
+ * Resolve and filter rows for a ResourceTarget. Exported so V4.5 helper
+ * checkers (reconciliation, temporal_gap, cross_surface_drift) can reuse
+ * the same selection semantics as the auditor.
+ */
+export function selectRows(target: ResourceTarget, expanded: ExpandedData): Row[] {
   const all = resolveRows(target, expanded);
   if (!target.filter) return all;
   return all.filter((row) => filterMatches(row, target.filter!));
@@ -237,6 +242,10 @@ function filterMatches(row: Row, filter: Filter): boolean {
 }
 
 function matchesPredicate(value: unknown, predicate: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.some((item) => matchesPredicate(item, predicate));
+  }
+
   // Bare value → equality
   if (predicate === null || typeof predicate !== 'object' || Array.isArray(predicate)) {
     return valueEquals(value, predicate);
@@ -272,6 +281,7 @@ function matchesPredicate(value: unknown, predicate: unknown): boolean {
 // ---------------------------------------------------------------------------
 
 function valueEquals(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a)) return a.some((item) => valueEquals(item, b));
   if (a === b) return true;
   if (a == null && b == null) return true;
   // Loose numeric/string equality for amounts that arrive as strings
@@ -281,6 +291,7 @@ function valueEquals(a: unknown, b: unknown): boolean {
 }
 
 function compareScalar(a: unknown, b: number | string): number {
+  if (Array.isArray(a)) return compareScalar(firstScalar(a), b);
   if (typeof b === 'number') {
     const an = toNumber(a);
     return an - b;
@@ -293,6 +304,7 @@ function compareScalar(a: unknown, b: number | string): number {
 }
 
 function toNumber(v: unknown): number {
+  if (Array.isArray(v)) return toNumber(firstScalar(v));
   if (typeof v === 'number') return v;
   if (typeof v === 'string' && v.trim() !== '') {
     const n = Number(v);
@@ -302,6 +314,7 @@ function toNumber(v: unknown): number {
 }
 
 function toMillis(v: unknown): number | null {
+  if (Array.isArray(v)) return toMillis(firstScalar(v));
   if (v == null) return null;
   if (typeof v === 'number') {
     // unix seconds vs ms heuristic
@@ -324,16 +337,42 @@ function ageDays(ms: number): number {
   return (Date.now() - ms) / (24 * 3600 * 1000);
 }
 
-/** Get a nested field with `a.b.c` dotted paths */
+function readRowField(row: Row, field: string): unknown {
+  return getNested(row, field);
+}
+
+/** Get a nested field with `a.b.c` dotted paths, traversing arrays as any-match lists. */
 function getNested(obj: Record<string, unknown>, path: string): unknown {
   if (!path.includes('.')) return obj[path];
-  const parts = path.split('.');
-  let cur: unknown = obj;
-  for (const p of parts) {
-    if (cur == null || typeof cur !== 'object') return undefined;
-    cur = (cur as Record<string, unknown>)[p];
+  return getNestedParts(obj, path.split('.'));
+}
+
+function getNestedParts(cur: unknown, parts: string[]): unknown {
+  if (parts.length === 0) return cur;
+  if (Array.isArray(cur)) {
+    const values = cur.flatMap((item) => flattenNestedValue(getNestedParts(item, parts)));
+    if (values.length === 0) return undefined;
+    if (values.length === 1) return values[0];
+    return values;
   }
-  return cur;
+  if (cur == null || typeof cur !== 'object') return undefined;
+  const [head, ...tail] = parts;
+  return getNestedParts((cur as Record<string, unknown>)[head!], tail);
+}
+
+function flattenNestedValue(value: unknown): unknown[] {
+  if (value === undefined) return [];
+  if (Array.isArray(value)) return value.flatMap((item) => flattenNestedValue(item));
+  return [value];
+}
+
+function firstScalar(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  for (const item of value) {
+    const nested = firstScalar(item);
+    if (nested !== undefined) return nested;
+  }
+  return undefined;
 }
 
 function describeTarget(target: ResourceTarget): string {

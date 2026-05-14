@@ -18,6 +18,12 @@ import { logger } from '../utils/logger.js';
 import { rewriteBridgeTables, formatBridgeRewrite } from './bridge-rewriter.js';
 import { solveCounts, formatConflicts, type SolverConflict } from './count-solver.js';
 import { deterministicRepair, formatRepairDecisions } from './deterministic-repair.js';
+import { readV45Annotations } from './blueprint-engine.js';
+import {
+  runFidelity,
+  formatFidelityFailures,
+  type FidelityResult,
+} from '../validation/fidelity-validator.js';
 
 // ---------------------------------------------------------------------------
 // Public entry point
@@ -62,6 +68,17 @@ export interface ExpandAndAuditOptions {
    * satisfy is a bad tradeoff for callers that want SOMETHING to inspect.
    */
   strict?: boolean;
+  /**
+   * V4.5 — run the fidelity validator against the original PersonaContract
+   * after structural audit + repair has finished. Reads the contract /
+   * coverage / lowering annotations stamped on the blueprint by
+   * `BlueprintEngine.generateV45`. If the blueprint has no V4.5 annotations,
+   * the check is a no-op.
+   *
+   * When `strict` is also true, hard-clause fidelity failures throw. Otherwise
+   * they are surfaced in `complianceReport` alongside the structural result.
+   */
+  runFidelityCheck?: boolean;
 }
 
 export interface ExpandAndAuditResult {
@@ -81,6 +98,12 @@ export interface ExpandAndAuditResult {
    * write this alongside the expanded data so a human can inspect the gap.
    */
   complianceReport?: string;
+  /**
+   * V4.5 — the fidelity validator's verdict against the original
+   * PersonaContract. Populated only when `runFidelityCheck` was set on the
+   * options and the blueprint carried V4.5 annotations.
+   */
+  fidelity?: FidelityResult;
 }
 
 /**
@@ -185,6 +208,7 @@ export async function expandAndAudit(
           outcome: 'passed-with-solver-conflicts',
         });
       }
+      maybeRunFidelity(result, current, expanded, audit, options);
       return result;
     }
 
@@ -216,7 +240,15 @@ export async function expandAndAudit(
         maxAttempts,
         outcome: 'failed-after-repair-budget',
       });
-      return { expanded, audit, repairAttempts, blueprint: current, complianceReport };
+      const failedResult: ExpandAndAuditResult = {
+        expanded,
+        audit,
+        repairAttempts,
+        blueprint: current,
+        complianceReport,
+      };
+      maybeRunFidelity(failedResult, current, expanded, audit, options);
+      return failedResult;
     }
 
     // Log the failures we're about to repair.
@@ -501,6 +533,61 @@ function constantSatisfiesPredicate(value: unknown, predicate: unknown): boolean
     return isNull === op.is_null;
   }
   return true; // numeric/date comparisons on constants — conservatively allow
+}
+
+// ---------------------------------------------------------------------------
+// V4.5 fidelity hook (Layer 6)
+// ---------------------------------------------------------------------------
+
+function maybeRunFidelity(
+  result: ExpandAndAuditResult,
+  blueprint: Blueprint,
+  expanded: ExpandedData,
+  audit: AuditResult,
+  options: ExpandAndAuditOptions,
+): void {
+  if (!options.runFidelityCheck) return;
+  const anno = readV45Annotations(blueprint);
+  if (!anno) {
+    logger.debug(
+      'runFidelityCheck requested but blueprint has no V4.5 annotations — skipping.',
+    );
+    return;
+  }
+  // Reconstruct a LoweringResult-shaped object — we only need
+  // clauseIdToClaimIds / skipped for the fidelity validator.
+  const lowering = {
+    claims: [],
+    anchors: anno.contract.anchors,
+    clauseIdToClaimIds: anno.lowering.clauseIdToClaimIds,
+    skipped: anno.lowering.skipped,
+  };
+  const fidelity = runFidelity(anno.contract, anno.coverage, {
+    structuralAudit: audit,
+    lowering,
+    blueprint,
+    expanded,
+  });
+  result.fidelity = fidelity;
+
+  if (fidelity.failures.length > 0) {
+    const report = formatFidelityFailures(fidelity);
+    logger.warn(report);
+    const strict = options.strict ?? false;
+    if (strict) {
+      throw new BlueprintGenerationError(
+        `Fidelity validation FAILED — ${fidelity.failures.length} hard clause(s) did not land in the final data.\n\n${report}`,
+        'Each failure references the original persona quote and a likely source (extraction, lowering, generation, projection). Targeted regeneration starts at the matching pipeline seam.',
+      );
+    }
+    // In soft mode, append fidelity failures to the compliance report.
+    const fidLines = ['', '## V4.5 fidelity failures', '', report];
+    result.complianceReport = (result.complianceReport ?? '') + fidLines.join('\n');
+  } else if (fidelity.evaluations.length > 0) {
+    logger.success(
+      `V4.5 fidelity passed (${fidelity.evaluations.length - fidelity.evaluations.filter((e) => e.skipped).length} clause checks, ${fidelity.evaluations.filter((e) => e.skipped).length} skipped/soft).`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

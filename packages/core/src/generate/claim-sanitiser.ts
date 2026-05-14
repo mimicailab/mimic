@@ -47,19 +47,34 @@ export function sanitiseClaims(
   const decisions: SanitiseDecision[] = [];
   const out: Claim[] = [];
 
+  // Build the field-existence index up front (cheap; bounded by adapter+table count).
+  const fieldIndex = buildFieldIndex(options);
+
+  // Pass 0: normalize target names and reject targets that can never resolve
+  // when schema/spec data is available. This prevents malformed targets like
+  // `surface:"api", name:"api.stripe.subscription"` from surviving into
+  // audit as unsatisfiable predicates.
+  const normalisedClaims: Claim[] = [];
+  for (const claim of input) {
+    const targetVerdict = normaliseAndValidateTarget(claim, fieldIndex, options);
+    if (targetVerdict.decision) decisions.push(targetVerdict.decision);
+    if (targetVerdict.action === 'dropped') continue;
+
+    const aliasVerdict = normaliseApiFieldAliases(targetVerdict.claim);
+    if (aliasVerdict.decision) decisions.push(aliasVerdict.decision);
+    normalisedClaims.push(aliasVerdict.claim);
+  }
+
   // First pass: detect targets with a distribution_pct claim so we can demote
   // sibling row_count claims that target the same field.
   const distributionTargets = new Set<string>();
-  for (const c of input) {
+  for (const c of normalisedClaims) {
     if (c.kind === 'distribution_pct') {
       distributionTargets.add(`${c.target.surface}:${c.target.name}:${c.field}`);
     }
   }
 
-  // Build the field-existence index up front (cheap; bounded by adapter+table count).
-  const fieldIndex = buildFieldIndex(options);
-
-  for (const claim of input) {
+  for (const claim of normalisedClaims) {
     // V3 Layer 1 — field grounding. Reject claims whose filter keys or
     // field/aggregate references target fields that don't exist on the
     // resource. Predicates against missing fields are unsatisfiable by
@@ -113,6 +128,10 @@ export function sanitiseClaims(
  */
 type FieldIndex = Map<string, Set<string>>;
 
+type TargetValidationResult =
+  | { action: 'kept'; claim: Claim; decision?: SanitiseDecision }
+  | { action: 'dropped'; claim: Claim; decision: SanitiseDecision };
+
 function buildFieldIndex(options: SanitiseOptions): FieldIndex {
   const index: FieldIndex = new Map();
 
@@ -146,18 +165,197 @@ function buildFieldIndex(options: SanitiseOptions): FieldIndex {
   return index;
 }
 
+function normaliseAndValidateTarget(
+  claim: Claim,
+  index: FieldIndex,
+  options: SanitiseOptions,
+): TargetValidationResult {
+  const original = claim.target.name.trim();
+  let normalized = original;
+
+  if (claim.target.surface === 'api') {
+    if (normalized.startsWith('db.')) {
+      return {
+        action: 'dropped',
+        claim,
+        decision: {
+          claimId: claim.id,
+          action: 'dropped',
+          reason:
+            `target normalisation: api target name "${original}" starts with db.; ` +
+            'surface already encodes the namespace, so this target can never resolve.',
+        },
+      };
+    }
+    normalized = normalized.replace(/^(?:api\.)+/, '');
+  } else {
+    if (normalized.startsWith('api.')) {
+      return {
+        action: 'dropped',
+        claim,
+        decision: {
+          claimId: claim.id,
+          action: 'dropped',
+          reason:
+            `target normalisation: db target name "${original}" starts with api.; ` +
+            'surface already encodes the namespace, so this target can never resolve.',
+        },
+      };
+    }
+    normalized = normalized.replace(/^(?:db\.)+/, '');
+  }
+
+  let nextClaim = claim;
+  let decision: SanitiseDecision | undefined;
+  if (normalized !== original) {
+    nextClaim = {
+      ...claim,
+      target: { ...claim.target, name: normalized },
+    };
+    decision = {
+      claimId: claim.id,
+      action: 'kept',
+      reason: `target normalisation: rewrote ${claim.target.surface}.${original} -> ${claim.target.surface}.${normalized}`,
+    };
+  }
+
+  const targetFields = resolveTargetFields(nextClaim, index);
+  if (!targetFields && hasValidationDataForSurface(nextClaim, options)) {
+    return {
+      action: 'dropped',
+      claim: nextClaim,
+      decision: {
+        claimId: claim.id,
+        action: 'dropped',
+        reason:
+          `target normalisation: unknown target ${nextClaim.target.surface}.${nextClaim.target.name}. ` +
+          'No schema/spec entry exists for this target, so the auditor would never resolve rows for it.',
+      },
+    };
+  }
+
+  return { action: 'kept', claim: nextClaim, decision };
+}
+
+function normaliseApiFieldAliases(
+  claim: Claim,
+): { claim: Claim; decision?: SanitiseDecision } {
+  if (claim.target.surface !== 'api') return { claim };
+
+  let nextClaim = claim;
+  const rewrites: string[] = [];
+
+  if (claim.target.filter) {
+    let changed = false;
+    const nextFilter: Filter = {};
+    for (const [key, value] of Object.entries(claim.target.filter)) {
+      const rewrittenKey = normaliseApiFieldAlias(claim.target.name, key);
+      if (rewrittenKey !== key) {
+        changed = true;
+        rewrites.push(`filter.${key} -> ${rewrittenKey}`);
+      }
+      if (!(rewrittenKey in nextFilter)) {
+        nextFilter[rewrittenKey] = value;
+      }
+    }
+    if (changed) {
+      nextClaim = {
+        ...nextClaim,
+        target: {
+          ...nextClaim.target,
+          filter: nextFilter,
+        },
+      };
+    }
+  }
+
+  const fieldRef = readFieldReference(nextClaim);
+  if (fieldRef) {
+    const rewrittenField = normaliseApiFieldAlias(nextClaim.target.name, fieldRef);
+    if (rewrittenField !== fieldRef) {
+      rewrites.push(`field.${fieldRef} -> ${rewrittenField}`);
+      nextClaim = rewriteClaimField(nextClaim, rewrittenField);
+    }
+  }
+
+  if (rewrites.length === 0) return { claim };
+
+  return {
+    claim: nextClaim,
+    decision: {
+      claimId: claim.id,
+      action: 'kept',
+      reason: `field alias rewrite: normalised ${claim.target.name} ${rewrites.join(', ')}`,
+    },
+  };
+}
+
+function normaliseApiFieldAlias(targetName: string, fieldPath: string): string {
+  if (targetName === 'stripe.subscription') {
+    switch (fieldPath) {
+      case 'plan_nickname':
+      case 'price_nickname':
+      case 'nickname':
+        return 'items.data.price.nickname';
+      case 'plan_lookup_key':
+      case 'price_lookup_key':
+      case 'lookup_key':
+        return 'items.data.price.lookup_key';
+      case 'price_id':
+        return 'items.data.price.id';
+      case 'product_id':
+      case 'product':
+        return 'items.data.price.product';
+    }
+  }
+  return fieldPath;
+}
+
+function rewriteClaimField(claim: Claim, field: string): Claim {
+  switch (claim.kind) {
+    case 'aggregate_sum':
+    case 'aggregate_avg':
+    case 'pinned_field':
+    case 'distribution_pct':
+    case 'date_window':
+      return {
+        ...claim,
+        field,
+      };
+    default:
+      return claim;
+  }
+}
+
+function hasValidationDataForSurface(
+  claim: Claim,
+  options: SanitiseOptions,
+): boolean {
+  if (claim.target.surface === 'db') return Boolean(options.schema);
+  return Boolean(options.resourceSpecs && Object.keys(options.resourceSpecs).length > 0);
+}
+
+function resolveTargetFields(
+  claim: Claim,
+  index: FieldIndex,
+): Set<string> | undefined {
+  const key = `${claim.target.surface}:${claim.target.name}`;
+  const direct = index.get(key);
+  if (direct) return direct;
+  if (claim.target.surface === 'api') {
+    const singular = singulariseApiTarget(claim.target.name);
+    if (singular) return index.get(`api:${singular}`);
+  }
+  return undefined;
+}
+
 function checkFieldGrounding(
   claim: Claim,
   index: FieldIndex,
 ): { action: 'dropped' | 'kept'; reason: string } | null {
   // Find the resource entry. Try the literal target first, then a singularised
   // alias for permissive plural names like "stripe.customers".
-  const key = `${claim.target.surface}:${claim.target.name}`;
-  let fields = index.get(key);
-  if (!fields && claim.target.surface === 'api') {
-    const singular = singulariseApiTarget(claim.target.name);
-    if (singular) fields = index.get(`api:${singular}`);
-  }
+  const fields = resolveTargetFields(claim, index);
   // No entry → we have nothing to validate against; let the claim through.
   // This intentionally fails open rather than rejecting claims when the
   // calling site didn't pass schema/specs.

@@ -47,6 +47,10 @@ export function registerRunCommand(program: Command): void {
       '--strict',
       'abort on persona contradictions or unfixable claim failures (default: write a compliance report and proceed)',
     )
+    .option(
+      '--v45',
+      'use the V4.5 contract-coverage pipeline: contract compiler + coverage planner + lowering + fidelity validator',
+    )
     .option('--verbose', 'enable verbose logging')
     .action(async (opts) => {
       await runGenerate(opts);
@@ -64,6 +68,7 @@ interface RunOptions {
   seed?: number;
   llmRuntime?: string;
   strict?: boolean;
+  v45?: boolean;
   verbose?: boolean;
 }
 
@@ -265,7 +270,13 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         // resourceSpecs are available — V2 requires them for API slots, and
         // pure-DB personas without adapters keep working on the old path.
         if (resourceSpecs && Object.keys(resourceSpecs).length > 0) {
-          blueprint = await engine.generateV2(
+          const generateFn = opts.v45
+            ? engine.generateV45.bind(engine)
+            : engine.generateV2.bind(engine);
+          if (opts.v45) {
+            logger.info('Using V4.5 pipeline: contract compiler → coverage planner → lowering → fidelity validator.');
+          }
+          blueprint = await generateFn(
             schema,
             { name: persona.name, description: persona.description },
             config.domain,
@@ -347,6 +358,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         resourceSpecs,
         persona: { name: persona.name, description: persona.description },
         strict: opts.strict,
+        runFidelityCheck: opts.v45,
       });
       const expanded = auditResult.expanded;
 

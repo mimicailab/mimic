@@ -100,11 +100,20 @@ export function rewriteBridgeTables(
     const remaining: EntityArchetypeConfig['archetypes'] = [];
     for (const archetype of config.archetypes) {
       const platform = archetype.fields['billing_platform'];
+      const externalId = archetype.fields['external_id'];
       if (typeof platform === 'string' && adapterMap.has(platform)) {
         strippedArchetypes.push({
           table: bridgeTable,
           label: archetype.label,
           reason: `bridge-table archetype with billing_platform="${platform}" — mirror flow generates these rows`,
+        });
+        continue; // strip
+      }
+      if (typeof externalId === 'string' && externalId.trim().length > 0) {
+        strippedArchetypes.push({
+          table: bridgeTable,
+          label: archetype.label,
+          reason: 'bridge-table archetype with explicit external_id — mirror flow owns API identity on bridge tables',
         });
         continue; // strip
       }

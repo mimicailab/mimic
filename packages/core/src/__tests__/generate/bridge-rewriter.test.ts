@@ -48,6 +48,27 @@ describe('bridge-rewriter', () => {
     expect(labels).toEqual(['free-tier']);
   });
 
+  it('strips bridge-table archetypes that pre-claim external_id without a platform tag', () => {
+    const input = bp({
+      entityArchetypes: {
+        users: {
+          count: 200,
+          archetypes: [
+            { label: 'starter-rogue', weight: 0.8, fields: { external_id: 'cus_starter_001', plan: 'starter' }, vary: {} },
+            { label: 'free-tier', weight: 0.2, fields: { plan: 'free' }, vary: {} },
+          ],
+        },
+      },
+    });
+
+    const result = rewriteBridgeTables(input, MAPPING);
+
+    expect(result.strippedArchetypes).toHaveLength(1);
+    expect(result.strippedArchetypes[0]?.reason).toContain('explicit external_id');
+    const labels = result.blueprint.data.entityArchetypes!.users!.archetypes.map((a) => a.label);
+    expect(labels).toEqual(['free-tier']);
+  });
+
   it('rewrites bridge-table row_count claims to API surface', () => {
     const input = bp({
       entityArchetypes: { users: { count: 100, archetypes: [] } },

@@ -39,6 +39,10 @@ import { rewriteClaimsForBridges } from './bridge-rewriter.js';
 import { deriveSlots } from './topology.js';
 import { generateAllSlots, type SlotContentResult } from './content-generator.js';
 import type { Claim } from '../types/claim.js';
+import { compileContract } from '../contract/contract-compiler.js';
+import { planCoverage, formatCoverageReport } from '../contract/coverage-planner.js';
+import { lowerContract, formatLoweringResult } from '../contract/lowering.js';
+import type { PersonaContract, CoverageReport } from '../contract/persona-contract.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -649,6 +653,173 @@ export class BlueprintEngine {
     return blueprint;
   }
 
+  // =====================================================================
+  // V4.5 — Contract compiler → coverage planner → lowering → V2/V3 core
+  // =====================================================================
+
+  /**
+   * V4.5 blueprint generation.
+   *
+   * Front-end replacement for the V2 path:
+   *   1. Contract compiler (one narrow LLM call) → PersonaContract with
+   *      richer clauses (count, aggregate, distribution, temporal, anchor,
+   *      cross_surface, reconciliation, narrative).
+   *   2. Coverage planner (deterministic rule table) decides each clause's
+   *      status. Hard clauses with no matching rule fail the run loudly
+   *      BEFORE any expensive generation work happens.
+   *   3. Lowering maps executable_now clauses into the existing Claim and
+   *      Anchor structures the V2/V3 engine already consumes.
+   *   4. The existing V2/V3 generator runs unchanged — bridge rewriter,
+   *      sanitiser, topology, per-slot content, identity contract.
+   *   5. The PersonaContract + CoverageReport + LoweringResult are stashed
+   *      in `data.annotations` so the fidelity validator can run later.
+   *
+   * The middle and back half of the pipeline (audit, repair, expand) stays
+   * identical to V2. Fidelity validation happens in `expandAndAudit` when
+   * `useV45ContractAnnotations` is set on the options — see Layer 6.
+   */
+  async generateV45(
+    schema: SchemaModel,
+    persona: PersonaInput,
+    domain: string,
+    options: GenerateOptions = {},
+    apis?: Record<string, { adapter?: string; config?: Record<string, unknown> }>,
+    promptContexts?: Record<string, PromptContext>,
+    resourceSpecs?: Record<string, AdapterResourceSpecs>,
+    schemaMapping?: SchemaMapping,
+  ): Promise<Blueprint> {
+    const cacheKey = this.computeCacheKey(schema, persona, domain, apis);
+
+    if (!options.force) {
+      const cached = await this.cache.get(cacheKey);
+      if (cached && cached.data.annotations?.v45) {
+        logger.step(
+          `Blueprint (V4.5) for "${persona.name}" loaded from cache (${cacheKey.slice(0, 8)}...)`,
+        );
+        return cached;
+      }
+    }
+
+    logger.step(
+      `Generating blueprint (V4.5) for "${persona.name}" in domain "${domain}"...`,
+    );
+
+    // ── Layer 1: Contract compiler ──────────────────────────────────────
+    const contract = await compileContract(
+      this.llmClient,
+      { name: persona.name, description: persona.description },
+      domain,
+      schema,
+      promptContexts,
+      resourceSpecs,
+      schemaMapping,
+      {
+        temperature: options.temperature,
+        maxRetries: options.maxRetries,
+        currentDate: new Date().toISOString().split('T')[0],
+        volume: options.volume,
+        personaIndex: options.personaIndex,
+        totalPersonas: options.totalPersonas,
+      },
+    );
+
+    // ── Layer 2: Coverage planner ───────────────────────────────────────
+    const coverage = planCoverage(contract.clauses);
+    logger.info(formatCoverageReport(coverage));
+
+    if (coverage.blockers.length > 0) {
+      const lines = coverage.blockers
+        .map((b) => `  - ${b.clauseId} (${b.family}): "${quoteFor(contract, b.clauseId)}" — ${b.explanation}`)
+        .join('\n');
+      throw new BlueprintGenerationError(
+        `V4.5 coverage planner blocked the run: ${coverage.blockers.length} hard clause(s) have no rule in the ${coverage.registryVersion} registry.\n${lines}`,
+        'Either downgrade the offending clause(s) to "soft" in the persona description, ' +
+          'or extend the capability registry in packages/core/src/contract/coverage-planner.ts ' +
+          'with a rule that covers the family/payload shape.',
+      );
+    }
+
+    // ── Layer 3: Lowering ───────────────────────────────────────────────
+    const lowered = lowerContract(contract.clauses, coverage);
+    logger.info(formatLoweringResult(lowered));
+
+    // ── Layer 4: V2/V3 generator (unchanged) ────────────────────────────
+    const { claims: bridgeRewrittenClaims } = rewriteClaimsForBridges(
+      lowered.claims,
+      schemaMapping,
+    );
+    const sanitised = sanitiseClaims(bridgeRewrittenClaims, {
+      schema,
+      resourceSpecs,
+    });
+    const rewrittenClaims = sanitised.claims;
+
+    const slots = deriveSlots({
+      schema,
+      resourceSpecs,
+      schemaMapping,
+      tableClassifications: undefined,
+      claims: rewrittenClaims,
+      volume: options.volume,
+    });
+    logger.step(
+      `Derived ${slots.length} resource slot${slots.length === 1 ? '' : 's'} ` +
+        `(${slots.filter((s) => s.surface === 'db').length} db, ${slots.filter((s) => s.surface === 'api').length} api)`,
+    );
+
+    const slotResults = await generateAllSlots(this.llmClient, slots, {
+      persona: { name: persona.name, description: persona.description },
+      domain,
+      anchors: lowered.anchors,
+      promptContexts,
+      resourceSpecs,
+      schemaMapping,
+      concurrency: options.adapterBatchConcurrency ?? 4,
+      temperature: options.temperature,
+      maxRetries: options.maxRetries,
+      currentDate: new Date().toISOString().split('T')[0],
+      volume: options.volume,
+      personaIndex: options.personaIndex,
+      totalPersonas: options.totalPersonas,
+    });
+
+    // ── Assemble + stash V4.5 contract for the fidelity validator ───────
+    const blueprint = assembleBlueprintFromSlots({
+      persona,
+      personaId: contract.personaId,
+      domain: contract.domain,
+      personaProfile: contract.persona,
+      claims: rewrittenClaims,
+      anchors: lowered.anchors,
+      slotResults,
+      modelId: this.llmClient.getModelId(),
+    });
+
+    blueprint.data.annotations = blueprint.data.annotations ?? {};
+    blueprint.data.annotations.v45 = {
+      contract,
+      coverage,
+      lowering: {
+        clauseIdToClaimIds: lowered.clauseIdToClaimIds,
+        skipped: lowered.skipped,
+      },
+    };
+    blueprint.checksum = computeChecksum(blueprint);
+
+    try {
+      await this.cache.set(cacheKey, blueprint);
+      logger.success(
+        `Blueprint (V4.5) for "${persona.name}" cached (${cacheKey.slice(0, 8)}...)`,
+      );
+    } catch (error) {
+      logger.warn(
+        `Failed to cache blueprint: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    return blueprint;
+  }
+
   // -----------------------------------------------------------------------
   // Schema mapping (DB↔API field correspondence)
   // -----------------------------------------------------------------------
@@ -1159,4 +1330,27 @@ function computeChecksum(blueprint: Blueprint): string {
     data: blueprint.data,
   });
   return createHash('sha256').update(content).digest('hex');
+}
+
+function quoteFor(contract: PersonaContract, clauseId: string): string {
+  return contract.clauses.find((c) => c.id === clauseId)?.quote ?? '(quote unavailable)';
+}
+
+/**
+ * Read the V4.5 annotations stamped onto a blueprint by `generateV45`.
+ * Returns `undefined` if the blueprint was produced by an older path.
+ */
+export function readV45Annotations(blueprint: Blueprint): {
+  contract: PersonaContract;
+  coverage: CoverageReport;
+  lowering: { clauseIdToClaimIds: Record<string, string[]>; skipped: Array<{ clauseId: string; reason: string }> };
+} | undefined {
+  const anno = blueprint.data.annotations?.v45 as
+    | {
+        contract: PersonaContract;
+        coverage: CoverageReport;
+        lowering: { clauseIdToClaimIds: Record<string, string[]>; skipped: Array<{ clauseId: string; reason: string }> };
+      }
+    | undefined;
+  return anno;
 }
