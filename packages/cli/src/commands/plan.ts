@@ -99,7 +99,6 @@ async function runPlan(opts: PlanOptions): Promise<void> {
         schema,
         promptContexts,
         resourceSpecs,
-        undefined,
         {
           currentDate: new Date().toISOString().split('T')[0]!,
           volume: config.generate.volume,

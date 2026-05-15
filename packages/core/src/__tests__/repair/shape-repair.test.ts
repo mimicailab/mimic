@@ -87,6 +87,80 @@ describe('shape-repair — local-only successes', () => {
   });
 });
 
+describe('shape-repair — format_violation', () => {
+  it('re-mints an API id with the adapter\'s declared prefix', async () => {
+    const { registerProjectorHints, __resetProjectorHints } = await import(
+      '../../projection/projector-hints.js'
+    );
+    __resetProjectorHints();
+    registerProjectorHints({
+      adapterId: 'stripe',
+      idPrefixes: { customer: 'cus_' },
+    });
+
+    const state = createWorldState(new SeededRandom(1));
+    state.identities.set('e1', {
+      entityId: 'e1',
+      slots: [{ surface: 'stripe', objectKind: 'customer', deterministicSeed: 'e1' }],
+    });
+    const ds: MaterialisedDataset = {
+      tables: {},
+      apiResponses: {
+        stripe: {
+          adapterId: 'stripe',
+          responses: {
+            customer: [
+              { statusCode: 200, headers: {}, body: { id: 'wrong_abc123' }, personaId: 'v5' },
+            ],
+          },
+        },
+      },
+    };
+    const first = validateShape(ds, undefined, state);
+    const fail = first.failures.find((f) => f.kind === 'format_violation');
+    expect(fail).toBeDefined();
+
+    const { repaired, appliedOps } = repairShape(ds, first.failures);
+    expect(appliedOps.some((op) => op.startsWith('format_violation:'))).toBe(true);
+    const newId = (repaired.apiResponses.stripe!.responses.customer![0]!.body as { id: string }).id;
+    expect(newId.startsWith('cus_p1_')).toBe(true);
+    expect(validateShape(repaired, undefined, state).classification).toBe('clean');
+    __resetProjectorHints();
+  });
+
+  it('threads personaIndex into the re-minted id (p2 for persona 2)', async () => {
+    const { registerProjectorHints, __resetProjectorHints } = await import(
+      '../../projection/projector-hints.js'
+    );
+    __resetProjectorHints();
+    registerProjectorHints({ adapterId: 'stripe', idPrefixes: { customer: 'cus_' } });
+
+    const state = createWorldState(new SeededRandom(1), 2);
+    state.identities.set('e1', {
+      entityId: 'e1',
+      slots: [{ surface: 'stripe', objectKind: 'customer', deterministicSeed: 'e1' }],
+    });
+    const ds: MaterialisedDataset = {
+      tables: {},
+      apiResponses: {
+        stripe: {
+          adapterId: 'stripe',
+          responses: {
+            customer: [
+              { statusCode: 200, headers: {}, body: { id: 'bad_xyz' }, personaId: 'v5' },
+            ],
+          },
+        },
+      },
+    };
+    const first = validateShape(ds, undefined, state);
+    const { repaired } = repairShape(ds, first.failures, undefined, state.personaIndex);
+    const newId = (repaired.apiResponses.stripe!.responses.customer![0]!.body as { id: string }).id;
+    expect(newId.startsWith('cus_p2_')).toBe(true);
+    __resetProjectorHints();
+  });
+});
+
 describe('shape-repair — refuses owner-level failures', () => {
   it('throws IllegalRepairError when handed an owner-level failure', () => {
     const ds: MaterialisedDataset = { tables: {}, apiResponses: {} };

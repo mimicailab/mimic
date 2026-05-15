@@ -24,6 +24,7 @@ import type { SchemaModel } from '../types/schema.js';
 import type { MaterialisedDataset } from '../projection/types.js';
 import type { ShapeFailure } from '../validation/shape-validator.js';
 import { getPersonaIdPrefix } from '../projection/identity-prefix.js';
+import { getProjectorHints } from '../projection/projector-hints.js';
 
 // ---------------------------------------------------------------------------
 // Illegal-op surface (planters of semantic intent — these throw)
@@ -71,6 +72,7 @@ export function repairShape(
   materialised: MaterialisedDataset,
   failures: ShapeFailure[],
   schema?: SchemaModel,
+  personaIndex = 1,
 ): ShapeRepairResult {
   // Deep-clone the dataset so projector output stays immutable. This is
   // cheap enough at the scales V5 personas produce (tens of thousands of
@@ -115,7 +117,7 @@ export function repairShape(
         if (failure.surface === 'db') {
           const row = next.tables[failure.target]?.[failure.index];
           if (row) {
-            row.id = mintId('row', `${failure.target}-${failure.index}`);
+            row.id = mintId('row', `${failure.target}-${failure.index}`, personaIndex);
             appliedOps.push(`missing_id:db:${failure.target}[${failure.index}]`);
           }
         } else {
@@ -125,9 +127,13 @@ export function repairShape(
           if (resp && typeof resp.body === 'object' && resp.body !== null) {
             const adapter = failure.target.split('.')[0]!;
             const resource = failure.target.split('.')[1] ?? 'r';
-            (resp.body as Record<string, unknown>).id = mintId(
-              resource.slice(0, 3),
+            const hints = getProjectorHints(adapter);
+            const prefix =
+              hints.idPrefixes?.[resource] ?? hints.idPrefix ?? `${resource.slice(0, 3).toLowerCase()}_`;
+            (resp.body as Record<string, unknown>).id = mintApiPrefixedId(
+              prefix,
               `${adapter}-${resource}-${failure.index}`,
+              personaIndex,
             );
             appliedOps.push(`missing_id:api:${failure.target}[${failure.index}]`);
           }
@@ -152,22 +158,32 @@ export function repairShape(
         break;
       }
 
-      case 'format_violation':
-      case 'casing_violation':
-        // Placeholder: only triggers when the validator emits these
-        // kinds, which the Phase 9 validator currently doesn't (the
-        // canonical entity attrs land verbatim). Phase 13 can extend
-        // both ends once we know what formats the validator should
-        // enforce.
-        appliedOps.push(`${failure.kind}:noop`);
+      case 'format_violation': {
+        // Today only fires on API id-prefix mismatches — re-mint the id
+        // using the adapter's declared prefix. The deterministic suffix
+        // is recovered from the observed id (strip any incorrect prefix
+        // we can identify) so existing references keep working after
+        // repair when possible.
+        const [adapter, resource] = failure.target.split('.');
+        const resp = adapter && resource
+          ? next.apiResponses[adapter]?.responses[resource]?.[failure.rowIndex]
+          : undefined;
+        if (resp && typeof resp.body === 'object' && resp.body !== null) {
+          const body = resp.body as Record<string, unknown>;
+          const tail = String(body[failure.field] ?? '')
+            .replace(/^[a-z]+_p\d+_/i, '')
+            .replace(/[^a-z0-9]/gi, '')
+            .slice(-10)
+            .toLowerCase();
+          body[failure.field] = mintApiPrefixedId(
+            failure.expectedPrefix,
+            tail || `${adapter}-${resource}-${failure.rowIndex}`,
+            personaIndex,
+          );
+          appliedOps.push(`format_violation:${failure.target}.${failure.field}[${failure.rowIndex}]`);
+        }
         break;
-
-      case 'fk_unresolved':
-        // Placeholder: Phase 9 doesn't emit fk_unresolved yet. When it
-        // does (Phase 13 sweep), this op walks the identity table for a
-        // matching external_id and writes the FK column.
-        appliedOps.push(`fk_unresolved:noop`);
-        break;
+      }
     }
   }
 
@@ -178,9 +194,14 @@ export function repairShape(
 // Helpers
 // ---------------------------------------------------------------------------
 
-function mintId(prefix: string, seed: string): string {
+function mintId(prefix: string, seed: string, personaIndex: number): string {
   const tail = seed.replace(/[^a-z0-9]/gi, '').slice(-10).toLowerCase();
-  return `${getPersonaIdPrefix(`${prefix}_`, 1)}${tail}`;
+  return `${getPersonaIdPrefix(`${prefix}_`, personaIndex)}${tail}`;
+}
+
+function mintApiPrefixedId(prefix: string, seed: string, personaIndex: number): string {
+  const tail = seed.replace(/[^a-z0-9]/gi, '').slice(-10).toLowerCase();
+  return `${getPersonaIdPrefix(prefix, personaIndex)}${tail}`;
 }
 
 function defaultForColumn(type: string | undefined): unknown {

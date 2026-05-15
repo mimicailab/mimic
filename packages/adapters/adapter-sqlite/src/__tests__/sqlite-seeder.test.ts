@@ -149,7 +149,7 @@ function makeSchema(): SchemaModel {
 function makeExpandedData(personaId: string): ExpandedData {
   return {
     personaId,
-    blueprint: {} as ExpandedData['blueprint'],
+    persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
     tables: {
       users: [
         { id: 1, name: 'Alice', email: 'alice@test.com' },
@@ -174,7 +174,7 @@ function makeContext(schema?: SchemaModel): AdapterContext {
       domain: 'test',
       personas: [{ name: 'test', description: 'test' }],
     } as MimicConfig,
-    blueprints: new Map(),
+    
     logger: {},
     schema,
   };
@@ -312,7 +312,7 @@ describe('SQLiteSeeder', () => {
 
       const data: ExpandedData = {
         personaId: 'test',
-        blueprint: {} as ExpandedData['blueprint'],
+        persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
         tables: {
           events: [{ id: 1, created_at: new Date('2024-01-01T00:00:00Z') }],
         },
@@ -348,7 +348,7 @@ describe('SQLiteSeeder', () => {
 
       const data: ExpandedData = {
         personaId: 'test',
-        blueprint: {} as ExpandedData['blueprint'],
+        persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
         tables: {
           flags: [{ id: 1, active: true }, { id: 2, active: false }],
         },
@@ -384,7 +384,7 @@ describe('SQLiteSeeder', () => {
 
       const data: ExpandedData = {
         personaId: 'test',
-        blueprint: {} as ExpandedData['blueprint'],
+        persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
         tables: {
           metadata: [{ id: 1, data: { key: 'value', nested: [1, 2, 3] } }],
         },

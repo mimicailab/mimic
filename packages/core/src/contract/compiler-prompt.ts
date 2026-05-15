@@ -14,7 +14,6 @@ import type {
   AdapterResourceSpecs,
   ResourceSpec,
 } from '../types/index.js';
-import type { SchemaMapping } from '../types/blueprint.js';
 
 void ({} as PromptContext);
 
@@ -26,8 +25,6 @@ export interface BuildCompilerUserPromptOptions {
   adapterResources?: Record<string, string[]>;
   /** Full ResourceSpecs for field-grounded extraction. */
   resourceSpecs?: Record<string, AdapterResourceSpecs>;
-  /** Schema mapping — drives the BRIDGE TABLES block */
-  schemaMapping?: SchemaMapping;
   /** Current date (ISO YYYY-MM-DD) */
   currentDate?: string;
   /** Volume string from config (e.g. "6 months") */
@@ -50,7 +47,6 @@ export function buildCompilerUserPrompt(options: BuildCompilerUserPromptOptions)
     domain,
     adapterResources,
     resourceSpecs,
-    schemaMapping,
     currentDate,
     volume,
     personaIndex,
@@ -69,7 +65,6 @@ export function buildCompilerUserPrompt(options: BuildCompilerUserPromptOptions)
       : adapterResources && Object.keys(adapterResources).length > 0
         ? formatAdapterSummary(adapterResources)
         : '';
-  const bridgeBlock = schemaMapping ? formatBridgeBlock(schemaMapping) : '';
 
   const dateRange = startDate
     ? `Date range: ${startDate} → ${today} (every date you produce MUST fall within this range — resolve relative dates against ${today})`
@@ -89,7 +84,6 @@ export function buildCompilerUserPrompt(options: BuildCompilerUserPromptOptions)
     ...(personaHint ? ['', personaHint] : []),
     ...(tableSummary ? ['', tableSummary] : []),
     ...(adapterSummary ? ['', adapterSummary] : []),
-    ...(bridgeBlock ? ['', bridgeBlock] : []),
     '',
     'Compile the persona contract. Emit one clause per requirement the persona states. Carry the exact source quote on every clause. Return ONLY the JSON object.',
   ].join('\n');
@@ -190,36 +184,3 @@ function listResourceFilterableFields(spec: ResourceSpec): string[] {
   return out;
 }
 
-function formatBridgeBlock(schemaMapping: SchemaMapping): string {
-  const bridgeTables = schemaMapping.bridgeTables;
-  if (!bridgeTables || bridgeTables.length === 0) return '';
-
-  // Group api targets per bridge table
-  const targetsByTable = new Map<string, Set<string>>();
-  for (const m of schemaMapping.mappings) {
-    if (!bridgeTables.includes(m.dbTable)) continue;
-    if (m.apiField !== 'id') continue;
-    if (!m.adapterId || !m.apiResource) continue;
-    const set = targetsByTable.get(m.dbTable) ?? new Set();
-    set.add(`${m.adapterId}.${m.apiResource}`);
-    targetsByTable.set(m.dbTable, set);
-  }
-
-  const lines: string[] = [
-    '--- BRIDGE TABLES (DB tables produced by the API → DB mirror) ---',
-    'For these tables, prefer api.<adapter>.<resource> targets when the persona',
-    'pins a specific platform. Clauses without a platform filter (e.g. plan/status',
-    'only) stay on the DB surface.',
-    '',
-  ];
-  for (const t of bridgeTables) {
-    const targets = targetsByTable.get(t);
-    if (targets && targets.size > 0) {
-      lines.push(`  - ${t}  →  ${[...targets].sort().join(', ')}`);
-    } else {
-      lines.push(`  - ${t}`);
-    }
-  }
-  lines.push('--- END BRIDGE TABLES ---');
-  return lines.join('\n');
-}

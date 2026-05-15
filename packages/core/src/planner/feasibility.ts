@@ -18,6 +18,7 @@ import type {
   ReconciliationClause,
   TemporalClause,
 } from '../contract/clause-types.js';
+import { maxResolvedTolerance, resolveNumericTolerance } from '../utils/tolerance.js';
 
 export type FeasibilityRuleId =
   | 'sum_identity'
@@ -82,7 +83,7 @@ function checkSumIdentity(clauses: Clause[]): FeasibilityFailure[] {
     if (c.family !== 'reconciliation') continue;
     const recon = c as ReconciliationClause;
     const bucketSum = recon.buckets.reduce((s, b) => s + b.value, 0);
-    const tolerance = recon.tolerance ?? 0;
+    const tolerance = resolveNumericTolerance(recon.headline, recon.tolerance);
     if (Math.abs(bucketSum - recon.headline) > tolerance) {
       failures.push({
         ruleId: 'sum_identity',
@@ -122,7 +123,12 @@ function checkPopulationCoherence(clauses: Clause[]): FeasibilityFailure[] {
       for (let j = i + 1; j < group.length; j++) {
         const a = group[i]!;
         const b = group[j]!;
-        const tol = Math.max(a.clause.tolerance ?? 0, b.clause.tolerance ?? 0);
+        const tol = maxResolvedTolerance(
+          a.expected,
+          a.clause.tolerance,
+          b.expected,
+          b.clause.tolerance,
+        );
         if (Math.abs(a.expected - b.expected) > tol) {
           failures.push({
             ruleId: 'population_coherence',
@@ -171,7 +177,7 @@ function checkWindowCoherence(clauses: Clause[]): FeasibilityFailure[] {
       for (let j = i + 1; j < group.length; j++) {
         const a = group[i]!;
         const b = group[j]!;
-        const tol = Math.max(a.tolerance, b.tolerance);
+        const tol = maxResolvedTolerance(a.expected, a.tolerance, b.expected, b.tolerance);
         if (Math.abs(a.expected - b.expected) > tol) {
           failures.push({
             ruleId: 'window_coherence',

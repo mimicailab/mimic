@@ -6,15 +6,15 @@
  */
 
 import type { TemporalClause } from '../../contract/clause-types.js';
-import type { Anchor } from '../../types/blueprint.js';
+import type { Anchor } from '../../contract/persona-contract.js';
 
 export interface TemporalGapCheckResult {
   passed: boolean;
   expectedDays: number;
   actualDays: number | null;
   tolerance: number;
-  anchorA: { id: string; date: string | null };
-  anchorB: { id: string; date: string | null };
+  anchorA: { id: string; field: string | null; date: string | null };
+  anchorB: { id: string; field: string | null; date: string | null };
   reason?: string;
 }
 
@@ -25,8 +25,10 @@ export function checkTemporalGap(
   const tolerance = clause.tolerance ?? 0;
   const a = anchors.find((x) => x.id === clause.anchorA);
   const b = anchors.find((x) => x.id === clause.anchorB);
-  const dateA = a?.dates.event ?? null;
-  const dateB = b?.dates.event ?? null;
+  const resolvedA = resolveAnchorDate(a, 'start', clause.anchorA === clause.anchorB);
+  const resolvedB = resolveAnchorDate(b, 'end', clause.anchorA === clause.anchorB);
+  const dateA = resolvedA.date;
+  const dateB = resolvedB.date;
 
   if (!dateA || !dateB) {
     return {
@@ -34,9 +36,9 @@ export function checkTemporalGap(
       expectedDays: clause.days,
       actualDays: null,
       tolerance,
-      anchorA: { id: clause.anchorA, date: dateA },
-      anchorB: { id: clause.anchorB, date: dateB },
-      reason: `Missing anchor event date — anchorA=${dateA ?? 'unbound'}, anchorB=${dateB ?? 'unbound'}.`,
+      anchorA: { id: clause.anchorA, field: resolvedA.field, date: dateA },
+      anchorB: { id: clause.anchorB, field: resolvedB.field, date: dateB },
+      reason: `Missing anchor date — anchorA=${dateA ?? 'unbound'}, anchorB=${dateB ?? 'unbound'}.`,
     };
   }
 
@@ -48,8 +50,8 @@ export function checkTemporalGap(
       expectedDays: clause.days,
       actualDays: null,
       tolerance,
-      anchorA: { id: clause.anchorA, date: dateA },
-      anchorB: { id: clause.anchorB, date: dateB },
+      anchorA: { id: clause.anchorA, field: resolvedA.field, date: dateA },
+      anchorB: { id: clause.anchorB, field: resolvedB.field, date: dateB },
       reason: `Anchor event date is not parseable as ISO date.`,
     };
   }
@@ -62,10 +64,32 @@ export function checkTemporalGap(
     expectedDays: clause.days,
     actualDays,
     tolerance,
-    anchorA: { id: clause.anchorA, date: dateA },
-    anchorB: { id: clause.anchorB, date: dateB },
+    anchorA: { id: clause.anchorA, field: resolvedA.field, date: dateA },
+    anchorB: { id: clause.anchorB, field: resolvedB.field, date: dateB },
     reason: passed
       ? undefined
       : `Anchor gap ${actualDays}d does not match expected ${clause.days}d (tolerance ${tolerance}).`,
   };
+}
+
+function resolveAnchorDate(
+  anchor: Anchor | undefined,
+  side: 'start' | 'end',
+  sameAnchorPair: boolean,
+): { field: string | null; date: string | null } {
+  if (!anchor) return { field: null, date: null };
+  if (anchor.dates.event) return { field: 'event', date: anchor.dates.event };
+
+  const datedEntries = Object.entries(anchor.dates)
+    .map(([field, date]) => ({ field, date, ts: new Date(date).getTime() }))
+    .filter((entry) => Number.isFinite(entry.ts))
+    .sort((left, right) => left.ts - right.ts);
+
+  if (datedEntries.length === 0) return { field: null, date: null };
+  if (sameAnchorPair && datedEntries.length > 1) {
+    const chosen = side === 'start' ? datedEntries[0]! : datedEntries[datedEntries.length - 1]!;
+    return { field: chosen.field, date: chosen.date };
+  }
+
+  return { field: datedEntries[0]!.field, date: datedEntries[0]!.date };
 }

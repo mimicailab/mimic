@@ -38,7 +38,7 @@ export function projectDb(
       if (!slot) continue;
 
       const row: Row = {};
-      const id = mintDbId(slot.deterministicSeed);
+      const id = mintDbId(slot.deterministicSeed, state.personaIndex);
       row.id = id;
       // Canonical entity attrs become row columns when names line up
       // with the schema. Unknown columns are dropped — projectors never
@@ -62,10 +62,10 @@ export function projectDb(
   return rows;
 }
 
-function mintDbId(seed: string): string {
+function mintDbId(seed: string, personaIndex: number): string {
   // Deterministic, adapter-agnostic — no provider-shaped prefix here.
   // The seed already encodes (entityId, surface, objectKind); we hash to
   // a short stable token for readability.
   const trimmed = seed.replace(/[^a-z0-9]/gi, '').slice(-12).toLowerCase();
-  return `${getPersonaIdPrefix('row_', 1)}${trimmed}`;
+  return `${getPersonaIdPrefix('row_', personaIndex)}${trimmed}`;
 }

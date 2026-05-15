@@ -178,9 +178,9 @@ async function cleanDatabase(
       const url = dbConfig.url as string;
       const seeder = new MySQLSeeder();
       try {
-        await seeder.init({ url }, { config, blueprints: new Map(), logger });
+        await seeder.init({ url }, { config, logger });
         const schema = await seeder.introspect({ url });
-        await seeder.clean({ config, blueprints: new Map(), logger, schema });
+        await seeder.clean({ config, logger, schema });
         logger.success(`Truncated MySQL tables in "${dbName}"`);
       } finally {
         await seeder.dispose();
@@ -193,10 +193,10 @@ async function cleanDatabase(
       try {
         await seeder.init(
           { path, walMode: dbConfig.walMode as boolean | undefined },
-          { config, blueprints: new Map(), logger },
+          { config, logger },
         );
         const schema = await seeder.introspect({ path });
-        await seeder.clean({ config, blueprints: new Map(), logger, schema });
+        await seeder.clean({ config, logger, schema });
         logger.success(`Cleaned SQLite tables in "${dbName}"`);
       } finally {
         await seeder.dispose();
@@ -213,9 +213,9 @@ async function cleanDatabase(
             database: dbConfig.database as string | undefined,
             collections: dbConfig.collections as string[] | undefined,
           },
-          { config, blueprints: new Map(), logger },
+          { config, logger },
         );
-        await seeder.clean({ config, blueprints: new Map(), logger });
+        await seeder.clean({ config, logger });
         logger.success(`Cleaned MongoDB collections in "${dbName}"`);
       } finally {
         await seeder.dispose();

@@ -2,7 +2,6 @@ import type { ZodSchema } from 'zod';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { SchemaModel } from './schema.js';
-import type { Blueprint } from './blueprint.js';
 import type { ExpandedData } from './dataset.js';
 import type { MimicConfig } from './config.js';
 import type { StateStore } from '../mock/state-store.js';
@@ -84,7 +83,6 @@ export interface EventEmitterAdapter<TConfig = unknown> extends Adapter<TConfig>
 export interface AdapterContext {
   config: MimicConfig;
   schema?: SchemaModel;
-  blueprints: Map<string, Blueprint>;
   logger: unknown;
   llmClient?: unknown;
 }

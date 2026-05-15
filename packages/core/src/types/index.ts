@@ -12,25 +12,6 @@ export type {
 } from './schema.js';
 
 export type {
-  Anchor,
-  Blueprint,
-  PersonaProfile,
-  PersonaData,
-  EntityData,
-  DataPattern,
-  RandomSpec,
-  FrequencySpec,
-  FieldVariation,
-  EntityArchetype,
-  EntityArchetypeConfig,
-  SchemaMapping,
-  SchemaMappingEntry,
-  TableRole,
-  MirrorSource,
-  TableClassification,
-} from './blueprint.js';
-
-export type {
   Adapter,
   AdapterType,
   DatabaseAdapter,

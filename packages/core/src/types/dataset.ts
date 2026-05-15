@@ -1,10 +1,20 @@
-import type { Blueprint } from './blueprint.js';
 import type { Fact } from './fact-manifest.js';
+import type { PersonaProfile } from '../contract/persona-contract.js';
 
-/** The expanded dataset — ready to seed/serve */
+/**
+ * Expanded dataset emitted by the V5 pipeline and read by the seed / host /
+ * test commands. Mirrors the world-state projection's `MaterialisedDataset`
+ * plus a thin persona carrier (`personaId` + `persona`) and the empty-slot
+ * fields (`documents`, `files`, `events`, `facts`) the older downstream
+ * features still expect to exist on disk.
+ *
+ * V4.5 note: the previous `blueprint: Blueprint` field was deleted in the
+ * V5 cleanup. Downstream code that needs the persona profile reads
+ * `expanded.persona` directly.
+ */
 export interface ExpandedData {
   personaId: string;
-  blueprint: Blueprint;
+  persona: PersonaProfile;
   tables: Record<string, Row[]>;
   documents: Record<string, DocumentRecord[]>;
   apiResponses: Record<string, ApiResponseSet>;

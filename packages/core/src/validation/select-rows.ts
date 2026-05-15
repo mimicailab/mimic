@@ -57,8 +57,14 @@ function matchesPredicate(value: unknown, predicate: unknown): boolean {
     return value.some((item) => matchesPredicate(item, predicate));
   }
 
+  // A bare-null predicate means "explicitly null" — see the matching
+  // note in population-planner.ts::matchesPredicate. Use the `is_null`
+  // op to catch missing/empty values as well.
+  if (predicate === null) {
+    return value === null;
+  }
   // Bare value → equality
-  if (predicate === null || typeof predicate !== 'object' || Array.isArray(predicate)) {
+  if (typeof predicate !== 'object' || Array.isArray(predicate)) {
     return valueEquals(value, predicate);
   }
   const op = predicate as FilterOp;

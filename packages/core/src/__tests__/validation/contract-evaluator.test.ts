@@ -19,9 +19,11 @@ import {
 } from '../../projection/index.js';
 import { evaluateContract } from '../../validation/contract-evaluator.js';
 import type {
+  AggregateClause,
   AnchorClause,
   Clause,
   CountClause,
+  CrossSurfaceClause,
   ReconciliationClause,
   TemporalClause,
 } from '../../contract/clause-types.js';
@@ -118,6 +120,87 @@ describe('contract evaluator — happy path round-trips', () => {
     };
     const { evaluation } = pipeline([count, anchor]);
     expect(evaluation.failures.find((f) => f.clauseId === 'klein')).toBeUndefined();
+  });
+
+  it('cross-surface clause treats absent bindings as semantic missing, not row-match failure', () => {
+    const users: CountClause = {
+      id: 'users',
+      quote: '3 active users in the database',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { status: 'active' } },
+      expected: 3,
+    };
+    const drift: CrossSurfaceClause = {
+      id: 'orphans',
+      quote: 'some users have ids in db but no stripe customer record',
+      family: 'cross_surface',
+      strength: 'hard',
+      entity: 'users',
+      surfaceA: { surface: 'db', name: 'users', filter: { status: 'active' } },
+      surfaceB: { surface: 'api', name: 'stripe.customer' },
+      field: 'external_id',
+      valueA: 'present',
+      valueB: 'missing',
+    };
+
+    const { evaluation } = pipeline([users, drift]);
+    expect(evaluation.failures.find((f) => f.clauseId === 'orphans')).toBeUndefined();
+  });
+
+  it('relative_gap uses named anchor dates when event is absent', () => {
+    const count: CountClause = {
+      id: 'pop',
+      quote: '1 stripe customer',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'api', name: 'stripe.customer' },
+      expected: 1,
+    };
+    const anchor: AnchorClause = {
+      id: 'settlement-anchor',
+      quote: 'bank settlement pending for Klein Records',
+      family: 'anchor',
+      strength: 'hard',
+      anchorId: 'gocardless-settlement',
+      customer: 'Klein Records',
+      dates: {
+        collected_at: '2026-05-12',
+        settles_at: '2026-05-14',
+      },
+    };
+    const gap: TemporalClause = {
+      id: 'settlement-gap',
+      quote: 'settles two days after collection',
+      family: 'temporal',
+      kind: 'relative_gap',
+      strength: 'hard',
+      anchorA: 'gocardless-settlement',
+      anchorB: 'gocardless-settlement',
+      days: 2,
+    };
+
+    const { evaluation } = pipeline([count, anchor, gap]);
+    expect(evaluation.failures.find((f) => f.clauseId === 'settlement-gap')).toBeUndefined();
+  });
+
+  it('aggregate-only raw target: planner materialises one matching row and evaluator passes', () => {
+    const price: AggregateClause = {
+      id: 'starter-price',
+      quote: 'starter (£29/mo)',
+      family: 'aggregate',
+      op: 'sum',
+      strength: 'hard',
+      target: {
+        surface: 'api',
+        name: 'stripe.price',
+        filter: { nickname: 'starter-monthly' },
+      },
+      field: 'unit_amount',
+      expected: 2900,
+    };
+    const { evaluation } = pipeline([price]);
+    expect(evaluation.failures.find((f) => f.clauseId === 'starter-price')).toBeUndefined();
   });
 
   it('reconciliation clause: ledger balanced ⇒ evaluator passes', () => {

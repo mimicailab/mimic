@@ -415,7 +415,7 @@ describe('RecurlyAdapter', () => {
   it('should serve pre-seeded data', async () => {
     const seedData = new Map([['persona-1', {
       personaId: 'persona-1',
-      blueprint: {} as any,
+      persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
       tables: {},
       documents: {},
       apiResponses: {

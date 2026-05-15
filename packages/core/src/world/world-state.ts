@@ -15,7 +15,7 @@
  * throws. Same-key, same-content writes are idempotent.
  */
 
-import type { PopulationId } from '../contract/clause-types.js';
+import type { OwnerId, PopulationId } from '../contract/clause-types.js';
 import type { SeededRandom } from './prng.js';
 import type {
   AnchorBinding,
@@ -35,6 +35,13 @@ export interface WorldState {
   budgets: Map<BudgetId, BudgetLedger>;
   /** Seeded, threaded through every planner. */
   prng: SeededRandom;
+  /**
+   * Persona index for this run. Used by the projectors and the shape repair
+   * to namespace minted IDs (e.g. `cus_p2_…` for the second persona in a
+   * batch) so two personas in the same workspace cannot collide on IDs.
+   * Defaults to 1; the pipeline driver sets it from its `RunPipelineContext`.
+   */
+  personaIndex: number;
 }
 
 /**
@@ -77,9 +84,10 @@ export class WorldStateConflictError extends Error {
 
 /**
  * Build an empty WorldState. The PRNG must be supplied by the
- * orchestrator — Phase 6 owns when/how to seed.
+ * orchestrator — Phase 6 owns when/how to seed. `personaIndex` defaults to
+ * 1 so existing callers (and tests) need no change.
  */
-export function createWorldState(prng: SeededRandom): WorldState {
+export function createWorldState(prng: SeededRandom, personaIndex = 1): WorldState {
   return {
     populations: new Map(),
     lifecycleEvents: [],
@@ -87,7 +95,47 @@ export function createWorldState(prng: SeededRandom): WorldState {
     identities: new Map(),
     budgets: new Map(),
     prng,
+    personaIndex,
   };
+}
+
+/**
+ * Prepare a world state for Phase 10 regeneration. The triggering owner and
+ * every downstream owner slice are cleared so replay rebuilds that suffix of
+ * the world instead of appending duplicate entities/events onto stale state.
+ */
+export function resetWorldStateFromOwner(state: WorldState, ownerId: OwnerId): WorldState {
+  const next = cloneWorldState(state);
+
+  switch (ownerId) {
+    case 'population':
+      next.populations = new Map();
+      next.identities = new Map();
+      next.lifecycleEvents = [];
+      next.anchors = new Map();
+      next.budgets = new Map();
+      break;
+    case 'identity':
+      next.identities = new Map();
+      next.lifecycleEvents = [];
+      next.anchors = new Map();
+      next.budgets = new Map();
+      break;
+    case 'lifecycle':
+      next.lifecycleEvents = [];
+      next.anchors = new Map();
+      next.budgets = new Map();
+      break;
+    case 'anchor':
+      next.anchors = new Map();
+      next.budgets = new Map();
+      break;
+    case 'reconciliation':
+      next.budgets = new Map();
+      break;
+  }
+
+  return next;
 }
 
 /**
@@ -105,14 +153,7 @@ export function createWorldState(prng: SeededRandom): WorldState {
  *     overwrites; throws `WorldStateConflictError` on a disagreement.
  */
 export function mergeDelta(state: WorldState, delta: WorldStateDelta): WorldState {
-  const next: WorldState = {
-    populations: new Map(state.populations),
-    lifecycleEvents: [...state.lifecycleEvents],
-    anchors: new Map(state.anchors),
-    identities: new Map(state.identities),
-    budgets: new Map(state.budgets),
-    prng: state.prng,
-  };
+  const next = cloneWorldState(state);
 
   if (delta.populations) {
     for (const block of delta.populations) {
@@ -151,6 +192,18 @@ export function mergeDelta(state: WorldState, delta: WorldStateDelta): WorldStat
     }
   }
   return next;
+}
+
+function cloneWorldState(state: WorldState): WorldState {
+  return {
+    populations: new Map(state.populations),
+    lifecycleEvents: [...state.lifecycleEvents],
+    anchors: new Map(state.anchors),
+    identities: new Map(state.identities),
+    budgets: new Map(state.budgets),
+    prng: state.prng,
+    personaIndex: state.personaIndex,
+  };
 }
 
 // ---------------------------------------------------------------------------

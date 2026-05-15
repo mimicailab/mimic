@@ -38,6 +38,7 @@ import type { MaterialisedDataset } from '../projection/types.js';
 import { selectRows, readRowField, toNumber, firstScalar } from './select-rows.js';
 import { checkReconciliation } from './helper-checkers/reconciliation.js';
 import { checkTemporalGap } from './helper-checkers/temporal-consistency.js';
+import { resolveNumericTolerance } from '../utils/tolerance.js';
 import { checkCrossSurfaceDrift } from './helper-checkers/cross-surface-drift.js';
 import { checkSemanticDistribution } from './helper-checkers/semantic-distribution.js';
 import { resolveSemanticTarget } from '../contract/semantic-capabilities.js';
@@ -138,7 +139,7 @@ function evaluateClause(
     case 'anchor':
       return evalAnchor(clause, worldState, ownerFor(clause, graph));
     case 'cross_surface':
-      return evalCrossSurface(clause, expanded, ownerFor(clause, graph));
+      return evalCrossSurface(clause, expanded, worldState, ownerFor(clause, graph));
     case 'reconciliation':
       return evalReconciliation(clause, expanded, ownerFor(clause, graph));
     case 'narrative':
@@ -166,7 +167,7 @@ function evalCount(
   }
   const rows = selectRows(target, expanded);
   const actual = rows.length;
-  const tol = clause.tolerance ?? 0;
+  const tol = resolveNumericTolerance(clause.expected, clause.tolerance);
   const predicate = `count(${describeTarget(target)}) = ${clause.expected}${tol ? ` (±${tol})` : ''}`;
   if (Math.abs(actual - clause.expected) <= tol) return pass(clause, predicate);
   return fail(clause, `expected ${clause.expected}, got ${actual}`, actual, 'planner', ownerId, predicate);
@@ -184,7 +185,7 @@ function evalAggregate(
   const rows = selectRows(target, expanded);
   const sum = rows.reduce((s, r) => s + toNumber(readRowField(r, clause.field)), 0);
   const value = clause.op === 'avg' ? (rows.length === 0 ? 0 : sum / rows.length) : sum;
-  const tol = clause.tolerance ?? 0;
+  const tol = resolveNumericTolerance(clause.expected, clause.tolerance);
   const predicate = `${clause.op}(${describeTarget(target)}.${clause.field}) = ${clause.expected}${tol ? ` (±${tol})` : ''}`;
   if (Math.abs(value - clause.expected) <= tol) return pass(clause, predicate);
   return fail(
@@ -271,7 +272,7 @@ function evalTemporal(
         );
       }).length;
     }
-    const tol = clause.tolerance ?? 0;
+    const tol = resolveNumericTolerance(clause.expected, clause.tolerance);
     const predicate = `count(${target ? describeTarget(target) : 'lifecycle'} where ${clause.field} ∈ [${clause.min}, ${clause.max}]) = ${clause.expected}${tol ? ` (±${tol})` : ''}`;
     return Math.abs(count - clause.expected) <= tol
       ? pass(clause, predicate)
@@ -311,10 +312,11 @@ function evalAnchor(
 
 function evalCrossSurface(
   clause: CrossSurfaceClause,
-  expanded: ExpandedData,
+  _expanded: ExpandedData,
+  worldState: WorldState,
   ownerId: OwnerId | undefined,
 ): ContractEvaluation {
-  const r = checkCrossSurfaceDrift(clause, expanded);
+  const r = checkCrossSurfaceDrift(clause, worldState);
   const predicate = `cross_surface(${clause.entity}.${clause.field}) drifts as expected`;
   return r.passed
     ? pass(clause, predicate)

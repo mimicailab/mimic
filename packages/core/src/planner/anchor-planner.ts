@@ -65,10 +65,11 @@ function resolveAnchorEntity(clause: AnchorClause, state: WorldState): string | 
   // 1. If the customer descriptor names a known entity attr (e.g. attrs.name
   //    === "Klein Records"), prefer that.
   if (clause.customer) {
+    const target = normaliseText(clause.customer);
     for (const [, entities] of state.populations) {
       for (const e of entities) {
-        const name = (e.attrs.name ?? e.attrs.company ?? '') as string;
-        if (typeof name === 'string' && name === clause.customer) return e.id;
+        const candidates = [e.attrs.name, e.attrs.company, e.attrs.customer_reference];
+        if (candidates.some((value) => normaliseText(value) === target)) return e.id;
       }
     }
   }
@@ -78,4 +79,10 @@ function resolveAnchorEntity(clause: AnchorClause, state: WorldState): string | 
     if (entities.length > 0) return entities[0]!.id;
   }
   return null;
+}
+
+function normaliseText(value: unknown): string {
+  return typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/\s+/g, ' ')
+    : '';
 }

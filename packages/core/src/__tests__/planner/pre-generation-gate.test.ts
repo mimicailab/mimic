@@ -107,6 +107,26 @@ describe('pre-generation gate', () => {
     expect(result.report.contradictions[0]?.clauseIds).toContain('mrr-drop');
   });
 
+  it('treats fractional reconciliation tolerance as a relative percentage', () => {
+    const clause: ReconciliationClause = {
+      id: 'total-mrr',
+      quote: 'approximately £127k MRR across 8 billing platforms',
+      family: 'reconciliation',
+      strength: 'hard',
+      metric: 'total_mrr',
+      headline: 12_700_000,
+      tolerance: 0.05,
+      buckets: [
+        { name: 'stripe', value: 7_700_000, target: { surface: 'api', name: 'stripe.subscription' }, field: 'mrr', op: 'sum' },
+        { name: 'paddle', value: 2_800_000, target: { surface: 'api', name: 'paddle.subscription' }, field: 'mrr', op: 'sum' },
+        { name: 'revenuecat', value: 1_500_000, target: { surface: 'api', name: 'revenuecat.subscription' }, field: 'mrr', op: 'sum' },
+        { name: 'chargebee', value: 600_000, target: { surface: 'api', name: 'chargebee.subscription' }, field: 'mrr', op: 'sum' },
+      ],
+    };
+    const result = runPreGenerationGate(makeContract([clause]));
+    expect(result.ok).toBe(true);
+  });
+
   it('reports a population-coherence contradiction when two count clauses disagree on the same cohort', () => {
     const a: CountClause = {
       id: 'starter-a',

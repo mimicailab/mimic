@@ -19,6 +19,7 @@ import {
 } from '../../planner/index.js';
 import { createWorldState, SeededRandom } from '../../world/index.js';
 import type {
+  AggregateClause,
   AnchorClause,
   Clause,
   CountClause,
@@ -81,6 +82,36 @@ describe('population planner', () => {
     expect(pop).toHaveLength(100);
     // Every entity carries the cohort label derived from the cohort rule.
     expect([...pop![0]!.cohorts]).toContain('tier:starter');
+  });
+
+  it('supports overlapping filtered counts within the same population', () => {
+    const active: CountClause = {
+      id: 'active-users',
+      quote: '10 active users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { status: 'active' } },
+      expected: 10,
+    };
+    const orphans: CountClause = {
+      id: 'orphan-users',
+      quote: '2 active users with no external id',
+      family: 'count',
+      strength: 'hard',
+      target: {
+        surface: 'db',
+        name: 'users',
+        filter: { status: 'active', external_id: { is_null: true } },
+      },
+      expected: 2,
+    };
+    const { contract, graph, initial } = setUp([active, orphans]);
+    const { state } = runPlanners(contract, graph, initial);
+    const users = state.populations.get('db:users') ?? [];
+
+    expect(users).toHaveLength(10);
+    expect(users.filter((user) => user.attrs.status === 'active')).toHaveLength(10);
+    expect(users.filter((user) => user.attrs.external_id == null)).toHaveLength(2);
   });
 });
 
@@ -172,6 +203,38 @@ describe('anchor planner', () => {
     const binding = state.anchors.get('klein-dup');
     expect(binding).toBeDefined();
     expect(binding!.dates).toEqual({ event: '2026-04-29' });
+
+    const bound = [...state.populations.values()]
+      .flat()
+      .find((entity) => entity.id === binding!.entityId);
+    expect(bound).toBeDefined();
+    expect(bound!.attrs.company ?? bound!.attrs.name).toBe('Klein Records');
+  });
+});
+
+describe('population planner — aggregate-only targets', () => {
+  it('materialises a raw aggregate target even when no separate count clause exists', () => {
+    const price: AggregateClause = {
+      id: 'starter-price',
+      quote: 'starter (£29/mo)',
+      family: 'aggregate',
+      op: 'sum',
+      strength: 'hard',
+      target: {
+        surface: 'api',
+        name: 'stripe.price',
+        filter: { nickname: 'starter-monthly' },
+      },
+      field: 'unit_amount',
+      expected: 2900,
+    };
+    const { contract, graph, initial } = setUp([price]);
+    const { state } = runPlanners(contract, graph, initial);
+    const prices = state.populations.get('api:stripe.price') ?? [];
+
+    expect(prices).toHaveLength(1);
+    expect(prices[0]!.attrs.nickname).toBe('starter-monthly');
+    expect(prices[0]!.attrs.unit_amount).toBe(2900);
   });
 });
 
@@ -205,7 +268,7 @@ describe('reconciliation planner', () => {
 });
 
 describe('regenerateFromOwner', () => {
-  it('replays only the slice from the affected owner forward', () => {
+  it('rebuilds the affected slice instead of appending duplicate state', () => {
     const count: CountClause = {
       id: 'starter-100',
       quote: '100 starter customers',
@@ -218,13 +281,26 @@ describe('regenerateFromOwner', () => {
       },
       expected: 100,
     };
-    const { contract, graph, initial } = setUp([count]);
+    const failed: TemporalClause = {
+      id: 'failed-charges',
+      quote: '8 failed charges this week',
+      family: 'temporal',
+      kind: 'window',
+      strength: 'hard',
+      target: { surface: 'api', name: 'stripe.charge', filter: { status: 'failed' } },
+      field: 'created',
+      min: '2026-05-08',
+      max: '2026-05-15',
+      expected: 8,
+    };
+    const { contract, graph, initial } = setUp([count, failed]);
     const { state: first } = runPlanners(contract, graph, initial);
-    // Regen from lifecycle — populations from `first` carry over; lifecycle
-    // emits no events here so the state should equal `first` in entity
-    // count.
-    const { state } = regenerateFromOwner(contract, graph, first, 'lifecycle');
+    expect(first.populations.get('paying_customers')).toHaveLength(100);
+    expect(first.lifecycleEvents.filter((e) => e.kind === 'failure')).toHaveLength(8);
+
+    const { state } = regenerateFromOwner(contract, graph, first, 'population');
     expect(state.populations.get('paying_customers')).toHaveLength(100);
+    expect(state.lifecycleEvents.filter((e) => e.kind === 'failure')).toHaveLength(8);
   });
 
   it('throws on an unknown owner', () => {

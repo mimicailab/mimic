@@ -13,8 +13,7 @@ export {
 } from './projection-planner.js';
 export { projectDb } from './db-projector.js';
 export { projectApi } from './api-projector.js';
-export { FkResolutionError, resolveMirroredFks } from './fk-resolver.js';
-export { getPersonaIdPrefix, getResourceIdPrefix } from './identity-prefix.js';
+export { getPersonaIdPrefix } from './identity-prefix.js';
 export {
   registerProjectorHints,
   getProjectorHints,

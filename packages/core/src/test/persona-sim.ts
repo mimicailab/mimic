@@ -1,5 +1,6 @@
 import type { ILLMClient } from '../llm/index.js';
-import type { TestScenario, PersonaProfile } from '../types/index.js';
+import type { TestScenario } from '../types/index.js';
+import type { PersonaProfile } from '../contract/persona-contract.js';
 
 // ---------------------------------------------------------------------------
 // Prompts

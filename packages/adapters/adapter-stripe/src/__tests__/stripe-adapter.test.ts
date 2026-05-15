@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildTestServer, type TestServer } from '@mimicai/adapter-sdk';
-import type { ExpandedData, Blueprint } from '@mimicai/core';
+import type { ExpandedData } from '@mimicai/core';
 import { StripeAdapter } from '../stripe-adapter.js';
 
 describe('StripeAdapter', () => {
@@ -967,7 +967,7 @@ describe('StripeAdapter', () => {
       const seedData = new Map<string, ExpandedData>([
         ['test-persona', {
           personaId: 'test-persona',
-          blueprint: {} as Blueprint,
+          persona: { name: 'Test', age: 0, occupation: '', location: '', salary: null, description: '' },
           tables: {},
           documents: {},
           apiResponses: {

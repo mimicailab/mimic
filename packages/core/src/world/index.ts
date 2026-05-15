@@ -8,6 +8,7 @@ export type {
   CohortId,
   LifecycleStatus,
   EntityLifecycle,
+  SurfaceBinding,
   CanonicalEntity,
   IdentitySlot,
   IdentityRecord,

@@ -111,6 +111,51 @@ describe('shape validator — owner-level failure kinds', () => {
     expect(r.classification).toBe('owner-level');
   });
 
+  it('detects format_violation when an API id is missing the adapter prefix', async () => {
+    const { registerProjectorHints, __resetProjectorHints } = await import(
+      '../../projection/projector-hints.js'
+    );
+    __resetProjectorHints();
+    registerProjectorHints({
+      adapterId: 'stripe',
+      idPrefixes: { customer: 'cus_' },
+    });
+
+    const state = createWorldState(new SeededRandom(1));
+    state.identities.set('e1', {
+      entityId: 'e1',
+      slots: [{ surface: 'stripe', objectKind: 'customer', deterministicSeed: 'e1' }],
+    });
+    const ds: MaterialisedDataset = {
+      tables: {},
+      apiResponses: {
+        stripe: {
+          adapterId: 'stripe',
+          responses: {
+            customer: [
+              {
+                statusCode: 200,
+                headers: {},
+                body: { id: 'wrong_prefix_abc' }, // missing cus_ prefix
+                personaId: 'v5',
+              },
+            ],
+          },
+        },
+      },
+    };
+    const r = validateShape(ds, undefined, state);
+    const fail = r.failures.find(
+      (f): f is Extract<ShapeFailure, { kind: 'format_violation' }> =>
+        f.kind === 'format_violation',
+    );
+    expect(fail).toBeDefined();
+    expect(fail!.expectedPrefix).toBe('cus_');
+    expect(fail!.observed).toBe('wrong_prefix_abc');
+    expect(fail!.scope).toBe('local');
+    __resetProjectorHints();
+  });
+
   it('detects count_mismatch on db-prefixed populations', () => {
     const state = createWorldState(new SeededRandom(1));
     state.populations.set('db:users', [

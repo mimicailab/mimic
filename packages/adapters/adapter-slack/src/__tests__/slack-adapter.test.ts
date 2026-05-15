@@ -301,7 +301,7 @@ function makeData(personaId: string, responses: Record<string, Array<Record<stri
   return new Map([
     [personaId, {
       personaId,
-      blueprint: { id: 'test', personas: [], facts: [] } as unknown as ExpandedData['blueprint'],
+      persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
       tables: {},
       documents: {},
       apiResponses: { slack: { adapterId: 'slack', responses: wrapped } },

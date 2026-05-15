@@ -234,7 +234,7 @@ async function runHost(opts: HostOptions): Promise<void> {
       // ── Start mock API server for this adapter ───────────────────────
       const adapter = new AdapterClass();
       const adapterConfig = cfg.config ?? {};
-      await adapter.init(adapterConfig, { config, blueprints: new Map(), logger: console });
+      await adapter.init(adapterConfig, { config, logger: console });
 
       const mockServer = new MockServer();
       await mockServer.registerAdapter(adapter, dataMap!, { basePath: adapter.basePath });

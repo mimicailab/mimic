@@ -745,7 +745,7 @@ describe('HubSpotAdapter', () => {
 function fakeExpanded(personaId: string, responses: Record<string, Array<{ statusCode: number; headers: Record<string, string>; personaId: string; body: unknown }>>): ExpandedData {
   return {
     personaId,
-    blueprint: { id: 'test', personas: [], facts: [] } as unknown as ExpandedData['blueprint'],
+    persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
     tables: {},
     documents: {},
     apiResponses: { hubspot: { adapterId: 'hubspot', responses } },

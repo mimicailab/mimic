@@ -3,7 +3,6 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { CostTracker, type CostCategory } from './cost-tracker.js';
 import { openRecordsInJsonSchema, unwrapToolInput } from './anthropic-native.js';
 import {
-  normalizeLLMOutput,
   type GenerateObjectOptions,
   type GenerateObjectResult,
   type GenerateTextOptions,
@@ -135,8 +134,7 @@ export class ClaudeCodeClient implements ILLMClient {
         lastIssues = 'response was not valid JSON';
       } else {
         const unwrapped = unwrapToolInput(raw, expectedTopKeys);
-        const normalized = normalizeLLMOutput(unwrapped);
-        const validation = opts.schema.safeParse(normalized);
+        const validation = opts.schema.safeParse(unwrapped);
         if (validation.success) {
           for (const a of attempts) {
             this.costTracker.record({
@@ -166,7 +164,7 @@ export class ClaudeCodeClient implements ILLMClient {
           .join('\n  ');
         debugFile(`CLAUDE-CODE VALIDATION FAILED [${attemptLabel}]`, {
           issues: lastIssues,
-          rawKeys: Object.keys((normalized as Record<string, unknown>) ?? {}),
+          rawKeys: Object.keys((unwrapped as Record<string, unknown>) ?? {}),
         });
       }
 

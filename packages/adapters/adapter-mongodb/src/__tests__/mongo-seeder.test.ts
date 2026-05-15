@@ -67,7 +67,7 @@ vi.mock('mongodb', () => ({
 function makeExpandedData(personaId: string): ExpandedData {
   return {
     personaId,
-    blueprint: {} as ExpandedData['blueprint'],
+    persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
     tables: {
       users: [
         { id: 1, name: 'Alice', email: 'alice@test.com' },
@@ -93,7 +93,7 @@ function makeContext(): AdapterContext {
       domain: 'test',
       personas: [{ name: 'test', description: 'test' }],
     } as MimicConfig,
-    blueprints: new Map(),
+    
     logger: {},
   };
 }
@@ -263,7 +263,7 @@ describe('MongoSeeder', () => {
 
       const emptyData: ExpandedData = {
         personaId: 'test',
-        blueprint: {} as ExpandedData['blueprint'],
+        persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
         tables: {},
         documents: {},
         apiResponses: {},

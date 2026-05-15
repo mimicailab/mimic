@@ -72,6 +72,31 @@ describe('projection — determinism', () => {
     const b = runProjection(state);
     expect(JSON.stringify(a.dataset)).toBe(JSON.stringify(b.dataset));
   });
+
+  it('does not fan out disjoint populations across unrelated surfaces', () => {
+    const stripeCustomers: CountClause = {
+      id: 'stripe-customers',
+      quote: '3 stripe customers',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'api', name: 'stripe.customer' },
+      expected: 3,
+    };
+    const dbUsers: CountClause = {
+      id: 'db-users',
+      quote: '2 database users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users' },
+      expected: 2,
+    };
+
+    const { state } = setUp([stripeCustomers, dbUsers]);
+    const { dataset } = runProjection(state);
+
+    expect(dataset.apiResponses['stripe']!.responses['customer']!).toHaveLength(3);
+    expect(dataset.tables['users']!).toHaveLength(2);
+  });
 });
 
 describe('projection — freezes world state', () => {
@@ -118,11 +143,86 @@ describe('projection — uses ProjectorHints when an adapter declares them', () 
   });
 });
 
-describe('projection — identity invariant across surfaces', () => {
-  it('an entity present on db and stripe carries the same identity record + status', () => {
-    // One canonical population that needs slots on BOTH surfaces. We
-    // express that via a cross_surface clause so the contract walker
-    // discovers both coordinates.
+describe('projection — persona-index namespaces minted IDs', () => {
+  it('uses state.personaIndex (not hardcoded 1) in the prefix', () => {
+    registerProjectorHints({ adapterId: 'stripe', idPrefixes: { customer: 'cus_' } });
+    const count: CountClause = {
+      id: 'c',
+      quote: '2 stripe customers',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'api', name: 'stripe.customer' },
+      expected: 2,
+    };
+    const contract = makeContract([count]);
+    const gate = runPreGenerationGate(contract);
+    if (!gate.ok) throw new Error('gate failed');
+    // Persona 2 (e.g. second persona in the batch).
+    const initial = createWorldState(new SeededRandom(1), 2);
+    const { state } = runPlanners(contract, gate.obligationGraph, initial);
+    const { dataset } = runProjection(state);
+    const responses = dataset.apiResponses['stripe']!.responses['customer']!;
+    for (const r of responses) {
+      const body = r.body as Record<string, unknown>;
+      expect(String(body.id)).toMatch(/^cus_p2_/);
+    }
+  });
+});
+
+describe('projection — registry-derived hints (real wiring path)', () => {
+  it('registerAdapter publishes hints derived from resourceSpecs.idPrefixes', async () => {
+    const { registerAdapter, clearRegistry } = await import('../../adapter/registry.js');
+    clearRegistry();
+    __resetProjectorHints();
+
+    // Minimal ApiMockAdapter stub with resourceSpecs carrying an id prefix.
+    const fakeAdapter = {
+      id: 'fakebill',
+      name: 'Fake Billing',
+      type: 'api-mock' as const,
+      basePath: '/v1',
+      resourceSpecs: {
+        platform: {
+          id: 'fakebill',
+          name: 'Fake Billing',
+          timestampFormat: 'iso8601' as const,
+          idPrefix: 'fb_',
+        },
+        resources: {
+          customer: {
+            resource: 'customer',
+            objectType: 'customer',
+            fields: {
+              id: { type: 'string' as const, required: true, idPrefix: 'fbc_' },
+            },
+          },
+        },
+      },
+      init: async () => {},
+      apply: async () => ({ adapterId: 'fakebill', success: true, stats: {}, duration: 0 }),
+      clean: async () => {},
+      healthcheck: async () => true,
+      dispose: async () => {},
+      registerRoutes: async () => {},
+      getEndpoints: () => [],
+      resolvePersona: () => null,
+    };
+    registerAdapter(fakeAdapter as any, {
+      id: 'fakebill',
+      name: 'Fake Billing',
+      type: 'api-mock',
+      description: '',
+    });
+
+    const { getProjectorHints } = await import('../../projection/projector-hints.js');
+    const hints = getProjectorHints('fakebill');
+    expect(hints.idPrefix).toBe('fb_');
+    expect(hints.idPrefixes?.customer).toBe('fbc_');
+  });
+});
+
+describe('projection — entity-owned surface bindings', () => {
+  it('reserves only the surfaces a canonical entity actually owns', () => {
     const count: CountClause = {
       id: 'c',
       quote: '5 paying customers on stripe',
@@ -150,17 +250,15 @@ describe('projection — identity invariant across surfaces', () => {
     const { state } = setUp([count, cs]);
     runProjection(state);
 
-    // Every entity gets one slot per (surface, objectKind) referenced by
-    // the contract — here that is db.users and stripe.customer.
+    // Cross-surface clauses no longer cause contract-wide slot fan-out.
+    // This paying_customer cohort owns its semantic billing projection only.
     for (const [, record] of state.identities) {
       const surfaces = record.slots.map((s) => `${s.surface}.${s.objectKind}`);
-      expect(surfaces).toContain('db.users');
-      expect(surfaces).toContain('stripe.customer');
+      expect(surfaces).toContain('stripe.subscription');
+      expect(surfaces).not.toContain('db.users');
+      expect(surfaces).not.toContain('stripe.customer');
     }
-    // The contract evaluator (Phase 8) ultimately enforces equal status
-    // across surfaces; Phase 7's projector consults the same lifecycle
-    // status on the canonical entity, so both surfaces end up with the
-    // same status value by construction.
+
     const entity = state.populations.get('paying_customers')![0]!;
     expect(entity.lifecycle.status).toBe('active');
   });

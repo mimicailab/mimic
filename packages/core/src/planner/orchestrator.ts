@@ -21,7 +21,7 @@
 import type { OwnerId } from '../contract/clause-types.js';
 import type { PersonaContract } from '../contract/persona-contract.js';
 import type { WorldState } from '../world/world-state.js';
-import { mergeDelta } from '../world/world-state.js';
+import { mergeDelta, resetWorldStateFromOwner } from '../world/world-state.js';
 import { runAnchorPlanner } from './anchor-planner.js';
 import { runIdentityPlanner } from './identity-planner.js';
 import { runLifecyclePlanner } from './lifecycle-planner.js';
@@ -83,7 +83,7 @@ export function regenerateFromOwner(
   if (start < 0) {
     throw new Error(`regenerateFromOwner: unknown owner "${ownerId}".`);
   }
-  let next = state;
+  let next = resetWorldStateFromOwner(state, ownerId);
   const evidence: PlannerEvidence[] = [];
   for (let i = start; i < PLANNER_ORDER.length; i++) {
     const owner = PLANNER_ORDER[i]!;

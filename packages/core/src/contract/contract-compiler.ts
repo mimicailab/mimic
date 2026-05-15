@@ -19,7 +19,6 @@ import type {
   PromptContext,
   SchemaModel,
 } from '../types/index.js';
-import type { SchemaMapping } from '../types/blueprint.js';
 import type { ILLMClient } from '../llm/client.js';
 import { ContractCompilerOutputSchema, type ContractCompilerOutput } from './contract-zod.js';
 import { buildCompilerUserPrompt } from './compiler-prompt.js';
@@ -148,7 +147,6 @@ export async function compileContract(
   schema: SchemaModel,
   promptContexts: Record<string, PromptContext> | undefined,
   resourceSpecs: Record<string, AdapterResourceSpecs> | undefined,
-  schemaMapping: SchemaMapping | undefined,
   options: CompileContractOptions = {},
 ): Promise<PersonaContract> {
   const adapterResources: Record<string, string[]> = {};
@@ -168,7 +166,6 @@ export async function compileContract(
     domain,
     adapterResources: Object.keys(adapterResources).length > 0 ? adapterResources : undefined,
     resourceSpecs,
-    schemaMapping,
     currentDate: options.currentDate,
     volume: options.volume,
     personaIndex: options.personaIndex,
@@ -218,6 +215,13 @@ export async function compileContract(
   if (canonicalised > 0) {
     logger.info(
       `Contract compiler canonicalised ${canonicalised} clause change(s) onto semantic targets before coverage planning.`,
+    );
+  }
+
+  const softenedReconciliations = softenIncompletePlatformReconciliations(output.clauses as Clause[]);
+  if (softenedReconciliations > 0) {
+    logger.warn(
+      `Contract compiler softened ${softenedReconciliations} incomplete platform reconciliation clause(s) whose quoted platform count exceeded the emitted bucket count.`,
     );
   }
 
@@ -281,6 +285,32 @@ function mergeAnchors(
   }
 
   return [...byId.values()];
+}
+
+/**
+ * Guard against the compiler inventing a blocking platform-wide
+ * reconciliation from a headline like "across 8 billing platforms" while only
+ * emitting a subset of platform buckets. The headline aggregate remains hard;
+ * only the incomplete derived reconciliation is softened.
+ */
+export function softenIncompletePlatformReconciliations(clauses: Clause[]): number {
+  let softened = 0;
+  for (const clause of clauses) {
+    if (clause.family !== 'reconciliation' || clause.strength !== 'hard') continue;
+    const expectedBucketCount = quotedPlatformCount(clause.quote);
+    if (expectedBucketCount == null || clause.buckets.length >= expectedBucketCount) continue;
+    clause.strength = 'soft';
+    softened++;
+  }
+  return softened;
+}
+
+function quotedPlatformCount(quote: string): number | undefined {
+  const match = quote.match(/\bacross\s+(\d+)\s+billing platforms?\b/i)
+    ?? quote.match(/\bacross\s+(\d+)\s+platforms?\b/i);
+  if (!match) return undefined;
+  const value = Number.parseInt(match[1] ?? '', 10);
+  return Number.isFinite(value) ? value : undefined;
 }
 
 /**

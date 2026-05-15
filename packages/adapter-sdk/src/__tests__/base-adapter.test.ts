@@ -40,7 +40,7 @@ describe('BaseApiMockAdapter', () => {
   it('should store config and context on init', async () => {
     const adapter = new TestAdapter();
     const config = { name: 'test-config' };
-    const context = { config: {} as any, blueprints: new Map(), logger: console };
+    const context = { config: {} as any,  logger: console };
     await adapter.init(config, context as AdapterContext);
     expect(adapter.getConfig()).toEqual({ name: 'test-config' });
     expect(adapter.getContext()).toBeDefined();

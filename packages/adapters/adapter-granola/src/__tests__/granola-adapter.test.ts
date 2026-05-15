@@ -458,7 +458,7 @@ function makeFakeData(personaId: string, responses: Record<string, Array<Record<
   return new Map([
     [personaId, {
       personaId,
-      blueprint: { id: 'test', personas: [], facts: [] } as unknown as ExpandedData['blueprint'],
+      persona: { name: "t", age: 0, occupation: "", location: "", salary: null, description: "" },
       tables: {},
       documents: {},
       apiResponses: { granola: { adapterId: 'granola', responses: wrapped } },

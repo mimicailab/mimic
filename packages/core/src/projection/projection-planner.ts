@@ -18,6 +18,13 @@ import { createEmptyDataset } from './types.js';
 import { projectDb } from './db-projector.js';
 import { projectApi } from './api-projector.js';
 
+export class ProjectionInvariantError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProjectionInvariantError';
+  }
+}
+
 export interface SurfaceCoord {
   surface: string;
   objectKind: string;
@@ -99,6 +106,8 @@ export function runProjection(
     dataset.apiResponses[adapter] = { adapterId: adapter, responses };
   }
 
+  assertProjectionOwnershipInvariant(state, dataset, schema);
+
   return { dataset, plan };
 }
 
@@ -133,4 +142,82 @@ function freezeWorldState(state: WorldState): void {
     Object.freeze(e.attrs);
     Object.freeze(e);
   }
+}
+
+function assertProjectionOwnershipInvariant(
+  state: WorldState,
+  dataset: MaterialisedDataset,
+  schema: SchemaModel | undefined,
+): void {
+  const expected = collectExpectedProjectionCounts(state, schema);
+  const actual = collectActualProjectionCounts(dataset);
+  const keys = new Set([...expected.keys(), ...actual.keys()]);
+
+  for (const key of keys) {
+    const expectedCount = expected.get(key) ?? 0;
+    const actualCount = actual.get(key) ?? 0;
+    if (expectedCount === actualCount) continue;
+    throw new ProjectionInvariantError(
+      `projection ownership invariant failed for ${describeCoordKey(key)}: expected ${expectedCount} row(s), emitted ${actualCount}`,
+    );
+  }
+}
+
+function collectExpectedProjectionCounts(
+  state: WorldState,
+  schema: SchemaModel | undefined,
+): Map<string, number> {
+  const hasOwnedBindings = [...state.populations.values()]
+    .flat()
+    .some((entity) => (entity.surfaceBindings?.length ?? 0) > 0);
+
+  const counts = new Map<string, number>();
+
+  const add = (surface: string, objectKind: string): void => {
+    if (surface === 'db' && schema && !schema.tables.find((table) => table.name === objectKind)) {
+      return;
+    }
+    const key = `${surface}::${objectKind}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  };
+
+  if (hasOwnedBindings) {
+    for (const [, entities] of state.populations) {
+      for (const entity of entities) {
+        for (const binding of entity.surfaceBindings ?? []) {
+          add(binding.surface, binding.objectKind);
+        }
+      }
+    }
+    return counts;
+  }
+
+  for (const [, identity] of state.identities) {
+    for (const slot of identity.slots) {
+      add(slot.surface, slot.objectKind);
+    }
+  }
+
+  return counts;
+}
+
+function collectActualProjectionCounts(dataset: MaterialisedDataset): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const [table, rows] of Object.entries(dataset.tables)) {
+    counts.set(`db::${table}`, rows.length);
+  }
+
+  for (const [adapter, responseSet] of Object.entries(dataset.apiResponses)) {
+    for (const [resource, responses] of Object.entries(responseSet.responses)) {
+      counts.set(`${adapter}::${resource}`, responses.length);
+    }
+  }
+
+  return counts;
+}
+
+function describeCoordKey(key: string): string {
+  const [surface, objectKind] = key.split('::');
+  return `${surface}.${objectKind}`;
 }

@@ -17,6 +17,7 @@ import {
   formatOwnerLevelFailureReport,
   derivePromptContext,
   deriveDataSpec,
+  registerAdapter,
 } from '@mimicai/core';
 import type {
   LLMRuntime,
@@ -104,6 +105,10 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   let schema: SchemaModel;
   try {
     schema = await resolveSchema(config, cwd);
+    logger.debugFile('SCHEMA', {
+      tableCount: schema.tables.length,
+      tables: schema.tables.map((table) => table.name),
+    });
     schemaSpin.succeed(`Schema parsed: ${chalk.yellow(String(schema.tables.length))} tables`);
   } catch (err) {
     schemaSpin.fail('Failed to parse schema');
@@ -111,6 +116,10 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   }
 
   const { promptContexts, resourceSpecs } = await resolveAdapterMetadata(config);
+  logger.debugFile('ADAPTER METADATA', {
+    promptContexts: promptContexts ? Object.keys(promptContexts) : [],
+    resourceSpecs: resourceSpecs ? Object.keys(resourceSpecs) : [],
+  });
 
   const costTracker = new CostTracker();
   const runtimeOverride = resolveRuntimeOverride(opts.llmRuntime);
@@ -149,7 +158,6 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         schema,
         promptContexts,
         resourceSpecs,
-        undefined,
         {
           currentDate: new Date().toISOString().split('T')[0]!,
           volume: config.generate.volume,
@@ -157,6 +165,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
           totalPersonas: targetPersonas.length,
         },
       );
+      logger.debugFile(`CONTRACT COMPILED [${persona.name}]`, contract);
       compileSpin.succeed(`Contract compiled: ${contract.clauses.length} clauses`);
     } catch (err) {
       compileSpin.fail(`Contract compilation failed for ${persona.name}`);
@@ -164,9 +173,16 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     }
 
     const pipeSpin = logger.spinner('Running V5 pipeline...');
+    logger.debugFile(`PIPELINE INPUT [${runId}]`, {
+      persona: persona.name,
+      runId,
+      seed: `${seed}-${personaIndex}`,
+      personaIndex,
+    });
     const result = runPipeline(contract, schema, {
       runId,
       seed: `${seed}-${personaIndex}`,
+      personaIndex,
     });
 
     if (!result.ok) {
@@ -178,6 +194,13 @@ async function runGenerate(opts: RunOptions): Promise<void> {
           : formatOwnerLevelFailureReport(result.report);
       const suffix = result.reason === 'pre_generation_gate' ? 'pre-gate' : 'owner-level';
       const reportPath = join(reportDir, `${runId}.${suffix}.md`);
+      logger.debugFile(`PIPELINE RESULT [${runId}]`, {
+        ok: false,
+        persona: persona.name,
+        reason: result.reason,
+        reportPath,
+        report: result.report,
+      });
       if (!opts.dryRun) {
         const { writeFile } = await import('node:fs/promises');
         await writeFile(reportPath, rendered, 'utf8');
@@ -190,6 +213,22 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     }
 
     pipeSpin.succeed(`Pipeline OK · proof: ${result.proof.records.length} record(s)`);
+    logger.debugFile(`PIPELINE RESULT [${runId}]`, {
+      ok: true,
+      persona: persona.name,
+      proofRecords: result.proof.records.length,
+      tables: Object.fromEntries(
+        Object.entries(result.materialised.tables).map(([table, rows]) => [table, rows.length]),
+      ),
+      apis: Object.fromEntries(
+        Object.entries(result.materialised.apiResponses).map(([adapterId, responseSet]) => [
+          adapterId,
+          Object.fromEntries(
+            Object.entries(responseSet.responses).map(([resource, responses]) => [resource, responses.length]),
+          ),
+        ]),
+      ),
+    });
 
     const expanded = toExpandedData(contract, result.materialised);
     if (!opts.dryRun) {
@@ -306,6 +345,13 @@ export async function resolveAdapterMetadata(config: MimicConfig): Promise<{
       }) as (new () => ApiMockAdapter) | undefined;
       if (!AdapterClass) continue;
       const adapter = new AdapterClass();
+      // Register the adapter with core — derives ProjectorHints from the
+      // adapter's resourceSpecs/promptContext so the V5 projectors mint
+      // surface-formatted IDs (cus_, sub_, ...) instead of the generic
+      // 3-char fallback.
+      const manifest = (mod as { manifest?: import('@mimicai/core').AdapterManifest })
+        .manifest;
+      if (manifest) registerAdapter(adapter, manifest);
       if (adapter.resourceSpecs) {
         resourceSpecs[adapterId] = adapter.resourceSpecs;
         promptContexts[adapterId] = derivePromptContext(adapter.resourceSpecs);
@@ -361,7 +407,7 @@ export async function resolveSchema(config: MimicConfig, cwd: string): Promise<S
         const { MySQLSeeder } = await import('@mimicai/adapter-mysql');
         const seeder = new MySQLSeeder();
         const url = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
-        await seeder.init({ url }, { config, blueprints: new Map(), logger });
+        await seeder.init({ url }, { config, logger });
         try {
           return await seeder.introspect({ url });
         } finally {
@@ -372,7 +418,7 @@ export async function resolveSchema(config: MimicConfig, cwd: string): Promise<S
         const { SQLiteSeeder } = await import('@mimicai/adapter-sqlite');
         const seeder = new SQLiteSeeder();
         const path = (dbConfig as Record<string, unknown>).path as string;
-        await seeder.init({ path }, { config, blueprints: new Map(), logger });
+        await seeder.init({ path }, { config, logger });
         try {
           return await seeder.introspect({ path });
         } finally {
@@ -384,7 +430,7 @@ export async function resolveSchema(config: MimicConfig, cwd: string): Promise<S
         const seeder = new MongoSeeder();
         const url = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
         const database = (dbConfig as Record<string, unknown>).database as string | undefined;
-        await seeder.init({ url, database }, { config, blueprints: new Map(), logger });
+        await seeder.init({ url, database }, { config, logger });
         try {
           return await seeder.introspect({ url, database });
         } finally {
@@ -419,19 +465,11 @@ function toExpandedData(
   contract: PersonaContract,
   materialised: MaterialisedDataset,
 ): ExpandedData {
-  // Wrap the V5 MaterialisedDataset in the existing ExpandedData shape so the
-  // downstream commands (seed/test/host) keep reading `.mimic/data/<persona>.json`
-  // without churn. V5 doesn't produce a Blueprint or generated facts; the
-  // wrapper fields are left empty/placeholder.
+  // V5 ExpandedData carrier: just personaId + persona profile + the
+  // materialised dataset slots. No V4.5 Blueprint envelope.
   return {
     personaId: contract.personaId,
-    blueprint: {
-      personaId: contract.personaId,
-      domain: contract.domain,
-      profile: contract.persona,
-      entities: [],
-      patterns: [],
-    } as unknown as ExpandedData['blueprint'],
+    persona: contract.persona,
     tables: materialised.tables,
     documents: {},
     apiResponses: materialised.apiResponses,

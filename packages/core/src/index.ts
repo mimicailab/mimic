@@ -12,20 +12,7 @@ export type {
   IndexInfo,
 } from './types/schema.js';
 
-export type {
-  Blueprint,
-  PersonaProfile,
-  PersonaData,
-  EntityData,
-  DataPattern,
-  RandomSpec,
-  FrequencySpec,
-  SchemaMapping,
-  SchemaMappingEntry,
-  TableRole,
-  MirrorSource,
-  TableClassification,
-} from './types/blueprint.js';
+export type { PersonaProfile, Anchor } from './contract/persona-contract.js';
 
 export type {
   Adapter,
@@ -280,8 +267,7 @@ export type {
 // without re-routing imports.
 export { SeededRandom } from './world/prng.js';
 export { selectRows, resolveRows } from './validation/select-rows.js';
-export { FkResolutionError, resolveMirroredFks } from './projection/fk-resolver.js';
-export { getPersonaIdPrefix, getResourceIdPrefix } from './projection/identity-prefix.js';
+export { getPersonaIdPrefix } from './projection/identity-prefix.js';
 export {
   PROVENANCE_KEY,
   stampProvenance,

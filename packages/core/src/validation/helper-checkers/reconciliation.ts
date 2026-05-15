@@ -14,6 +14,7 @@ import type { ReconciliationClause } from '../../contract/clause-types.js';
 import type { ExpandedData } from '../../types/dataset.js';
 import type { Filter, ResourceTarget } from '../../types/claim.js';
 import { selectRows } from '../select-rows.js';
+import { resolveNumericTolerance } from '../../utils/tolerance.js';
 
 export interface ReconciliationCheckResult {
   passed: boolean;
@@ -33,7 +34,7 @@ export function checkReconciliation(
   clause: ReconciliationClause,
   expanded: ExpandedData,
 ): ReconciliationCheckResult {
-  const tolerance = clause.tolerance ?? 0;
+  const tolerance = resolveNumericTolerance(clause.headline, clause.tolerance);
   const per_bucket: ReconciliationCheckResult['per_bucket'] = [];
 
   let bucketSum = 0;

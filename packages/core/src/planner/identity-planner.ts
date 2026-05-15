@@ -2,8 +2,8 @@
  * V5 — Phase 6: Identity planner.
  *
  * Owns: cross_surface clauses. Reserves one canonical IdentityRecord per
- * entity, with surface slots for every (surface, objectKind) the contract
- * references. The slots carry a `deterministicSeed` derived from the
+ * entity, with surface slots derived from the entity's owned
+ * `surfaceBindings`. The slots carry a `deterministicSeed` derived from the
  * canonical entity id — projectors mint final surface IDs from this seed
  * plus adapter `ProjectorHints`.
  *
@@ -13,41 +13,37 @@
  * only — never vendor-shaped strings.
  */
 
-import type { Clause, CrossSurfaceClause } from '../contract/clause-types.js';
+import type { CrossSurfaceClause } from '../contract/clause-types.js';
 import type { PersonaContract } from '../contract/persona-contract.js';
 import type {
   CanonicalEntity,
   IdentityRecord,
   IdentitySlot,
+  SurfaceBinding,
 } from '../world/entity.js';
-import type { ResourceTarget } from '../types/claim.js';
 import type { WorldState, WorldStateDelta } from '../world/world-state.js';
 import type { ObligationGraph } from './obligation-graph.js';
 import type { PlannerEvidence, PlannerResult } from './planner-result.js';
-import { resolveSemanticTarget } from '../contract/semantic-capabilities.js';
 
 export function runIdentityPlanner(
   contract: PersonaContract,
   graph: ObligationGraph,
   state: WorldState,
 ): PlannerResult {
-  // Collect surface coordinates referenced by ANY clause in the contract.
-  // This is what an entity might need a slot for. Population planner already
-  // wrote canonical entities; we attach slots to each one.
-  const surfaceCoords = collectSurfaceCoords(contract);
-
   const identities: Array<[string, IdentityRecord]> = [];
   const evidence: PlannerEvidence[] = [];
 
   for (const [populationId, entities] of state.populations) {
+    let reservedSlots = 0;
     for (const entity of entities) {
-      const slots = buildSlotsFor(entity, surfaceCoords);
+      const slots = buildSlotsFor(entity);
+      reservedSlots += slots.length;
       identities.push([entity.id, { entityId: entity.id, slots }]);
     }
     evidence.push({
       clauseId: `identity:${populationId}`,
-      observed: { populationId, entities: entities.length, surfaceCount: surfaceCoords.length },
-      note: `identity planner reserved ${surfaceCoords.length} slot(s) for each of ${entities.length} entities`,
+      observed: { populationId, entities: entities.length, reservedSlots },
+      note: `identity planner reserved ${reservedSlots} entity-owned slot(s) across ${entities.length} entities`,
     });
   }
 
@@ -77,68 +73,8 @@ interface SurfaceCoord {
   surface: string;
   objectKind: string;
 }
-
-function collectSurfaceCoords(contract: PersonaContract): SurfaceCoord[] {
-  const seen = new Set<string>();
-  const out: SurfaceCoord[] = [];
-
-  function add(t: ResourceTarget | undefined): void {
-    if (!t) return;
-    const coord = toCoord(t);
-    if (!coord) return;
-    const key = `${coord.surface}::${coord.objectKind}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    out.push(coord);
-  }
-
-  function addSemantic(clause: Clause): void {
-    const semanticTarget = (
-      clause as { semanticTarget?: import('../contract/clause-types.js').SemanticTarget }
-    ).semanticTarget;
-    if (!semanticTarget) return;
-    const resolved = resolveSemanticTarget(semanticTarget);
-    if (resolved) add(resolved.target);
-  }
-
-  for (const clause of contract.clauses) {
-    switch (clause.family) {
-      case 'count':
-      case 'aggregate':
-      case 'distribution':
-        add(clause.target);
-        addSemantic(clause);
-        break;
-      case 'temporal':
-        if (clause.kind === 'window') {
-          add(clause.target);
-          addSemantic(clause);
-        }
-        break;
-      case 'cross_surface':
-        add(clause.surfaceA);
-        add(clause.surfaceB);
-        break;
-      case 'reconciliation':
-        for (const b of clause.buckets) add(b.target);
-        break;
-      case 'anchor':
-      case 'narrative':
-        break;
-    }
-  }
-  return out;
-}
-
-function toCoord(t: ResourceTarget): SurfaceCoord | null {
-  if (t.surface === 'db') return { surface: 'db', objectKind: t.name };
-  // api: "<adapter>.<resource>"
-  const dot = t.name.indexOf('.');
-  if (dot < 0) return null;
-  return { surface: t.name.slice(0, dot), objectKind: t.name.slice(dot + 1) };
-}
-
-function buildSlotsFor(entity: CanonicalEntity, coords: SurfaceCoord[]): IdentitySlot[] {
+function buildSlotsFor(entity: CanonicalEntity): IdentitySlot[] {
+  const coords = ownedSurfaceCoords(entity.surfaceBindings ?? []);
   return coords.map((c) => ({
     surface: c.surface,
     objectKind: c.objectKind,
@@ -146,4 +82,16 @@ function buildSlotsFor(entity: CanonicalEntity, coords: SurfaceCoord[]): Identit
   }));
 }
 
-void ({} as Clause);
+function ownedSurfaceCoords(bindings: SurfaceBinding[]): SurfaceCoord[] {
+  const seen = new Set<string>();
+  const coords: SurfaceCoord[] = [];
+
+  for (const binding of bindings) {
+    const key = `${binding.surface}::${binding.objectKind}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    coords.push({ surface: binding.surface, objectKind: binding.objectKind });
+  }
+
+  return coords;
+}

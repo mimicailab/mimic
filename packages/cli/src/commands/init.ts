@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { input, select, checkbox, confirm } from '@inquirer/prompts';
+import { input, select, confirm } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { resolve, join } from 'node:path';
 import { readFile, appendFile } from 'node:fs/promises';
@@ -11,7 +11,6 @@ import {
   logger,
   MimicError,
 } from '@mimicai/core';
-import { listBuiltinBlueprints } from '@mimicai/blueprints';
 
 // ---------------------------------------------------------------------------
 // Command registration
@@ -96,56 +95,33 @@ async function runInit(): Promise<void> {
   }
 
   // ── Personas ────────────────────────────────────────────────────────────
-  const builtins = listBuiltinBlueprints();
-  const builtinChoices = builtins.map((b) => ({
-    name: `${b.id} — ${b.description}`,
-    value: b.id,
-    checked: true,
-  }));
-
-  const selectedBuiltins = await checkbox({
-    message: 'Select built-in personas to include:',
-    choices: builtinChoices,
-  });
-
-  const addCustom = await confirm({
-    message: 'Add a custom persona?',
-    default: false,
-  });
-
   interface PersonaEntry {
     name: string;
     description: string;
-    blueprint?: string;
   }
 
-  const personas: PersonaEntry[] = selectedBuiltins.map((id) => {
-    const info = builtins.find((b) => b.id === id)!;
-    return {
-      name: id,
-      description: info.description,
-      blueprint: `builtin:${info.domain}/${id}`,
-    };
-  });
-
-  if (addCustom) {
+  const personas: PersonaEntry[] = [];
+  let addMore = true;
+  while (addMore) {
     const customName = await input({
       message: 'Persona slug (lowercase, hyphens ok):',
       validate: (v) =>
         /^[a-z0-9-]+$/.test(v.trim()) ? true : 'Must be lowercase alphanumeric with hyphens',
     });
     const customDesc = await input({
-      message: 'Short description:',
+      message: 'Persona description (free text — the V5 contract compiler reads this):',
       validate: (v) => (v.trim().length > 0 ? true : 'Description is required'),
     });
     personas.push({ name: customName.trim(), description: customDesc.trim() });
+
+    addMore = await confirm({ message: 'Add another persona?', default: false });
   }
 
   if (personas.length === 0) {
     throw new MimicError(
       'At least one persona is required',
       'CONFIG_INVALID',
-      'Select a built-in persona or add a custom one',
+      'Add at least one persona description.',
     );
   }
 

@@ -136,7 +136,7 @@ export class ScenarioRunner {
       );
     }
 
-    const persona = groundTruth.blueprint.persona;
+    const persona = groundTruth.persona;
 
     // 1. Generate input
     let input: string;

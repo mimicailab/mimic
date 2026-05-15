@@ -240,7 +240,7 @@ async function createSeeder(
       const seeder = new MySQLSeeder();
       await seeder.init(
         { url, seedStrategy: strategy as 'truncate-and-insert' | 'append' | 'upsert', copyThreshold: dbConfig.copyThreshold as number | undefined, excludeTables: dbConfig.excludeTables as string[] | undefined },
-        { config, blueprints: new Map(), logger },
+        { config, logger },
       );
       const schema = await resolveSchema(cwd, config, dbConfig);
       return { seeder, strategy, schema };
@@ -251,7 +251,7 @@ async function createSeeder(
       const seeder = new SQLiteSeeder();
       await seeder.init(
         { path, walMode: dbConfig.walMode as boolean | undefined, seedStrategy: strategy as 'truncate-and-insert' | 'append' },
-        { config, blueprints: new Map(), logger },
+        { config, logger },
       );
       // For SQLite, introspect from the live database
       const schema = await seeder.introspect({ path, walMode: dbConfig.walMode as boolean | undefined });
@@ -270,7 +270,7 @@ async function createSeeder(
           autoCreateIndexes: dbConfig.autoCreateIndexes as boolean | undefined,
           tls: dbConfig.tls as boolean | undefined,
         },
-        { config, blueprints: new Map(), logger },
+        { config, logger },
       );
       return { seeder, strategy, schema: null };
     }

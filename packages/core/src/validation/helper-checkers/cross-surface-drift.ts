@@ -1,14 +1,13 @@
 /**
- * V4.5 helper — cross-surface drift checker.
+ * V5 helper — cross-surface drift checker.
  *
- * Confirms that the same entity disagrees (or agrees) between two surfaces
- * in the intended way. Example: "Larkspur is active in Postgres and canceled
- * in Stripe with a 9-day drift."
+ * Evaluates drift over the canonical world, using entity-owned surface
+ * bindings instead of fuzzy string matching over projected rows.
  */
 
 import type { CrossSurfaceClause } from '../../contract/clause-types.js';
-import type { ExpandedData } from '../../types/dataset.js';
-import { selectRows } from '../select-rows.js';
+import type { CanonicalEntity, IdentityRecord } from '../../world/entity.js';
+import type { WorldState } from '../../world/world-state.js';
 
 export interface CrossSurfaceDriftResult {
   passed: boolean;
@@ -21,38 +20,21 @@ export interface CrossSurfaceDriftResult {
 
 export function checkCrossSurfaceDrift(
   clause: CrossSurfaceClause,
-  expanded: ExpandedData,
+  worldState: WorldState,
 ): CrossSurfaceDriftResult {
-  const rowsA = selectRows(clause.surfaceA, expanded);
-  const rowsB = selectRows(clause.surfaceB, expanded);
+  const candidates = buildCandidates(clause, worldState);
+  const actualA = candidates.map((candidate) => candidate.actualA);
+  const actualB = candidates.map((candidate) => candidate.actualB);
+  const matched = candidates.filter((candidate) => candidate.matchesA && candidate.matchesB);
 
-  // Filter by entity descriptor — match against any string field that
-  // includes the entity name (the persona-side identifier).
-  const matchedA = rowsA.filter((r) => containsEntity(r, clause.entity));
-  const matchedB = rowsB.filter((r) => containsEntity(r, clause.entity));
+  const driftActual = clause.driftDays == null ? null : inferDriftDays(matched[0]?.entity, clause.field);
+  const driftTolerance = clause.driftTolerance ?? 0;
+  const driftPassed =
+    clause.driftDays == null
+      ? true
+      : driftActual != null && Math.abs(driftActual - clause.driftDays) <= driftTolerance;
 
-  const actualA = matchedA.map((r) => r[clause.field]);
-  const actualB = matchedB.map((r) => r[clause.field]);
-
-  const aOk = actualA.some((v) => looseEquals(v, clause.valueA));
-  const bOk = actualB.some((v) => looseEquals(v, clause.valueB));
-
-  let driftActual: number | null = null;
-  let driftPassed = true;
-  let driftTolerance = clause.driftTolerance ?? 0;
-  if (typeof clause.driftDays === 'number') {
-    // Try common timestamp fields to compute a drift between the two rows.
-    const tsA = pickDate(matchedA[0]);
-    const tsB = pickDate(matchedB[0]);
-    if (tsA != null && tsB != null) {
-      driftActual = Math.round((tsB - tsA) / (24 * 3600 * 1000));
-      driftPassed = Math.abs(driftActual - clause.driftDays) <= driftTolerance;
-    } else {
-      driftPassed = false;
-    }
-  }
-
-  const passed = aOk && bOk && driftPassed && matchedA.length > 0 && matchedB.length > 0;
+  const passed = matched.length > 0 && driftPassed;
 
   return {
     passed,
@@ -80,16 +62,100 @@ export function checkCrossSurfaceDrift(
       : {}),
     reason: passed
       ? undefined
-      : buildReason(clause, matchedA.length, matchedB.length, aOk, bOk, driftPassed, driftActual),
+      : buildReason(clause, candidates.length, matched.length, actualA, actualB, driftPassed, driftActual),
   };
 }
 
-function containsEntity(row: Record<string, unknown>, entity: string): boolean {
-  const needle = entity.toLowerCase();
-  for (const v of Object.values(row)) {
-    if (typeof v === 'string' && v.toLowerCase().includes(needle)) return true;
+function buildCandidates(
+  clause: CrossSurfaceClause,
+  worldState: WorldState,
+): Array<{
+  entity: CanonicalEntity;
+  actualA: unknown;
+  actualB: unknown;
+  matchesA: boolean;
+  matchesB: boolean;
+}> {
+  const allEntities = [...worldState.populations.values()].flat();
+  let entities = allEntities.filter((entity) => matchesEntityDescriptor(entity, clause.entity));
+
+  if (entities.length === 0) {
+    entities = allEntities.filter((entity) => {
+      const identity = worldState.identities.get(entity.id);
+      return hasSurface(identity, clause.surfaceA.surface, surfaceObjectKind(clause.surfaceA.name))
+        || hasSurface(identity, clause.surfaceB.surface, surfaceObjectKind(clause.surfaceB.name));
+    });
   }
+
+  return entities.map((entity) => {
+    const identity = worldState.identities.get(entity.id);
+    const hasA = hasSurface(identity, clause.surfaceA.surface, surfaceObjectKind(clause.surfaceA.name));
+    const hasB = hasSurface(identity, clause.surfaceB.surface, surfaceObjectKind(clause.surfaceB.name));
+    const actualA = valueForSurface(entity, clause.field, hasA, clause.valueA);
+    const actualB = valueForSurface(entity, clause.field, hasB, clause.valueB);
+
+    return {
+      entity,
+      actualA,
+      actualB,
+      matchesA: matchesExpected(actualA, clause.valueA),
+      matchesB: matchesExpected(actualB, clause.valueB),
+    };
+  });
+}
+
+function matchesEntityDescriptor(entity: CanonicalEntity, descriptor: string): boolean {
+  const needle = descriptor.trim().toLowerCase();
+  if (!needle) return true;
+
+  if (entity.populationId.toLowerCase().includes(needle)) return true;
+  if ((entity.kind ?? '').toLowerCase().includes(needle)) return true;
+
+  for (const value of [entity.id, entity.attrs.name, entity.attrs.company, entity.attrs.customer_reference]) {
+    if (typeof value === 'string' && value.toLowerCase().includes(needle)) return true;
+  }
+
   return false;
+}
+
+function hasSurface(identity: IdentityRecord | undefined, surface: string, objectKind: string): boolean {
+  return identity?.slots.some((slot) => slot.surface === surface && slot.objectKind === objectKind) ?? false;
+}
+
+function surfaceObjectKind(targetName: string): string {
+  const dot = targetName.indexOf('.');
+  return dot >= 0 ? targetName.slice(dot + 1) : targetName;
+}
+
+function valueForSurface(
+  entity: CanonicalEntity,
+  field: string,
+  hasSurfaceBinding: boolean,
+  expected: unknown,
+): unknown {
+  if (isPresenceExpectation(expected)) {
+    const value = hasSurfaceBinding ? readEntityField(entity, field) : undefined;
+    return isPresent(value) ? 'present' : 'missing';
+  }
+
+  if (!hasSurfaceBinding) return null;
+  return readEntityField(entity, field);
+}
+
+function isPresenceExpectation(value: unknown): value is 'present' | 'missing' {
+  return typeof value === 'string' && ['present', 'missing'].includes(value.toLowerCase());
+}
+
+function isPresent(value: unknown): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  return value !== null && value !== undefined && value !== '';
+}
+
+function matchesExpected(actual: unknown, expected: unknown): boolean {
+  if (isPresenceExpectation(expected)) {
+    return typeof actual === 'string' && actual.toLowerCase() === expected.toLowerCase();
+  }
+  return looseEquals(actual, expected);
 }
 
 function looseEquals(a: unknown, b: unknown): boolean {
@@ -101,46 +167,62 @@ function looseEquals(a: unknown, b: unknown): boolean {
   return String(a) === String(b);
 }
 
-function pickDate(row: Record<string, unknown> | undefined): number | null {
-  if (!row) return null;
-  const candidates = [
-    'canceled_at',
-    'cancelled_at',
-    'updated_at',
-    'created_at',
-    'event_at',
-    'occurred_at',
-  ];
-  for (const k of candidates) {
-    const v = row[k];
-    if (v == null) continue;
-    if (typeof v === 'number') return v < 1e12 ? v * 1000 : v;
-    if (typeof v === 'string') {
-      const t = new Date(v).getTime();
-      if (!Number.isNaN(t)) return t;
-    }
+function readEntityField(entity: CanonicalEntity, path: string): unknown {
+  const fromAttrs = readNested(entity.attrs, path);
+  if (fromAttrs !== undefined) return fromAttrs;
+  if (path === 'status') return entity.lifecycle.status;
+  if (path === 'created' || path === 'created_at') return entity.lifecycle.start;
+  return undefined;
+}
+
+function readNested(record: Record<string, unknown>, path: string): unknown {
+  const parts = path.split('.');
+  let current: unknown = record;
+  for (const part of parts) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+function inferDriftDays(entity: CanonicalEntity | undefined, field: string): number | null {
+  if (!entity) return null;
+  const value = readEntityField(entity, field);
+  const ts = toTimestamp(value);
+  if (ts == null) return null;
+  const start = toTimestamp(entity.lifecycle.start);
+  if (start == null) return null;
+  return Math.round((ts - start) / (24 * 3600 * 1000));
+}
+
+function toTimestamp(value: unknown): number | null {
+  if (typeof value === 'number') return value < 1e12 ? value * 1000 : value;
+  if (typeof value === 'string') {
+    const parsed = new Date(value).getTime();
+    return Number.isNaN(parsed) ? null : parsed;
   }
   return null;
 }
 
 function buildReason(
   clause: CrossSurfaceClause,
-  matchedA: number,
-  matchedB: number,
-  aOk: boolean,
-  bOk: boolean,
+  candidates: number,
+  matched: number,
+  actualA: unknown[],
+  actualB: unknown[],
   driftPassed: boolean,
   driftActual: number | null,
 ): string {
   const parts: string[] = [];
-  if (matchedA === 0)
-    parts.push(`no row on ${clause.surfaceA.surface}.${clause.surfaceA.name} matches entity "${clause.entity}"`);
-  if (matchedB === 0)
-    parts.push(`no row on ${clause.surfaceB.surface}.${clause.surfaceB.name} matches entity "${clause.entity}"`);
-  if (matchedA > 0 && !aOk)
-    parts.push(`surfaceA.${clause.field} did not include expected ${JSON.stringify(clause.valueA)}`);
-  if (matchedB > 0 && !bOk)
-    parts.push(`surfaceB.${clause.field} did not include expected ${JSON.stringify(clause.valueB)}`);
+  if (candidates === 0) {
+    parts.push(`no canonical entity matched descriptor ${JSON.stringify(clause.entity)}`);
+  } else if (matched === 0) {
+    parts.push(
+      `no canonical entity matched ${clause.surfaceA.surface}.${clause.surfaceA.name}.${clause.field}=${JSON.stringify(clause.valueA)} and ${clause.surfaceB.surface}.${clause.surfaceB.name}.${clause.field}=${JSON.stringify(clause.valueB)}`,
+    );
+    parts.push(`observed A=${JSON.stringify(actualA)}`);
+    parts.push(`observed B=${JSON.stringify(actualB)}`);
+  }
   if (typeof clause.driftDays === 'number' && !driftPassed)
     parts.push(`drift ${driftActual ?? 'unavailable'}d does not match expected ${clause.driftDays}d`);
   return parts.join('; ');

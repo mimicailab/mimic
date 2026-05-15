@@ -38,7 +38,7 @@ export function projectApi(
         ?.slots.find((s) => s.surface === adapter && s.objectKind === resource);
       if (!slot) continue;
 
-      const id = mintApiId(idPrefix, slot.deterministicSeed);
+      const id = mintApiId(idPrefix, slot.deterministicSeed, state.personaIndex);
       const body: Record<string, unknown> = {
         id,
         ...requiredDefaults,
@@ -64,7 +64,7 @@ function defaultPrefix(resource: string): string {
   return `${resource.slice(0, 3).toLowerCase()}_`;
 }
 
-function mintApiId(prefix: string, seed: string): string {
+function mintApiId(prefix: string, seed: string, personaIndex: number): string {
   const tail = seed.replace(/[^a-z0-9]/gi, '').slice(-10).toLowerCase();
-  return `${getPersonaIdPrefix(prefix, 1)}${tail}`;
+  return `${getPersonaIdPrefix(prefix, personaIndex)}${tail}`;
 }

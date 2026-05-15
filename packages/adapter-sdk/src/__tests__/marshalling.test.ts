@@ -21,7 +21,7 @@ function dataFor(
   };
   const ed: ExpandedData = {
     personaId,
-    blueprint: { id: personaId } as any,
+    persona: { name: personaId, age: 0, occupation: '', location: '', salary: null, description: '' },
     tables: {},
     documents: {},
     apiResponses,

@@ -19,6 +19,7 @@ import type { SchemaModel } from '../types/schema.js';
 import type { OwnerId } from '../contract/clause-types.js';
 import type { WorldState } from '../world/world-state.js';
 import type { MaterialisedDataset } from '../projection/types.js';
+import { getProjectorHints } from '../projection/projector-hints.js';
 
 // ---------------------------------------------------------------------------
 // Failure shape
@@ -28,10 +29,8 @@ export type ShapeFailureScope = 'local' | 'owner-level';
 
 export type ShapeFailure =
   | { kind: 'schema_mismatch'; scope: 'local'; table: string; rowIndex: number; unexpected: string[]; missing: string[] }
-  | { kind: 'fk_unresolved'; scope: 'local'; table: string; rowIndex: number; column: string }
   | { kind: 'missing_id'; scope: 'local'; surface: 'db' | 'api'; target: string; index: number }
-  | { kind: 'format_violation'; scope: 'local'; surface: 'db' | 'api'; target: string; field: string; rowIndex: number; expected: string }
-  | { kind: 'casing_violation'; scope: 'local'; surface: 'db' | 'api'; target: string; field: string; rowIndex: number }
+  | { kind: 'format_violation'; scope: 'local'; surface: 'api'; target: string; field: string; rowIndex: number; expectedPrefix: string; observed: string }
   | { kind: 'identity_drift'; scope: 'owner-level'; ownerId: OwnerId; entityId: string; details: string }
   | { kind: 'count_mismatch'; scope: 'owner-level'; ownerId: OwnerId; populationId: string; expected: number; actual: number }
   | { kind: 'cohort_drift'; scope: 'owner-level'; ownerId: OwnerId; entityId: string; details: string };
@@ -56,6 +55,7 @@ export function validateShape(
 
   failures.push(...checkDbShape(materialised, schema));
   failures.push(...checkApiShape(materialised));
+  failures.push(...checkApiIdPrefixes(materialised));
   failures.push(...checkIdentityDrift(materialised, worldState));
   failures.push(...checkCohortDrift(materialised, worldState));
   failures.push(...checkCountCoherence(materialised, worldState));
@@ -127,6 +127,47 @@ function checkApiShape(materialised: MaterialisedDataset): ShapeFailure[] {
             surface: 'api',
             target: `${adapterId}.${resource}`,
             index: idx,
+          });
+        }
+      });
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// API id-prefix format check — local
+// ---------------------------------------------------------------------------
+
+/**
+ * Confirms each API response's `id` field starts with the adapter's
+ * declared prefix (e.g. `cus_` for Stripe customers). When the prefix
+ * disagrees, that's a local format violation — Phase 10's shape repair
+ * re-mints the id with the right prefix. When no prefix is declared at
+ * all, the check is silent.
+ */
+function checkApiIdPrefixes(materialised: MaterialisedDataset): ShapeFailure[] {
+  const out: ShapeFailure[] = [];
+  for (const [adapterId, set] of Object.entries(materialised.apiResponses)) {
+    const hints = getProjectorHints(adapterId);
+    for (const [resource, responses] of Object.entries(set.responses)) {
+      const prefix = hints.idPrefixes?.[resource] ?? hints.idPrefix;
+      if (!prefix) continue;
+      responses.forEach((resp, idx) => {
+        const body = resp.body as Record<string, unknown> | null;
+        if (!body || typeof body !== 'object') return;
+        const id = body.id;
+        if (typeof id !== 'string' || id.length === 0) return; // missing_id covers this
+        if (!id.startsWith(prefix)) {
+          out.push({
+            kind: 'format_violation',
+            scope: 'local',
+            surface: 'api',
+            target: `${adapterId}.${resource}`,
+            field: 'id',
+            rowIndex: idx,
+            expectedPrefix: prefix,
+            observed: id,
           });
         }
       });

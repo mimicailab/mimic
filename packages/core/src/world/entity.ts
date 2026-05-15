@@ -38,9 +38,18 @@ export interface EntityLifecycle {
   status: LifecycleStatus;
 }
 
+export interface SurfaceBinding {
+  /** Abstract surface key (e.g. `db`, `stripe`, `gocardless`). */
+  surface: string;
+  /** Canonical object class on that surface (e.g. `users`, `customer`). */
+  objectKind: string;
+}
+
 export interface CanonicalEntity {
   id: EntityId;
   populationId: PopulationId;
+  /** Semantic kind carried by the canonical world, when known. */
+  kind?: string;
   /**
    * Cohort memberships. A single entity may belong to multiple cohorts
    * (e.g. {paying, starter, monthly}); ordering is irrelevant so we use a
@@ -53,6 +62,12 @@ export interface CanonicalEntity {
    * name. Projectors translate these to surface columns.
    */
   attrs: Record<string, unknown>;
+  /**
+   * Surface/object pairs this entity actually owns. Phase 6 derives
+   * `IdentityRecord.slots` from these bindings instead of minting slots for
+   * every coordinate mentioned anywhere in the contract.
+   */
+  surfaceBindings?: SurfaceBinding[];
   lifecycle: EntityLifecycle;
 }
 

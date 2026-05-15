@@ -20,7 +20,6 @@ const ADAPTER_PACKAGES = [
   '@mimicai/core',
   '@mimicai/cli',
   '@mimicai/adapter-sdk',
-  '@mimicai/blueprints',
   '@mimicai/adapter-postgres',
   '@mimicai/adapter-mysql',
   '@mimicai/adapter-sqlite',
