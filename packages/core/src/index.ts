@@ -133,6 +133,7 @@ export {
   CONTRACT_COMPILER_VERSION,
 } from './contract/contract-compiler.js';
 export type { CompileContractOptions } from './contract/contract-compiler.js';
+export { canonicaliseContract } from './contract/canonicaliser.js';
 export type {
   PersonaContract,
 } from './contract/persona-contract.js';
