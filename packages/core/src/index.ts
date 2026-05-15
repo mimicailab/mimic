@@ -134,6 +134,30 @@ export {
 } from './contract/contract-compiler.js';
 export type { CompileContractOptions } from './contract/contract-compiler.js';
 export { canonicaliseContract } from './contract/canonicaliser.js';
+
+// V5 — Phase 4 planner surface.
+export {
+  runPreGenerationGate,
+  formatGateReport,
+  runFeasibilityChecks,
+  assignOwner,
+  listRules,
+  OWNERS_REGISTRY_VERSION,
+  buildObligationGraph,
+  buildObligationNode,
+} from './planner/index.js';
+export type {
+  GateResult,
+  FeasibilityResult,
+  FeasibilityFailure,
+  FeasibilityRuleId,
+  MissingOwnerFailure,
+  ContradictionAndCoverageReport,
+  OwnerAssignmentDecision,
+  ObligationGraph,
+  ObligationNode,
+  BudgetClaim,
+} from './planner/index.js';
 export type {
   PersonaContract,
 } from './contract/persona-contract.js';
