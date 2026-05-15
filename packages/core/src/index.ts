@@ -227,6 +227,17 @@ export type {
 
 // V5 — Phase 9 shape validator.
 export { validateShape } from './validation/shape-validator.js';
+
+// V5 — Phase 11 proof report.
+export { buildProofArtifact, PROOF_VERSION } from './validation/proof-report.js';
+export type {
+  ProofArtifact,
+  ProofRecord,
+  ProofEvidence,
+  ProofResult,
+  MissingProofError,
+  BuildProofOptions,
+} from './validation/proof-report.js';
 export type {
   ShapeFailure,
   ShapeFailureScope,
