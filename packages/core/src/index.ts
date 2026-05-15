@@ -225,6 +225,15 @@ export type {
   ContractEvaluationResult,
 } from './validation/contract-evaluator.js';
 
+// V5 — Phase 9 shape validator.
+export { validateShape } from './validation/shape-validator.js';
+export type {
+  ShapeFailure,
+  ShapeFailureScope,
+  ShapeClassification,
+  ShapeValidationResult,
+} from './validation/shape-validator.js';
+
 // V5 — Phase 7 projection.
 export {
   runProjection,
