@@ -35,7 +35,7 @@ import type { ObligationGraph } from '../planner/obligation-graph.js';
 import type { WorldState } from '../world/world-state.js';
 import type { MaterialisedDataset } from '../projection/types.js';
 
-import { selectRows, readRowField, toNumber, firstScalar } from './select-rows.js';
+import { selectRows, resolveRows, readRowField, toNumber, firstScalar } from './select-rows.js';
 import { checkReconciliation } from './helper-checkers/reconciliation.js';
 import { checkTemporalGap } from './helper-checkers/temporal-consistency.js';
 import { resolveNumericTolerance } from '../utils/tolerance.js';
@@ -148,6 +148,14 @@ function evaluateClause(
   }
 }
 
+function semanticAdapter(
+  semanticTarget: import('../contract/clause-types.js').SemanticTarget | undefined,
+): string | undefined {
+  if (!semanticTarget) return undefined;
+  if (semanticTarget.kind === 'billing_customer_cohort') return semanticTarget.adapter;
+  return undefined;
+}
+
 function ownerFor(clause: Clause, graph: ObligationGraph | undefined): OwnerId | undefined {
   return graph?.byClauseId.get(clause.id)?.ownerId;
 }
@@ -161,7 +169,7 @@ function evalCount(
   expanded: ExpandedData,
   ownerId: OwnerId | undefined,
 ): ContractEvaluation {
-  const target = resolveTarget(clause.target, clause.semanticTarget?.adapter, clause);
+  const target = resolveTarget(clause.target, semanticAdapter(clause.semanticTarget), clause);
   if (!target) {
     return fail(clause, 'count target could not be resolved', undefined, 'canonicalisation', ownerId);
   }
@@ -178,7 +186,7 @@ function evalAggregate(
   expanded: ExpandedData,
   ownerId: OwnerId | undefined,
 ): ContractEvaluation {
-  const target = resolveTarget(clause.target, clause.semanticTarget?.adapter, clause);
+  const target = resolveTarget(clause.target, semanticAdapter(clause.semanticTarget), clause);
   if (!target) {
     return fail(clause, 'aggregate target could not be resolved', undefined, 'canonicalisation', ownerId);
   }
@@ -256,11 +264,13 @@ function evalTemporal(
     // Prefer the materialised dataset; fall back to lifecycle events.
     const target = resolveTarget(clause.target, undefined, clause);
     let count = 0;
+    let hasMaterialisedRows = false;
     if (target) {
       const rows = selectRows(target, expanded);
       count = countInWindow(rows, clause.field, clause.min, clause.max);
+      hasMaterialisedRows = resolveRows(target, expanded).length > 0;
     }
-    if (count === 0 && worldState.lifecycleEvents.length > 0) {
+    if (count === 0 && !hasMaterialisedRows && worldState.lifecycleEvents.length > 0) {
       // Fall through to lifecycle events when materialisation is empty
       // (e.g. an api:stripe.charge surface that no projector registered).
       count = worldState.lifecycleEvents.filter((e) => {

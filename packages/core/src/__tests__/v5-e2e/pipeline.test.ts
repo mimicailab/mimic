@@ -108,29 +108,44 @@ describe('pipeline — gate fails before any planner runs', () => {
 
 describe('pipeline — owner_level abort when evaluator cannot pass', () => {
   it('exhausts regen attempts on a clause the planner cannot satisfy and returns owner_level', () => {
-    // Aggregate sum over `mrr` with expected=10_000 on a raw subscription
-    // target — population planner creates entities without an `mrr`
-    // attribute (no semantic data carrier yet), so the aggregate evaluator
-    // reports sum=0 ≠ 10_000. Regen replays the reconciliation planner
-    // (revenue aggregates route there) which doesn't change the entity
-    // attrs, so we exhaust attempts.
-    const agg: import('../../contract/clause-types.js').AggregateClause = {
-      id: 'mrr',
-      quote: '£10k MRR',
-      family: 'aggregate',
-      op: 'sum',
+    // Total count says 5 active users; per-plan counts say 5 free AND 5
+    // pro on the same population. Free seeds plan=free on the 5 existing
+    // entities; pro can't adopt them (conflicting plan), so the while
+    // loop mints 5 more entities — now total=10, and the total clause
+    // (expected=5) fails on status=active. Deterministic, can't be
+    // fixed by regen.
+    const total: CountClause = {
+      id: 'total-active',
+      quote: '5 active users',
+      family: 'count',
       strength: 'hard',
-      field: 'mrr',
-      expected: 10_000,
-      target: { surface: 'api', name: 'stripe.subscription' },
+      target: { surface: 'db', name: 'users', filter: { status: 'active' } },
+      expected: 5,
+      tolerance: 0,
     };
-    const result = runPipeline(makeContract([agg]), undefined, { runId: 'r-owner' });
+    const free: CountClause = {
+      id: 'free-five',
+      quote: '5 free users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { plan: 'free', status: 'active' } },
+      expected: 5,
+    };
+    const pro: CountClause = {
+      id: 'pro-five',
+      quote: '5 pro users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { plan: 'pro', status: 'active' } },
+      expected: 5,
+    };
+    const result = runPipeline(makeContract([total, free, pro]), undefined, { runId: 'r-owner' });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.reason).toBe('owner_level');
     if (result.reason !== 'owner_level') return;
     expect(result.report.cause).toBe('regen_exhausted');
-    expect(result.report.ownerId).toBe('reconciliation');
-    expect(result.report.clauseIds).toContain('mrr');
+    expect(result.report.ownerId).toBe('population');
+    expect(result.report.clauseIds).toContain('total-active');
   });
 });

@@ -8,6 +8,7 @@ import {
   OWNERS_REGISTRY_VERSION,
 } from '../../planner/index.js';
 import type {
+  AggregateClause,
   AnchorClause,
   Clause,
   CountClause,
@@ -280,5 +281,31 @@ describe('pre-generation gate', () => {
     expect(counts?.ownerId).toBe('population');
     expect(narr?.ownerId).toBeNull();
     expect(narr?.ruleId).toBe('narrative.unowned.v1');
+  });
+
+  it('routes product-side minor-unit revenue aggregates to reconciliation', () => {
+    const clause: AggregateClause = {
+      id: 'stripe-mrr',
+      quote: '£77k MRR on Stripe',
+      family: 'aggregate',
+      op: 'sum',
+      strength: 'hard',
+      field: 'mrr_cents',
+      expected: 7_700_000,
+      target: {
+        surface: 'db',
+        name: 'users',
+        filter: { status: 'active', plan: { neq: 'free' }, billing_platform: 'stripe' },
+      },
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying' },
+      },
+    };
+    const result = runPreGenerationGate(makeContract([clause]));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.obligationGraph.byClauseId.get('stripe-mrr')?.ownerId).toBe('reconciliation');
   });
 });

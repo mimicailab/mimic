@@ -235,27 +235,34 @@ function checkAnchorUniqueness(clauses: Clause[]): FeasibilityFailure[] {
 
 function checkCrossSurfaceConsistency(clauses: Clause[]): FeasibilityFailure[] {
   const failures: FeasibilityFailure[] = [];
-  const byEntity = new Map<string, CrossSurfaceClause[]>();
+  // Group by the comparison being made: (entity, field, surfaceA, surfaceB).
+  // Two clauses are only contradictory when they describe the SAME comparison
+  // with incompatible (valueA, valueB) pairs. Distinct surface pairs (e.g.
+  // db↔stripe and db↔paddle on the same `paid_user.external_id` field) are
+  // independent assertions, not contradictions.
+  const byKey = new Map<string, CrossSurfaceClause[]>();
+  const surfaceLabel = (s: { surface: 'db' | 'api'; name: string }): string =>
+    s.surface === 'db' ? `db:${s.name}` : `api:${s.name}`;
   for (const c of clauses) {
     if (c.family !== 'cross_surface') continue;
     const cs = c as CrossSurfaceClause;
-    const list = byEntity.get(cs.entity) ?? [];
+    const key = `${cs.entity}::${cs.field}::${surfaceLabel(cs.surfaceA)}::${surfaceLabel(cs.surfaceB)}`;
+    const list = byKey.get(key) ?? [];
     list.push(cs);
-    byEntity.set(cs.entity, list);
+    byKey.set(key, list);
   }
 
-  for (const [entity, group] of byEntity) {
+  for (const [, group] of byKey) {
     if (group.length < 2) continue;
+    const a = group[0]!;
     for (let i = 1; i < group.length; i++) {
-      const a = group[0]!;
       const b = group[i]!;
-      if (a.field !== b.field) continue;
       if (a.valueA === b.valueA && a.valueB === b.valueB) continue;
       failures.push({
         ruleId: 'cross_surface_consistency',
         clauseIds: [a.id, b.id],
         quotes: [a.quote, b.quote],
-        detail: `Entity "${entity}" field "${a.field}" demanded with incompatible (valueA, valueB) pairs.`,
+        detail: `Entity "${a.entity}" field "${a.field}" between ${surfaceLabel(a.surfaceA)} and ${surfaceLabel(a.surfaceB)} demanded with incompatible (valueA, valueB) pairs.`,
       });
     }
   }

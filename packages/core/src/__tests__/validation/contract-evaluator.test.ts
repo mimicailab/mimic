@@ -203,6 +203,66 @@ describe('contract evaluator — happy path round-trips', () => {
     expect(evaluation.failures.find((f) => f.clauseId === 'starter-price')).toBeUndefined();
   });
 
+  it('product-user revenue aggregates stamp onto existing paid users without inflating counts', () => {
+    const paying: CountClause = {
+      id: 'paying-users',
+      quote: '5 paying users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { status: 'active', plan: { neq: 'free' } } },
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying' },
+      },
+      expected: 5,
+    };
+    const free: CountClause = {
+      id: 'free-users',
+      quote: '2 free users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { status: 'active', plan: 'free' } },
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'free' },
+      },
+      expected: 2,
+    };
+    const stripeMrr: AggregateClause = {
+      id: 'stripe-mrr',
+      quote: '£50 MRR on Stripe',
+      family: 'aggregate',
+      op: 'sum',
+      strength: 'hard',
+      target: {
+        surface: 'db',
+        name: 'users',
+        filter: { status: 'active', plan: { neq: 'free' }, billing_platform: 'stripe' },
+      },
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying' },
+      },
+      field: 'mrr_cents',
+      expected: 5_000,
+    };
+
+    const { evaluation, dataset } = pipeline([paying, free, stripeMrr]);
+    expect(evaluation.passed).toBe(true);
+    expect(dataset.tables.users).toHaveLength(7);
+    expect(
+      dataset.tables.users.filter(
+        (row) => row.status === 'active' && row.plan !== 'free',
+      ),
+    ).toHaveLength(5);
+    expect(
+      dataset.tables.users.filter((row) => row.status === 'active' && row.billing_platform === 'stripe'),
+    ).toHaveLength(1);
+  });
+
   it('reconciliation clause: ledger balanced ⇒ evaluator passes', () => {
     const recon: ReconciliationClause = {
       id: 'mrr',
@@ -231,42 +291,42 @@ describe('contract evaluator — happy path round-trips', () => {
 
 describe('contract evaluator — failure routing', () => {
   it('carries ownerId on failures so regen knows where to go', () => {
-    // Aggregate over an MRR field that population entities don't carry —
-    // sum = 0, expected = 10_000. The evaluator surfaces the failure
-    // with ownerId='reconciliation' (revenue aggregates route there).
-    const c: import('../../contract/clause-types.js').AggregateClause = {
-      id: 'unmet',
-      quote: '£10k MRR among paying customers',
-      family: 'aggregate',
-      op: 'sum',
-      strength: 'hard',
-      field: 'mrr',
-      expected: 10_000,
-      semanticTarget: {
-        kind: 'billing_customer_cohort',
-        adapter: 'stripe',
-        facets: { billingState: 'paying' },
-      },
-    };
-    const pop: CountClause = {
-      id: 'pop',
-      quote: '5 paying customers',
+    // 5 active users + 5 free + 5 pro on the same population. Free seeds
+    // plan=free on the existing 5 entities; pro can't adopt them
+    // (conflicting plan), so it mints 5 NEW entities. Now total=10 vs
+    // expected=5 — total-active fails. The evaluator surfaces the
+    // failure with ownerId='population' for Phase 10's regen routing.
+    const total: CountClause = {
+      id: 'total-active',
+      quote: '5 active users',
       family: 'count',
       strength: 'hard',
-      semanticTarget: {
-        kind: 'billing_customer_cohort',
-        adapter: 'stripe',
-        facets: { billingState: 'paying' },
-      },
+      target: { surface: 'db', name: 'users', filter: { status: 'active' } },
+      expected: 5,
+      tolerance: 0,
+    };
+    const free: CountClause = {
+      id: 'free-five',
+      quote: '5 free users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { plan: 'free', status: 'active' } },
       expected: 5,
     };
-    const { evaluation } = pipeline([pop, c]);
+    const pro: CountClause = {
+      id: 'pro-five',
+      quote: '5 pro users',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users', filter: { plan: 'pro', status: 'active' } },
+      expected: 5,
+    };
+    const { evaluation } = pipeline([total, free, pro]);
     expect(evaluation.passed).toBe(false);
-    const failure = evaluation.failures.find((f) => f.clauseId === 'unmet')!;
+    const failure = evaluation.failures.find((f) => f.clauseId === 'total-active')!;
     expect(failure).toBeDefined();
-    expect(failure.ownerId).toBe('reconciliation');
+    expect(failure.ownerId).toBe('population');
     expect(failure.source).toBe('planner');
-    expect(failure.quote).toBe('£10k MRR among paying customers');
   });
 
   it('failure source is one of the V5 sources only (no `lowering`)', () => {
@@ -282,6 +342,48 @@ describe('contract evaluator — failure routing', () => {
     for (const f of evaluation.failures) {
       expect(['planner', 'projection', 'canonicalisation']).toContain(f.source);
     }
+  });
+
+  it('does not fall back to lifecycle events when a db target already has rows', () => {
+    const clause: TemporalClause = {
+      id: 'stale-login',
+      quote: '1 pro customer logged in during May',
+      family: 'temporal',
+      kind: 'window',
+      strength: 'hard',
+      target: {
+        surface: 'db',
+        name: 'users',
+        filter: { status: 'active', plan: 'pro' },
+      },
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying', tier: 'pro' },
+      },
+      field: 'last_login_at',
+      min: '2026-05-01',
+      max: '2026-05-31',
+      expected: 1,
+    };
+    const contract = makeContract([clause]);
+    const state = createWorldState(new SeededRandom(1));
+    state.lifecycleEvents.push({
+      entityId: 'product:users:paying/e1',
+      kind: 'start',
+      timestamp: '2026-05-10T00:00:00.000Z',
+      attrs: { field: 'last_login_at' },
+    });
+
+    const evaluation = evaluateContract(contract, state, {
+      tables: {
+        users: [{ status: 'active', plan: 'pro', last_login_at: '2026-04-01T00:00:00.000Z' }],
+      },
+      apiResponses: {},
+    });
+
+    expect(evaluation.passed).toBe(false);
+    expect(evaluation.failures.find((f) => f.clauseId === 'stale-login')?.actual).toBe(0);
   });
 });
 

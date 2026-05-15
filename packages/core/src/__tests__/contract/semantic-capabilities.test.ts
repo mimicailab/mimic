@@ -59,6 +59,83 @@ describe('semantic capability registry', () => {
     });
   });
 
+  it('canonicalises raw product user cohorts onto semantic targets and tighter db filters', () => {
+    const clauses: Clause[] = [
+      {
+        id: 'paying-users',
+        quote: '2,847 paying customers in the product database',
+        family: 'count',
+        strength: 'hard',
+        target: {
+          surface: 'db',
+          name: 'users',
+          filter: { status: 'active' },
+        },
+        expected: 2847,
+      },
+      {
+        id: 'orphans',
+        quote: '34 users in the database with paid plan flags but no corresponding billing platform record',
+        family: 'count',
+        strength: 'hard',
+        target: {
+          surface: 'db',
+          name: 'users',
+          filter: { status: 'active' },
+        },
+        expected: 34,
+      },
+      {
+        id: 'stripe-mrr',
+        quote: '£77k MRR on Stripe',
+        family: 'aggregate',
+        op: 'sum',
+        strength: 'hard',
+        target: {
+          surface: 'db',
+          name: 'users',
+          filter: { status: 'active', billing_platform: 'stripe' },
+        },
+        field: 'mrr_cents',
+        expected: 7_700_000,
+      },
+    ];
+
+    const changed = canonicaliseSemanticClauses(clauses);
+
+    expect(changed).toBe(7);
+    expect(clauses[0]).toMatchObject({
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying' },
+      },
+      target: {
+        filter: { status: 'active', plan: { neq: 'free' } },
+      },
+    });
+    expect(clauses[1]).toMatchObject({
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying', linkage: 'unlinked' },
+      },
+      target: {
+        filter: { status: 'active', plan: { neq: 'free' }, billing_platform: null },
+      },
+    });
+    expect(clauses[2]).toMatchObject({
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying' },
+      },
+      target: {
+        filter: { status: 'active', billing_platform: 'stripe', plan: { neq: 'free' } },
+      },
+    });
+  });
+
   it('resolves billing customer cohorts into executable Stripe subscription targets', () => {
     const resolved = resolveSemanticTarget({
       kind: 'billing_customer_cohort',
@@ -73,6 +150,20 @@ describe('semantic capability registry', () => {
       'items.data.price.lookup_key': {
         in: expect.arrayContaining(['starter', 'starter-monthly', 'starter_annual']),
       },
+    });
+  });
+
+  it('resolves product user cohorts into executable db user targets', () => {
+    const resolved = resolveSemanticTarget({
+      kind: 'product_user_cohort',
+      table: 'users',
+      facets: { billingState: 'paying', linkage: 'unlinked' },
+    });
+
+    expect(resolved?.target).toEqual({
+      surface: 'db',
+      name: 'users',
+      filter: { plan: { neq: 'free' }, billing_platform: null },
     });
   });
 });

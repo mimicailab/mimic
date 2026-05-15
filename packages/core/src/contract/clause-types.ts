@@ -30,7 +30,21 @@ export interface BillingCustomerCohortSemanticTarget {
   };
 }
 
-export type SemanticTarget = BillingCustomerCohortSemanticTarget;
+export interface ProductUserCohortSemanticTarget {
+  kind: 'product_user_cohort';
+  /** Product-side user table, e.g. users. */
+  table: string;
+  facets?: {
+    /** Canonical business tier, e.g. starter | pro | enterprise. */
+    tier?: string;
+    /** Paying/free lifecycle bucket in the product database. */
+    billingState?: 'paying' | 'free';
+    /** Whether the user is linked to a billing platform record. */
+    linkage?: 'linked' | 'unlinked';
+  };
+}
+
+export type SemanticTarget = BillingCustomerCohortSemanticTarget | ProductUserCohortSemanticTarget;
 
 export type SemanticFieldHint = 'tier';
 

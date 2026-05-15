@@ -164,9 +164,16 @@ function ensureCount(
 ): void {
   if (!clause) return;
 
-  hydrateExistingEntities(entities, clause, expected);
-  while (matchingEntities(entities, clause).length < expected) {
+  // Compute the current matching count ONCE, then track it incrementally
+  // through the hydrate + mint loops. Recomputing matchingEntities() inside
+  // each iteration is O(N) per call, which made the whole step O(M·N²) and
+  // dominated runtime on big personas (~15 min on 3.8k entities × 29
+  // population clauses).
+  let matched = matchingEntities(entities, clause).length;
+  matched = hydrateExistingEntities(entities, clause, expected, matched);
+  while (matched < expected) {
     entities.push(makeEntity(populationId, entities.length + 1, clause));
+    matched++;
   }
 }
 
@@ -205,7 +212,11 @@ function applyDistribution(entities: CanonicalEntity[], clause: DistributionClau
   const total = entities.length;
   if (total === 0) return;
   const entries = Object.entries(clause.values).sort((a, b) => b[1] - a[1]);
-  const unassigned = entities.filter((entity) => readEntityField(entity, clause.field) == null);
+  // Only entities with an UNSET field are eligible for distribution
+  // assignment. Entities that an earlier clause explicitly pinned to
+  // `null` (e.g. orphan-count's `billing_platform: null`) are off-limits
+  // — overwriting them would invalidate the pinning clause.
+  const unassigned = entities.filter((entity) => readEntityField(entity, clause.field) === undefined);
   let cursor = 0;
   for (const [value, pct] of entries) {
     const targetCount = Math.round((pct / 100) * total);
@@ -224,8 +235,9 @@ function ensureAggregatePopulation(
   populationId: string,
   clause: AggregateClause,
 ): void {
-  hydrateExistingEntities(entities, clause, 1);
-  if (matchingEntities(entities, clause).length > 0) return;
+  let matched = matchingEntities(entities, clause).length;
+  matched = hydrateExistingEntities(entities, clause, 1, matched);
+  if (matched > 0) return;
   entities.push(makeEntity(populationId, entities.length + 1, clause));
 }
 
@@ -236,14 +248,37 @@ function stampAggregate(
   expected: number,
   op: 'sum' | 'avg',
 ): void {
-  const values =
-    op === 'sum'
-      ? splitExpected(expected, entities.length)
-      : entities.map(() => expected);
+  if (op === 'avg') {
+    for (const entity of entities) {
+      if (readSeedField(entity.attrs, field) === undefined) {
+        setSeedField(entity.attrs, field, expected);
+      }
+      setSeedField(entity.attrs, `agg.${metricId}`, expected);
+    }
+    return;
+  }
 
-  for (let i = 0; i < entities.length; i++) {
-    const entity = entities[i]!;
-    const value = values[i]!;
+  // SUM op: when a broader aggregate runs after a narrower one already
+  // stamped some entities (e.g. `total-mrr` on status=active AFTER
+  // `stripe-mrr-sum` on billing_platform=stripe), preserve the existing
+  // values and only distribute the REMAINDER across entities that don't
+  // yet have the field set. Without this, the broader aggregate
+  // overwrites the per-cohort stamps and every narrower clause fails.
+  let alreadyStamped = 0;
+  const unstamped: CanonicalEntity[] = [];
+  for (const entity of entities) {
+    const v = readSeedField(entity.attrs, field);
+    if (typeof v === 'number') {
+      alreadyStamped += v;
+    } else {
+      unstamped.push(entity);
+    }
+  }
+  const remaining = expected - alreadyStamped;
+  const values = splitExpected(remaining, unstamped.length);
+  for (let i = 0; i < unstamped.length; i++) {
+    const entity = unstamped[i]!;
+    const value = values[i] ?? 0;
     setSeedField(entity.attrs, field, value);
     setSeedField(entity.attrs, `agg.${metricId}`, value);
   }
@@ -302,18 +337,25 @@ function hydrateExistingEntities(
   entities: CanonicalEntity[],
   clause: Clause,
   expected: number,
-): void {
+  matched: number,
+): number {
   // Cohort-only seed: drop per-entity-index defaults (external_id,
   // customer_reference) so canAdoptSeed doesn't reject every existing
   // entity on a fabricated id collision. Per-index fields stay on the
   // newly-minted entities from makeEntity; they're not adoption criteria.
+  //
+  // `matched` is threaded through (NOT recomputed) so this stays O(N) per
+  // clause instead of O(N²). Every successful applySeed turns one
+  // previously-unmatched entity into a matching one — increment by 1.
   const seed = cohortSeedFor(clause);
   for (const entity of entities) {
-    if (matchingEntities(entities, clause).length >= expected) return;
+    if (matched >= expected) return matched;
     if (matchesClause(entity, clause)) continue;
     if (!canAdoptSeed(entity, seed)) continue;
     applySeed(entity, seed, clause);
+    matched++;
   }
+  return matched;
 }
 
 function cohortSeedFor(clause: Clause): Record<string, unknown> {
@@ -560,33 +602,58 @@ function applySemanticSeed(
   entityIndex: number,
 ): void {
   const semanticTarget = (clause as { semanticTarget?: SemanticTarget }).semanticTarget;
-  if (!semanticTarget || semanticTarget.kind !== 'billing_customer_cohort') return;
+  if (!semanticTarget) return;
 
-  const tier = semanticTarget.facets?.tier;
-  if (semanticTarget.facets?.billingState === 'paying' && readSeedField(attrs, 'status') === undefined) {
+  if (semanticTarget.kind === 'billing_customer_cohort') {
+    const tier = semanticTarget.facets?.tier;
+    if (semanticTarget.facets?.billingState === 'paying' && readSeedField(attrs, 'status') === undefined) {
+      setSeedField(attrs, 'status', 'active');
+    }
+    if (semanticTarget.facets?.billingState === 'free' && readSeedField(attrs, 'status') === undefined) {
+      setSeedField(attrs, 'status', 'free');
+    }
+    if (readSeedField(attrs, 'billing_platform') === undefined) {
+      setSeedField(attrs, 'billing_platform', semanticTarget.adapter);
+    }
+    if (!tier) return;
+
+    const price = defaultTierAmountCents(tier);
+    setIfMissing(attrs, 'tier', tier);
+    setIfMissing(attrs, 'plan', tier);
+    setIfMissing(attrs, 'nickname', `${tier}-monthly`);
+    setIfMissing(attrs, 'lookup_key', `${tier}-monthly`);
+    setIfMissing(attrs, 'items.data.price.lookup_key', `${tier}-monthly`);
+    setIfMissing(attrs, 'items.data.price.nickname', `${tier}-monthly`);
+    if (price != null) {
+      setIfMissing(attrs, 'unit_amount', price);
+      setIfMissing(attrs, 'mrr', price);
+      setIfMissing(attrs, 'mrr_cents', price);
+    }
+    setIfMissing(attrs, 'customer_reference', `${semanticTarget.adapter}-customer-${entityIndex}`);
+    return;
+  }
+
+  if (readSeedField(attrs, 'status') === undefined) {
     setSeedField(attrs, 'status', 'active');
   }
-  if (semanticTarget.facets?.billingState === 'free' && readSeedField(attrs, 'status') === undefined) {
-    setSeedField(attrs, 'status', 'free');
+  if (semanticTarget.facets?.billingState === 'free') {
+    setIfMissing(attrs, 'plan', 'free');
   }
-  if (readSeedField(attrs, 'billing_platform') === undefined) {
-    setSeedField(attrs, 'billing_platform', semanticTarget.adapter);
+  if (semanticTarget.facets?.linkage === 'unlinked') {
+    setIfMissing(attrs, 'billing_platform', null);
+    setIfMissing(attrs, 'external_id', null);
   }
+
+  const tier = semanticTarget.facets?.tier;
   if (!tier) return;
 
   const price = defaultTierAmountCents(tier);
   setIfMissing(attrs, 'tier', tier);
   setIfMissing(attrs, 'plan', tier);
-  setIfMissing(attrs, 'nickname', `${tier}-monthly`);
-  setIfMissing(attrs, 'lookup_key', `${tier}-monthly`);
-  setIfMissing(attrs, 'items.data.price.lookup_key', `${tier}-monthly`);
-  setIfMissing(attrs, 'items.data.price.nickname', `${tier}-monthly`);
   if (price != null) {
-    setIfMissing(attrs, 'unit_amount', price);
     setIfMissing(attrs, 'mrr', price);
     setIfMissing(attrs, 'mrr_cents', price);
   }
-  setIfMissing(attrs, 'customer_reference', `${semanticTarget.adapter}-customer-${entityIndex}`);
 }
 
 function defaultTierAmountCents(tier: string): number | undefined {
@@ -607,7 +674,8 @@ function shouldDefaultExternalId(clause: Clause): boolean {
   return populationId === 'db:users'
     || populationId === 'paying_customers'
     || populationId === 'billing_customers'
-    || populationId === 'free_customers';
+    || populationId === 'free_customers'
+    || populationId.startsWith('product:');
 }
 
 function buildExternalIdSeed(clause: Clause, entityIndex: number): string {

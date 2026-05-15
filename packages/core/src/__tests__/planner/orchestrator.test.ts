@@ -78,7 +78,7 @@ describe('population planner', () => {
     };
     const { contract, graph, initial } = setUp([count]);
     const { state } = runPlanners(contract, graph, initial);
-    const pop = state.populations.get('paying_customers');
+    const pop = state.populations.get('paying_customers:stripe');
     expect(pop).toHaveLength(100);
     // Every entity carries the cohort label derived from the cohort rule.
     expect([...pop![0]!.cohorts]).toContain('tier:starter');
@@ -295,11 +295,11 @@ describe('regenerateFromOwner', () => {
     };
     const { contract, graph, initial } = setUp([count, failed]);
     const { state: first } = runPlanners(contract, graph, initial);
-    expect(first.populations.get('paying_customers')).toHaveLength(100);
+    expect(first.populations.get('paying_customers:stripe')).toHaveLength(100);
     expect(first.lifecycleEvents.filter((e) => e.kind === 'failure')).toHaveLength(8);
 
     const { state } = regenerateFromOwner(contract, graph, first, 'population');
-    expect(state.populations.get('paying_customers')).toHaveLength(100);
+    expect(state.populations.get('paying_customers:stripe')).toHaveLength(100);
     expect(state.lifecycleEvents.filter((e) => e.kind === 'failure')).toHaveLength(8);
   });
 

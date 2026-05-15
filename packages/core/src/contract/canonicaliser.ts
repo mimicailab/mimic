@@ -270,7 +270,7 @@ function resolveSubject(
   rawTarget: ResourceTarget | undefined,
 ): ResolvedSubject {
   if (semanticTarget) {
-    const fromSemantic = resolveSemanticSubject(semanticTarget);
+    const fromSemantic = resolveSemanticSubject(semanticTarget, rawTarget);
     if (fromSemantic.populationId !== 'unresolved') return fromSemantic;
   }
   if (rawTarget) {
@@ -279,20 +279,49 @@ function resolveSubject(
   return { populationId: 'unresolved', unresolvedText: '(no target)' };
 }
 
-function resolveSemanticSubject(semanticTarget: SemanticTarget): ResolvedSubject {
+function resolveSemanticSubject(
+  semanticTarget: SemanticTarget,
+  rawTarget: ResourceTarget | undefined,
+): ResolvedSubject {
   switch (semanticTarget.kind) {
     case 'billing_customer_cohort': {
       const billingState = semanticTarget.facets?.billingState;
       const tier = semanticTarget.facets?.tier;
-      const populationId: PopulationId =
+      // Population is per-adapter: "1,200 Stripe paying customers" and
+      // "412 Paddle paying customers" are different populations, NOT
+      // contradictory counts on the same population.
+      const adapter = semanticTarget.adapter;
+      const base =
         billingState === 'paying'
           ? 'paying_customers'
           : billingState === 'free'
             ? 'free_customers'
             : 'billing_customers';
+      const populationId: PopulationId = adapter ? `${base}:${adapter}` : base;
       return {
         populationId,
         cohortRule: tier != null ? { tier } : undefined,
+      };
+    }
+    case 'product_user_cohort': {
+      const table = semanticTarget.table.trim().toLowerCase();
+      const billingState = semanticTarget.facets?.billingState;
+      const populationId: PopulationId =
+        billingState === 'paying'
+          ? `product:${table}:paying`
+          : billingState === 'free'
+            ? `product:${table}:free`
+            : `product:${table}`;
+      const semanticRule: CohortRule = {};
+      if (semanticTarget.facets?.tier) semanticRule.plan = semanticTarget.facets.tier;
+      if (semanticTarget.facets?.linkage === 'unlinked') semanticRule.billing_platform = null;
+      const rawRule =
+        rawTarget && rawTarget.surface === 'db' && rawTarget.name.trim().toLowerCase() === table
+          ? rawTarget.filter
+          : undefined;
+      return {
+        populationId,
+        cohortRule: mergeCohortRules(semanticRule, rawRule),
       };
     }
   }
@@ -320,9 +349,24 @@ function canonicaliseMetric(op: 'sum' | 'avg', field: string): MetricId {
   // Known metrics keep their canonical name regardless of op so the
   // reconciliation planner can match a sum-of-MRR aggregate against a
   // headline MRR target.
-  const norm = field.trim().toLowerCase();
-  if (norm === 'mrr' || norm === 'arr' || norm === 'revenue') return norm;
+  const norm = field.trim().toLowerCase().replace(/\s+/g, '_');
+  if (/^mrr(?:_|$)/.test(norm) && /(change|delta)/.test(norm)) return 'mrr_change';
+  if (/(^|_)mrr_change(?:_|$)/.test(norm)) return 'mrr_change';
+  if (/(^|_)mrr(?:_|$)/.test(norm)) return 'mrr';
+  if (/(^|_)arr(?:_|$)/.test(norm)) return 'arr';
+  if (/(^|_)revenue(?:_|$)/.test(norm)) return 'revenue';
   return `${op}_${norm}`;
+}
+
+function mergeCohortRules(
+  semanticRule: CohortRule,
+  rawRule: Filter | undefined,
+): CohortRule | undefined {
+  const merged: CohortRule = {
+    ...semanticRule,
+    ...(rawRule ? cloneFilter(rawRule) : {}),
+  };
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 function canonicaliseWindow(min: string, max: string): CanonicalWindow {

@@ -42,6 +42,13 @@ export function runLifecyclePlanner(
       if (pool.length === 0) continue;
 
       const clause = contract.clauses.find((c) => c.id === node.clauseId);
+      // Restrict the pool to entities matching the clause's cohort
+      // filter. Without this, a window clause like "14 pro customers
+      // logged in within window" would round-robin across every db:users
+      // entity, including 2833 entities that aren't pro — and the
+      // evaluator (which filters by `plan=pro`) would never find them.
+      const cohortPool = filterByCohort(pool, clause);
+      const targetPool = cohortPool.length > 0 ? cohortPool : pool;
       const kind = inferKind(node.budgetClaim.field, clause);
       const timestamps = evenlySpacedTimestamps(
         node.budgetClaim.min,
@@ -49,14 +56,25 @@ export function runLifecyclePlanner(
         node.budgetClaim.expected,
       );
 
+      const field = node.budgetClaim.field;
       for (let i = 0; i < timestamps.length; i++) {
-        const entity = pool[i % pool.length]!;
+        const entity = targetPool[i % targetPool.length]!;
+        const timestamp = timestamps[i]!;
         events.push({
           entityId: entity.id,
           kind,
-          timestamp: timestamps[i]!,
-          attrs: { source: 'lifecycle_planner', field: node.budgetClaim.field },
+          timestamp,
+          attrs: { source: 'lifecycle_planner', field },
         });
+        // Also stamp the timestamp onto the entity's attrs so the DB
+        // projector emits it as a column. The contract evaluator reads
+        // materialised rows first (where `row[field]` is in window) and
+        // only falls back to event counting when the rows path produces
+        // zero — without this stamping, every temporal_window clause
+        // would over-count via the unfiltered fallback path.
+        if (entity.attrs[field] === undefined) {
+          entity.attrs[field] = timestamp;
+        }
       }
       evidence.push({
         clauseId: node.clauseId,
@@ -65,8 +83,9 @@ export function runLifecyclePlanner(
           kind,
           count: timestamps.length,
           window: { start: node.budgetClaim.min, end: node.budgetClaim.max },
+          pool: targetPool.length,
         },
-        note: `lifecycle planner emitted ${timestamps.length} ${kind} event(s)`,
+        note: `lifecycle planner emitted ${timestamps.length} ${kind} event(s) over ${targetPool.length} cohort entit(ies)`,
       });
     } else if (node.budgetClaim.kind === 'temporal_gap') {
       // Realised when both anchors are bound (anchor planner runs after
@@ -109,6 +128,77 @@ function inferKind(field: string, clause: Clause | undefined): LifecycleEventKin
   if (blob.includes('upgrade')) return 'upgrade';
   if (blob.includes('downgrade')) return 'downgrade';
   return 'start';
+}
+
+function filterByCohort(
+  pool: import('../world/entity.js').CanonicalEntity[],
+  clause: Clause | undefined,
+): import('../world/entity.js').CanonicalEntity[] {
+  if (!clause) return pool;
+  const rule = clause.canonicalTarget?.cohortRule;
+  if (!rule) return pool;
+  return pool.filter((entity) => {
+    for (const [field, expected] of Object.entries(rule)) {
+      const current = entity.attrs[field] ?? (field === 'status' ? entity.lifecycle.status : undefined);
+      if (!matchesPredicate(current, expected)) return false;
+    }
+    return true;
+  });
+}
+
+function matchesPredicate(value: unknown, predicate: unknown): boolean {
+  if (predicate === null) return value === null;
+  if (typeof predicate !== 'object' || predicate == null || Array.isArray(predicate)) {
+    return valueEquals(value, predicate);
+  }
+
+  const op = predicate as Record<string, unknown>;
+  if ('eq' in op) return valueEquals(value, op.eq);
+  if ('neq' in op) return !valueEquals(value, op.neq);
+  if ('in' in op && Array.isArray(op.in)) return op.in.some((item) => valueEquals(value, item));
+  if ('nin' in op && Array.isArray(op.nin)) return !op.nin.some((item) => valueEquals(value, item));
+  if ('gte' in op) return compareScalar(value, op.gte as number | string) >= 0;
+  if ('lte' in op) return compareScalar(value, op.lte as number | string) <= 0;
+  if ('gt' in op) return compareScalar(value, op.gt as number | string) > 0;
+  if ('lt' in op) return compareScalar(value, op.lt as number | string) < 0;
+  if ('is_null' in op) {
+    const isNull = value === null || value === undefined || value === '';
+    return isNull === op.is_null;
+  }
+  return false;
+}
+
+function valueEquals(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a == null && b == null) return true;
+  if (typeof a === 'number' && typeof b === 'string') return a === Number(b);
+  if (typeof a === 'string' && typeof b === 'number') return Number(a) === b;
+  return false;
+}
+
+function compareScalar(a: unknown, b: number | string): number {
+  if (typeof b === 'number') return toNumber(a) - b;
+  const left = toMillis(a);
+  const right = toMillis(b);
+  if (left != null && right != null) return left - right;
+  return String(a).localeCompare(String(b));
+}
+
+function toMillis(value: unknown): number | null {
+  if (value == null) return null;
+  if (typeof value === 'number') return value < 1e12 ? value * 1000 : value;
+  if (typeof value !== 'string') return null;
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? null : ms;
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  return 0;
 }
 
 function pickStatus(filter: Record<string, unknown> | undefined): string | null {

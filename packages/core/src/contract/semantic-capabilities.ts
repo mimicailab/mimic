@@ -40,6 +40,14 @@ const BILLING_TIER_FIELD_KEYS = new Set([
   'items.data.price.nickname',
 ]);
 
+const PRODUCT_USER_TABLES = new Set(['users']);
+
+const PRODUCT_USER_FREE_HINT = /\bfree(?:-|\s)tier\b|\bfree users?\b|\bfree plan\b/i;
+const PRODUCT_USER_PAYING_HINT =
+  /\bpaying (?:customers?|users?)\b|\bpaid (?:customers?|users?)\b|\bpaid plan\b|\bbilling history\b|\bmrr\b|\brevenue\b/i;
+const PRODUCT_USER_UNLINKED_HINT =
+  /\bno corresponding billing(?: platform)? record\b|\bno billing(?: platform)? record\b|\bmissing billing(?: platform)? record\b|\bwithout (?:a )?billing(?: platform)? record\b/i;
+
 export function resolveSemanticTarget(target: SemanticTarget): ResolvedSemanticTarget | null {
   const normalised = normaliseSemanticTarget(target);
 
@@ -70,23 +78,63 @@ export function resolveSemanticTarget(target: SemanticTarget): ResolvedSemanticT
             : 'Semantic billing customer cohort lowered via Stripe subscriptions.',
       };
     }
+    case 'product_user_cohort': {
+      const filter: Filter = {};
+      const tier = normalised.facets?.tier;
+      const billingState = normalised.facets?.billingState;
+      if (tier) {
+        filter.plan = tier;
+      } else if (billingState === 'free') {
+        filter.plan = 'free';
+      } else if (billingState === 'paying') {
+        filter.plan = { neq: 'free' };
+      }
+      if (normalised.facets?.linkage === 'unlinked') {
+        filter.billing_platform = null;
+      }
+      return {
+        target: {
+          surface: 'db',
+          name: normalised.table,
+          ...(Object.keys(filter).length > 0 ? { filter } : {}),
+        },
+        explanation:
+          tier != null
+            ? `Semantic product user cohort lowered via db.${normalised.table} filtered to tier=${tier}.`
+            : `Semantic product user cohort lowered via db.${normalised.table}.`,
+      };
+    }
   }
 }
 
 export function normaliseSemanticTarget(target: SemanticTarget): SemanticTarget {
-  if (target.kind !== 'billing_customer_cohort') return target;
+  if (target.kind === 'billing_customer_cohort') {
+    const tier = target.facets?.tier;
+    return {
+      ...target,
+      adapter: target.adapter.trim().toLowerCase(),
+      facets:
+        tier == null
+          ? target.facets
+          : {
+              ...target.facets,
+              tier: canonicaliseBillingTierValue(tier) ?? tier,
+            },
+    };
+  }
 
   const tier = target.facets?.tier;
+  const canonicalTier = tier == null ? undefined : canonicaliseBillingTierValue(tier) ?? tier;
+  const billingState = canonicalTier === 'free' ? 'free' : target.facets?.billingState;
+  const facets = {
+    ...(billingState ? { billingState } : {}),
+    ...(canonicalTier != null && canonicalTier !== 'free' ? { tier: canonicalTier } : {}),
+    ...(target.facets?.linkage ? { linkage: target.facets.linkage } : {}),
+  };
   return {
     ...target,
-    adapter: target.adapter.trim().toLowerCase(),
-    facets:
-      tier == null
-        ? target.facets
-        : {
-            ...target.facets,
-            tier: canonicaliseBillingTierValue(tier) ?? tier,
-          },
+    table: target.table.trim().toLowerCase(),
+    facets: Object.keys(facets).length > 0 ? facets : undefined,
   };
 }
 
@@ -98,6 +146,13 @@ export function describeSemanticTarget(target: SemanticTarget): string {
       if (target.facets?.tier) parts.push(`tier=${target.facets.tier}`);
       return `billing_customer_cohort(${parts.join(', ')})`;
     }
+    case 'product_user_cohort': {
+      const parts = [`table=${target.table}`];
+      if (target.facets?.billingState) parts.push(`billingState=${target.facets.billingState}`);
+      if (target.facets?.tier) parts.push(`tier=${target.facets.tier}`);
+      if (target.facets?.linkage) parts.push(`linkage=${target.facets.linkage}`);
+      return `product_user_cohort(${parts.join(', ')})`;
+    }
   }
 }
 
@@ -105,6 +160,8 @@ export function canonicaliseSemanticClauses(clauses: Clause[]): number {
   let changed = 0;
 
   for (const clause of clauses) {
+    changed += canonicaliseProductUserClause(clause);
+
     if (hasSemanticTarget(clause)) {
       const normalised = normaliseSemanticTarget(clause.semanticTarget);
       if (JSON.stringify(normalised) !== JSON.stringify(clause.semanticTarget)) {
@@ -165,6 +222,13 @@ export function extractSemanticFieldValue(
       getNested(row, 'plan.lookup_key'),
       getNested(row, 'plan.nickname'),
     ];
+    for (const candidate of candidates) {
+      const canonical = canonicaliseBillingTierValue(candidate);
+      if (canonical) return canonical;
+    }
+  }
+  if (target.kind === 'product_user_cohort' && field === 'tier') {
+    const candidates = [getNested(row, 'plan'), getNested(row, 'tier')];
     for (const candidate of candidates) {
       const canonical = canonicaliseBillingTierValue(candidate);
       if (canonical) return canonical;
@@ -238,6 +302,169 @@ function liftBillingCustomerBaseTarget(clause: DistributionClause): SemanticTarg
       billingState: 'paying',
     },
   };
+}
+
+function canonicaliseProductUserClause(clause: Clause): number {
+  const target = getPrimaryTarget(clause);
+  if (!target || !isProductUserTarget(target)) return 0;
+
+  const semantics = inferProductUserSemantics(clause, target);
+  if (!semantics) return 0;
+
+  let changed = normaliseProductUserTarget(target, semantics);
+  if (!hasSemanticTarget(clause)) {
+    clause.semanticTarget = {
+      kind: 'product_user_cohort',
+      table: target.name,
+      ...(Object.keys(semantics).length > 0 ? { facets: semantics } : {}),
+    };
+    changed++;
+  }
+  if (clause.family === 'distribution' && detectsBillingTierField(clause.field) && clause.semanticField !== 'tier') {
+    clause.semanticField = 'tier';
+    changed++;
+  }
+  return changed;
+}
+
+interface ProductUserSemantics {
+  tier?: string;
+  billingState?: 'paying' | 'free';
+  linkage?: 'linked' | 'unlinked';
+}
+
+function inferProductUserSemantics(
+  clause: Clause,
+  target: ResourceTarget,
+): ProductUserSemantics | null {
+  const quote = clause.quote.toLowerCase();
+  const tier = readProductUserTier(target.filter);
+  const linkage = readProductUserLinkage(target.filter)
+    ?? (PRODUCT_USER_UNLINKED_HINT.test(quote) ? 'unlinked' : undefined);
+  let billingState: ProductUserSemantics['billingState'];
+
+  if (tier === 'free') {
+    billingState = 'free';
+  } else if (tier) {
+    billingState = 'paying';
+  } else if (PRODUCT_USER_FREE_HINT.test(quote)) {
+    billingState = 'free';
+  } else if (linkage === 'unlinked' || PRODUCT_USER_PAYING_HINT.test(quote) || clauseSignalsRevenue(clause)) {
+    billingState = 'paying';
+  }
+
+  const semantics: ProductUserSemantics = {
+    ...(tier && tier !== 'free' ? { tier } : {}),
+    ...(billingState ? { billingState } : {}),
+    ...(linkage ? { linkage } : {}),
+  };
+  return Object.keys(semantics).length > 0 ? semantics : null;
+}
+
+function clauseSignalsRevenue(clause: Clause): boolean {
+  if (clause.family === 'aggregate') {
+    return /(mrr|arr|revenue)/i.test(clause.field);
+  }
+  if (clause.family === 'distribution') {
+    return /(mrr|arr|revenue|billing_platform)/i.test(clause.field);
+  }
+  return false;
+}
+
+function normaliseProductUserTarget(
+  target: ResourceTarget,
+  semantics: ProductUserSemantics,
+): number {
+  let changed = 0;
+  const filter = (target.filter ??= {});
+  const planField = pickExistingPlanField(filter);
+
+  if (planField) {
+    const current = filter[planField];
+    if (typeof current === 'string') {
+      const canonical = canonicaliseBillingTierValue(current) ?? current;
+      const next = canonical === 'free' ? 'free' : canonical;
+      if (next !== current) {
+        filter[planField] = next;
+        changed++;
+      }
+    }
+  } else if (semantics.tier) {
+    filter.plan = semantics.tier;
+    changed++;
+  } else if (semantics.billingState === 'free') {
+    filter.plan = 'free';
+    changed++;
+  } else if (semantics.billingState === 'paying') {
+    filter.plan = { neq: 'free' };
+    changed++;
+  }
+
+  if (semantics.linkage === 'unlinked') {
+    const current = filter.billing_platform;
+    const isExplicitNull = current === null;
+    const isNullOp =
+      current != null
+      && typeof current === 'object'
+      && !Array.isArray(current)
+      && 'is_null' in current
+      && (current as { is_null?: boolean }).is_null === true;
+    if (!isExplicitNull || isNullOp) {
+      filter.billing_platform = null;
+      changed++;
+    }
+  }
+
+  return changed;
+}
+
+function readProductUserTier(filter: Filter | undefined): string | undefined {
+  if (!filter) return undefined;
+
+  for (const key of ['plan', 'tier']) {
+    const candidate = extractFilterValue(filter[key]);
+    const canonical = canonicaliseBillingTierValue(candidate);
+    if (canonical) return canonical;
+  }
+
+  return undefined;
+}
+
+function readProductUserLinkage(
+  filter: Filter | undefined,
+): ProductUserSemantics['linkage'] | undefined {
+  if (!filter || !('billing_platform' in filter)) return undefined;
+  const predicate = filter.billing_platform;
+  if (predicate === null) return 'unlinked';
+  if (typeof predicate === 'string' || typeof predicate === 'number') return 'linked';
+  if (predicate == null || typeof predicate !== 'object' || Array.isArray(predicate)) return undefined;
+  const op = predicate as FilterOp;
+  if ('is_null' in op) return op.is_null ? 'unlinked' : 'linked';
+  if ('eq' in op) return op.eq == null ? 'unlinked' : 'linked';
+  return undefined;
+}
+
+function isProductUserTarget(target: ResourceTarget): boolean {
+  return target.surface === 'db' && PRODUCT_USER_TABLES.has(target.name.trim().toLowerCase());
+}
+
+function pickExistingPlanField(filter: Filter): 'plan' | 'tier' | null {
+  if ('plan' in filter) return 'plan';
+  if ('tier' in filter) return 'tier';
+  return null;
+}
+
+function getPrimaryTarget(clause: Clause): ResourceTarget | undefined {
+  switch (clause.family) {
+    case 'count':
+    case 'aggregate':
+    case 'distribution':
+      return clause.target;
+    case 'temporal':
+      return clause.kind === 'window' ? clause.target : undefined;
+    default:
+      return undefined;
+  }
 }
 
 function readBillingTierFromFilter(filter: Filter | undefined): string | null {

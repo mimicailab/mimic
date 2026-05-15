@@ -45,7 +45,7 @@ describe('canonicaliser', () => {
     };
     const out = canonicaliseContract(makeContract([clause]));
     expect(out.clauses[0]!.canonicalTarget).toEqual({
-      populationId: 'paying_customers',
+      populationId: 'paying_customers:stripe',
       cohortRule: { tier: 'starter' },
       metricId: 'count',
     });
@@ -69,7 +69,35 @@ describe('canonicaliser', () => {
     };
     const out = canonicaliseContract(makeContract([clause]));
     expect(out.clauses[0]!.canonicalTarget).toEqual({
-      populationId: 'paying_customers',
+      populationId: 'paying_customers:stripe',
+      metricId: 'mrr',
+    });
+  });
+
+  it('canonicalises product-user revenue aggregates onto product populations with canonical revenue metrics', () => {
+    const clause: AggregateClause = {
+      id: 'c2b',
+      quote: '£77k MRR on Stripe',
+      family: 'aggregate',
+      op: 'sum',
+      strength: 'hard',
+      field: 'mrr_cents',
+      expected: 7_700_000,
+      target: {
+        surface: 'db',
+        name: 'users',
+        filter: { status: 'active', plan: { neq: 'free' }, billing_platform: 'stripe' },
+      },
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying' },
+      },
+    };
+    const out = canonicaliseContract(makeContract([clause]));
+    expect(out.clauses[0]!.canonicalTarget).toEqual({
+      populationId: 'product:users:paying',
+      cohortRule: { status: 'active', plan: { neq: 'free' }, billing_platform: 'stripe' },
       metricId: 'mrr',
     });
   });
@@ -88,7 +116,7 @@ describe('canonicaliser', () => {
       expected: 847,
     };
     const out = canonicaliseContract(makeContract([clause]));
-    expect(out.clauses[0]!.canonicalTarget?.populationId).toBe('free_customers');
+    expect(out.clauses[0]!.canonicalTarget?.populationId).toBe('free_customers:stripe');
   });
 
   it('falls back to raw db target when no semantic target is given', () => {
@@ -220,7 +248,7 @@ describe('canonicaliser', () => {
       semanticField: 'tier',
     };
     const out = canonicaliseContract(makeContract([clause]));
-    expect(out.clauses[0]!.canonicalTarget?.populationId).toBe('paying_customers');
+    expect(out.clauses[0]!.canonicalTarget?.populationId).toBe('paying_customers:stripe');
     expect(out.clauses[0]!.canonicalTarget?.metricId).toBe('count');
   });
 

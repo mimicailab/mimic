@@ -259,7 +259,7 @@ describe('projection — entity-owned surface bindings', () => {
       expect(surfaces).not.toContain('stripe.customer');
     }
 
-    const entity = state.populations.get('paying_customers')![0]!;
+    const entity = state.populations.get('paying_customers:stripe')![0]!;
     expect(entity.lifecycle.status).toBe('active');
   });
 });

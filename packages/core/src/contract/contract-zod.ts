@@ -51,7 +51,7 @@ const ResourceTargetSchema = z.object({
   filter: FilterSchema.optional(),
 });
 
-const SemanticTargetSchema = z.object({
+const BillingCustomerSemanticTargetSchema = z.object({
   kind: z.literal('billing_customer_cohort'),
   adapter: z.string().describe('Adapter that owns billing truth, e.g. "stripe"'),
   facets: z
@@ -61,6 +61,23 @@ const SemanticTargetSchema = z.object({
     })
     .optional(),
 });
+
+const ProductUserSemanticTargetSchema = z.object({
+  kind: z.literal('product_user_cohort'),
+  table: z.string().describe('Product-side database table, e.g. "users"'),
+  facets: z
+    .object({
+      tier: z.string().optional().describe('Canonical business tier, e.g. starter | pro | enterprise'),
+      billingState: z.enum(['paying', 'free']).optional(),
+      linkage: z.enum(['linked', 'unlinked']).optional(),
+    })
+    .optional(),
+});
+
+const SemanticTargetSchema = z.discriminatedUnion('kind', [
+  BillingCustomerSemanticTargetSchema,
+  ProductUserSemanticTargetSchema,
+]);
 
 const ClauseBaseSchema = {
   id: z.string().describe('Stable kebab-case clause id'),

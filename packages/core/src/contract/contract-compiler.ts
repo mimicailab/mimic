@@ -103,9 +103,21 @@ The currently supported semantic target is:
     }
   }
 
+  semanticTarget = {
+    kind: "product_user_cohort",
+    table: "users",
+    facets?: {
+      billingState?: "paying" | "free",
+      tier?: "starter" | "pro" | "enterprise" | <other canonical tier label>,
+      linkage?: "linked" | "unlinked"
+    }
+  }
+
 Examples:
   - "100 starter customers on Stripe" -> family="count", semanticTarget={kind:"billing_customer_cohort",adapter:"stripe",facets:{billingState:"paying",tier:"starter"}}
   - "60% starter / 30% pro / 10% enterprise among paid customers" -> family="distribution", semanticTarget={kind:"billing_customer_cohort",adapter:"stripe",facets:{billingState:"paying"}}, semanticField="tier"
+  - "847 free-tier users in the product database" -> family="count", target={surface:"db",name:"users",filter:{plan:"free"}}, semanticTarget={kind:"product_user_cohort",table:"users",facets:{billingState:"free"}}
+  - "34 users with paid plan flags but no corresponding billing platform record" -> family="count", target={surface:"db",name:"users",filter:{plan:{neq:"free"},billing_platform:null}}, semanticTarget={kind:"product_user_cohort",table:"users",facets:{billingState:"paying",linkage:"unlinked"}}
 
 Semantic targets are the contract-level source of truth. Downstream code lowers them into executable surface predicates deterministically.
 

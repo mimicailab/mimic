@@ -77,8 +77,13 @@ export function runPreGenerationGate(contract: PersonaContract): GateResult {
     const decision = assignOwner(c);
     ownerDecisions.push(decision);
 
-    // Narrative or soft clauses without owners don't fail the gate; they
-    // simply aren't part of the obligation graph.
+    // Narrative clauses by design have no runtime owner — they're
+    // documentation, not constraints. Skip them regardless of strength;
+    // the LLM frequently emits factual narratives marked "hard" and the
+    // gate shouldn't penalise that.
+    if (c.family === 'narrative') continue;
+    // Soft (non-narrative) clauses without owners don't fail the gate
+    // either; they simply aren't part of the obligation graph.
     if (c.strength !== 'hard') continue;
     if (decision.ownerId == null) {
       missingOwners.push({
