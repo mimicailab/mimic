@@ -187,6 +187,34 @@ export type {
   OwnerId,
 } from './contract/clause-types.js';
 
+// V5 — Phase 5 canonical world state.
+export {
+  createWorldState,
+  mergeDelta,
+  WorldStateConflictError,
+  ledgerPartSum,
+  ledgerBalances,
+  assertLedgerBalances,
+  BudgetIdentityError,
+} from './world/index.js';
+export type {
+  WorldState,
+  WorldStateDelta,
+  EntityId,
+  CohortId,
+  LifecycleStatus,
+  EntityLifecycle,
+  CanonicalEntity,
+  IdentitySlot,
+  IdentityRecord,
+  LifecycleEventKind,
+  LifecycleEvent,
+  AnchorId,
+  AnchorBinding,
+  BudgetId,
+  BudgetLedger,
+} from './world/index.js';
+
 // V5 — Extracted helpers, available now so future phases can wire them in
 // without re-routing imports.
 export { SeededRandom } from './world/prng.js';
