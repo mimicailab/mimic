@@ -24,6 +24,7 @@ import type { ResourceTarget } from '../types/claim.js';
 import type { WorldState, WorldStateDelta } from '../world/world-state.js';
 import type { ObligationGraph } from './obligation-graph.js';
 import type { PlannerEvidence, PlannerResult } from './planner-result.js';
+import { resolveSemanticTarget } from '../contract/semantic-capabilities.js';
 
 export function runIdentityPlanner(
   contract: PersonaContract,
@@ -91,15 +92,28 @@ function collectSurfaceCoords(contract: PersonaContract): SurfaceCoord[] {
     out.push(coord);
   }
 
+  function addSemantic(clause: Clause): void {
+    const semanticTarget = (
+      clause as { semanticTarget?: import('../contract/clause-types.js').SemanticTarget }
+    ).semanticTarget;
+    if (!semanticTarget) return;
+    const resolved = resolveSemanticTarget(semanticTarget);
+    if (resolved) add(resolved.target);
+  }
+
   for (const clause of contract.clauses) {
     switch (clause.family) {
       case 'count':
       case 'aggregate':
       case 'distribution':
         add(clause.target);
+        addSemantic(clause);
         break;
       case 'temporal':
-        if (clause.kind === 'window') add(clause.target);
+        if (clause.kind === 'window') {
+          add(clause.target);
+          addSemantic(clause);
+        }
         break;
       case 'cross_surface':
         add(clause.surfaceA);

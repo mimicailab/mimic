@@ -5,6 +5,8 @@ import { createRequire } from 'node:module';
 import { loadEnvFile } from './utils/env.js';
 import { registerInitCommand } from './commands/init.js';
 import { registerRunCommand } from './commands/run.js';
+import { registerPlanCommand } from './commands/plan.js';
+import { registerExplainCommand } from './commands/explain.js';
 import { registerSeedCommand } from './commands/seed.js';
 import { registerHostCommand } from './commands/host.js';
 import { registerTestCommand } from './commands/test.js';
@@ -37,6 +39,8 @@ program
 
 registerInitCommand(program);
 registerRunCommand(program);
+registerPlanCommand(program);
+registerExplainCommand(program);
 registerSeedCommand(program);
 registerHostCommand(program);
 registerTestCommand(program);

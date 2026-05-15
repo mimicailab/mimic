@@ -228,6 +228,17 @@ export type {
 // V5 — Phase 9 shape validator.
 export { validateShape } from './validation/shape-validator.js';
 
+// V5 — Phase 12 pipeline driver.
+export {
+  runPipeline,
+  MAX_REGEN_ATTEMPTS,
+  MAX_SHAPE_REPAIR_ATTEMPTS,
+} from './pipeline.js';
+export type {
+  PipelineResult,
+  RunPipelineContext,
+} from './pipeline.js';
+
 // V5 — Phase 11 proof report.
 export { buildProofArtifact, PROOF_VERSION } from './validation/proof-report.js';
 export type {
