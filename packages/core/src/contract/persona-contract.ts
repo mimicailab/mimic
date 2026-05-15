@@ -1,12 +1,11 @@
 /**
- * V4.5 — Persona contract.
+ * V5 — Persona contract.
  *
  * Output of the contract compiler. Carries the original persona profile, the
- * full clause set (richer than the lowered Claim[]), and the declared
- * anchors. Survives lowering so the fidelity validator can still check
- * every hard clause against the final output.
- *
- * Reference: private/v4.5.md.
+ * full clause set, and the declared anchors. The contract is the runtime
+ * plan: subsequent phases (canonicaliser, pre-generation gate, planners)
+ * enrich clauses in place via the optional `canonicalTarget`, `ownerId`, and
+ * `canonicalisationGap` fields rather than producing a parallel structure.
  */
 
 import type { Clause } from './clause-types.js';
@@ -19,11 +18,11 @@ export interface PersonaContract {
   domain: string;
   /** Free-text profile fields the LLM extracted */
   persona: PersonaProfile;
-  /** Source persona description, used by the fidelity report and prompts */
+  /** Source persona description, used by the proof report and prompts */
   source: { name: string; description: string };
   /**
    * Full clause set — both hard and soft. The contract is the source of
-   * truth; the generator only sees a lowered subset.
+   * truth; every planner reads from it directly.
    */
   clauses: Clause[];
   /** Anchors declared by the contract (sometimes derived from anchor clauses) */
@@ -32,33 +31,4 @@ export interface PersonaContract {
   compiledAt: string;
   /** Compiler version — bumped when the clause shape changes */
   compilerVersion: string;
-}
-
-/** Possible coverage outcomes for one clause. */
-export type CoverageStatus =
-  | 'executable_now'
-  | 'executable_with_helper'
-  | 'soft_only'
-  | 'unsupported_blocking';
-
-export interface CoverageDecision {
-  clauseId: string;
-  family: import('./clause-types.js').ClauseFamily;
-  strength: import('./clause-types.js').ClauseStrength;
-  status: CoverageStatus;
-  /** Planner rule id that fired (or `no-match` when none fired) */
-  ruleId: string;
-  /** Lowering target id when executable_now, helper id when executable_with_helper */
-  loweringTarget?: string;
-  /** Human-readable rationale */
-  explanation: string;
-}
-
-export interface CoverageReport {
-  /** Per-clause decisions in input order */
-  decisions: CoverageDecision[];
-  /** Convenience: hard clauses that came back as `unsupported_blocking` */
-  blockers: CoverageDecision[];
-  /** Versioned capability registry id this report was produced against */
-  registryVersion: string;
 }

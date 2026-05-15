@@ -149,6 +149,17 @@ export type {
   CrossSurfaceClause,
   ReconciliationClause,
   NarrativeClause,
+  TargetBearingClause,
+  SemanticTarget,
+  SemanticFieldHint,
+  // V5 — populated by Phase 3 / Phase 4
+  CanonicalTarget,
+  CanonicalisationGap,
+  CanonicalWindow,
+  CohortRule,
+  PopulationId,
+  MetricId,
+  OwnerId,
 } from './contract/clause-types.js';
 
 // V5 — Extracted helpers, available now so future phases can wire them in

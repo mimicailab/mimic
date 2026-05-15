@@ -1,13 +1,15 @@
 /**
- * V4.5 — Persona contract clause types.
+ * V5 — Persona contract clause types.
  *
- * A `Clause` is a single faithful parse of a persona requirement. It is richer
- * than the legacy `Claim` (which is the lowered execution-plan input the
- * generator consumes). Clauses preserve the source quote, the requirement
- * family, and the strength (hard | soft), and they survive lowering so the
- * fidelity validator can still check them against the final output.
+ * A `Clause` is a single faithful parse of a persona requirement. The contract
+ * compiler emits clauses with `source`, `family`, and `strength` populated; the
+ * canonicaliser (Phase 3) then attaches `canonicalTarget` (and, on unresolved
+ * clauses, `canonicalisationGap`); the pre-generation gate (Phase 4) finally
+ * stamps `ownerId` on every hard clause that the rule table can assign.
  *
- * Reference: private/v4.5.md — "Layer 1: Contract compiler".
+ * In keeping with the V5 design principle "the contract is the runtime plan",
+ * canonical meaning, owner attribution, and gap diagnostics all live directly
+ * on the clause — never in a parallel `Map<ClauseId, …>` sidecar.
  */
 
 import type { ResourceTarget, Filter } from '../types/claim.js';
@@ -31,6 +33,89 @@ export interface BillingCustomerCohortSemanticTarget {
 export type SemanticTarget = BillingCustomerCohortSemanticTarget;
 
 export type SemanticFieldHint = 'tier';
+
+// ---------------------------------------------------------------------------
+// Canonical target — populated by Phase 3 (canonicaliser)
+// ---------------------------------------------------------------------------
+
+/**
+ * Stable identifier for a named population. Examples:
+ *   - `paying_customers`
+ *   - `free_customers`
+ *   - `pro_customers`
+ *
+ * The canonicaliser maps persona language onto these IDs so every planner
+ * downstream agrees on the entity set being talked about.
+ */
+export type PopulationId = string;
+
+/**
+ * Stable identifier for a metric. Examples: `mrr`, `arr`, `mrr_change`,
+ * `count`. Reconciliation, aggregate, and temporal clauses share this name
+ * so the budgets they imply can be cross-referenced.
+ */
+export type MetricId = string;
+
+/**
+ * Filter expression over a canonical entity's attributes. Reuses the
+ * existing `Filter` shape because canonical entities live in the same
+ * `Record<string, unknown>` space as raw rows — the semantic field
+ * vocabulary is just stable across surfaces.
+ */
+export type CohortRule = Filter;
+
+/** Time window attached to a canonical target. */
+export interface CanonicalWindow {
+  /** ISO date or full timestamp — inclusive lower bound. */
+  start: string;
+  /** ISO date or full timestamp — inclusive upper bound. */
+  end: string;
+  /** Granularity hint — left undefined when irrelevant. */
+  granularity?: 'day' | 'week' | 'month' | 'quarter' | 'year';
+}
+
+/**
+ * Canonical interpretation of a clause's subject. Populated by the
+ * canonicaliser; required on every clause after Phase 3 (the
+ * pre-generation gate (Phase 4) reads it directly).
+ *
+ * `populationId === 'unresolved'` is the canonicaliser's signal that the
+ * persona language could not be resolved; the matching
+ * `canonicalisationGap` carries the diagnostic.
+ */
+export interface CanonicalTarget {
+  populationId: PopulationId | 'unresolved';
+  cohortRule?: CohortRule;
+  metricId?: MetricId;
+  window?: CanonicalWindow;
+}
+
+/**
+ * Diagnostic for a clause the canonicaliser could not resolve. Folded into
+ * the Phase 4 combined contradiction + coverage report. Absent on success.
+ */
+export interface CanonicalisationGap {
+  reason: string;
+  unresolvedText: string;
+  /** Echoes `clause.quote` for report-rendering convenience. */
+  quote: string;
+}
+
+// ---------------------------------------------------------------------------
+// Owner — populated by Phase 4 (pre-generation gate)
+// ---------------------------------------------------------------------------
+
+/**
+ * Identifier of the V5 planner that owns a clause's execution. Hard clauses
+ * MUST carry one after the gate passes; the rule table in `planner/owners.ts`
+ * is the single source of truth for assignment.
+ */
+export type OwnerId =
+  | 'population'
+  | 'lifecycle'
+  | 'anchor'
+  | 'identity'
+  | 'reconciliation';
 
 // ---------------------------------------------------------------------------
 // Common
@@ -61,6 +146,26 @@ interface ClauseBase {
   family: ClauseFamily;
   /** Hard or soft */
   strength: ClauseStrength;
+  /**
+   * Canonical interpretation. Populated by the canonicaliser (Phase 3);
+   * optional in the raw compiler output but required after canonicalisation.
+   *
+   * When `canonicalTarget.populationId === 'unresolved'`, the matching
+   * `canonicalisationGap` describes why.
+   */
+  canonicalTarget?: CanonicalTarget;
+  /**
+   * Owner planner identifier. Populated by the pre-generation gate (Phase 4)
+   * once every hard clause has been matched to a planner via `planner/owners.ts`.
+   * Soft / narrative clauses may remain unowned without blocking the gate.
+   */
+  ownerId?: OwnerId;
+  /**
+   * Diagnostic from the canonicaliser. Set ONLY on clauses Phase 3 could not
+   * resolve; the Phase 4 gate reads this to fold canonicalisation gaps into
+   * the single combined `ContradictionAndCoverageReport`.
+   */
+  canonicalisationGap?: CanonicalisationGap;
 }
 
 // ---------------------------------------------------------------------------

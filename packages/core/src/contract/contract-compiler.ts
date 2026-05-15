@@ -30,7 +30,7 @@ import type { Clause, AnchorClause } from './clause-types.js';
 import { canonicaliseSemanticClauses } from './semantic-capabilities.js';
 
 /** Bumped when the clause shape changes — used in PersonaContract.compilerVersion. */
-export const CONTRACT_COMPILER_VERSION = 'v4.5.1';
+export const CONTRACT_COMPILER_VERSION = 'v5';
 
 export interface CompileContractOptions {
   temperature?: number;
