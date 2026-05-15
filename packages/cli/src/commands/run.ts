@@ -7,6 +7,7 @@ import {
   logger,
   writeJson,
   ensureDir,
+  MimicError,
   parseSchema,
   CostTracker,
   createLLMClient,
@@ -18,6 +19,7 @@ import {
   deriveDataSpec,
 } from '@mimicai/core';
 import type {
+  LLMRuntime,
   PersonaContract,
   PromptContext,
   DataSpec,
@@ -25,6 +27,8 @@ import type {
   ApiMockAdapter,
   SchemaModel,
   MimicConfig,
+  ExpandedData,
+  MaterialisedDataset,
 } from '@mimicai/core';
 import { resolveEnvVars } from '../utils/env.js';
 import { importFromProject } from '../utils/import.js';
@@ -37,6 +41,7 @@ export function registerRunCommand(program: Command): void {
   program
     .command('run')
     .description('Compile each persona contract and run the V5 pipeline')
+    .option('-d, --dry-run', 'compile + run the pipeline but do not write data/proof to disk')
     .option('-p, --persona <names...>', 'limit to specific personas')
     .option('-s, --seed <number>', 'override random seed', parseInt)
     .option(
@@ -54,6 +59,7 @@ export function registerRunCommand(program: Command): void {
 // ---------------------------------------------------------------------------
 
 interface RunOptions {
+  dryRun?: boolean;
   persona?: string[];
   seed?: number;
   llmRuntime?: string;
@@ -75,6 +81,11 @@ async function runGenerate(opts: RunOptions): Promise<void> {
   const cwd = process.cwd();
   const config = await loadConfig(cwd);
 
+  const debugDir = join(cwd, '.mimic', 'debug');
+  const debugLogFile = join(debugDir, `run-${Date.now()}.log`);
+  logger.initDebugLog(debugLogFile);
+  logger.debugFile('CONFIG', config);
+
   logger.header('mimic run (V5)');
 
   const targetPersonas = resolvePersonas(config, opts.persona);
@@ -84,38 +95,50 @@ async function runGenerate(opts: RunOptions): Promise<void> {
 
   const dataDir = join(cwd, '.mimic', 'data');
   const proofDir = join(cwd, '.mimic', 'proof');
+  const reportDir = join(cwd, '.mimic', 'reports');
   await ensureDir(dataDir);
   await ensureDir(proofDir);
+  await ensureDir(reportDir);
 
-  // ── Parse schema ──────────────────────────────────────────────────────
   const schemaSpin = logger.spinner('Parsing schema...');
   let schema: SchemaModel;
   try {
-    schema = await parseSchema(resolveSchemaOptions(config));
+    schema = await resolveSchema(config, cwd);
     schemaSpin.succeed(`Schema parsed: ${chalk.yellow(String(schema.tables.length))} tables`);
   } catch (err) {
     schemaSpin.fail('Failed to parse schema');
     throw err;
   }
 
-  // ── Resolve adapter resource specs (for contract compiler grounding) ──
   const { promptContexts, resourceSpecs } = await resolveAdapterMetadata(config);
-  void deriveDataSpec; // silence unused export warning until disk write wires it
 
-  // ── LLM client (used for contract compilation only in V5) ─────────────
   const costTracker = new CostTracker();
   const runtimeOverride = resolveRuntimeOverride(opts.llmRuntime);
   const llmClient = createLLMClient(config, costTracker, runtimeOverride);
+  const resolvedRuntime = runtimeOverride ?? config.llm.runtime ?? 'api';
+  if (resolvedRuntime === 'claude-code') {
+    logger.info(
+      chalk.dim(
+        'LLM runtime: claude-code — billed to your Claude subscription, not per-token API charges',
+      ),
+    );
+  } else if (resolvedRuntime === 'batch') {
+    logger.warn(
+      'LLM runtime: batch — BatchClient not implemented yet, falling back to api runtime at full price',
+    );
+  }
 
   const seed = opts.seed ?? config.generate.seed;
 
+  type SummaryRow = { persona: string; ok: boolean; tables: Record<string, number>; apis?: Record<string, number> };
+  const summary: SummaryRow[] = [];
   let exitCode = 0;
+
   for (let i = 0; i < targetPersonas.length; i++) {
     const persona = targetPersonas[i]!;
     const personaIndex = i + 1;
     const runId = `${persona.name}-${Date.now()}`;
 
-    // ── 1. Compile contract via LLM ────────────────────────────────────
     const compileSpin = logger.spinner(`Compiling contract for ${chalk.yellow(persona.name)}...`);
     let contract: PersonaContract;
     try {
@@ -126,7 +149,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
         schema,
         promptContexts,
         resourceSpecs,
-        undefined, // schemaMapping not needed for compiler grounding in V5
+        undefined,
         {
           currentDate: new Date().toISOString().split('T')[0]!,
           volume: config.generate.volume,
@@ -140,64 +163,133 @@ async function runGenerate(opts: RunOptions): Promise<void> {
       throw err;
     }
 
-    // ── 2. Run the V5 pipeline ─────────────────────────────────────────
-    const result = runPipeline(contract, schema, { runId, seed: `${seed}-${personaIndex}` });
+    const pipeSpin = logger.spinner('Running V5 pipeline...');
+    const result = runPipeline(contract, schema, {
+      runId,
+      seed: `${seed}-${personaIndex}`,
+    });
 
     if (!result.ok) {
+      pipeSpin.fail('Pipeline aborted');
       exitCode = 1;
-      if (result.reason === 'pre_generation_gate') {
-        console.error(chalk.red(formatGateReport(result.report)));
-      } else {
-        console.error(chalk.red(formatOwnerLevelFailureReport(result.report)));
+      const rendered =
+        result.reason === 'pre_generation_gate'
+          ? formatGateReport(result.report)
+          : formatOwnerLevelFailureReport(result.report);
+      const suffix = result.reason === 'pre_generation_gate' ? 'pre-gate' : 'owner-level';
+      const reportPath = join(reportDir, `${runId}.${suffix}.md`);
+      if (!opts.dryRun) {
+        const { writeFile } = await import('node:fs/promises');
+        await writeFile(reportPath, rendered, 'utf8');
       }
-      logger.warn(`${persona.name}: pipeline aborted — see report above.`);
+      console.error();
+      console.error(chalk.red(rendered));
+      logger.warn(`${persona.name}: see ${chalk.cyan(reportPath)}`);
+      summary.push({ persona: persona.name, ok: false, tables: {} });
       continue;
     }
 
-    // ── 3. Persist outputs ─────────────────────────────────────────────
-    await writeJson(join(dataDir, `${persona.name}.json`), result.materialised);
-    await writeJson(join(proofDir, `${runId}.json`), result.proof);
-    logger.success(
-      `${persona.name}: ${tableCount(result.materialised)} rows + ${apiCount(result.materialised)} API responses; proof at .mimic/proof/${runId}.json`,
-    );
+    pipeSpin.succeed(`Pipeline OK · proof: ${result.proof.records.length} record(s)`);
+
+    const expanded = toExpandedData(contract, result.materialised);
+    if (!opts.dryRun) {
+      await writeJson(join(dataDir, `${persona.name}.json`), expanded);
+      await writeJson(join(proofDir, `${runId}.json`), result.proof);
+    }
+
+    const tableCounts: Record<string, number> = {};
+    for (const [t, rows] of Object.entries(result.materialised.tables)) {
+      tableCounts[t] = rows.length;
+    }
+    const apiCounts: Record<string, number> = {};
+    for (const [adapterId, set] of Object.entries(result.materialised.apiResponses)) {
+      const total = Object.values(set.responses).reduce((s, arr) => s + arr.length, 0);
+      if (total > 0) apiCounts[adapterId] = total;
+    }
+    summary.push({ persona: persona.name, ok: true, tables: tableCounts, apis: apiCounts });
   }
 
-  // ── Cost summary ──────────────────────────────────────────────────────
   const cost = costTracker.getSummary();
-  if (cost.total > 0) logger.info(`LLM cost: $${cost.total.toFixed(4)}`);
+  if (cost.total > 0) {
+    console.log();
+    logger.info(`LLM cost: ${chalk.yellow(`$${cost.total.toFixed(4)}`)}`);
+  }
 
-  if (exitCode !== 0) {
+  console.log();
+  logger.header('Summary');
+  for (const entry of summary) {
+    console.log();
+    const status = entry.ok ? chalk.green('OK') : chalk.red('FAIL');
+    console.log(`  ${chalk.bold(entry.persona)} · ${status}`);
+    if (!entry.ok) continue;
+    const tableNames = Object.keys(entry.tables);
+    if (tableNames.length === 0 && !entry.apis) {
+      logger.info('  (no rows)');
+    } else {
+      for (const t of tableNames) {
+        logger.info(`  ${chalk.dim(t)}: ${chalk.yellow(String(entry.tables[t]))} rows`);
+      }
+      if (entry.apis) {
+        for (const [adapterId, count] of Object.entries(entry.apis)) {
+          logger.info(`  ${chalk.dim(`api:${adapterId}`)}: ${chalk.yellow(String(count))} entities`);
+        }
+      }
+    }
+  }
+
+  const totalRows = summary.reduce(
+    (sum, e) => sum + Object.values(e.tables).reduce((s, n) => s + n, 0),
+    0,
+  );
+  console.log();
+  if (opts.dryRun) {
+    logger.done(`Dry run complete — ${totalRows} rows would be generated`);
+  } else if (exitCode === 0) {
+    logger.done(`Generated ${totalRows} rows across ${summary.length} persona(s)`);
+    logger.info(`Data written to ${chalk.cyan(dataDir)}`);
+    logger.info(`Proof artifacts in ${chalk.cyan(proofDir)}`);
+  } else {
+    logger.error(`One or more personas failed validation — see ${chalk.cyan(reportDir)}`);
     process.exitCode = exitCode;
   }
+  logger.info(`Debug log: ${chalk.cyan(debugLogFile)}`);
+  console.log();
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers (exported so plan/explain subcommands can reuse them)
 // ---------------------------------------------------------------------------
 
-function resolvePersonas(config: MimicConfig, filter: string[] | undefined): PersonaEntry[] {
+export function resolvePersonas(
+  config: MimicConfig,
+  filter: string[] | undefined,
+): PersonaEntry[] {
   const all = config.personas.map((p) => ({ name: p.name, description: p.description }));
   if (!filter || filter.length === 0) return all;
   const set = new Set(filter);
-  return all.filter((p) => set.has(p.name));
+  const subset = all.filter((p) => set.has(p.name));
+  const missing = filter.filter((n) => !subset.some((p) => p.name === n));
+  if (missing.length > 0) {
+    throw new MimicError(
+      `Unknown persona(s): ${missing.join(', ')}`,
+      'CONFIG_INVALID',
+      `Available personas: ${all.map((p) => p.name).join(', ')}`,
+    );
+  }
+  return subset;
 }
 
-function resolveSchemaOptions(config: MimicConfig): Parameters<typeof parseSchema>[0] {
-  // Defer to parseSchema's auto-detection by default; the config schema
-  // contract is unchanged from V4.5.
-  return { schema: { source: (config as { schema?: { source?: string } }).schema?.source } } as Parameters<typeof parseSchema>[0];
-}
-
-async function resolveAdapterMetadata(config: MimicConfig): Promise<{
+export async function resolveAdapterMetadata(config: MimicConfig): Promise<{
   promptContexts: Record<string, PromptContext> | undefined;
   resourceSpecs: Record<string, AdapterResourceSpecs> | undefined;
+  dataSpecs: Record<string, DataSpec> | undefined;
 }> {
+  if (!config.apis || Object.keys(config.apis).length === 0) {
+    return { promptContexts: undefined, resourceSpecs: undefined, dataSpecs: undefined };
+  }
   const promptContexts: Record<string, PromptContext> = {};
   const resourceSpecs: Record<string, AdapterResourceSpecs> = {};
-  if (!config.apis || Object.keys(config.apis).length === 0) {
-    return { promptContexts: undefined, resourceSpecs: undefined };
-  }
-
+  const dataSpecs: Record<string, DataSpec> = {};
   for (const [name, apiConfig] of Object.entries(config.apis)) {
     const adapterId = (apiConfig as { adapter?: string }).adapter ?? name;
     try {
@@ -217,35 +309,134 @@ async function resolveAdapterMetadata(config: MimicConfig): Promise<{
       if (adapter.resourceSpecs) {
         resourceSpecs[adapterId] = adapter.resourceSpecs;
         promptContexts[adapterId] = derivePromptContext(adapter.resourceSpecs);
-      } else if (adapter.promptContext) {
-        promptContexts[adapterId] = adapter.promptContext;
+        dataSpecs[adapterId] = deriveDataSpec(adapter.resourceSpecs);
+      } else {
+        if (adapter.promptContext) promptContexts[adapterId] = adapter.promptContext;
+        if (adapter.dataSpec) dataSpecs[adapterId] = adapter.dataSpec;
       }
     } catch {
-      logger.debug(`Could not resolve adapter "${adapterId}"`);
+      logger.debug(`Could not resolve adapter "${adapterId}" for prompt context`);
     }
   }
   return {
     promptContexts: Object.keys(promptContexts).length > 0 ? promptContexts : undefined,
     resourceSpecs: Object.keys(resourceSpecs).length > 0 ? resourceSpecs : undefined,
+    dataSpecs: Object.keys(dataSpecs).length > 0 ? dataSpecs : undefined,
   };
 }
 
-function resolveRuntimeOverride(value: string | undefined): 'api' | 'claude-code' | 'batch' | undefined {
-  if (!value) return undefined;
-  if (value === 'api' || value === 'claude-code' || value === 'batch') return value;
-  throw new Error(`Unknown --llm-runtime "${value}". Expected api | claude-code | batch.`);
-}
-
-function tableCount(materialised: { tables: Record<string, unknown[]> }): number {
-  return Object.values(materialised.tables).reduce((s, rows) => s + rows.length, 0);
-}
-
-function apiCount(materialised: { apiResponses: Record<string, { responses: Record<string, unknown[]> }> }): number {
-  let n = 0;
-  for (const set of Object.values(materialised.apiResponses)) {
-    for (const responses of Object.values(set.responses)) n += responses.length;
+export async function resolveSchema(config: MimicConfig, cwd: string): Promise<SchemaModel> {
+  const databases = config.databases;
+  if (!databases || Object.keys(databases).length === 0) {
+    if (config.apis && Object.keys(config.apis).length > 0) {
+      return { tables: [], enums: [], insertionOrder: [] };
+    }
+    throw new MimicError(
+      'No database or API configured',
+      'CONFIG_INVALID',
+      "Add a 'databases' or 'apis' section to mimic.json",
+    );
   }
-  return n;
+
+  const [, dbConfig] = Object.entries(databases)[0]!;
+  const dbType = dbConfig.type;
+  const schemaConfig = (dbConfig as Record<string, unknown>).schema as
+    | { source: 'prisma' | 'sql' | 'introspect'; path?: string }
+    | undefined;
+  const source = schemaConfig?.source ?? 'introspect';
+
+  if (source === 'introspect') {
+    switch (dbType) {
+      case 'postgres': {
+        const dbUrl = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
+        const pg = await import('pg');
+        const pool = new pg.default.Pool({ connectionString: dbUrl });
+        try {
+          return await parseSchema({ schema: schemaConfig, pool, basePath: cwd });
+        } finally {
+          await pool.end();
+        }
+      }
+      case 'mysql': {
+        const { MySQLSeeder } = await import('@mimicai/adapter-mysql');
+        const seeder = new MySQLSeeder();
+        const url = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
+        await seeder.init({ url }, { config, blueprints: new Map(), logger });
+        try {
+          return await seeder.introspect({ url });
+        } finally {
+          await seeder.dispose();
+        }
+      }
+      case 'sqlite': {
+        const { SQLiteSeeder } = await import('@mimicai/adapter-sqlite');
+        const seeder = new SQLiteSeeder();
+        const path = (dbConfig as Record<string, unknown>).path as string;
+        await seeder.init({ path }, { config, blueprints: new Map(), logger });
+        try {
+          return await seeder.introspect({ path });
+        } finally {
+          await seeder.dispose();
+        }
+      }
+      case 'mongodb': {
+        const { MongoSeeder } = await import('@mimicai/adapter-mongodb');
+        const seeder = new MongoSeeder();
+        const url = resolveEnvVars((dbConfig as Record<string, unknown>).url as string);
+        const database = (dbConfig as Record<string, unknown>).database as string | undefined;
+        await seeder.init({ url, database }, { config, blueprints: new Map(), logger });
+        try {
+          return await seeder.introspect({ url, database });
+        } finally {
+          await seeder.dispose();
+        }
+      }
+      default:
+        throw new MimicError(
+          `Unsupported database type "${dbType}" for introspection`,
+          'CONFIG_INVALID',
+          'Supported: postgres, mysql, sqlite, mongodb',
+        );
+    }
+  }
+
+  return parseSchema({ schema: schemaConfig, basePath: cwd });
 }
 
-void resolveEnvVars;
+function resolveRuntimeOverride(value: string | undefined): LLMRuntime | undefined {
+  if (!value) return undefined;
+  if (value !== 'api' && value !== 'claude-code' && value !== 'batch') {
+    throw new MimicError(
+      `Unknown --llm-runtime value: "${value}"`,
+      'CONFIG_INVALID',
+      'Valid values: api, claude-code, batch',
+    );
+  }
+  return value;
+}
+
+function toExpandedData(
+  contract: PersonaContract,
+  materialised: MaterialisedDataset,
+): ExpandedData {
+  // Wrap the V5 MaterialisedDataset in the existing ExpandedData shape so the
+  // downstream commands (seed/test/host) keep reading `.mimic/data/<persona>.json`
+  // without churn. V5 doesn't produce a Blueprint or generated facts; the
+  // wrapper fields are left empty/placeholder.
+  return {
+    personaId: contract.personaId,
+    blueprint: {
+      personaId: contract.personaId,
+      domain: contract.domain,
+      profile: contract.persona,
+      entities: [],
+      patterns: [],
+    } as unknown as ExpandedData['blueprint'],
+    tables: materialised.tables,
+    documents: {},
+    apiResponses: materialised.apiResponses,
+    files: [],
+    events: [],
+    facts: [],
+  };
+}
