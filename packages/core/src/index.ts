@@ -268,7 +268,17 @@ export {
   provenanceKey,
 } from './validation/proof.js';
 export type { RowProvenance } from './validation/proof.js';
-export { IllegalRepairError } from './repair/shape-repair.js';
+export {
+  IllegalRepairError,
+  performRepairOp,
+  repairShape,
+  formatOwnerLevelFailureReport,
+} from './repair/index.js';
+export type {
+  ShapeRepairResult,
+  OwnerLevelFailureReport,
+  OwnerLevelFailureCause,
+} from './repair/index.js';
 
 export { derivePromptContext, deriveDataSpec } from './types/adapter.js';
 
