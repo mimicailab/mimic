@@ -215,6 +215,16 @@ export type {
   BudgetLedger,
 } from './world/index.js';
 
+// V5 — Phase 8 contract evaluator.
+export { evaluateContract } from './validation/contract-evaluator.js';
+export type {
+  ContractEvaluation,
+  ContractEvaluationFailure,
+  ContractEvaluationFailureSource,
+  ContractEvaluationPass,
+  ContractEvaluationResult,
+} from './validation/contract-evaluator.js';
+
 // V5 — Phase 7 projection.
 export {
   runProjection,
