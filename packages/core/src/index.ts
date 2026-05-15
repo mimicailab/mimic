@@ -215,6 +215,26 @@ export type {
   BudgetLedger,
 } from './world/index.js';
 
+// V5 — Phase 7 projection.
+export {
+  runProjection,
+  planProjection,
+  createEmptyDataset,
+  projectDb,
+  projectApi,
+  registerProjectorHints,
+  getProjectorHints,
+  defaultHints,
+  __resetProjectorHints,
+} from './projection/index.js';
+export type {
+  ProjectionPlan,
+  ProjectionResult,
+  SurfaceCoord,
+  MaterialisedDataset,
+  ProjectorHints,
+} from './projection/index.js';
+
 // V5 — Extracted helpers, available now so future phases can wire them in
 // without re-routing imports.
 export { SeededRandom } from './world/prng.js';

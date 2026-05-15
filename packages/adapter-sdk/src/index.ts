@@ -31,6 +31,18 @@ export type { TestServer } from './test-helpers.js';
 // ── Format helpers ──────────────────────────────────────────────────────────
 export { unixNow, toDateStr, capitalize } from './format-helpers.js';
 
+// ── V5 projector hints ──────────────────────────────────────────────────────
+// Source of truth lives in @mimicai/core (so the core projector can read
+// the registry without inverting the dependency direction). Adapters call
+// `registerProjectorHints` from their module init to declare their hints.
+export {
+  registerProjectorHints,
+  getProjectorHints,
+  defaultHints,
+  __resetProjectorHints,
+} from '@mimicai/core';
+export type { ProjectorHints } from '@mimicai/core';
+
 // ── Re-exports from core (convenience for adapter authors) ─────────────────
 export {
   generateId,
