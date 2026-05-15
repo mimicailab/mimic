@@ -26,15 +26,10 @@ export interface PersonaData {
   patterns: DataPattern[];
   annotations?: Record<string, unknown>;
   /**
-   * Structured persona claims — checkable predicates extracted from the
-   * persona NL. Replaces the legacy `facts` array; the claim auditor
-   * evaluates these against the expanded data and triggers the repair loop
-   * if any fail. See types/claim.ts for the Claim shape.
-   */
-  claims?: import('./claim.js').Claim[];
-  /**
    * @deprecated Legacy field — descriptive prose, not validated. Retained for
-   * fact-manifest test-scenario generation only. New work should emit `claims`.
+   * fact-manifest test-scenario generation only. The V4.5 `claims` field was
+   * removed in Phase 1 of the V5 rebuild; V5 expresses requirements via the
+   * `PersonaContract` clauses directly.
    */
   facts?: import('./fact-manifest.js').Fact[];
   /** API entity seeds, keyed by adapter ID then resource type */

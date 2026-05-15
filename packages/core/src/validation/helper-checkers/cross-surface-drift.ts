@@ -8,7 +8,7 @@
 
 import type { CrossSurfaceClause } from '../../contract/clause-types.js';
 import type { ExpandedData } from '../../types/dataset.js';
-import { selectRows } from '../../generate/claim-auditor.js';
+import { selectRows } from '../select-rows.js';
 
 export interface CrossSurfaceDriftResult {
   passed: boolean;

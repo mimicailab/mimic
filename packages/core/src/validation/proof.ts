@@ -1,17 +1,14 @@
 /**
- * Row provenance — V3 Layer 2.
+ * Row provenance — V5 proof substrate.
  *
- * Every row materialised by the expander gets a provenance stamp identifying
- * the archetype (and surface) that produced it. The stamp uses a `Symbol`
- * key so it survives Object spread but is invisible to `Object.keys` /
- * `Object.entries` / `JSON.stringify` — no risk of leaking into seeded data,
- * audit predicates, or facts.
+ * Moved from `generate/provenance.ts` as part of the V5 rebuild. The stamp
+ * mechanism is unchanged (Symbol-keyed property surviving Object spread,
+ * invisible to JSON.stringify) so projectors can attribute every emitted
+ * row to the planner node that authorised it.
  *
- * Provenance powers cross-surface leakage repair: when a `db.users` row_count
- * overshoots, the auditor groups matched rows by their producing archetype.
- * Some matched rows trace back to an API archetype via the mirror flow — the
- * repair logic can then narrow that API archetype's vary range instead of
- * fruitlessly clamping the cited DB archetype.
+ * Phase 11 will layer the `ProofRecord` accumulator on top: each hard clause
+ * in a passing run gets a {clauseId, ownerId, evidence} record derived from
+ * these stamps, written to `.mimic/proof/<runId>.json`.
  */
 import type { Row } from '../types/dataset.js';
 
@@ -67,10 +64,6 @@ export function getProvenance(row: Row): RowProvenance | undefined {
 /**
  * Group a list of rows by their provenance ref. Rows without provenance fall
  * into an "(unstamped)" bucket so the report can still account for them.
- *
- * For cross-surface mirrored / fk-backfilled rows, the key surfaces the
- * original producing archetype (e.g. `api.stripe.customer[starter-monthly]
- * (via mirror)`) so the repair loop sees where to narrow.
  */
 export function groupRowsByProvenance(rows: ReadonlyArray<Row>): Map<string, Row[]> {
   const buckets = new Map<string, Row[]>();
@@ -87,10 +80,7 @@ export function groupRowsByProvenance(rows: ReadonlyArray<Row>): Map<string, Row
 /**
  * Stable string key for a provenance record. When the row crossed surfaces
  * (mirror / fk-backfill) and the source archetype is known, the key cites the
- * source instead of the materialised surface — so an audit failure on
- * `db.users` whose matched rows came from `stripe.customer[starter-monthly]`
- * via the mirror flow groups under `api.stripe.customer[starter-monthly]
- * (via mirror)`. That is the archetype a repair patch needs to narrow.
+ * source instead of the materialised surface.
  */
 export function provenanceKey(prov: RowProvenance): string {
   if ((prov.via === 'mirror' || prov.via === 'fk-backfill') && prov.sourceTarget) {

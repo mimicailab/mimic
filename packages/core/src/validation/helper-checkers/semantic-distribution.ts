@@ -1,6 +1,6 @@
 import type { DistributionClause } from '../../contract/clause-types.js';
 import type { ExpandedData } from '../../types/dataset.js';
-import { selectRows } from '../../generate/claim-auditor.js';
+import { selectRows } from '../select-rows.js';
 import {
   canonicaliseBillingTierValue,
   extractSemanticFieldValue,

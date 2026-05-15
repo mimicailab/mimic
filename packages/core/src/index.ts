@@ -124,53 +124,17 @@ export type { LLMRuntime, TokenUsageEntry, CostSummary, CostCategory } from './l
 export { providerConfigFromMimic } from './llm/providers.js';
 export type { ProviderConfig } from './llm/providers.js';
 
-// Generate
-export { BlueprintEngine } from './generate/blueprint-engine.js';
-export { BlueprintExpander } from './generate/expander.js';
-export { BlueprintCache } from './generate/blueprint-cache.js';
-export { SeededRandom } from './generate/seed-random.js';
-export { DataValidator } from './generate/data-validator.js';
-export type { RepairStats } from './generate/data-validator.js';
-export { classifyTables } from './generate/table-classifier.js';
-export { FkResolutionError, resolveMirroredFks } from './generate/fk-resolver.js';
-export { assembleResourceArchetypes } from './generate/resource-assembler.js';
-export type { AssembleOptions } from './generate/resource-assembler.js';
-export { generateFacts, buildDataStats } from './generate/fact-generator.js';
-export { auditClaims, formatAuditFailures } from './generate/claim-auditor.js';
-export { applyBlueprintPatch } from './generate/blueprint-patch.js';
-export { expandAndAudit } from './generate/audit-and-repair.js';
-export type { ExpandAndAuditOptions, ExpandAndAuditResult } from './generate/audit-and-repair.js';
-export { rewriteBridgeTables, rewriteClaimsForBridges, formatBridgeRewrite } from './generate/bridge-rewriter.js';
-export type { BridgeRewriteResult } from './generate/bridge-rewriter.js';
-export { solveCounts, formatConflicts } from './generate/count-solver.js';
-export type { SolveResult, SolverConflict, SolverTraceEntry } from './generate/count-solver.js';
-export { deterministicRepair, formatRepairDecisions } from './generate/deterministic-repair.js';
-export type { DeterministicRepairResult, RepairDecision } from './generate/deterministic-repair.js';
-
-// V2 — layered, narrow-LLM pipeline (claim-extract → bridge-rewrite → topology → per-slot content)
-export { extractClaims } from './generate/claim-extractor.js';
-export type { ExtractClaimsOptions, ExtractClaimsResult } from './generate/claim-extractor.js';
-
-// V4.5 — Contract compiler → coverage planner → lowering → V2/V3 core → fidelity validator
+// V5 — Contract front end (compiler keeps producing the persona contract;
+// canonicaliser + pre-generation gate + planners + projectors + validators
+// land in later phases). Lowering / coverage planner / fidelity validator
+// are removed; their V5 successors will export from here once landed.
 export {
   compileContract,
   CONTRACT_COMPILER_VERSION,
 } from './contract/contract-compiler.js';
 export type { CompileContractOptions } from './contract/contract-compiler.js';
-export {
-  planCoverage,
-  formatCoverageReport,
-  CAPABILITY_REGISTRY_VERSION,
-  LOWERING_TARGETS,
-  HELPER_TARGETS,
-} from './contract/coverage-planner.js';
-export { lowerContract, formatLoweringResult } from './contract/lowering.js';
-export type { LoweringResult } from './contract/lowering.js';
 export type {
   PersonaContract,
-  CoverageStatus,
-  CoverageDecision,
-  CoverageReport,
 } from './contract/persona-contract.js';
 export type {
   Clause,
@@ -186,23 +150,23 @@ export type {
   ReconciliationClause,
   NarrativeClause,
 } from './contract/clause-types.js';
+
+// V5 — Extracted helpers, available now so future phases can wire them in
+// without re-routing imports.
+export { SeededRandom } from './world/prng.js';
+export { selectRows, resolveRows } from './validation/select-rows.js';
+export { FkResolutionError, resolveMirroredFks } from './projection/fk-resolver.js';
+export { getPersonaIdPrefix, getResourceIdPrefix } from './projection/identity-prefix.js';
 export {
-  runFidelity,
-  formatFidelityFailures,
-} from './validation/fidelity-validator.js';
-export type {
-  FidelityResult,
-  FidelityEvaluation,
-  FidelityFailureSource,
-} from './validation/fidelity-validator.js';
-export { readV45Annotations } from './generate/blueprint-engine.js';
-export { deriveSlots } from './generate/topology.js';
-export type { ResourceSlot, DeriveSlotsOptions } from './generate/topology.js';
-export { generateAllSlots } from './generate/content-generator.js';
-export type {
-  GenerateSlotContentOptions,
-  SlotContentResult,
-} from './generate/content-generator.js';
+  PROVENANCE_KEY,
+  stampProvenance,
+  getProvenance,
+  groupRowsByProvenance,
+  provenanceKey,
+} from './validation/proof.js';
+export type { RowProvenance } from './validation/proof.js';
+export { IllegalRepairError } from './repair/shape-repair.js';
+
 export { derivePromptContext, deriveDataSpec } from './types/adapter.js';
 
 // Seed (adapters are now in @mimicai/adapter-* packages)
@@ -245,9 +209,10 @@ export {
 } from './mock/utils.js';
 export type { PaginatedResult } from './mock/utils.js';
 
-// Orchestration
-export { Mimic } from './mimic.js';
-export type { MimicRunOptions } from './mimic.js';
+// Orchestration — the V4.5 Mimic class and BlueprintEngine have been removed.
+// Phase 12 will introduce `pipeline.ts` exporting `runPipeline(contract,
+// schema, ctx): PipelineResult`. Until that lands, callers must wait — the
+// CLI is expected to fail typecheck.
 
 // Adapter
 export { BaseAdapter } from './adapter/base.js';

@@ -22,7 +22,7 @@ import type {
 import type { SchemaMapping } from '../types/blueprint.js';
 import type { ILLMClient } from '../llm/client.js';
 import { ContractCompilerOutputSchema, type ContractCompilerOutput } from './contract-zod.js';
-import { buildClaimExtractionPrompt } from '../generate/prompts.js';
+import { buildCompilerUserPrompt } from './compiler-prompt.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import type { PersonaContract } from './persona-contract.js';
@@ -162,9 +162,7 @@ export async function compileContract(
     }
   }
 
-  // Reuse the existing extraction prompt builder to ground targets/fields,
-  // then swap in the V4.5 system prompt + closing instruction.
-  const { user: groundedUser } = buildClaimExtractionPrompt({
+  const user = buildCompilerUserPrompt({
     schema,
     persona,
     domain,
@@ -177,13 +175,7 @@ export async function compileContract(
     totalPersonas: options.totalPersonas,
   });
 
-  const user =
-    groundedUser.replace(
-      /Extract the persona contract\. .*$/m,
-      'Compile the persona contract. Emit one clause per requirement the persona states. Carry the exact source quote on every clause. Return ONLY the JSON object.',
-    );
-
-  logger.step(`Compiling persona contract (V4.5) for "${persona.name}"...`);
+  logger.step(`Compiling persona contract for "${persona.name}"...`);
 
   let output: ContractCompilerOutput;
   try {

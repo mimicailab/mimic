@@ -1,3 +1,14 @@
+/**
+ * Foreign-key resolution across already-projected surface rows.
+ *
+ * Moved from `generate/fk-resolver.ts` as part of the V5 rebuild. The logic
+ * is unchanged — projectors call this to wire mirrored rows back to their
+ * identity-table parents using the API entity's external_id reference.
+ *
+ * V5 boundary: this helper is a PROJECTION concern, not a planner concern.
+ * The canonical world holds stable identity records; projectors mint surface
+ * IDs and then this helper threads FKs across the already-emitted rows.
+ */
 import type {
   SchemaModel,
   TableInfo,
@@ -191,6 +202,7 @@ export function resolveMirroredFks(
     }
   }
 
+  void logger;
   return { rows: mirroredRows, errors };
 }
 
@@ -199,7 +211,7 @@ export function resolveMirroredFks(
 // ---------------------------------------------------------------------------
 
 function getPrimaryKeyColumn(schema: SchemaModel, tableName: string): string {
-  const table = schema.tables.find(t => t.name === tableName);
+  const table = schema.tables.find((t: TableInfo) => t.name === tableName);
   if (table && table.primaryKey.length > 0) {
     return table.primaryKey[0]!;
   }

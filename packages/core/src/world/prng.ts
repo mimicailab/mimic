@@ -1,14 +1,22 @@
+/**
+ * Deterministic PRNG threaded through the V5 world state.
+ *
+ * Moved from `generate/seed-random.ts` as part of the V5 rebuild. The class
+ * keeps the legacy name `SeededRandom` so callers stay stable; Phase 5
+ * attaches an instance to `WorldState.prng` so every planner draws from the
+ * same seeded stream.
+ *
+ * Phase 5 open question: when `regenerateFromOwner` re-runs a planner, does
+ * it consume a child stream or re-use the parent? Decide during planner
+ * code review.
+ */
 import seedrandom from 'seedrandom';
-
-// ---------------------------------------------------------------------------
-// SeededRandom
-// ---------------------------------------------------------------------------
 
 /**
  * Thin, deterministic PRNG wrapper around `seedrandom`.
  *
  * Every method is fully deterministic given the same seed, which guarantees
- * reproducible data-set expansion across runs.
+ * reproducible world-state planning + projection across runs.
  */
 export class SeededRandom {
   private readonly rng: seedrandom.PRNG;

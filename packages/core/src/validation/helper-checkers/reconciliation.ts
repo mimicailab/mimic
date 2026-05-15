@@ -13,7 +13,7 @@
 import type { ReconciliationClause } from '../../contract/clause-types.js';
 import type { ExpandedData } from '../../types/dataset.js';
 import type { Filter, ResourceTarget } from '../../types/claim.js';
-import { selectRows } from '../../generate/claim-auditor.js';
+import { selectRows } from '../select-rows.js';
 
 export interface ReconciliationCheckResult {
   passed: boolean;

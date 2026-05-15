@@ -1,3 +1,20 @@
+/**
+ * Surface-formatted identifier minting.
+ *
+ * Moved from `generate/identity-prefix.ts` as part of the V5 rebuild.
+ *
+ * V5 boundary (Phase 6 / Phase 7):
+ *   - The identity planner owns canonical identity only — it reserves slots
+ *     such as "this entity needs a Stripe customer ID" inside an
+ *     `IdentityRecord`, without choosing the final string.
+ *   - This module is the ONLY place where final surface identifiers are
+ *     minted, as a pure deterministic function of `(IdentityRecord,
+ *     ProjectorHints)`. Prefix logic (`cus_`, `sub_`, casing) lives here,
+ *     never in the planner.
+ *
+ * Enforced by the import-lint rule added in Phase 13: nothing under
+ * `planner/` may import from this file.
+ */
 import type { PromptContext, AdapterResourceSpecs } from '../types/index.js';
 
 /**
