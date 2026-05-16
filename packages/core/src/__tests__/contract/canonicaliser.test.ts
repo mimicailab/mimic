@@ -96,8 +96,61 @@ describe('canonicaliser', () => {
     };
     const out = canonicaliseContract(makeContract([clause]));
     expect(out.clauses[0]!.canonicalTarget).toEqual({
-      populationId: 'product:users:paying',
+      populationId: 'db:users',
       cohortRule: { status: 'active', plan: { neq: 'free' }, billing_platform: 'stripe' },
+      metricId: 'mrr',
+    });
+  });
+
+  it('preserves a valid compiler-authored canonical target', () => {
+    const clause: CountClause = {
+      id: 'c1b',
+      quote: '100 starter customers on Stripe',
+      family: 'count',
+      strength: 'hard',
+      semanticTarget: {
+        kind: 'billing_customer_cohort',
+        adapter: 'stripe',
+        facets: { billingState: 'paying', tier: 'starter' },
+      },
+      canonicalTarget: {
+        populationId: 'db:users',
+        cohortRule: { billing_platform: 'stripe', plan: 'starter' },
+        metricId: 'count',
+      },
+      expected: 100,
+    };
+    const out = canonicaliseContract(makeContract([clause]));
+    expect(out.clauses[0]!.canonicalTarget).toEqual({
+      populationId: 'db:users',
+      cohortRule: { billing_platform: 'stripe', plan: 'starter' },
+      metricId: 'count',
+    });
+    expect(out.clauses[0]!.canonicalisationGap).toBeUndefined();
+  });
+
+  it('falls back to deterministic resolution when a compiler-authored canonical target is invalid', () => {
+    const clause: AggregateClause = {
+      id: 'c2c',
+      quote: '£127k MRR among paying customers',
+      family: 'aggregate',
+      op: 'sum',
+      strength: 'hard',
+      field: 'mrr',
+      expected: 12700000,
+      semanticTarget: {
+        kind: 'billing_customer_cohort',
+        adapter: 'stripe',
+        facets: { billingState: 'paying' },
+      },
+      canonicalTarget: {
+        populationId: 'db:users',
+        metricId: 'count',
+      },
+    };
+    const out = canonicaliseContract(makeContract([clause]));
+    expect(out.clauses[0]!.canonicalTarget).toEqual({
+      populationId: 'paying_customers:stripe',
       metricId: 'mrr',
     });
   });

@@ -79,12 +79,34 @@ const SemanticTargetSchema = z.discriminatedUnion('kind', [
   ProductUserSemanticTargetSchema,
 ]);
 
+const CanonicalWindowSchema = z.object({
+  start: z.string(),
+  end: z.string(),
+  granularity: z.enum(['day', 'week', 'month', 'quarter', 'year']).optional(),
+});
+
+const CanonicalTargetSchema = z.object({
+  populationId: z.string().describe(
+    'Stable canonical entity population id. Reuse the same populationId when clauses talk about the same real-world entities across surfaces.',
+  ),
+  cohortRule: FilterSchema.optional().describe(
+    'Canonical cohort restriction over that population, e.g. { billing_platform: "stripe", plan: "starter" }.',
+  ),
+  metricId: z.string().optional().describe(
+    'Stable canonical metric id, e.g. count | mrr | arr | revenue | mrr_change | gap_days | event.',
+  ),
+  window: CanonicalWindowSchema.optional(),
+});
+
 const ClauseBaseSchema = {
   id: z.string().describe('Stable kebab-case clause id'),
   quote: z.string().describe('Exact persona text this clause was extracted from'),
   strength: z.enum(['hard', 'soft']).describe(
     'hard: must be satisfied (blocks the run if unsupported). ' +
     'soft: nice-to-have (never blocks).',
+  ),
+  canonicalTarget: CanonicalTargetSchema.optional().describe(
+    'Optional compiler-authored canonical interpretation. Use when you can confidently map the clause onto a shared canonical population. Leave absent if unsure; the deterministic canonicaliser will fill it.',
   ),
 };
 

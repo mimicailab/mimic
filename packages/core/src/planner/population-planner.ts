@@ -606,6 +606,10 @@ function applySemanticSeed(
 
   if (semanticTarget.kind === 'billing_customer_cohort') {
     const tier = semanticTarget.facets?.tier;
+    const billingState = semanticTarget.facets?.billingState;
+    if (billingState && readSeedField(attrs, 'billing_state') === undefined) {
+      setSeedField(attrs, 'billing_state', billingState);
+    }
     if (semanticTarget.facets?.billingState === 'paying' && readSeedField(attrs, 'status') === undefined) {
       setSeedField(attrs, 'status', 'active');
     }
@@ -633,6 +637,10 @@ function applySemanticSeed(
     return;
   }
 
+  const billingState = semanticTarget.facets?.billingState;
+  if (billingState && readSeedField(attrs, 'billing_state') === undefined) {
+    setSeedField(attrs, 'billing_state', billingState);
+  }
   if (readSeedField(attrs, 'status') === undefined) {
     setSeedField(attrs, 'status', 'active');
   }

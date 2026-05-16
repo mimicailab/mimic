@@ -26,6 +26,7 @@ import type {
   DistributionClause,
   OwnerId,
   ReconciliationClause,
+  SemanticTarget,
   TemporalClause,
 } from '../contract/clause-types.js';
 import type { PersonaContract } from '../contract/persona-contract.js';
@@ -148,14 +149,6 @@ function evaluateClause(
   }
 }
 
-function semanticAdapter(
-  semanticTarget: import('../contract/clause-types.js').SemanticTarget | undefined,
-): string | undefined {
-  if (!semanticTarget) return undefined;
-  if (semanticTarget.kind === 'billing_customer_cohort') return semanticTarget.adapter;
-  return undefined;
-}
-
 function ownerFor(clause: Clause, graph: ObligationGraph | undefined): OwnerId | undefined {
   return graph?.byClauseId.get(clause.id)?.ownerId;
 }
@@ -169,7 +162,7 @@ function evalCount(
   expanded: ExpandedData,
   ownerId: OwnerId | undefined,
 ): ContractEvaluation {
-  const target = resolveTarget(clause.target, semanticAdapter(clause.semanticTarget), clause);
+  const target = resolveTarget(clause.target, clause.semanticTarget);
   if (!target) {
     return fail(clause, 'count target could not be resolved', undefined, 'canonicalisation', ownerId);
   }
@@ -186,7 +179,7 @@ function evalAggregate(
   expanded: ExpandedData,
   ownerId: OwnerId | undefined,
 ): ContractEvaluation {
-  const target = resolveTarget(clause.target, semanticAdapter(clause.semanticTarget), clause);
+  const target = resolveTarget(clause.target, clause.semanticTarget);
   if (!target) {
     return fail(clause, 'aggregate target could not be resolved', undefined, 'canonicalisation', ownerId);
   }
@@ -223,7 +216,7 @@ function evalDistribution(
   }
 
   // Raw distribution: count rows per bucket, compare percentages.
-  const target = resolveTarget(clause.target, undefined, clause);
+  const target = resolveTarget(clause.target, undefined);
   if (!target) {
     return fail(clause, 'distribution target could not be resolved', undefined, 'canonicalisation', ownerId);
   }
@@ -262,7 +255,7 @@ function evalTemporal(
 ): ContractEvaluation {
   if (clause.kind === 'window') {
     // Prefer the materialised dataset; fall back to lifecycle events.
-    const target = resolveTarget(clause.target, undefined, clause);
+    const target = resolveTarget(clause.target, undefined);
     let count = 0;
     let hasMaterialisedRows = false;
     if (target) {
@@ -383,16 +376,34 @@ function fail(
 
 function resolveTarget(
   raw: ResourceTarget | undefined,
-  _adapter: string | undefined,
-  clause: Clause,
+  semanticTarget: SemanticTarget | undefined,
 ): ResourceTarget | undefined {
-  if (raw) return raw;
-  // Semantic targets resolve via the existing capability registry.
-  const semantic = (clause as { semanticTarget?: import('../contract/clause-types.js').SemanticTarget })
-    .semanticTarget;
-  if (!semantic) return undefined;
-  const resolved = resolveSemanticTarget(semantic);
-  return resolved?.target;
+  if (!semanticTarget) return raw;
+  const semantic = resolveSemanticTarget(semanticTarget)?.target;
+  if (!raw) return semantic;
+  if (!semantic) return raw;
+  if (raw.surface !== semantic.surface || raw.name !== semantic.name) return raw;
+
+  const filter = mergeFilters(semantic.filter, raw.filter);
+  return {
+    ...raw,
+    ...(filter ? { filter } : {}),
+  };
+}
+
+function mergeFilters(
+  semantic: Filter | undefined,
+  raw: Filter | undefined,
+): Filter | undefined {
+  if (!semantic && !raw) return undefined;
+  return {
+    ...(semantic ? cloneFilter(semantic) : {}),
+    ...(raw ? cloneFilter(raw) : {}),
+  };
+}
+
+function cloneFilter(filter: Filter): Filter {
+  return JSON.parse(JSON.stringify(filter));
 }
 
 function describeTarget(t: ResourceTarget): string {

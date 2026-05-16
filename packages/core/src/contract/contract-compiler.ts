@@ -29,7 +29,7 @@ import type { Clause, AnchorClause } from './clause-types.js';
 import { canonicaliseSemanticClauses } from './semantic-capabilities.js';
 
 /** Bumped when the clause shape changes — used in PersonaContract.compilerVersion. */
-export const CONTRACT_COMPILER_VERSION = 'v5';
+export const CONTRACT_COMPILER_VERSION = 'v6';
 
 export interface CompileContractOptions {
   temperature?: number;
@@ -66,6 +66,7 @@ Each clause MUST carry:
   - quote: the EXACT persona text the clause was extracted from, verbatim.
   - family: one of count | aggregate | distribution | temporal | anchor | cross_surface | reconciliation | narrative.
   - strength: "hard" if the run should block when no rule covers it, otherwise "soft".
+  - canonicalTarget when you can confidently identify the shared canonical population the clause talks about.
 
 Pick "hard" by default for any explicit number, named event, or cross-surface assertion. Pick "soft" only for style/tone/qualitative material.
 
@@ -120,6 +121,40 @@ Examples:
   - "34 users with paid plan flags but no corresponding billing platform record" -> family="count", target={surface:"db",name:"users",filter:{plan:{neq:"free"},billing_platform:null}}, semanticTarget={kind:"product_user_cohort",table:"users",facets:{billingState:"paying",linkage:"unlinked"}}
 
 Semantic targets are the contract-level source of truth. Downstream code lowers them into executable surface predicates deterministically.
+
+## Canonical targets — compile-time semantic interpretation
+
+When you can confidently identify the SHARED canonical population a clause refers to,
+emit canonicalTarget directly on the clause.
+
+  canonicalTarget = {
+    populationId: <stable canonical population id>,
+    cohortRule?: { ... },
+    metricId?: <stable metric id>,
+    window?: { start: <iso>, end: <iso>, granularity?: day|week|month|quarter|year }
+  }
+
+Rules:
+  - canonicalTarget is the runtime plan vocabulary. It may be broader than the raw target surface.
+  - Reuse the SAME populationId when two clauses describe the same real-world entities across different surfaces.
+  - target / semanticTarget still describe where the fact is observed; canonicalTarget describes what entity population the fact is ABOUT.
+  - If the persona also defines a product-side users table as the shared customer universe, prefer that shared users population for customer cohorts that resolve back to those users.
+  - If you are unsure, omit canonicalTarget rather than guessing. The deterministic canonicaliser will fill it.
+
+Metric guidance:
+  - count/distribution/temporal-window -> metricId="count"
+  - aggregate on mrr_* -> metricId="mrr"
+  - aggregate on arr_* -> metricId="arr"
+  - aggregate on revenue_* -> metricId="revenue"
+  - reconciliation -> metricId = clause.metric
+  - anchor -> metricId="event"
+  - relative_gap -> metricId="gap_days"
+
+Examples:
+  - "Exactly 3,794 rows total" on db.users -> canonicalTarget={populationId:"db:users",metricId:"count"}
+  - "Exactly 856 starter customers" on Stripe, when those customers resolve back to product users -> canonicalTarget={populationId:"db:users",cohortRule:{billing_platform:"stripe",plan:"starter"},metricId:"count"}
+  - "Exactly 34 paid-plan orphans" -> canonicalTarget={populationId:"db:users",cohortRule:{plan:{neq:"free"},billing_platform:null},metricId:"count"}
+  - temporal window on pro users -> canonicalTarget={populationId:"db:users",cohortRule:{plan:"pro"},metricId:"count",window:{start:"2026-05-01",end:"2026-05-31",granularity:"month"}}
 
 ## Clause families
 
@@ -193,7 +228,7 @@ export async function compileContract(
       schemaName: 'PersonaContract',
       schemaDescription:
         'Compiled persona contract — personaId, domain, profile, clauses, and anchors. ' +
-          'Clauses carry source quote + family + strength; the contract is the source of truth.',
+          'Clauses carry source quote + family + strength, and may also carry canonicalTarget when the shared runtime population is clear; the contract is the source of truth.',
       system: SYSTEM_PROMPT,
       prompt: user,
       label: `contract-compile:${persona.name}`,

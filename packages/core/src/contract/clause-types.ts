@@ -2,8 +2,9 @@
  * V5 — Persona contract clause types.
  *
  * A `Clause` is a single faithful parse of a persona requirement. The contract
- * compiler emits clauses with `source`, `family`, and `strength` populated; the
- * canonicaliser (Phase 3) then attaches `canonicalTarget` (and, on unresolved
+ * compiler emits clauses with `source`, `family`, `strength`, and optionally
+ * `canonicalTarget` populated; the canonicaliser (Phase 3) validates compiler
+ * annotations and deterministically fills any gaps (and, on unresolved
  * clauses, `canonicalisationGap`); the pre-generation gate (Phase 4) finally
  * stamps `ownerId` on every hard clause that the rule table can assign.
  *
@@ -49,7 +50,7 @@ export type SemanticTarget = BillingCustomerCohortSemanticTarget | ProductUserCo
 export type SemanticFieldHint = 'tier';
 
 // ---------------------------------------------------------------------------
-// Canonical target — populated by Phase 3 (canonicaliser)
+// Canonical target — compiler-authored when available, validated by Phase 3
 // ---------------------------------------------------------------------------
 
 /**
@@ -89,8 +90,9 @@ export interface CanonicalWindow {
 }
 
 /**
- * Canonical interpretation of a clause's subject. Populated by the
- * canonicaliser; required on every clause after Phase 3 (the
+ * Canonical interpretation of a clause's subject. May be authored by the
+ * compiler and is validated/finalised by the canonicaliser; required on every
+ * clause after Phase 3 (the
  * pre-generation gate (Phase 4) reads it directly).
  *
  * `populationId === 'unresolved'` is the canonicaliser's signal that the
@@ -161,8 +163,9 @@ interface ClauseBase {
   /** Hard or soft */
   strength: ClauseStrength;
   /**
-   * Canonical interpretation. Populated by the canonicaliser (Phase 3);
-   * optional in the raw compiler output but required after canonicalisation.
+  * Canonical interpretation. Optional in the raw compiler output; validated
+  * and normalised by the canonicaliser (Phase 3), and required after
+  * canonicalisation.
    *
    * When `canonicalTarget.populationId === 'unresolved'`, the matching
    * `canonicalisationGap` describes why.

@@ -91,6 +91,8 @@ export function resolveSemanticTarget(target: SemanticTarget): ResolvedSemanticT
       }
       if (normalised.facets?.linkage === 'unlinked') {
         filter.billing_platform = null;
+      } else if (normalised.facets?.linkage === 'linked') {
+        filter.billing_platform = { is_null: false };
       }
       return {
         target: {

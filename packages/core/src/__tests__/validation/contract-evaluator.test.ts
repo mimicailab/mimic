@@ -263,6 +263,42 @@ describe('contract evaluator — happy path round-trips', () => {
     ).toHaveLength(1);
   });
 
+  it('merges semantic filters into same-surface evaluator targets', () => {
+    const clause: CountClause = {
+      id: 'unlinked-paid',
+      quote: '2 paid-plan orphans',
+      family: 'count',
+      strength: 'hard',
+      target: { surface: 'db', name: 'users' },
+      semanticTarget: {
+        kind: 'product_user_cohort',
+        table: 'users',
+        facets: { billingState: 'paying', linkage: 'unlinked' },
+      },
+      expected: 2,
+    };
+    const contract = makeContract([clause]);
+
+    const evaluation = evaluateContract(contract, createWorldState(new SeededRandom(1)), {
+      tables: {
+        users: [
+          { status: 'active', plan: 'starter', billing_platform: null },
+          { status: 'active', plan: 'pro', billing_platform: null },
+          { status: 'active', plan: 'starter', billing_platform: 'stripe' },
+          { status: 'active', plan: 'free', billing_platform: null },
+        ],
+      },
+      apiResponses: {},
+    });
+
+    expect(evaluation.passed).toBe(true);
+    expect(evaluation.evaluations[0]).toMatchObject({
+      clauseId: 'unlinked-paid',
+      predicate: 'count(db.users where plan={"neq":"free"} AND billing_platform=null) = 2',
+      passed: true,
+    });
+  });
+
   it('reconciliation clause: ledger balanced ⇒ evaluator passes', () => {
     const recon: ReconciliationClause = {
       id: 'mrr',

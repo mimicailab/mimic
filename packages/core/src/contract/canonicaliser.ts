@@ -1,12 +1,12 @@
 /**
  * V5 — Phase 3: Canonicaliser.
  *
- * Maps the fuzzy persona language already captured on each clause onto a
- * precise canonical vocabulary the planners and validators read. Strictly
- * deterministic — no LLM. Mutates the contract in place: every clause gets
- * a `canonicalTarget`; clauses the rule table cannot resolve get a
- * `canonicalisationGap` instead, which the Phase 4 gate folds into its
- * combined `ContradictionAndCoverageReport`.
+ * Validates compiler-authored canonical targets and deterministically fills
+ * any gaps. Strictly deterministic — no LLM. Mutates the contract in place:
+ * every clause ends with a `canonicalTarget`; clauses neither the compiler nor
+ * the fallback rule table can resolve get a `canonicalisationGap` instead,
+ * which the Phase 4 gate folds into its combined
+ * `ContradictionAndCoverageReport`.
  *
  * Source of truth: this file. There is no parallel canonical-contract
  * type and no canonical-targets map keyed by clause id. Canonical meaning
@@ -68,6 +68,13 @@ interface CanonicaliseResult {
 }
 
 function canonicaliseClause(clause: Clause): CanonicaliseResult {
+  const provided = validateProvidedCanonicalTarget(clause);
+  if (provided) return provided;
+
+  return resolveClauseFallback(clause);
+}
+
+function resolveClauseFallback(clause: Clause): CanonicaliseResult {
   switch (clause.family) {
     case 'count':
       return canonicaliseCount(clause);
@@ -86,6 +93,87 @@ function canonicaliseClause(clause: Clause): CanonicaliseResult {
     case 'narrative':
       return canonicaliseNarrative(clause);
   }
+}
+
+function validateProvidedCanonicalTarget(clause: Clause): CanonicaliseResult | null {
+  if (!clause.canonicalTarget) return null;
+  // Clauses with a semanticTarget are always resolved via the semantic registry so
+  // the canonical population IDs (e.g. paying_customers:stripe) are computed
+  // correctly. Letting a compiler-provided target win here would replace a
+  // semantically-correct population like paying_customers:stripe with db:users,
+  // which breaks API mock population generation.
+  if ((clause as { semanticTarget?: unknown }).semanticTarget) return null;
+
+  const target = normaliseProvidedCanonicalTarget(clause, clause.canonicalTarget);
+  if (!target) return null;
+  return { target };
+}
+
+function normaliseProvidedCanonicalTarget(
+  clause: Clause,
+  target: CanonicalTarget,
+): CanonicalTarget | null {
+  const populationId = target.populationId.trim();
+  if (!populationId || populationId === 'unresolved') return null;
+
+  const next: CanonicalTarget = {
+    populationId,
+  };
+
+  if (target.cohortRule && Object.keys(target.cohortRule).length > 0) {
+    next.cohortRule = cloneFilter(target.cohortRule);
+  }
+
+  switch (clause.family) {
+    case 'count':
+    case 'distribution':
+      if (target.metricId && target.metricId !== 'count') return null;
+      next.metricId = 'count';
+      break;
+    case 'aggregate': {
+      const metricId = canonicaliseMetric(clause.op, clause.field);
+      if (target.metricId && target.metricId !== metricId) return null;
+      next.metricId = metricId;
+      break;
+    }
+    case 'temporal':
+      if (clause.kind === 'window') {
+        if (target.metricId && target.metricId !== 'count') return null;
+        next.metricId = 'count';
+        next.window = canonicaliseWindow(clause.min, clause.max);
+        break;
+      }
+      return {
+        populationId: `anchor_gap:${clause.anchorA}->${clause.anchorB}`,
+        metricId: 'gap_days',
+      };
+    case 'anchor':
+      return {
+        populationId: `anchor:${clause.anchorId}`,
+        metricId: 'event',
+        window: anchorWindow(clause.dates),
+      };
+    case 'cross_surface':
+      return {
+        populationId,
+        cohortRule: { [clause.field]: { in: [clause.valueA, clause.valueB] } as Filter[string] },
+        metricId: 'cross_surface_field',
+      };
+    case 'reconciliation':
+      if (target.metricId && target.metricId !== clause.metric) return null;
+      next.metricId = clause.metric;
+      break;
+    case 'narrative':
+      next.metricId = target.metricId?.trim() || 'style';
+      break;
+  }
+
+  if (target.window) {
+    if (clause.family !== 'temporal' || clause.kind !== 'window') return null;
+    if (target.window.start !== clause.min || target.window.end !== clause.max) return null;
+  }
+
+  return next;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,9 +203,20 @@ function canonicaliseAggregate(clause: AggregateClause): CanonicaliseResult {
   if (subject.populationId === 'unresolved') {
     return unresolved(clause.quote, subject.unresolvedText ?? '(no target)', 'No population matched aggregate clause.');
   }
+  // When there is no semanticTarget and the raw target is a billing API surface
+  // (api:<adapter>.*), redirect the aggregate to paying_customers:<adapter> so
+  // the planner stamps MRR/revenue attributes on the existing customer entities
+  // rather than minting a separate 1-entity aggregate population that then emits
+  // a spurious extra API row and triggers the projection ownership invariant.
+  let populationId = subject.populationId;
+  if (!clause.semanticTarget && populationId.startsWith('api:')) {
+    const dotIdx = populationId.indexOf('.', 4);
+    const adapter = dotIdx > 0 ? populationId.slice(4, dotIdx) : populationId.slice(4);
+    if (adapter) populationId = `paying_customers:${adapter}` as PopulationId;
+  }
   return {
     target: {
-      populationId: subject.populationId,
+      populationId,
       cohortRule: subject.cohortRule,
       metricId: canonicaliseMetric(clause.op, clause.field),
     },
@@ -305,16 +404,14 @@ function resolveSemanticSubject(
     }
     case 'product_user_cohort': {
       const table = semanticTarget.table.trim().toLowerCase();
-      const billingState = semanticTarget.facets?.billingState;
-      const populationId: PopulationId =
-        billingState === 'paying'
-          ? `product:${table}:paying`
-          : billingState === 'free'
-            ? `product:${table}:free`
-            : `product:${table}`;
+      // Product-user cohorts narrow the shared product table population.
+      // Splitting these into synthetic product:* populations duplicates db
+      // rows once projection materialises them back onto the same table.
+      const populationId: PopulationId = `db:${table}`;
       const semanticRule: CohortRule = {};
       if (semanticTarget.facets?.tier) semanticRule.plan = semanticTarget.facets.tier;
       if (semanticTarget.facets?.linkage === 'unlinked') semanticRule.billing_platform = null;
+      if (semanticTarget.facets?.linkage === 'linked') semanticRule.billing_platform = { is_null: false };
       const rawRule =
         rawTarget && rawTarget.surface === 'db' && rawTarget.name.trim().toLowerCase() === table
           ? rawTarget.filter
