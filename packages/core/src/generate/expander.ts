@@ -3921,17 +3921,29 @@ function generateColumnValue(col: ColumnInfo, rng: SeededRandom): unknown {
 }
 
 /**
- * Remove rows that would violate unique constraints defined in the schema.
- * For each unique constraint (including PK), build a composite key from the
- * row values and keep only the first occurrence.  Works for any schema.
+ * Enforce unique constraints on a row set.
+ *
+ * Single-column unique constraints (e.g. `users.email UNIQUE`) are
+ * CONSTRUCTIVE: a colliding value is rewritten to a unique value (an
+ * incrementing suffix on strings, monotonically incremented numbers).
+ * No rows are dropped — the persona's row count is preserved.
+ *
+ * Multi-column unique constraints (e.g. `(user_id, period)` on
+ * usage_metrics) remain DESTRUCTIVE: dupes are dropped. These typically
+ * encode "at most one X per Y" relationships where regenerating either
+ * column would break the relationship, so collapse is the correct
+ * behaviour.
+ *
+ * SQL semantics: NULL doesn't equal NULL — a row with any NULL in the
+ * unique key doesn't conflict with anything (Postgres, MySQL, SQLite all
+ * behave this way). Without this, e.g. 100 rows with NULL
+ * `stripe_pi_id` would collapse to 1 even though Postgres would happily
+ * accept all.
  */
 function deduplicateByUniqueConstraints(
   rows: Row[],
   tableInfo: TableInfo,
 ): Row[] {
-  // Collect all unique key sets: explicit unique constraints + primary key.
-  // Skip PK if any PK column is missing from rows (e.g. UUID PKs that
-  // haven't been generated yet — they'll be unique once assigned later).
   const uniqueKeySets: string[][] = [
     ...(tableInfo.uniqueConstraints ?? []),
   ];
@@ -3947,33 +3959,119 @@ function deduplicateByUniqueConstraints(
 
   if (uniqueKeySets.length === 0) return rows;
 
-  // One Set per unique constraint to track seen composite keys
-  const seenSets = uniqueKeySets.map(() => new Set<string>());
-  const before = rows.length;
+  // Split into single-column (regenerate) vs multi-column (drop dupes).
+  const singleCol: string[] = [];
+  const multiCol: string[][] = [];
+  for (const cols of uniqueKeySets) {
+    if (cols.length === 1) singleCol.push(cols[0]!);
+    else multiCol.push(cols);
+  }
 
-  const result = rows.filter((row) => {
-    for (let i = 0; i < uniqueKeySets.length; i++) {
-      const cols = uniqueKeySets[i]!;
-      // SQL semantics: NULL doesn't equal NULL, so a row with any NULL in the
-      // unique key doesn't conflict with anything (Postgres, MySQL, SQLite all
-      // behave this way). Without this, e.g. 100 rows with NULL `stripe_pi_id`
-      // would collapse to 1 here even though Postgres would happily accept all.
-      const hasNull = cols.some(c => row[c] === undefined || row[c] === null);
-      if (hasNull) continue;
-      const key = cols.map((c) => String(row[c])).join('\x00');
-      if (seenSets[i]!.has(key)) return false;
-      seenSets[i]!.add(key);
+  // Pass 1 — single-column uniques: rewrite collisions in-place.
+  let repairs = 0;
+  for (const col of singleCol) {
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const v = row[col];
+      if (v === undefined || v === null) continue; // NULL never collides
+      const key = String(v);
+      if (!seen.has(key)) {
+        seen.add(key);
+        continue;
+      }
+      // Collision — find a unique replacement deterministically.
+      const replacement = mintUniqueReplacement(key, seen);
+      row[col] = coerceReplacement(replacement, v);
+      seen.add(String(row[col]));
+      repairs++;
     }
-    return true;
-  });
+  }
 
+  // Pass 2 — multi-column uniques: drop dupes (regenerating one column
+  // would break the relationship the constraint encodes).
+  const before = rows.length;
+  let result = rows;
+  if (multiCol.length > 0) {
+    const seenSets = multiCol.map(() => new Set<string>());
+    result = rows.filter((row) => {
+      for (let i = 0; i < multiCol.length; i++) {
+        const cols = multiCol[i]!;
+        const hasNull = cols.some(c => row[c] === undefined || row[c] === null);
+        if (hasNull) continue;
+        const key = cols.map((c) => String(row[c])).join('\x00');
+        if (seenSets[i]!.has(key)) return false;
+        seenSets[i]!.add(key);
+      }
+      return true;
+    });
+  }
+
+  if (repairs > 0) {
+    logger.debug(
+      `Repaired "${tableInfo.name}" single-column unique collisions: ${repairs} row(s) rewritten ` +
+      `(${singleCol.join(', ')})`,
+    );
+  }
   if (result.length < before) {
     logger.debug(
-      `Deduped "${tableInfo.name}" by unique constraints: ${before} → ${result.length} rows`,
+      `Deduped "${tableInfo.name}" by multi-column unique constraint(s): ${before} → ${result.length} rows`,
     );
   }
 
   return result;
+}
+
+/**
+ * Produce a deterministic, schema-friendly replacement for a colliding
+ * unique value. Strategy: append "+N" before the local part of an email,
+ * "_N" before the file extension if any, or "+N" at the end otherwise,
+ * where N is the smallest integer that makes the result unique against
+ * `seen`. We do not call faker here — collisions during dedup mean the
+ * faker pool is already exhausted, and a counter suffix is the only
+ * guaranteed-unique synthesis that stays close to the original value.
+ */
+function mintUniqueReplacement(original: string, seen: Set<string>): string {
+  const atIdx = original.indexOf('@');
+  const dotIdx = atIdx < 0 ? original.lastIndexOf('.') : -1;
+
+  let i = 2;
+  while (i < 1_000_000) {
+    let candidate: string;
+    if (atIdx > 0) {
+      candidate = `${original.slice(0, atIdx)}+${i}${original.slice(atIdx)}`;
+    } else if (dotIdx > 0) {
+      candidate = `${original.slice(0, dotIdx)}_${i}${original.slice(dotIdx)}`;
+    } else {
+      candidate = `${original}+${i}`;
+    }
+    if (!seen.has(candidate)) return candidate;
+    i++;
+  }
+  // Pathological — fall through to a guaranteed-unique synthesis.
+  return `${original}+${Date.now()}_${seen.size}`;
+}
+
+/**
+ * Coerce the string replacement back into the type of the original value
+ * (number, bigint, or string). For numbers we hash the replacement string
+ * to a large integer; for strings we return the replacement as-is.
+ */
+function coerceReplacement(replacement: string, original: unknown): unknown {
+  if (typeof original === 'number') {
+    let h = 0;
+    for (let i = 0; i < replacement.length; i++) {
+      h = (h * 31 + replacement.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  }
+  if (typeof original === 'bigint') {
+    let h = 0n;
+    for (let i = 0; i < replacement.length; i++) {
+      h = (h * 31n + BigInt(replacement.charCodeAt(i)));
+    }
+    return h < 0n ? -h : h;
+  }
+  return replacement;
 }
 
 // ---------------------------------------------------------------------------

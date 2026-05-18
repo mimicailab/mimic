@@ -1,4 +1,4 @@
-import type { SchemaModel, TableInfo, ColumnInfo, PromptContext, AdapterResourceSpecs } from '../types/index.js';
+import type { SchemaModel, TableInfo, ColumnInfo, PromptContext, AdapterResourceSpecs, TableClassification } from '../types/index.js';
 import type { SchemaMapping } from '../types/blueprint.js';
 import { getPersonaIdPrefix, getResourceIdPrefix } from './identity-prefix.js';
 
@@ -45,6 +45,18 @@ export interface BuildPromptOptions {
    * promptContext.idPrefix because it's per-resource, not per-platform.
    */
   resourceSpecs?: Record<string, AdapterResourceSpecs>;
+  /**
+   * Per-table classification (role + mirror sources) produced by
+   * `classifyTables`. Drives the TABLE CLASSIFICATION block in the user
+   * prompt: tables flagged as `external-mirrored` get one row per API
+   * source entity from the mirror flow, so Phase 1 must NOT emit
+   * archetypes for those linked rows — otherwise the DB ends up with
+   * Phase 1's archetype rows AND the mirror's rows, both representing
+   * the same logical customer. The LLM only emits archetypes for rows
+   * the persona declares as having no API counterpart (free-tier,
+   * orphans, internal-only segments).
+   */
+  tableClassifications?: TableClassification[];
 }
 
 
@@ -612,7 +624,7 @@ The persona pins \`raj@northwind.com\` and \`aisha@northwind.com\` for trial use
  * Build the system + user prompts for blueprint generation.
  */
 export function buildPrompt(options: BuildPromptOptions): PromptPair {
-  const { schema, persona, domain, apis, promptContexts, currentDate, volume, personaIndex, totalPersonas, apiPlatformNames, schemaMapping, resourceSpecs } = options;
+  const { schema, persona, domain, apis, promptContexts, currentDate, volume, personaIndex, totalPersonas, apiPlatformNames, schemaMapping, resourceSpecs, tableClassifications } = options;
 
   const today = currentDate ?? new Date().toISOString().split('T')[0];
   const startDate = volume ? computeStartDate(today, volume) : undefined;
@@ -638,6 +650,10 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
     'phase1',
   );
 
+  const classificationBlock = hasTables
+    ? formatTableClassification(schema, tableClassifications)
+    : '';
+
   const dateRange = startDate
     ? `⚠ DATE RANGE: ${startDate} → ${today}. ALL generated dates MUST fall within this range. No exceptions.`
     : `⚠ Current date: ${today}. ALL generated dates must be relative to this date.`;
@@ -662,6 +678,7 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
       ? ['--- DATABASE SCHEMA ---', schemaDump, '--- END SCHEMA ---', '']
       : []),
     ...(requiredSummary ? [requiredSummary, ''] : []),
+    ...(classificationBlock ? [classificationBlock, ''] : []),
     ...(apiSection ? [apiSection, ''] : []),
     ...(platformHint ? [platformHint, ''] : []),
     ...(identityContract ? [identityContract, ''] : []),
@@ -688,6 +705,85 @@ export function buildPrompt(options: BuildPromptOptions): PromptPair {
  * Build a prominent reminder listing every REQUIRED column per table.
  * This makes it impossible for the LLM to miss them.
  */
+/**
+ * Render the TABLE CLASSIFICATION block. Splits every DB table into two
+ * groups:
+ *
+ *   - MIRROR TARGETS: rows are derived from API entities by the mirror flow.
+ *     Phase 1 MUST NOT emit archetypes for rows that have an API
+ *     counterpart — only for rows the persona declares as having no API
+ *     source (free-tier users, orphans, internal-only segments).
+ *
+ *   - DB-ONLY: no API source. Phase 1 generates every row.
+ *
+ * Without this block, the LLM treats every table the same and emits a full
+ * set of archetypes for bridge tables — then the mirror flow runs and
+ * creates a parallel set of rows from the API entities, doubling the row
+ * count.
+ */
+function formatTableClassification(
+  schema: SchemaModel,
+  classifications: TableClassification[] | undefined,
+): string {
+  if (!classifications || classifications.length === 0) return '';
+
+  const classByTable = new Map<string, TableClassification>();
+  for (const c of classifications) classByTable.set(c.table, c);
+
+  const mirrorTargets: string[] = [];
+  const dbOnly: string[] = [];
+
+  for (const table of schema.tables) {
+    const c = classByTable.get(table.name);
+    const role = c?.role ?? 'internal-only';
+    if (role === 'external-mirrored' && c?.sources && c.sources.length > 0) {
+      const sources = c.sources
+        .map((s) => `${s.adapter}.${s.resource}`)
+        .join(', ');
+      mirrorTargets.push(`  - ${table.name} (sources: ${sources})`);
+    } else {
+      dbOnly.push(`  - ${table.name}`);
+    }
+  }
+
+  if (mirrorTargets.length === 0) return '';
+
+  const lines: string[] = [
+    '⚠ TABLE CLASSIFICATION — read this BEFORE emitting any entityArchetypes:',
+    '',
+    'MIRROR TARGETS (DB rows are derived from API entities by the mirror flow):',
+    ...mirrorTargets,
+    '',
+    'For mirror-target tables, the expander will create ONE DB row per API entity',
+    'on each listed source — so do NOT emit archetypes for rows that have an API',
+    'counterpart (rows whose billing_platform / external_id / *_customer_id fields',
+    'would be non-null). Those rows are created automatically.',
+    '',
+    'For mirror-target tables, ONLY emit archetypes for rows the persona declares',
+    'as having NO API source — e.g. free-tier users, paid-plan orphans whose linkage',
+    'fields are NULL, internal-only segments. Such archetypes MUST set every cross-',
+    'surface FK field (billing_platform, external_id, stripe_customer_id, etc.) to null',
+    'in `fields`.',
+    '',
+    'On mirror-target tables, every archetype MUST use explicit `count` (never `weight`).',
+    'There is no table-level row capacity for `weight` to apportion — the mirror flow',
+    'supplies the volume. Read the persona for the exact integer (e.g. "847 free-tier',
+    'users" → `count: 847`) and put it directly on the archetype. Archetypes that set',
+    '`weight` without `count` on a mirror-target table will be dropped because',
+    '`weight × 0-capacity = 0 rows`.',
+  ];
+
+  if (dbOnly.length > 0) {
+    lines.push(
+      '',
+      'DB-ONLY (no API source — generate every row yourself):',
+      ...dbOnly,
+    );
+  }
+
+  return lines.join('\n');
+}
+
 function formatRequiredColumns(schema: SchemaModel): string {
   const sections: string[] = [];
 
@@ -1320,6 +1416,13 @@ export interface BuildDistributionPromptOptions {
    * Per-adapter prompt context (idPrefix lookups) for the identity contract.
    */
   promptContexts?: Record<string, PromptContext>;
+  /**
+   * Anchors declared in Phase 1's `data.anchors`. The Phase 2 prompt lectures
+   * the LLM at length about binding anchors — this field gives it the actual
+   * list of ids to bind. Without it, the lecture has no referent and the LLM
+   * silently omits bindings (and validation aborts the run).
+   */
+  anchors?: import('../types/blueprint.js').Anchor[];
 }
 
 const DISTRIBUTION_SYSTEM_PROMPT = `You are a synthetic data architect. Your ONLY task is to decide the distribution of API entity data for a given persona.
@@ -1446,6 +1549,7 @@ export function buildDistributionPrompt(
     identityEntityCounts,
     schemaMapping,
     promptContexts,
+    anchors,
   } = options;
 
   const today = currentDate ?? new Date().toISOString().split('T')[0];
@@ -1503,6 +1607,28 @@ export function buildDistributionPrompt(
     lines.push('         3 of which have no DB counterpart and represent a deliberate asymmetry.');
     lines.push('Other non-identity resources can have any appropriate count.');
     lines.push('--- END CONSTRAINTS ---');
+  }
+
+  if (anchors && anchors.length > 0) {
+    lines.push('');
+    lines.push('--- DECLARED ANCHORS YOU MUST BIND ---');
+    lines.push('⚠ MANDATORY: every anchor below was declared by Phase 1 and MUST be bound by at');
+    lines.push('least one archetype in YOUR output (on one of the resources for this adapter).');
+    lines.push('An unbound anchor is a persona event with zero rows — generation aborts.');
+    lines.push('Bind by setting `anchor: "<id>"` on the archetype (with `count` for row count and');
+    lines.push('`weight: 0`). Use `vary` rules with `type: "anchor_date"` to pull the event date.');
+    lines.push('Bind ONLY the anchors whose persona event lives on a resource THIS adapter owns;');
+    lines.push('leave the rest for other adapters\' Phase 2 calls. Read the persona description');
+    lines.push('to match each anchor id to the correct resource on the correct adapter.');
+    lines.push('');
+    for (const a of anchors) {
+      const dateParts = Object.entries(a.dates ?? {})
+        .map(([k, v]) => `${k}=${v}`)
+        .join(', ');
+      const customerPart = a.customer?.match ? `, customer=${a.customer.match}` : '';
+      lines.push(`  - id="${a.id}" (${dateParts}${customerPart})`);
+    }
+    lines.push('--- END ANCHORS ---');
   }
 
   lines.push('', '--- API PLATFORM RESOURCES ---', '');

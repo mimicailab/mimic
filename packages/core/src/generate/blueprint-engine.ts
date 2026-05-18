@@ -121,6 +121,7 @@ export class BlueprintEngine {
     promptContexts?: Record<string, PromptContext>,
     schemaMapping?: SchemaMapping,
     resourceSpecs?: Record<string, AdapterResourceSpecs>,
+    tableClassifications?: TableClassification[],
   ): Promise<Blueprint> {
     const cacheKey = this.computeCacheKey(schema, persona, domain, apis);
 
@@ -157,6 +158,7 @@ export class BlueprintEngine {
       apiPlatformNames: options.apiPlatformNames,
       schemaMapping,
       resourceSpecs,
+      tableClassifications,
     });
 
     // Use the API-aware schema when APIs are configured — this makes
@@ -197,6 +199,9 @@ export class BlueprintEngine {
     // ------------------------------------------------------------------
     normalizeBlueprintData(llmOutput.data);
     validateBlueprintCoverage(llmOutput.data, schema);
+    if (tableClassifications && tableClassifications.length > 0) {
+      validateMirrorTargetArchetypes(llmOutput.data, tableClassifications);
+    }
 
     // Identity contract: deterministically inject the contracted prefix into
     // every archetype's vary[<field>], then validate as a defensive net. The
@@ -287,7 +292,7 @@ export class BlueprintEngine {
 
     // ── Fast path: few adapters → single-call generation ─────────────
     if (adapterKeys.length <= batchSize && !resourceSpecs) {
-      return this.generate(schema, persona, domain, options, apis, promptContexts, schemaMapping, resourceSpecs);
+      return this.generate(schema, persona, domain, options, apis, promptContexts, schemaMapping, resourceSpecs, tableClassifications);
     }
 
     // ── Check cache first (same key as single-call) ──────────────────
@@ -323,6 +328,7 @@ export class BlueprintEngine {
       promptContexts, // passed so formatPlatformHint can read adapter idPrefix values
       schemaMapping, // drives the IDENTITY CONTRACT block on the DB side
       resourceSpecs, // per-resource idPrefix lookup for the contract
+      tableClassifications, // drives the TABLE CLASSIFICATION block — keeps Phase 1 from emitting paid-linked rows on mirror-target tables
     );
 
     // ------------------------------------------------------------------
@@ -384,6 +390,10 @@ export class BlueprintEngine {
         identityEntityCounts: identityEntityCounts[adapterId],
         schemaMapping,
         promptContexts,
+        // Forward Phase 1's declared anchors so the Phase 2 LLM has the
+        // actual list of ids to bind. Without this the prompt lectures
+        // the model about binding anchors with no referent.
+        anchors: phase1Blueprint.data.anchors,
       });
 
       const result = await this.llmClient.generateObject({
@@ -712,6 +722,99 @@ function validateBlueprintCoverage(
       }
     }
   }
+}
+
+/**
+ * Repair Phase 1 archetypes that would double-count with the mirror flow.
+ *
+ * For tables classified as `external-mirrored`, the expander writes one DB
+ * row per API entity on each source. An archetype on such a table whose
+ * `fields.billing_platform` (or any cross-surface FK like `*_customer_id`)
+ * is set to a non-null value would emit a parallel set of rows representing
+ * the same customers — duplicating the mirror output.
+ *
+ * Rather than fail the run (the LLM tends to emit these archetypes even
+ * with explicit prompt guidance — they're its default mental model), we
+ * PRUNE the offending archetypes in-place and log a warning. The mirror
+ * flow produces the linked rows from the corresponding API entities;
+ * dropping the archetype removes the duplicates without losing information.
+ *
+ * Linkage-null archetypes (free-tier users, paid orphans, internal-only
+ * segments) survive — those genuinely have no API counterpart.
+ */
+function validateMirrorTargetArchetypes(
+  data: Blueprint['data'],
+  classifications: TableClassification[],
+): void {
+  const mirrorTargets = new Set(
+    classifications
+      .filter((c) => c.role === 'external-mirrored' && c.sources && c.sources.length > 0)
+      .map((c) => c.table),
+  );
+  if (mirrorTargets.size === 0) return;
+
+  const linkageHint = (key: string): boolean =>
+    key === 'billing_platform' ||
+    key === 'external_id' ||
+    /_customer_id$/.test(key) ||
+    /_account_(id|code)$/.test(key) ||
+    /_app_user_id$/.test(key);
+
+  const dropped: Array<{ table: string; label: string; reason: string }> = [];
+
+  for (const [tableName, config] of Object.entries(data.entityArchetypes ?? {})) {
+    if (!mirrorTargets.has(tableName)) continue;
+    const surviving: typeof config.archetypes = [];
+    for (const archetype of config.archetypes ?? []) {
+      const label = archetype.label ?? '(unlabelled)';
+      const fields = (archetype.fields ?? {}) as Record<string, unknown>;
+
+      // Reason 1: linkage field set to non-null → mirror will produce this row.
+      let linkageOffense: string | undefined;
+      for (const [k, v] of Object.entries(fields)) {
+        if (!linkageHint(k)) continue;
+        if (v === null || v === undefined || v === '') continue;
+        linkageOffense = `${k}=${JSON.stringify(v)}`;
+        break;
+      }
+      if (linkageOffense !== undefined) {
+        dropped.push({ table: tableName, label, reason: `linkage ${linkageOffense} (mirror owns these rows)` });
+        continue;
+      }
+
+      // Reason 2: weight-only archetype on a mirror-target table. The mirror
+      // supplies the volume, so there is no capacity for `weight` to apportion;
+      // weight×0 = 0 rows. The LLM must use explicit `count` for any standalone
+      // bucket the persona names ("847 free-tier users" → count: 847).
+      const countRaw = (archetype as { count?: unknown }).count;
+      const weightRaw = (archetype as { weight?: unknown }).weight;
+      const hasCount = typeof countRaw === 'number' && countRaw > 0;
+      const hasWeight = typeof weightRaw === 'number' && weightRaw > 0;
+      if (!hasCount && hasWeight) {
+        dropped.push({
+          table: tableName,
+          label,
+          reason: `weight-only (weight=${weightRaw}, count missing) — use explicit count on mirror-target tables`,
+        });
+        continue;
+      }
+
+      surviving.push(archetype);
+    }
+    config.archetypes = surviving;
+  }
+
+  if (dropped.length === 0) return;
+
+  const summary = dropped
+    .slice(0, 12)
+    .map((o) => `  - ${o.table} / "${o.label}": ${o.reason}`)
+    .join('\n');
+  const more = dropped.length > 12 ? `\n  ... +${dropped.length - 12} more` : '';
+
+  logger.warn(
+    `Dropped ${dropped.length} Phase 1 archetype(s) on mirror-target table(s):\n${summary}${more}`,
+  );
 }
 
 /**

@@ -107,11 +107,20 @@ export class ClaudeCodeClient implements ILLMClient {
 
       let result: OneShotResult;
       try {
+        // We deliberately do NOT pass `outputFormat: json_schema` here.
+        // The SDK's server-side schema enforcement hits a hard internal
+        // retry cap (`error_max_structured_output_retries`) on large
+        // schemas like our blueprint (8 adapters × many fields). Letting
+        // the model emit JSON in plain text and parsing it locally with
+        // `extractJson` is the same path the api runtime takes, and it
+        // works reliably regardless of schema size.
+        const promptWithSchemaHint = attempt === 0
+          ? `${userPrompt}\n\nReturn ONLY a single JSON object matching this JSON Schema (no prose, no markdown fences):\n${JSON.stringify(inputSchema)}`
+          : userPrompt;
         result = await this.runOneShot({
           system: baseSystem || undefined,
-          prompt: userPrompt,
+          prompt: promptWithSchemaHint,
           temperature: opts.temperature ?? this.config.temperature,
-          outputFormat: { type: 'json_schema', schema: inputSchema },
         });
       } catch (error) {
         throw this.wrapError(error, attemptLabel);
