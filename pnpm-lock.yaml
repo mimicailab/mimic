@@ -113,6 +113,46 @@ importers:
         specifier: ^7.5.0
         version: 7.5.0(@types/react@19.2.14)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
 
+  examples/cfo-agent-skills:
+    dependencies:
+      '@mimicai/adapter-chargebee':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-chargebee
+      '@mimicai/adapter-gocardless':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-gocardless
+      '@mimicai/adapter-lemonsqueezy':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-lemonsqueezy
+      '@mimicai/adapter-paddle':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-paddle
+      '@mimicai/adapter-postgres':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-postgres
+      '@mimicai/adapter-recurly':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-recurly
+      '@mimicai/adapter-revenuecat':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-revenuecat
+      '@mimicai/adapter-stripe':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-stripe
+      '@mimicai/adapter-zuora':
+        specifier: workspace:*
+        version: link:../../packages/adapters/adapter-zuora
+      '@mimicai/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+    devDependencies:
+      '@prisma/client':
+        specifier: ^7.5.0
+        version: 7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(better-sqlite3@12.8.0)(magicast@0.5.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
+      prisma:
+        specifier: ^7.5.0
+        version: 7.8.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(better-sqlite3@12.8.0)(magicast@0.5.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+
   examples/revenue-recovery-agent:
     dependencies:
       '@mimicai/adapter-postgres':

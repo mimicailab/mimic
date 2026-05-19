@@ -317,7 +317,11 @@ export interface SchemaMappingEntry {
   adapterId: string;
   /** API resource type (e.g. "customers") */
   apiResource: string;
-  /** API field name (e.g. "id") */
+  /**
+   * API field name (e.g. "id"). Used as the source for a blind copy when no
+   * `derivation` is set. When `derivation` is set, this is informational only —
+   * the derivation's `from` path takes over as the value source.
+   */
   apiField: string;
   /** Whether this DB table is a "bridge table" — a projection of API data into the DB */
   isBridgeTable: boolean;
@@ -342,7 +346,57 @@ export interface SchemaMappingEntry {
    * `mirror` — cross-surface IDs by definition must match.
    */
   direction: 'mirror' | 'drift_capable';
+  /**
+   * Optional derivation rule. When ABSENT, the mirror does a blind copy of
+   * `body[apiField] → row[dbColumn]`. Use this default whenever the source
+   * field's value space already equals the destination column's value space
+   * (e.g. both are open strings, or both are the same enum).
+   *
+   * When PRESENT, the derivation determines what gets written. Two shapes:
+   *
+   * - `{ from, cases, default? }` — read the value at the dot-path `from` on
+   *   the API body, look it up in `cases` (the source-value → destination-
+   *   value map), and write the destination value. If no case matches, use
+   *   `default` (or fail if `default` is absent). Required when the source
+   *   field's vocabulary doesn't equal the destination's (e.g. mapping a
+   *   numeric `price.unit_amount` to a categorical `plan` enum).
+   *
+   * - `{ value }` — write the constant `value` regardless of the API body.
+   *   Used when no API field encodes the destination column (e.g. every
+   *   GoCardless customer is on the starter plan by persona declaration).
+   */
+  derivation?: MappingDerivation;
 }
+
+/** Discriminated union of derivation shapes. See SchemaMappingEntry.derivation. */
+export type MappingDerivation =
+  | {
+      kind: 'derive';
+      /**
+       * Dot-path on the API response body. Supports both array index forms:
+       *   `items.data[0].price.unit_amount`
+       *   `items.data.0.price.unit_amount`
+       * Numeric path segments are array indices; string segments are keys.
+       */
+      from: string;
+      /**
+       * Source value → destination value. Keys are stringified source values
+       * (numbers stringify naturally — "2900" matches `unit_amount: 2900`).
+       * Every destination value must be in the destination column's enum
+       * (validated post-LLM).
+       */
+      cases: Record<string, string | number | boolean>;
+      /**
+       * Fallback when the source value doesn't appear in `cases`. Omit to
+       * make the mirror fail loudly on unexpected source values — useful
+       * for catching new tiers or out-of-spec data.
+       */
+      default?: string | number | boolean;
+    }
+  | {
+      kind: 'constant';
+      value: string | number | boolean;
+    };
 
 /**
  * Full schema mapping result from the LLM.

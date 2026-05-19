@@ -197,6 +197,7 @@ For entity tables that need many rows (customers, employees, orders, accounts �
 - Patterns can reference archetype-expanded entities via \`{{table_name.column_name}}\` placeholders as usual
 - **CRITICAL: Foreign key columns MUST be included in archetype \`fields\`.** Use the \`{{table_name.column_name}}\` placeholder format so the expander resolves them. For example, a subscriptions archetype MUST include \`"customer_id": "{{customers.id}}"\` in \`fields\`. The expander will randomly assign each cloned row to one of the expanded parent entities.
 - **ALL REQUIRED columns from the schema MUST appear** in either \`fields\` or \`vary\`. Do NOT omit any NOT NULL column without a default.
+- **ENUM COLUMNS — values MUST be drawn from the listed set.** When the schema renders a column as \`status varchar NOT NULL [active, paused, cancelled]\`, every \`fields\`/\`vary.pick\` value for that column MUST be one of \`active\`, \`paused\`, \`cancelled\`. Never write a value outside the enum: not an empty string, not a sequence id like \`plan_p1_001\`, not a value taken from a different platform's vocabulary (\`automatic\`, \`manual\` are valid for Paddle's collection_mode but NOT for a DB \`plan\` column declared as \`[free, starter, pro, enterprise]\`). The validator will count out-of-enum values and the conformance check will fail the run if it sees them.
 - **\`@default(now())\` timestamp columns (rendered as \`DEFAULT now()\` in the schema) are auto-distributed by the expander** across the configured volume range — you do NOT need to add a \`vary\` rule for them in the common case. Override **only when** the persona narrative pins a specific date or window for some rows (e.g. "double-charge on 2026-04-29", "8 failed charges this week"). For overrides, create a *separate archetype* for those persona-described rows with the constrained timestamp in \`vary\` (e.g. \`{ "type": "timestamp", "min": <epoch_secs>, "max": <epoch_secs> }\`). Do NOT enumerate timestamps row-by-row — let the expander materialize them.
 
 ##############################################################################
@@ -1252,6 +1253,80 @@ mirrors an API resource); \`apiField\` is the dotted path's leaf (use the top-le
 when the API stores it nested, e.g. \`failure_code\`, not \`outcome.reason\` — the generator
 reads top-level body fields).
 
+## Derivation — when a blind copy is wrong (CRITICAL)
+
+The default mirror behaviour is a blind copy: \`row[dbColumn] = body[apiField]\`. This is
+ONLY correct when the source field's value space equals the destination's. When they
+differ, you MUST emit a \`derivation\` rule instead, or the DB column ends up filled with
+foreign vocabulary the destination's enum constraint doesn't allow.
+
+For each mapping, ask: **do the source values look exactly like the values the
+destination column accepts?** If no, use a derivation.
+
+### Three derivation forms
+
+**(1) \`derivation: { kind: 'derive', from, cases, default? }\`** — value transformation.
+
+Use when the destination is an enum and the source is one of:
+- A number that bands into categories (Stripe \`subscription.items.data[0].price.unit_amount\`: 2900/7900/49900 → starter/pro/enterprise).
+- A vendor-specific string id (RevenueCat \`subscription.product_id\`: "com.foo.starter.monthly" → starter).
+- A different enum altogether (some adapters use "Basic"/"Pro"/"Ent" — map them to your enum's case).
+
+\`\`\`jsonc
+{ "dbTable": "users", "dbColumn": "plan",
+  "adapterId": "stripe", "apiResource": "customer",
+  "apiField": "id",   // informational only when derivation is set
+  "isBridgeTable": true, "direction": "drift_capable",
+  "derivation": {
+    "kind": "derive",
+    "from": "items.data[0].price.unit_amount",
+    "cases": { "2900": "starter", "7900": "pro", "49900": "enterprise" },
+    "default": "free"
+  }
+}
+\`\`\`
+
+The \`from\` path is rooted at the API response body for \`apiResource\` (so on a Stripe
+\`subscription\` body, \`items.data[0].price.unit_amount\` reaches into the embedded
+subscription_item's embedded price). Use array indices in \`[0]\` or bare-digit form.
+
+**Every value in \`cases\` and \`default\` MUST be in the destination column's enum.**
+If your case maps "2900" → "premium" but the enum is \`{free, starter, pro, enterprise}\`,
+the system rejects the mapping and retries the call.
+
+**(2) \`derivation: { kind: 'constant', value }\`** — flat value.
+
+Use when no API field on this platform's resource encodes the destination column. The
+classic case: the persona says "every GoCardless customer is on the starter plan" — the
+GoCardless API doesn't have a plan/tier concept at all, so the DB \`plan\` column on
+GC-mirrored rows is a persona-level constant.
+
+\`\`\`jsonc
+{ "dbTable": "users", "dbColumn": "plan",
+  "adapterId": "gocardless", "apiResource": "customer",
+  "apiField": "id", "isBridgeTable": true, "direction": "mirror",
+  "derivation": { "kind": "constant", "value": "starter" }
+}
+\`\`\`
+
+**(3) NO \`derivation\` — blind copy.** Use ONLY when the source and destination have the
+same value space. Examples:
+- \`users.email ← stripe.customer.email\` (both open strings).
+- \`payments.status ← stripe.charge.status\` (both an enum, identical values).
+- \`users.country ← stripe.customer.address.country\` (both ISO country codes).
+
+### Rule of thumb
+
+If the destination column is an enum, look at its \`enumValues\` and the source field's
+likely values. Are they the same set? If not, use \`derivation: derive\` with explicit
+cases. NEVER copy a source whose values can't appear in the destination enum.
+
+The previous behaviour — emitting a blind copy with \`apiField: "collection_mode"\` for a
+\`plan\` column that is \`enum {free, starter, pro, enterprise}\` — is wrong. The mirror
+will write "automatic" / "manual" into a column that doesn't accept those values, and the
+seeded data will be silently broken. Always check value-space equality before defaulting
+to copy.
+
 ## Direction — mirror vs drift_capable (CRITICAL)
 
 Every mapping entry MUST set \`direction\` to either \`"mirror"\` or \`"drift_capable"\`.
@@ -1423,6 +1498,14 @@ export interface BuildDistributionPromptOptions {
    * silently omits bindings (and validation aborts the run).
    */
   anchors?: import('../types/blueprint.js').Anchor[];
+  /**
+   * Persona-pinned requirements scoped to this prompt's (adapter, resource).
+   * Pre-extracted prose injected verbatim as a "PERSONA-PINNED REQUIREMENTS"
+   * block at the end of the user prompt. Surfaces the persona's exact
+   * numeric/date pins so the distribution LLM does not need to find them
+   * embedded in the persona description.
+   */
+  personaConstraintsBlock?: string;
 }
 
 const DISTRIBUTION_SYSTEM_PROMPT = `You are a synthetic data architect. Your ONLY task is to decide the distribution of API entity data for a given persona.
@@ -1452,6 +1535,38 @@ Use "vary" ONLY when you have a specific opinion the assembler cannot infer:
 - Specific pick values: { "field": "currency", "type": "pick", "values": ["usd", "eur"] }
 - Derived templates: { "field": "description", "type": "derived", "template": "Invoice for {{name}}" }
 Do NOT include vary for: IDs (assembler handles prefixes), timestamps, emails, names, phones.
+
+## CRITICAL — PINNED VALUES MUST LIVE IN fieldOverrides, NEVER IN vary
+When the persona states an EXACT numeric value (a sum, total, amount, threshold) or an EXACT date for a specific row or set of rows, that value MUST appear as a literal in \`fieldOverrides\`. Using \`vary.range\` or \`vary.timestamp\` on a field with a pinned value is wrong — \`vary.range\` rolls a RANDOM number from the range and rarely lands on the pinned value.
+
+This is the single biggest cause of "the count is right but the totals are wrong" persona failures. The expander faithfully renders what you emit. If you give it a range it rolls random numbers; if you give it a literal it uses the literal.
+
+**DON'T (broken — produces random £1 to £999):**
+\`\`\`json
+{ "label": "overdue-invoice-4800", "count": 1,
+  "fieldOverrides": [{"field": "status", "value": "payment_due"}],
+  "vary": [{"field": "total", "type": "range", "min": 100, "max": 99999}] }
+\`\`\`
+
+**DO (pinned — produces exactly £4,800 in pence):**
+\`\`\`json
+{ "label": "overdue-invoice-4800", "count": 1,
+  "fieldOverrides": [
+    {"field": "status", "value": "payment_due"},
+    {"field": "total", "value": "480000"},
+    {"field": "date", "value": "2026-04-11T00:00:00Z"},
+    {"field": "due_date", "value": "2026-04-25T00:00:00Z"}
+  ] }
+\`\`\`
+
+Apply this rule to:
+- Amount fields when persona names an exact amount: \`total\`, \`amount\`, \`amount_due\`, \`subtotal\`, \`unit_amount\`, \`unit_price.amount\`, \`mrr_cents\`, \`balance\`.
+- Date fields when persona names an exact date: \`date\`, \`due_date\`, \`charge_date\`, \`created\`, \`canceled_at\`, \`occurred_at\`, \`last_login_at\`.
+- Sum-constrained groups: when N rows must collectively sum to S, either set every row's amount to S/N as a literal, OR distribute the rows across N archetypes each with its own pinned amount. NEVER use a single \`vary.range\` and hope.
+
+When the persona names a value in £/$/€ + decimal, convert to integer minor units (pence/cents) BEFORE writing the literal. £4,800 → 480000. $79.00 → 7900.
+
+If \`fieldOverrides\` value must be a string per the schema, write the integer as a string ("480000") — the validator coerces numeric strings to numbers downstream.
 
 ## CRITICAL — FACT-DRIVEN DISTRIBUTIONS
 The persona description contains specific numeric claims (counts, totals, percentages, amounts).
@@ -1670,6 +1785,13 @@ export function buildDistributionPrompt(
   lines.push('vary: [{ "field": "amount", "type": "range", "min": 500, "max": 5000 }] — only when you have a specific opinion the assembler cannot infer.');
   lines.push('apiOnly: true ONLY for archetypes the persona declares as having no DB counterpart (e.g. orphans). Add an explicit "count" alongside.');
   lines.push('facts: [{ "id": "fact_001", "type": "overdue", "platform": "<adapter>", "severity": "warn", "detail": "..." }] — testable assertions about the data.');
+
+  // Persona-pinned requirements appended LAST so they dominate the user's
+  // mental model. The block is pre-extracted prose; the LLM should treat
+  // every requirement as a hard constraint on the archetypes it emits.
+  if (options.personaConstraintsBlock && options.personaConstraintsBlock.trim().length > 0) {
+    lines.push('', options.personaConstraintsBlock);
+  }
 
   return { system: DISTRIBUTION_SYSTEM_PROMPT, user: lines.join('\n') };
 }

@@ -264,13 +264,37 @@ function deriveVariation(
     return { type: 'pick', values: spec.enum };
   }
 
-  // Ref field → generate `gen_*` placeholder that the expander's
-  // cross-reference resolver will replace with real IDs from the pool.
-  // Generate for ALL ref fields regardless of required/nullable — realistic
+  // Ref field — split on `type`:
+  //   - `type: "string"` → emit a `gen_*` placeholder. The cross-reference
+  //     resolver swaps it for a real id from the pool. This is the common
+  //     case (e.g. `subscription.customer = "cus_xxx"`).
+  //   - `type: "object"` → leave the field unset (so the spec default — the
+  //     empty object skeleton — stays in place). The object-ref embed phase
+  //     in the expander replaces the skeleton with the full target body
+  //     post-expansion. Stripe's `subscription_item.price`, `invoice.lines`'
+  //     line item discounts, etc. all use this shape.
+  // Generate for ALL string refs regardless of required/nullable — realistic
   // mock data needs relationships populated. The resolver's cleanup pass
   // will null out any unresolved placeholders for truly optional refs.
-  if (spec.ref) {
+  if (spec.ref && spec.type !== 'object') {
     return { type: 'sequence', prefix: `gen_${spec.ref}_` };
+  }
+
+  // Implicit back-link: a required string field whose name matches another
+  // resource key in this adapter (e.g. `subscription_item.subscription`
+  // holding the parent subscription's id). Stripe declares these as plain
+  // strings without `ref:`, but the cross-reference resolver treats them as
+  // FKs (via the matching detection there). Emit a `gen_*` placeholder so
+  // the resolver has something to swap; without this the field is missing
+  // entirely from generated rows and the list-envelope splice can't group.
+  if (
+    spec.type === 'string' &&
+    spec.required &&
+    !spec.nullable &&
+    allSpecs?.resources?.[fieldName] &&
+    fieldName !== resource.objectType
+  ) {
+    return { type: 'sequence', prefix: `gen_${fieldName}_` };
   }
 
   // Semantic type derivations

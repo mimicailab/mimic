@@ -30,6 +30,13 @@ import {
   injectPhase2IdentityContract,
 } from './inject-identity-contract.js';
 import { assembleResourceArchetypes } from './resource-assembler.js';
+import {
+  extractPersonaConstraints,
+  constraintsForResource,
+  renderConstraintsBlock,
+  type PersonaConstraint,
+} from './persona-constraints.js';
+import { validateMappings, formatValidationErrorsForRetry } from './mapping-derivation.js';
 import { BlueprintGenerationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -374,10 +381,52 @@ export class BlueprintEngine {
     const mergedData = { ...phase1Blueprint.data };
     const collectedFacts: DistributionFact[] = [];
 
+    // Extract persona-pinned constraints ONCE before the per-adapter loop.
+    // Each constraint is scoped to a specific (adapter, resource) and gets
+    // injected into the matching distribution call so the LLM sees the
+    // exact value space it must satisfy. Best-effort: if extraction fails,
+    // we proceed with an empty constraint set (the persona text is still
+    // in the prompt).
+    let personaConstraints: PersonaConstraint[] = [];
+    const adapterResourceIndex: Record<string, string[]> = {};
+    for (const [adId, specs] of Object.entries(resourceSpecs)) {
+      adapterResourceIndex[adId] = Object.keys(specs.resources);
+    }
+    try {
+      personaConstraints = await extractPersonaConstraints(this.llmClient, {
+        persona: { name: persona.name, description: persona.description },
+        domain,
+        adapterIds: specAdapterIds,
+        adapterResources: adapterResourceIndex,
+        tableNames: schema.tables.map((t) => t.name),
+      });
+    } catch (err) {
+      logger.warn(
+        `Persona constraint extraction errored: ${
+          err instanceof Error ? err.message : String(err)
+        }. Continuing without pinned constraints.`,
+      );
+    }
+
     for (const adapterId of specAdapterIds) {
       const specs = resourceSpecs[adapterId]!;
 
       logger.step(`ResourceSpec distribution: ${adapterId}`);
+
+      // Filter persona constraints down to those that name this adapter
+      // (any resource on this adapter, or this adapter+resource). Render
+      // as a prose block injected after all other distribution rules.
+      const adapterConstraints = personaConstraints.filter(
+        (c) => !c.scope.adapter || c.scope.adapter === adapterId,
+      );
+      const constraintsBlock = renderConstraintsBlock(
+        // Pre-render with adapter-scoped constraints (any resource on this
+        // adapter); the LLM is producing a per-adapter blob so it sees them
+        // all together rather than per-resource. constraintsForResource
+        // remains available for callers that want narrower injection.
+        adapterConstraints,
+      );
+      void constraintsForResource; // kept exported for future per-resource splits
 
       const { system, user } = buildDistributionPrompt({
         persona: { name: persona.name, description: persona.description },
@@ -394,6 +443,7 @@ export class BlueprintEngine {
         // actual list of ids to bind. Without this the prompt lectures
         // the model about binding anchors with no referent.
         anchors: phase1Blueprint.data.anchors,
+        personaConstraintsBlock: constraintsBlock,
       });
 
       const result = await this.llmClient.generateObject({
@@ -492,6 +542,7 @@ export class BlueprintEngine {
   async generateSchemaMapping(
     schema: SchemaModel,
     adapterResources: Record<string, string[]>,
+    resourceSpecs?: Record<string, import('../types/adapter.js').AdapterResourceSpecs>,
   ): Promise<SchemaMapping> {
     logger.step('Generating schema mapping (DB ↔ API)...');
 
@@ -512,32 +563,69 @@ export class BlueprintEngine {
       adapterIds as [string, ...string[]],
     );
 
-    try {
-      const result = await this.llmClient.generateObject({
-        schema: schemaMappingSchema,
-        schemaName: 'SchemaMapping',
-        schemaDescription:
-          'Mapping between DB table columns and API platform resource fields',
-        system,
-        prompt: user,
-        label: 'schema-mapping',
-        category: 'generation',
-      });
+    // Up to two attempts. Attempt 1: raw prompt. Attempt 2 (only if attempt 1
+    // produced mappings that fail validation): append the validation errors
+    // and ask the LLM to repair. The repair loop is bounded — we don't chase
+    // forever — and the final mapping is accepted with whatever still fails,
+    // so a partially-broken LLM doesn't block generation. The data-validator
+    // + conformance check downstream will catch any leftover violations.
+    let userPrompt = user;
+    let mapping: SchemaMapping | null = null;
+    let lastErrors: import('./mapping-derivation.js').MappingValidationError[] = [];
 
-      const mapping = result.object as SchemaMapping;
-      logger.success(
-        `Schema mapping: ${mapping.mappings.length} field mapping(s), ` +
-          `${mapping.bridgeTables.length} bridge table(s): ${mapping.bridgeTables.join(', ') || '(none)'}`,
-      );
-      return mapping;
-    } catch (error) {
-      logger.warn(
-        `Schema mapping failed: ${error instanceof Error ? error.message : String(error)}. ` +
-          `Falling back to convention-based mapping.`,
-      );
-      // Return empty mapping — expander will use existing crossReference logic
-      return { mappings: [], bridgeTables: [] };
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await this.llmClient.generateObject({
+          schema: schemaMappingSchema,
+          schemaName: 'SchemaMapping',
+          schemaDescription:
+            'Mapping between DB table columns and API platform resource fields',
+          system,
+          prompt: userPrompt,
+          label: attempt === 1 ? 'schema-mapping' : 'schema-mapping:repair',
+          category: 'generation',
+        });
+        mapping = result.object as SchemaMapping;
+      } catch (error) {
+        logger.warn(
+          `Schema mapping failed: ${error instanceof Error ? error.message : String(error)}. ` +
+            `Falling back to convention-based mapping.`,
+        );
+        return { mappings: [], bridgeTables: [] };
+      }
+
+      const errors = validateMappings(mapping, schema, resourceSpecs);
+      if (errors.length === 0) {
+        logger.success(
+          `Schema mapping: ${mapping.mappings.length} field mapping(s), ` +
+            `${mapping.bridgeTables.length} bridge table(s): ${mapping.bridgeTables.join(', ') || '(none)'}`,
+        );
+        return mapping;
+      }
+
+      lastErrors = errors;
+      if (attempt === 1) {
+        logger.warn(
+          `Schema mapping had ${errors.length} validation error(s); retrying once with corrections.`,
+        );
+        userPrompt =
+          user + '\n\n' + formatValidationErrorsForRetry(errors);
+      }
     }
+
+    logger.warn(
+      `Schema mapping still has ${lastErrors.length} validation error(s) after retry. ` +
+        `Proceeding with imperfect mapping; data-validator + conformance check will surface the remaining issues. ` +
+        `First few:\n` +
+        lastErrors
+          .slice(0, 3)
+          .map(
+            (e) =>
+              `  - [${e.code}] ${e.entry.adapterId}.${e.entry.apiResource} → ${e.entry.dbTable}.${e.entry.dbColumn}`,
+          )
+          .join('\n'),
+    );
+    return mapping ?? { mappings: [], bridgeTables: [] };
   }
 
   /**

@@ -188,7 +188,7 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     for (const [adapterId, ctx] of Object.entries(promptContexts)) {
       adapterResources[adapterId] = ctx.resources;
     }
-    schemaMapping = await engine.generateSchemaMapping(schema, adapterResources);
+    schemaMapping = await engine.generateSchemaMapping(schema, adapterResources, resourceSpecs);
     logger.debugFile('SCHEMA_MAPPING', schemaMapping);
   }
 
@@ -362,8 +362,35 @@ async function runGenerate(opts: RunOptions): Promise<void> {
     }
   }
 
-  // ── Phase 3: Generate facts from actual data (post-expansion LLM call) ──
-  const { generateFacts } = await import('@mimicai/core');
+  // ── Phase 3a: Conformance check (persona claims vs expanded data) ───────
+  const { generateFacts, checkConformance, summarizeReport } = await import('@mimicai/core');
+  for (const { persona, expanded } of expandedResults) {
+    const report = await checkConformance(
+      llmClient,
+      expanded,
+      persona,
+      config.domain,
+    );
+    if (report.total === 0) {
+      logger.info(`Conformance: no testable assertions extracted for ${persona.name}`);
+    } else if (report.failed === 0) {
+      logger.success(
+        `Conformance: ${report.passed}/${report.total} persona claims verified for ${persona.name}` +
+          (report.skipped > 0 ? ` (${report.skipped} skipped)` : ''),
+      );
+    } else {
+      logger.warn(
+        `Conformance: ${report.failed}/${report.total} persona claims FAILED for ${persona.name}`,
+      );
+      console.log(chalk.dim(summarizeReport(report)));
+    }
+    if (!opts.dryRun) {
+      const reportPath = join(cwd, '.mimic', 'conformance', `${persona.name}.json`);
+      await writeJson(reportPath, report);
+    }
+  }
+
+  // ── Phase 3b: Generate facts from actual data (post-expansion LLM call) ─
   for (const { persona, expanded } of expandedResults) {
     expanded.facts = await generateFacts(
       llmClient,

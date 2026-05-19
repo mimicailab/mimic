@@ -14,6 +14,7 @@ export interface RepairStats {
   timestampsCoerced: number;
   fksRepaired: number;
   idsRepaired: number;
+  enumsCoerced: number;
 }
 
 // ─── FieldVariation detection ────────────────────────────────────────────
@@ -200,6 +201,7 @@ export class DataValidator {
       timestampsCoerced: 0,
       fksRepaired: 0,
       idsRepaired: 0,
+      enumsCoerced: 0,
     };
     this.variationCounter = 0;
 
@@ -215,6 +217,14 @@ export class DataValidator {
       logger.info(`DataValidator: ${total} repairs (${parts.join(', ')})`);
     } else {
       logger.debug('DataValidator: data clean — no repairs needed');
+    }
+
+    if (this.stats.enumsCoerced > 0) {
+      logger.warn(
+        `DataValidator: ${this.stats.enumsCoerced} row(s) had column values outside the declared enum. ` +
+          `Empty-string cases were normalized; other out-of-enum values were left in place so the ` +
+          `conformance check can surface the upstream source (usually mirror flow or LLM field overrides).`,
+      );
     }
 
     return this.stats;
@@ -683,6 +693,26 @@ export class DataValidator {
             this.stats.variationsResolved++;
           }
           break;
+        }
+      }
+
+      // Enum check: count out-of-enum values so the run surfaces broken
+      // mirror/expander values rather than masking them with a fallback.
+      // Coerce only the empty-string / whitespace case where there is no
+      // information to preserve — every other invalid value should reach
+      // the conformance check intact so the offending source is visible.
+      if (col.enumValues && col.enumValues.length > 0) {
+        const v = row[col.name];
+        if (v == null) continue;
+        const sv = String(v);
+        if (!col.enumValues.includes(sv)) {
+          if (sv.trim() === '') {
+            row[col.name] = col.isNullable ? null : col.enumValues[0];
+            this.stats.enumsCoerced++;
+          } else {
+            this.stats.enumsCoerced++;
+            // Leave the value in place; conformance check will report it.
+          }
         }
       }
     }
