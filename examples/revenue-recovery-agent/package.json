@@ -3,9 +3,9 @@
   "version": "0.0.2",
   "private": true,
   "dependencies": {
-    "@mimicai/adapter-postgres": "^0.13.0",
-    "@mimicai/adapter-stripe": "^0.13.0",
-    "@mimicai/cli": "^0.13.0"
+    "@mimicai/adapter-postgres": "latest",
+    "@mimicai/adapter-stripe": "latest",
+    "@mimicai/cli": "latest"
   },
   "devDependencies": {
     "@prisma/client": "^7.8.0",
