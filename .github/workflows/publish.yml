@@ -38,7 +38,15 @@ jobs:
           # pnpm-lock.yaml so the resulting "version packages" PR doesn't
           # leave the lockfile out of date with the bumped package.jsons —
           # otherwise CI on main fails next push with ERR_PNPM_OUTDATED_LOCKFILE.
-          version: pnpm changeset version && pnpm install --lockfile-only
+          #
+          # Wrapped as a single npm script (`ci:version`) because
+          # changesets/action@v1 forwards the `version:` value to the
+          # changeset binary as positional args rather than shell-evaluating
+          # the string. The previous inline form
+          #     `pnpm changeset version && pnpm install --lockfile-only`
+          # made changeset see ["version", "&&", "pnpm", "install", ...] and
+          # reject with "Too many arguments passed to changesets".
+          version: pnpm ci:version
           publish: pnpm release
           title: 'chore: version packages'
           commit: 'chore: version packages'
