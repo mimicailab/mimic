@@ -72,12 +72,35 @@ export interface GenerateObjectResult<T> {
   object: T;
   promptTokens: number;
   completionTokens: number;
+  /**
+   * Per-attempt breakdown when the underlying runtime supports schema repair
+   * retries (currently the claude-code runtime). Each entry carries its own
+   * label — `<label>` for the first attempt, `<label>:repair-N` for repairs —
+   * so the cost tracker can record each call distinctly. Undefined on
+   * runtimes that don't expose this granularity.
+   */
+  attempts?: ReadonlyArray<{ label: string; promptTokens: number; completionTokens: number }>;
 }
 
 export interface GenerateTextResult {
   text: string;
   promptTokens: number;
   completionTokens: number;
+}
+
+/**
+ * Surface contract every LLM runtime must implement. The blueprint engine,
+ * content generator, claim extractor, etc. depend on this — not on a concrete
+ * class — so alternate runtimes (Claude Agent SDK, batch API) can be swapped
+ * in without touching the pipeline.
+ */
+export interface ILLMClient {
+  generateObject<T extends z.ZodTypeAny>(
+    opts: GenerateObjectOptions<T>,
+  ): Promise<GenerateObjectResult<z.infer<T>>>;
+  generateText(opts: GenerateTextOptions): Promise<GenerateTextResult>;
+  getModelId(): string;
+  getCostTracker(): CostTracker;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +114,7 @@ export interface GenerateTextResult {
  *   3. Records every call's token usage via `CostTracker`.
  *   4. Maps SDK errors into `BlueprintGenerationError`.
  */
-export class LLMClient {
+export class LLMClient implements ILLMClient {
   private readonly model: ReturnType<typeof createProvider>;
   private readonly costTracker: CostTracker;
   private readonly config: LLMClientConfig;
@@ -403,7 +426,7 @@ const PERIODIC_FREQ_MAP: Record<string, string> = {
  * - `data.patterns[].periodic.frequency` as object → string enum
  * - `data.entityArchetypes` entries that are arrays instead of `{ count, archetypes }`
  */
-function normalizeLLMOutput(raw: unknown): unknown {
+export function normalizeLLMOutput(raw: unknown): unknown {
   if (!raw || typeof raw !== 'object') return raw;
   const obj = raw as Record<string, unknown>;
 

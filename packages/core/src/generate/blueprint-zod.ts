@@ -276,6 +276,45 @@ export type BlueprintLLMOutput = z.infer<typeof BlueprintLLMOutputSchema>;
  * mappings are essential for correct bridge table derivation.
  */
 export function createSchemaMappingOutputSchema(adapterIds: [string, ...string[]]) {
+  // Derivation shape — discriminated by `kind`. When absent on a mapping
+  // entry, the mirror does a blind copy of body[apiField] → row[dbColumn].
+  const PrimitiveValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+  const DeriveDerivationSchema = z.object({
+    kind: z.literal('derive'),
+    from: z.string().describe(
+      'Dot-path on the API response body. Supports array indices in both ' +
+      '`a.b[0].c` and `a.b.0.c` forms. Numeric segments are array indices; ' +
+      'string segments are keys. Examples: ' +
+      '"items.data[0].price.unit_amount" for Stripe subscription tier; ' +
+      '"product_id" for RevenueCat tier; "address.country" for region.',
+    ),
+    cases: z.record(z.string(), PrimitiveValueSchema).describe(
+      'Source value → destination value. Keys are stringified source values ' +
+      '("2900" matches numeric unit_amount=2900). EVERY value MUST be drawn ' +
+      "from the destination column's enum if the column has one (validated " +
+      'post-output). Example: { "2900": "starter", "7900": "pro", "49900": "enterprise" }.',
+    ),
+    default: PrimitiveValueSchema.optional().describe(
+      'Fallback when no case matches. Must also be in the destination enum. ' +
+      'Omit to make the mirror fail loudly on unexpected source values.',
+    ),
+  });
+
+  const ConstantDerivationSchema = z.object({
+    kind: z.literal('constant'),
+    value: PrimitiveValueSchema.describe(
+      "Flat value to write regardless of the API body. Use when no API field " +
+      'encodes the destination column (e.g. "every GoCardless customer is ' +
+      'on the starter plan" per persona).',
+    ),
+  });
+
+  const DerivationSchema = z.discriminatedUnion('kind', [
+    DeriveDerivationSchema,
+    ConstantDerivationSchema,
+  ]);
+
   const SchemaMappingEntrySchema = z.object({
     dbTable: z.string().describe('DB table name (e.g. "customers")'),
     dbColumn: z.string().describe('DB column name (e.g. "external_id")'),
@@ -283,7 +322,11 @@ export function createSchemaMappingOutputSchema(adapterIds: [string, ...string[]
       `Exact adapter/platform ID. Must be one of: ${adapterIds.join(', ')}. Do NOT use wildcards like "all".`,
     ),
     apiResource: z.string().describe('API resource type as listed for this specific platform (e.g. "customers", "charges", "payments")'),
-    apiField: z.string().describe('API field name (e.g. "id")'),
+    apiField: z.string().describe(
+      'API field name used as the source for a blind copy when `derivation` ' +
+      'is omitted. When `derivation` is set, this is informational — the ' +
+      'derivation\'s `from` path takes over.',
+    ),
     isBridgeTable: z.boolean().describe(
       'True if this DB table is a projection of API data (has billing_platform + external_id columns)',
     ),
@@ -294,6 +337,13 @@ export function createSchemaMappingOutputSchema(adapterIds: [string, ...string[]
       '"drift_capable": DB and API may intentionally diverge to model real-world inconsistency (row status, ' +
       'cancellation timestamps, period rollovers — any state-at-a-moment field). Reconciler leaves alone. ' +
       'Always "mirror" for id mappings. Default to "mirror" when in doubt — reconciliation expects equality unless told otherwise.',
+    ),
+    derivation: DerivationSchema.optional().describe(
+      'Optional value-transformation rule. OMIT (blind copy) when the source ' +
+      "field's value space equals the destination's. SET to `kind:derive` " +
+      'when source values must be transformed into destination enum values ' +
+      "(numeric→categorical, vendor-id→tier-name, etc.). SET to `kind:constant` " +
+      'when no API field encodes the destination column.',
     ),
   });
 

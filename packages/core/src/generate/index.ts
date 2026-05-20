@@ -27,3 +27,14 @@ export type { ResourceDistribution, DistributionOutput } from './resource-assemb
 
 export { generateFacts, buildDataStats } from './fact-generator.js';
 export type { DataStats } from './fact-generator.js';
+
+export { checkConformance, summarizeReport } from './conformance-checker.js';
+export type { ConformanceReport, AssertionResult, Assertion } from './conformance-checker.js';
+
+export {
+  extractPersonaConstraints,
+  constraintsForResource,
+  constraintsForTable,
+  renderConstraintsBlock,
+} from './persona-constraints.js';
+export type { PersonaConstraint, ExtractPersonaConstraintsOptions } from './persona-constraints.js';

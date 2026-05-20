@@ -26,6 +26,9 @@ import { FieldGenerator } from './field-generators.js';
 import { classifyTables } from './table-classifier.js';
 import { resolveMirroredFks } from './fk-resolver.js';
 import type { FkResolutionContext } from './fk-resolver.js';
+import { spliceListEnvelopes } from './envelope-splice.js';
+import { embedObjectRefs } from './object-ref-embed.js';
+import { applyDerivation } from './mapping-derivation.js';
 import { logger } from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
@@ -229,6 +232,24 @@ export class BlueprintExpander {
     }
     this.resolveApiCrossReferences(apiResponses, resourceSpecs);
 
+    // A4. Object-ref embed + list-envelope splice.
+    //
+    // These must run BEFORE Phase C (mirror) — the mirror's derivation
+    // rules walk paths like `subscription.items.data[0].price.unit_amount`,
+    // which only resolve once embed has replaced id-string placeholders
+    // with the full target body AND splice has populated each parent's
+    // envelope. With them after mirror, every paid Stripe/Paddle user
+    // gets the derivation's `default` value (e.g. "free") because the
+    // path returns undefined.
+    //
+    // Anchor reconciliation (Phase F.7) can rename ids that ripple into
+    // embedded bodies — for now we accept that risk; if anchor renames
+    // ever land on an embedded entity, we'd re-run embed there too. For
+    // the cfo-style flow (no anchor renames affecting embedded prices),
+    // running embed/splice here is correct and unblocks the mirror.
+    embedObjectRefs(apiResponses, resourceSpecs, this.rng);
+    spliceListEnvelopes(apiResponses, resourceSpecs);
+
     // ==================================================================
     // PHASE B: Expand identity tables
     // ==================================================================
@@ -428,6 +449,20 @@ export class BlueprintExpander {
       }
     }
 
+    // Re-dedup AFTER fillMissingRequiredColumns. The fill step writes random
+    // values into NOT-NULL columns that the upstream left empty (e.g. the
+    // per-parent expander producing 6 usage_metrics rows per user without
+    // setting `period`). Those random values can land on the same combination
+    // for multiple rows of the same parent, re-introducing duplicates that
+    // the seeder will reject under a multi-column unique constraint. Running
+    // dedup once more catches the duplicates the fill created.
+    for (const [tableName, rows] of Object.entries(tables)) {
+      const tableInfo = tableIndex.get(tableName);
+      if (tableInfo && rows.length > 1) {
+        tables[tableName] = deduplicateByUniqueConstraints(rows, tableInfo);
+      }
+    }
+
     // The LLM sometimes emits UUID-shaped strings that aren't valid hex
     // (e.g. "u1b2c3d4-..." starting with 'u') for `uuid` columns. Postgres
     // rejects those on insert. Coerce any non-conforming PK values to real
@@ -526,6 +561,9 @@ export class BlueprintExpander {
     // Strip the anchor tracking marker before returning — it's an
     // expansion-time internal, not part of the seeded contract.
     stripAnchorTags(tables, apiResponses);
+
+    // NOTE: object-ref embed + list-envelope splice ran early in Phase A.4
+    // so the mirror in Phase C could consume the populated envelopes.
 
     // ==================================================================
     // PHASE G: Pass through blueprint facts (legacy) — real facts are
@@ -1348,6 +1386,29 @@ export class BlueprintExpander {
             }
           }
         }
+
+        // Implicit back-link detection. Stripe (and friends) declare child→parent
+        // links as a bare string field whose NAME is the parent resource key —
+        // e.g. `subscription_item.subscription` holds the parent subscription's
+        // id, but Stripe's OpenAPI doesn't mark it as an FK so codegen never
+        // emits a `ref:`. Without this, the list-envelope splice can't group
+        // children under their parents.
+        //
+        // Rule: when a field has type:'string', is required, has no existing
+        // `ref:`, and its name matches another resource key in the same adapter,
+        // treat it as an implicit ref to that resource.
+        const resourceKeys = new Set(Object.keys(adapterSpecs.resources));
+        for (const [, spec] of Object.entries(adapterSpecs.resources)) {
+          for (const [fieldName, fieldSpec] of Object.entries(spec.fields)) {
+            if (fkMap.has(fieldName)) continue;
+            if (fieldSpec.ref) continue;
+            if (fieldSpec.type !== 'string') continue;
+            if (!fieldSpec.required) continue;
+            if (resourceKeys.has(fieldName) && fieldName !== spec.objectType) {
+              fkMap.set(fieldName, fieldName);
+            }
+          }
+        }
       }
 
       // Merge hardcoded fallback for any fields not already covered
@@ -1826,8 +1887,31 @@ export class BlueprintExpander {
           row.external_id = body.id;
         }
 
-        // Map API fields → DB columns via schema mapping
+        // Map API fields → DB columns via schema mapping.
+        //
+        // Three forms (see SchemaMappingEntry.derivation in types/blueprint.ts):
+        //   - no derivation     → blind copy body[apiField] → row[dbColumn]
+        //   - derive            → run cases-lookup on the path; write the result
+        //   - constant          → write the flat value
+        //
+        // Blind copy only writes when the source value is present; derivations
+        // can produce a value even when the path is missing (via `default`).
+        // When a derive has no matching case and no default, we skip the
+        // column — the validator will surface the offender if the column is
+        // enum-constrained and non-nullable.
         for (const mapping of mappings) {
+          if (mapping.derivation) {
+            const result = applyDerivation(body, mapping.derivation);
+            if (result.ok) {
+              row[mapping.dbColumn] = result.value as unknown;
+            } else {
+              logger.debug(
+                `Mirror derive skipped for ${mapping.adapterId}.${mapping.apiResource} → ` +
+                  `${mapping.dbTable}.${mapping.dbColumn}: ${result.reason}`,
+              );
+            }
+            continue;
+          }
           const apiValue = body[mapping.apiField];
           if (apiValue !== undefined && apiValue !== null) {
             row[mapping.dbColumn] = apiValue;
@@ -3921,17 +4005,29 @@ function generateColumnValue(col: ColumnInfo, rng: SeededRandom): unknown {
 }
 
 /**
- * Remove rows that would violate unique constraints defined in the schema.
- * For each unique constraint (including PK), build a composite key from the
- * row values and keep only the first occurrence.  Works for any schema.
+ * Enforce unique constraints on a row set.
+ *
+ * Single-column unique constraints (e.g. `users.email UNIQUE`) are
+ * CONSTRUCTIVE: a colliding value is rewritten to a unique value (an
+ * incrementing suffix on strings, monotonically incremented numbers).
+ * No rows are dropped — the persona's row count is preserved.
+ *
+ * Multi-column unique constraints (e.g. `(user_id, period)` on
+ * usage_metrics) remain DESTRUCTIVE: dupes are dropped. These typically
+ * encode "at most one X per Y" relationships where regenerating either
+ * column would break the relationship, so collapse is the correct
+ * behaviour.
+ *
+ * SQL semantics: NULL doesn't equal NULL — a row with any NULL in the
+ * unique key doesn't conflict with anything (Postgres, MySQL, SQLite all
+ * behave this way). Without this, e.g. 100 rows with NULL
+ * `stripe_pi_id` would collapse to 1 even though Postgres would happily
+ * accept all.
  */
 function deduplicateByUniqueConstraints(
   rows: Row[],
   tableInfo: TableInfo,
 ): Row[] {
-  // Collect all unique key sets: explicit unique constraints + primary key.
-  // Skip PK if any PK column is missing from rows (e.g. UUID PKs that
-  // haven't been generated yet — they'll be unique once assigned later).
   const uniqueKeySets: string[][] = [
     ...(tableInfo.uniqueConstraints ?? []),
   ];
@@ -3947,33 +4043,119 @@ function deduplicateByUniqueConstraints(
 
   if (uniqueKeySets.length === 0) return rows;
 
-  // One Set per unique constraint to track seen composite keys
-  const seenSets = uniqueKeySets.map(() => new Set<string>());
-  const before = rows.length;
+  // Split into single-column (regenerate) vs multi-column (drop dupes).
+  const singleCol: string[] = [];
+  const multiCol: string[][] = [];
+  for (const cols of uniqueKeySets) {
+    if (cols.length === 1) singleCol.push(cols[0]!);
+    else multiCol.push(cols);
+  }
 
-  const result = rows.filter((row) => {
-    for (let i = 0; i < uniqueKeySets.length; i++) {
-      const cols = uniqueKeySets[i]!;
-      // SQL semantics: NULL doesn't equal NULL, so a row with any NULL in the
-      // unique key doesn't conflict with anything (Postgres, MySQL, SQLite all
-      // behave this way). Without this, e.g. 100 rows with NULL `stripe_pi_id`
-      // would collapse to 1 here even though Postgres would happily accept all.
-      const hasNull = cols.some(c => row[c] === undefined || row[c] === null);
-      if (hasNull) continue;
-      const key = cols.map((c) => String(row[c])).join('\x00');
-      if (seenSets[i]!.has(key)) return false;
-      seenSets[i]!.add(key);
+  // Pass 1 — single-column uniques: rewrite collisions in-place.
+  let repairs = 0;
+  for (const col of singleCol) {
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const v = row[col];
+      if (v === undefined || v === null) continue; // NULL never collides
+      const key = String(v);
+      if (!seen.has(key)) {
+        seen.add(key);
+        continue;
+      }
+      // Collision — find a unique replacement deterministically.
+      const replacement = mintUniqueReplacement(key, seen);
+      row[col] = coerceReplacement(replacement, v);
+      seen.add(String(row[col]));
+      repairs++;
     }
-    return true;
-  });
+  }
 
+  // Pass 2 — multi-column uniques: drop dupes (regenerating one column
+  // would break the relationship the constraint encodes).
+  const before = rows.length;
+  let result = rows;
+  if (multiCol.length > 0) {
+    const seenSets = multiCol.map(() => new Set<string>());
+    result = rows.filter((row) => {
+      for (let i = 0; i < multiCol.length; i++) {
+        const cols = multiCol[i]!;
+        const hasNull = cols.some(c => row[c] === undefined || row[c] === null);
+        if (hasNull) continue;
+        const key = cols.map((c) => String(row[c])).join('\x00');
+        if (seenSets[i]!.has(key)) return false;
+        seenSets[i]!.add(key);
+      }
+      return true;
+    });
+  }
+
+  if (repairs > 0) {
+    logger.debug(
+      `Repaired "${tableInfo.name}" single-column unique collisions: ${repairs} row(s) rewritten ` +
+      `(${singleCol.join(', ')})`,
+    );
+  }
   if (result.length < before) {
     logger.debug(
-      `Deduped "${tableInfo.name}" by unique constraints: ${before} → ${result.length} rows`,
+      `Deduped "${tableInfo.name}" by multi-column unique constraint(s): ${before} → ${result.length} rows`,
     );
   }
 
   return result;
+}
+
+/**
+ * Produce a deterministic, schema-friendly replacement for a colliding
+ * unique value. Strategy: append "+N" before the local part of an email,
+ * "_N" before the file extension if any, or "+N" at the end otherwise,
+ * where N is the smallest integer that makes the result unique against
+ * `seen`. We do not call faker here — collisions during dedup mean the
+ * faker pool is already exhausted, and a counter suffix is the only
+ * guaranteed-unique synthesis that stays close to the original value.
+ */
+function mintUniqueReplacement(original: string, seen: Set<string>): string {
+  const atIdx = original.indexOf('@');
+  const dotIdx = atIdx < 0 ? original.lastIndexOf('.') : -1;
+
+  let i = 2;
+  while (i < 1_000_000) {
+    let candidate: string;
+    if (atIdx > 0) {
+      candidate = `${original.slice(0, atIdx)}+${i}${original.slice(atIdx)}`;
+    } else if (dotIdx > 0) {
+      candidate = `${original.slice(0, dotIdx)}_${i}${original.slice(dotIdx)}`;
+    } else {
+      candidate = `${original}+${i}`;
+    }
+    if (!seen.has(candidate)) return candidate;
+    i++;
+  }
+  // Pathological — fall through to a guaranteed-unique synthesis.
+  return `${original}+${Date.now()}_${seen.size}`;
+}
+
+/**
+ * Coerce the string replacement back into the type of the original value
+ * (number, bigint, or string). For numbers we hash the replacement string
+ * to a large integer; for strings we return the replacement as-is.
+ */
+function coerceReplacement(replacement: string, original: unknown): unknown {
+  if (typeof original === 'number') {
+    let h = 0;
+    for (let i = 0; i < replacement.length; i++) {
+      h = (h * 31 + replacement.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  }
+  if (typeof original === 'bigint') {
+    let h = 0n;
+    for (let i = 0; i < replacement.length; i++) {
+      h = (h * 31n + BigInt(replacement.charCodeAt(i)));
+    }
+    return h < 0n ? -h : h;
+  }
+  return replacement;
 }
 
 // ---------------------------------------------------------------------------

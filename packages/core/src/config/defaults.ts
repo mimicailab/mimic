@@ -3,6 +3,7 @@ import type { MimicConfig } from '../types/config.js';
 export const DEFAULT_LLM: MimicConfig['llm'] = {
   provider: 'anthropic',
   model: 'claude-haiku-4-5',
+  runtime: 'api',
 };
 
 export const DEFAULT_GENERATE: MimicConfig['generate'] = {

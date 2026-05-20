@@ -1,6 +1,6 @@
 {
-  "name": "cfo-agent-example",
-  "version": "0.0.4",
+  "name": "cfo-agent-skills-example",
+  "version": "0.0.1",
   "private": true,
   "dependencies": {
     "@mimicai/adapter-chargebee": "latest",

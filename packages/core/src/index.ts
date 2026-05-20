@@ -115,8 +115,12 @@ export { parseSchema } from './schema/index.js';
 
 // LLM
 export { LLMClient } from './llm/client.js';
-export type { LLMClientConfig } from './llm/client.js';
+export type { ILLMClient, LLMClientConfig } from './llm/client.js';
+export { ClaudeCodeClient } from './llm/claude-code-client.js';
+export type { ClaudeCodeClientConfig } from './llm/claude-code-client.js';
+export { createLLMClient } from './llm/factory.js';
 export { CostTracker } from './llm/cost-tracker.js';
+export type { LLMRuntime, TokenUsageEntry, CostSummary, CostCategory } from './llm/cost-tracker.js';
 export { providerConfigFromMimic } from './llm/providers.js';
 export type { ProviderConfig } from './llm/providers.js';
 
@@ -132,6 +136,15 @@ export { FkResolutionError, resolveMirroredFks } from './generate/fk-resolver.js
 export { assembleResourceArchetypes } from './generate/resource-assembler.js';
 export type { AssembleOptions } from './generate/resource-assembler.js';
 export { generateFacts, buildDataStats } from './generate/fact-generator.js';
+export { checkConformance, summarizeReport } from './generate/conformance-checker.js';
+export type { ConformanceReport, AssertionResult, Assertion } from './generate/conformance-checker.js';
+export {
+  extractPersonaConstraints,
+  constraintsForResource,
+  constraintsForTable,
+  renderConstraintsBlock,
+} from './generate/persona-constraints.js';
+export type { PersonaConstraint, ExtractPersonaConstraintsOptions } from './generate/persona-constraints.js';
 export { derivePromptContext, deriveDataSpec } from './types/adapter.js';
 
 // Seed (adapters are now in @mimicai/adapter-* packages)

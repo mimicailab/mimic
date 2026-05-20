@@ -6,6 +6,7 @@ import { parseSchema, type ParseSchemaOptions } from './schema/index.js';
 import { BlueprintEngine } from './generate/blueprint-engine.js';
 import { BlueprintExpander } from './generate/expander.js';
 import { generateFacts } from './generate/fact-generator.js';
+import { checkConformance, summarizeReport } from './generate/conformance-checker.js';
 import { BlueprintCache } from './generate/blueprint-cache.js';
 import { LLMClient } from './llm/client.js';
 import { CostTracker } from './llm/cost-tracker.js';
@@ -91,7 +92,26 @@ export class Mimic {
       data.set(blueprint.personaId, expanded);
     }
 
-    // 3b. Generate facts from actual expanded data (post-expansion LLM call)
+    // 3b. Conformance check (persona claims vs expanded data) — runs before
+    //     fact generation so the fact generator sees verified data.
+    for (let i = 0; i < this.config.personas.length; i++) {
+      const persona = this.config.personas[i]!;
+      const expanded = data.get(blueprints[i]!.personaId);
+      if (!expanded) continue;
+      const report = await checkConformance(llm, expanded, persona, this.config.domain);
+      if (report.failed > 0) {
+        logger.warn(
+          `Conformance: ${report.failed}/${report.total} persona claims failed for ${persona.name}`,
+        );
+        logger.warn(summarizeReport(report));
+      } else if (report.total > 0) {
+        logger.success(
+          `Conformance: ${report.passed}/${report.total} persona claims verified for ${persona.name}`,
+        );
+      }
+    }
+
+    // 3c. Generate facts from actual expanded data (post-expansion LLM call)
     for (let i = 0; i < this.config.personas.length; i++) {
       const persona = this.config.personas[i]!;
       const expanded = data.get(blueprints[i]!.personaId);

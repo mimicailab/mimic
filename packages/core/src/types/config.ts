@@ -12,8 +12,22 @@ export const MimicConfigSchema = z.object({
       baseUrl: z.string().optional(),
       /** Request timeout in ms (default 120000). Aborts stalled streams. */
       timeoutMs: z.number().int().min(5000).optional(),
+      /**
+       * Which runtime to route LLM calls through.
+       *   'api'         direct HTTP via the AI SDK / native Anthropic client
+       *                 (default, per-token billing).
+       *   'claude-code' proxy through the Claude Agent SDK. Calls are billed
+       *                 against the user's Claude subscription instead of
+       *                 per-token API charges, when one is active.
+       *   'batch'       reserved for the upcoming Message Batches API path
+       *                 (50% pricing, async). Falls back to 'api' until that
+       *                 client lands.
+       *
+       * CLI flag `--llm-runtime` overrides this.
+       */
+      runtime: z.enum(['api', 'claude-code', 'batch']).default('api'),
     })
-    .default({ provider: 'anthropic', model: 'claude-haiku-4-5' }),
+    .default({ provider: 'anthropic', model: 'claude-haiku-4-5', runtime: 'api' }),
 
   personas: z
     .array(

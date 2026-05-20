@@ -10,9 +10,9 @@
     "demo": "mimic run && echo '\\n✅ Data generated. Starting servers...' && mimic host"
   },
   "dependencies": {
-    "@mimicai/adapter-plaid": "^0.13.0",
-    "@mimicai/adapter-stripe": "^0.13.0",
-    "@mimicai/cli": "^0.13.0",
-    "@mimicai/explorer": "^0.13.0"
+    "@mimicai/adapter-plaid": "latest",
+    "@mimicai/adapter-stripe": "latest",
+    "@mimicai/cli": "latest",
+    "@mimicai/explorer": "latest"
   }
 }

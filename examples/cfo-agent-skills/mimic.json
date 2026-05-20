@@ -1,0 +1,49 @@
+{
+  "domain": "Multi-platform SaaS billing and subscription management. A growth-stage analytics company (Verida Analytics) that simultaneously uses 8 billing platforms across different customer segments and geographies. Core business: B2B analytics SaaS with starter, pro, and enterprise tiers.",
+
+  "llm": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-6"
+  },
+
+  "personas": [
+    {
+      "name": "growth-saas",
+      "description": "Verida Analytics is a UK-based growth-stage B2B SaaS company operating across 8 billing platforms and a central Postgres users database. The dataset is a snapshot of the business as of 2026-05-15 and should reflect the following fixed commercial, operational, and cross-surface facts.\n\nCOMPANY SNAPSHOT:\n  • Snapshot date: 2026-05-15 (Friday).\n  • Billing history window: 2025-11-15 through 2026-05-15 inclusive.\n  • Currency: GBP only. No USD, EUR, or AUD appears anywhere.\n  • Every monetary field on every API surface is stored in pence. Use integers where that adapter normally uses integers and integer-strings where that adapter normally uses strings.\n  • Billing platforms in scope: Stripe, Paddle, RevenueCat, Chargebee, GoCardless, Lemon Squeezy, Zuora, Recurly. Exactly these 8 platforms are present.\n\nHEADLINE METRICS:\n  • Total MRR across all 8 billing platforms: £138,900.\n  • Total paying customers across all 8 billing platforms: 2,913.\n  • Month-over-month growth: 8.2%.\n  • MRR arithmetic check: £77,200 + £28,100 + £15,000 + £6,100 + £2,400 + £4,200 + £3,800 + £2,100 = £138,900.\n  • Customer-count arithmetic check: 1,200 + 412 + 618 + 28 + 71 + 534 + 3 + 47 = 2,913.\n\nSTRIPE (web subscriptions):\n  • Exactly 1,200 customers.\n  • Exactly 856 starter customers. Every starter price row has unit_amount=2900 pence.\n  • Exactly 284 pro customers. Every pro price row has unit_amount=7900 pence.\n  • Exactly 60 enterprise customers. Every enterprise price row has unit_amount=49900 pence.\n  • Stripe MRR is exactly £77,200. Arithmetic check: 856*29 + 284*79 + 60*499 = 24,824 + 22,436 + 29,940 = 77,200.\n\nPADDLE (EU and international self-serve):\n  • Exactly 412 customers.\n  • Paddle MRR is exactly £28,100.\n  • Every Paddle price row is GBP only.\n  • Every Paddle price row has unit_price.amount stored as an integer-string of pence, for example \"7900\".\n  • Every Paddle price row has unit_price.currency_code=\"GBP\".\n  • German localisation is driving +31% month-over-month growth in the EU segment.\n\nREVENUECAT (mobile iOS and Android):\n  • Exactly 618 active subscribers.\n  • RevenueCat MRR is exactly £15,000.\n  • Exactly 22 subscribers are in in_billing_retry state because of an Apple App Store outage on 2026-05-12 (Tuesday).\n  • Week-over-week mobile revenue is down 23%.\n\nCHARGEBEE (enterprise invoicing):\n  • Exactly 28 customers.\n  • Chargebee MRR is exactly £6,100.\n  • Exactly 3 invoices are overdue with status=\"payment_due\".\n  • The overdue invoice totals are exactly £4,800, £4,200, and £3,400. Sum check: £12,400 total overdue.\n  • The oldest overdue invoice has date=2026-04-11. That is exactly 34 days before 2026-05-15.\n  • For every overdue invoice, due_date is strictly after date.\n\nGOCARDLESS (UK SMB direct debit):\n  • Exactly 71 customers.\n  • GoCardless MRR is exactly £2,400.\n  • There is exactly one direct-debit collection batch created on 2026-05-11 (Monday).\n  • The payments attached to that batch sum to 840000 pence (£8,400).\n  • Every payment in that batch has status=\"submitted\" and charge_date=2026-05-13.\n  • No other GoCardless batch exists with created date 2026-05-11.\n\nLEMON SQUEEZY (indie and developer licenses):\n  • Exactly 534 license holders.\n  • Lemon Squeezy MRR is exactly £4,200.\n\nZUORA (large enterprise usage-based billing):\n  • Exactly 3 active contracts.\n  • Every Zuora contract is usage-based.\n  • Zuora MRR is exactly £3,800.\n\nRECURLY (legacy migrated subscribers):\n  • Exactly 47 long-term subscribers.\n  • Recurly MRR is exactly £2,100.\n\nPRODUCT DATABASE (Postgres `users` table):\n  • Exactly 3,794 rows total.\n  • Every row has status=\"active\" in lowercase.\n  • No row has plan=\"\".\n  • Exactly 2,913 linked paid users have plan in {starter, pro, enterprise}. Each linked paid user has exactly one non-NULL billing linkage field among stripe_customer_id, paddle_customer_id, chargebee_customer_id, gocardless_customer_id, revenuecat_app_user_id, lemonsqueezy_customer_id, zuora_account_id, and recurly_account_code. That single non-NULL linkage resolves to a real row on the matching billing platform.\n  • Exactly 847 free-tier users have plan=\"free\". For every free-tier user, all 8 billing linkage fields are NULL. Approximately 50 free-tier users have a recent rate_limit_exceeded event.\n  • Exactly 34 paid-plan orphans have plan in {starter, pro, enterprise}. For every orphan, all 8 billing linkage fields are NULL. Tag every orphan as data-integrity-orphan.\n  • Exactly 14 pro-plan users have last_login_at < 2026-04-15. Tag those 14 as churn-risk.\n  • Every other pro-plan user has last_login_at >= 2026-05-01.\n  • User-table arithmetic check: 2,913 linked paid + 847 free-tier + 34 paid-plan orphans = 3,794 total users."
+    }
+  ],
+
+  "generate": {
+    "volume": "6 months",
+    "seed": 42
+  },
+
+  "databases": {
+    "primary": {
+      "type": "postgres",
+      "url": "$DATABASE_URL",
+      "schema": {
+        "source": "prisma",
+        "path": "./prisma/schema.prisma"
+      },
+      "seedStrategy": "truncate-and-insert"
+    }
+  },
+
+  "apis": {
+    "stripe":       { "enabled": true, "mcp": true },
+    "paddle":       { "enabled": true, "mcp": true },
+    "chargebee":    { "enabled": true, "mcp": true },
+    "gocardless":   { "enabled": true, "mcp": true },
+    "revenuecat":   { "enabled": true, "mcp": true },
+    "lemonsqueezy": { "enabled": true, "mcp": true },
+    "zuora":        { "enabled": true, "mcp": true },
+    "recurly":      { "enabled": true, "mcp": true }
+  },
+
+  "test": {
+    "agent": "http://localhost:3003/test",
+    "target_skill": "cfo-briefing",
+    "auto_scenarios": true
+  }
+}
