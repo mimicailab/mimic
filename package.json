@@ -9,6 +9,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean",
+    "ci:version": "changeset version && pnpm install --lockfile-only",
     "release": "pnpm build && pnpm changeset publish"
   },
   "devDependencies": {
