@@ -1,5 +1,13 @@
 # @mimicai/adapter-paddle
 
+## 0.13.1
+
+### Patch Changes
+
+- Updated dependencies [[`3064c42`](https://github.com/mimicailab/mimic/commit/3064c423efd339fe2aaa839832a69c02311e89f0)]:
+  - @mimicai/core@0.14.0
+  - @mimicai/adapter-sdk@0.14.0
+
 ## 0.13.0
 
 ### Patch Changes
