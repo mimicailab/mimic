@@ -1,0 +1,25 @@
+# RevenueCat product archive/unarchive — declarative behavior pack.
+# Replaces overrides/products.ts.
+adapter: revenuecat
+actions:
+  - method: POST
+    path: /projects/:project_id/products/:product_id/actions/archive
+    target: { namespace: revenuecat:products, id: '{{ params.product_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "product with id '{{ params.product_id }}' not found"
+    effects:
+      - set: { state: inactive }
+
+  - method: POST
+    path: /projects/:project_id/products/:product_id/actions/unarchive
+    target: { namespace: revenuecat:products, id: '{{ params.product_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "product with id '{{ params.product_id }}' not found"
+    effects:
+      - set: { state: active }

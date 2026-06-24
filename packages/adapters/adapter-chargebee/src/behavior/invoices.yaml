@@ -1,0 +1,76 @@
+# Chargebee Invoice lifecycle — declarative behavior pack.
+# Replaces the state-machine handlers in overrides/invoices.ts
+# (void / write_off / record_payment). Creation stays as code because it uses
+# the schema-default factory (escape hatch).
+#
+# Chargebee invoice statuses: payment_due | not_paid | paid | voided | pending.
+# Timestamps are unix seconds (unixNow); resource_version is unix-millis.
+adapter: chargebee
+actions:
+  # ── void (POST /invoices/:id/void) ─────────────────────────────────────────
+  - method: POST
+    path: /invoices/:invoice_id/void
+    target: { namespace: chargebee:invoices, id: '{{ params.invoice_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: "No such invoice: '{{ params.invoice_id }}'"
+    guard: "self.status in ['payment_due', 'not_paid']"
+    guardError:
+      status: 400
+      kind: invalid_state
+      code: invalid_state_for_request
+      message: "Invoice {{ params.invoice_id }} is {{ self.status }}, cannot void"
+    effects:
+      - set:
+          status: voided
+          voided_at: '{{ now }}'
+          updated_at: '{{ now }}'
+          resource_version: '{{ now * 1000 }}'
+
+  # ── write_off (POST /invoices/:id/write_off) ───────────────────────────────
+  - method: POST
+    path: /invoices/:invoice_id/write_off
+    target: { namespace: chargebee:invoices, id: '{{ params.invoice_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: "No such invoice: '{{ params.invoice_id }}'"
+    guard: "self.status in ['payment_due', 'not_paid']"
+    guardError:
+      status: 400
+      kind: invalid_state
+      code: invalid_state_for_request
+      message: "Invoice {{ params.invoice_id }} is {{ self.status }}, cannot write off"
+    effects:
+      - set:
+          status: pending
+          write_off_amount: "{{ self.amount_due != null ? self.amount_due : 0 }}"
+          updated_at: '{{ now }}'
+          resource_version: '{{ now * 1000 }}'
+
+  # ── record_payment (POST /invoices/:id/record_payment) ─────────────────────
+  - method: POST
+    path: /invoices/:invoice_id/record_payment
+    target: { namespace: chargebee:invoices, id: '{{ params.invoice_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: "No such invoice: '{{ params.invoice_id }}'"
+    guard: "self.status in ['payment_due', 'not_paid']"
+    guardError:
+      status: 400
+      kind: invalid_state
+      code: invalid_state_for_request
+      message: "Invoice {{ params.invoice_id }} is {{ self.status }}, cannot record payment"
+    effects:
+      - set:
+          status: paid
+          paid_at: '{{ now }}'
+          amount_paid: "{{ body.amount != null ? body.amount : (self.total != null ? self.total : (self.amount_due != null ? self.amount_due : 0)) }}"
+          amount_due: 0
+          updated_at: '{{ now }}'
+          resource_version: '{{ now * 1000 }}'

@@ -13,10 +13,8 @@ import { gocardlessResourceSpecs, WRAPPER_KEYS } from './generated/resource-spec
 import { SCHEMA_DEFAULTS } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute } from './generated/routes.js';
-
-import * as mandateOverrides from './overrides/mandates.js';
-import * as paymentOverrides from './overrides/payments.js';
-import * as subscriptionOverrides from './overrides/subscriptions.js';
+import { behaviorPacks } from './generated/behavior.js';
+import { gcError, gcStateError } from './gocardless-errors.js';
 
 function ns(resource: string): string {
   return `gocardless:${resource}`;
@@ -163,24 +161,16 @@ export class GoCardlessAdapter extends OpenApiMockAdapter<GoCardlessConfig> {
   // ---------------------------------------------------------------------------
 
   private mountOverrides(store: StateStore): void {
-    // Mandate lifecycle
-    this.registerOverride('POST', '/mandates/:mandate_id/actions/cancel',
-      mandateOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/mandates/:mandate_id/actions/reinstate',
-      mandateOverrides.buildReinstateHandler(store));
-
-    // Payment lifecycle
-    this.registerOverride('POST', '/payments/:payment_id/actions/cancel',
-      paymentOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/payments/:payment_id/actions/retry',
-      paymentOverrides.buildRetryHandler(store));
-
-    // Subscription lifecycle
-    this.registerOverride('POST', '/subscriptions/:subscription_id/actions/cancel',
-      subscriptionOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/subscriptions/:subscription_id/actions/pause',
-      subscriptionOverrides.buildPauseHandler(store));
-    this.registerOverride('POST', '/subscriptions/:subscription_id/actions/resume',
-      subscriptionOverrides.buildResumeHandler(store));
+    // Lifecycle state-machine transitions (mandates / payments / subscriptions)
+    // are declared in src/behavior/*.yaml and executed by the SDK behavior
+    // interpreter. Non-state-machine overrides (if any) would be registered as
+    // code here as an escape hatch.
+    this.mountBehaviorPacks(store, behaviorPacks, (e) =>
+      e.kind === 'not_found'
+        ? gcError('invalid_api_usage', 404, e.message, [
+            { reason: e.code, message: e.message },
+          ])
+        : gcStateError(e.message),
+    );
   }
 }

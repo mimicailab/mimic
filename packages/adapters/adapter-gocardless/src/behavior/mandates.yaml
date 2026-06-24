@@ -1,0 +1,41 @@
+# GoCardless Mandate lifecycle — declarative behavior pack.
+# Replaces overrides/mandates.ts.
+adapter: gocardless
+actions:
+  # ── cancel ─────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /mandates/:mandate_id/actions/cancel
+    target: { namespace: gocardless:mandates, id: '{{ params.mandate_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: 'mandate with id {{ params.mandate_id }} not found'
+    guard: "self.status != 'cancelled'"
+    guardError:
+      status: 409
+      kind: state
+      code: invalid_state
+      message: 'Mandate {{ params.mandate_id }} is already cancelled'
+    effects:
+      - set: { status: cancelled }
+    respond: { mandates: '{{ self }}' }
+
+  # ── reinstate ──────────────────────────────────────────────────────────────
+  - method: POST
+    path: /mandates/:mandate_id/actions/reinstate
+    target: { namespace: gocardless:mandates, id: '{{ params.mandate_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: 'mandate with id {{ params.mandate_id }} not found'
+    guard: "self.status == 'cancelled'"
+    guardError:
+      status: 409
+      kind: state
+      code: invalid_state
+      message: 'Mandate {{ params.mandate_id }} must be cancelled to reinstate, current: {{ self.status }}'
+    effects:
+      - set: { status: active }
+    respond: { mandates: '{{ self }}' }

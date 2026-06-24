@@ -1,0 +1,25 @@
+# RevenueCat offering archive/unarchive — declarative behavior pack.
+# Replaces overrides/offerings.ts.
+adapter: revenuecat
+actions:
+  - method: POST
+    path: /projects/:project_id/offerings/:offering_id/actions/archive
+    target: { namespace: revenuecat:offerings, id: '{{ params.offering_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "offering with id '{{ params.offering_id }}' not found"
+    effects:
+      - set: { state: inactive }
+
+  - method: POST
+    path: /projects/:project_id/offerings/:offering_id/actions/unarchive
+    target: { namespace: revenuecat:offerings, id: '{{ params.offering_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "offering with id '{{ params.offering_id }}' not found"
+    effects:
+      - set: { state: active }

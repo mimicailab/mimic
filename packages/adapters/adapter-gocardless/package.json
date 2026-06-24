@@ -20,7 +20,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "generate": "tsx scripts/gocardless-codegen.ts",
+    "generate": "tsx scripts/gocardless-codegen.ts && mimic-behavior-codegen",
+    "generate:behavior": "mimic-behavior-codegen",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

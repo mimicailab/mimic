@@ -1,0 +1,100 @@
+# Chargebee Subscription lifecycle — declarative behavior pack.
+# Replaces the state-machine handlers in overrides/subscriptions.ts
+# (cancel / reactivate / pause / resume). Creation stays as code because it
+# uses the schema-default factory + response pre-wrapping (escape hatch).
+#
+# Chargebee subscription statuses: active | non_renewing | paused | cancelled.
+# Timestamps are unix seconds (unixNow); resource_version is unix-millis.
+adapter: chargebee
+actions:
+  # ── cancel (POST /subscriptions/:id/cancel_for_items) ──────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/cancel_for_items
+    target: { namespace: chargebee:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: "No such subscription: '{{ params.subscription_id }}'"
+    guard: "!(self.status in ['cancelled', 'non_renewing'])"
+    guardError:
+      status: 400
+      kind: invalid_state
+      code: invalid_state_for_request
+      message: "Subscription {{ params.subscription_id }} is already {{ self.status }}, cannot cancel"
+    effects:
+      - set:
+          status: "{{ (body.end_of_term == true || body.end_of_term == 'true') ? 'non_renewing' : 'cancelled' }}"
+          cancel_reason: "{{ body.cancel_reason_code != null ? body.cancel_reason_code : 'not_paid' }}"
+          cancelled_at: "{{ (body.end_of_term == true || body.end_of_term == 'true') ? null : now }}"
+          updated_at: '{{ now }}'
+          resource_version: '{{ now * 1000 }}'
+
+  # ── reactivate (POST /subscriptions/:id/reactivate) ────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/reactivate
+    target: { namespace: chargebee:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: "No such subscription: '{{ params.subscription_id }}'"
+    guard: "self.status in ['cancelled', 'non_renewing']"
+    guardError:
+      status: 400
+      kind: invalid_state
+      code: invalid_state_for_request
+      message: "Subscription {{ params.subscription_id }} is {{ self.status }}, cannot reactivate"
+    effects:
+      - set:
+          status: active
+          cancelled_at: null
+          cancel_reason: null
+          activated_at: '{{ now }}'
+          updated_at: '{{ now }}'
+          resource_version: '{{ now * 1000 }}'
+
+  # ── pause (POST /subscriptions/:id/pause) ──────────────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/pause
+    target: { namespace: chargebee:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: "No such subscription: '{{ params.subscription_id }}'"
+    guard: "self.status == 'active'"
+    guardError:
+      status: 400
+      kind: invalid_state
+      code: invalid_state_for_request
+      message: "Subscription {{ params.subscription_id }} is {{ self.status }}, cannot pause"
+    effects:
+      - set:
+          status: paused
+          pause_date: '{{ now }}'
+          updated_at: '{{ now }}'
+          resource_version: '{{ now * 1000 }}'
+
+  # ── resume (POST /subscriptions/:id/resume) ────────────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/resume
+    target: { namespace: chargebee:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: "No such subscription: '{{ params.subscription_id }}'"
+    guard: "self.status == 'paused'"
+    guardError:
+      status: 400
+      kind: invalid_state
+      code: invalid_state_for_request
+      message: "Subscription {{ params.subscription_id }} is {{ self.status }}, cannot resume"
+    effects:
+      - set:
+          status: active
+          pause_date: null
+          resume_date: '{{ now }}'
+          updated_at: '{{ now }}'
+          resource_version: '{{ now * 1000 }}'

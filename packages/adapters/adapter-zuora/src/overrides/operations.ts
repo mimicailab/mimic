@@ -7,6 +7,7 @@ import { defaultInvoice, defaultPayment, defaultCreditMemo } from '../generated/
 const NS_INVOICES = 'zuora:invoices';
 const NS_PAYMENTS = 'zuora:payments';
 const NS_CREDIT_MEMOS = 'zuora:credit-memos';
+const NS_SUBSCRIPTIONS = 'zuora:subscriptions';
 
 function zuoraId(): string {
   return generateId('', 32);
@@ -49,19 +50,6 @@ export function buildInvoiceCollectHandler(store: StateStore): OverrideHandler {
     store.set(NS_PAYMENTS, pmtId, payment);
 
     return reply.code(200).send({ invoiceId: invId, paymentId: pmtId });
-  };
-}
-
-/** PUT /credit-memos/:creditMemoKey/apply — apply credit memo */
-export function buildApplyCreditMemoHandler(store: StateStore): OverrideHandler {
-  return async (req, reply) => {
-    const { creditMemoKey } = req.params as { creditMemoKey: string };
-    const existing = store.get<Record<string, unknown>>(NS_CREDIT_MEMOS, creditMemoKey);
-    if (!existing) return reply.code(404).send(notFound('Credit memo', creditMemoKey));
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const updated = { ...existing, ...body, status: 'Posted', updatedDate: isoNow() };
-    store.set(NS_CREDIT_MEMOS, creditMemoKey, updated);
-    return reply.code(200).send({ id: creditMemoKey });
   };
 }
 
@@ -142,6 +130,24 @@ export function buildUsageByAccountHandler(store: StateStore): OverrideHandler {
     return reply.code(200).send({
       data,
       nextPage: offset + pageSize < usages.length ? page + 1 : null,
+    });
+  };
+}
+
+/** GET /subscriptions/accounts/:accountKey — list subscriptions by account (list-shaping) */
+export function buildListByAccountHandler(store: StateStore): OverrideHandler {
+  return async (req, reply) => {
+    const { accountKey } = req.params as { accountKey: string };
+    const query = req.query as Record<string, string>;
+    let subs = store.list<Record<string, unknown>>(NS_SUBSCRIPTIONS).filter(s => s.accountId === accountKey);
+    if (query.status) subs = subs.filter(s => s.status === query.status);
+    const pageSize = query.pageSize ? parseInt(query.pageSize, 10) : 20;
+    const page = query.page ? parseInt(query.page, 10) : 1;
+    const offset = (page - 1) * pageSize;
+    const data = subs.slice(offset, offset + pageSize);
+    return reply.code(200).send({
+      data,
+      nextPage: offset + pageSize < subs.length ? page + 1 : null,
     });
   };
 }

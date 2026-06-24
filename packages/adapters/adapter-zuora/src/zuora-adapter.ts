@@ -8,16 +8,16 @@ import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import type { GeneratedRoute } from '@mimicai/adapter-sdk';
 import type { ZuoraConfig } from './config.js';
 import { registerZuoraTools } from './mcp.js';
-import { notFound } from './zuora-errors.js';
+import { notFound, zuoraError } from './zuora-errors.js';
 import meta from './adapter-meta.js';
 
 // Generated files
 import { zuoraResourceSpecs } from './generated/resource-specs.js';
 import { SCHEMA_DEFAULTS, defaultAccount, defaultSubscription, defaultOrder, defaultProduct, defaultProductRatePlan, defaultInvoice, defaultPayment, defaultPaymentMethod, defaultCreditMemo, defaultDebitMemo, defaultUsage, defaultContact } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
+import { behaviorPacks } from './generated/behavior.js';
 
-// Overrides
-import * as subOverrides from './overrides/subscriptions.js';
+// Overrides (escape hatch — non-state-machine logic the behavior DSL can't express)
 import * as acctOverrides from './overrides/accounts.js';
 import * as opsOverrides from './overrides/operations.js';
 
@@ -157,6 +157,12 @@ export class ZuoraAdapter extends OpenApiMockAdapter<ZuoraConfig> {
   private mountOverrides(server: FastifyInstance, store: StateStore): void {
     const BP = '/v1';
 
+    // ── Declarative behavior packs (subscription lifecycle, credit-memo apply) ──
+    // Replaces the hand-written state-machine handlers that loaded a resource,
+    // mutated its status/timestamps, and re-stored it. Error specs are mapped to
+    // Zuora's { success: false, reasons: [{ code, message }] } envelope.
+    this.mountBehaviorPacks(store, behaviorPacks, (e) => zuoraError(e.code, e.message));
+
     // ── Accounts ──────────────────────────────────────────────────────
     this.registerOverride('POST', `${BP}/accounts`, async (req, reply) => {
       const body = (req.body ?? {}) as Record<string, unknown>;
@@ -203,16 +209,9 @@ export class ZuoraAdapter extends OpenApiMockAdapter<ZuoraConfig> {
       return reply.code(200).send({ subscriptionId: subscriptionKey });
     });
 
-    this.registerOverride('PUT', `${BP}/subscriptions/:subscriptionKey/cancel`,
-      subOverrides.buildCancelHandler(store));
-    this.registerOverride('PUT', `${BP}/subscriptions/:subscriptionKey/renew`,
-      subOverrides.buildRenewHandler(store));
-    this.registerOverride('PUT', `${BP}/subscriptions/:subscriptionKey/suspend`,
-      subOverrides.buildSuspendHandler(store));
-    this.registerOverride('PUT', `${BP}/subscriptions/:subscriptionKey/resume`,
-      subOverrides.buildResumeHandler(store));
+    // cancel / renew / suspend / resume now handled by the behavior pack above.
     this.registerOverride('GET', `${BP}/subscriptions/accounts/:accountKey`,
-      subOverrides.buildListByAccountHandler(store));
+      opsOverrides.buildListByAccountHandler(store));
 
     // ── Orders ────────────────────────────────────────────────────────
     this.registerOverride('POST', `${BP}/orders`, async (req, reply) => {
@@ -371,9 +370,7 @@ export class ZuoraAdapter extends OpenApiMockAdapter<ZuoraConfig> {
       return reply.code(200).send({ id: creditMemoKey });
     });
 
-    this.registerOverride('PUT', `${BP}/credit-memos/:creditMemoKey/apply`,
-      opsOverrides.buildApplyCreditMemoHandler(store));
-
+    // credit-memos/:creditMemoKey/apply now handled by the behavior pack above.
     this.registerOverride('POST', `${BP}/credit-memos/invoice/:invoiceKey`,
       opsOverrides.buildCreditMemoFromInvoiceHandler(store));
 

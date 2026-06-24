@@ -1,6 +1,5 @@
 import type { StateStore } from '@mimicai/core';
 import type { OverrideHandler } from '@mimicai/adapter-sdk';
-import { generateId } from '@mimicai/adapter-sdk';
 import { paddleError, paddleStateError } from '../paddle-errors.js';
 
 const NS = 'paddle:subscriptions';
@@ -62,62 +61,6 @@ export function buildPauseHandler(store: StateStore): OverrideHandler {
         resume_at: body.resume_at ?? null,
       },
       paused_at: effectiveFrom === 'immediately' ? new Date().toISOString() : existing.paused_at,
-      updated_at: new Date().toISOString(),
-    };
-    store.set(NS, subscription_id, updated);
-    return reply.code(200).send(updated);
-  };
-}
-
-export function buildResumeHandler(store: StateStore): OverrideHandler {
-  return async (req, reply) => {
-    const { subscription_id } = req.params as { subscription_id: string };
-    const existing = store.get<Record<string, unknown>>(NS, subscription_id);
-
-    if (!existing) {
-      return reply.code(404).send(paddleError('not_found', `Subscription ${subscription_id} not found`));
-    }
-
-    if (existing.status !== 'paused') {
-      return reply.code(409).send(paddleStateError(`Subscription ${subscription_id} must be paused to resume, current status: ${existing.status}`));
-    }
-
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const effectiveFrom = body.effective_from ?? 'immediately';
-
-    const updated = {
-      ...existing,
-      status: effectiveFrom === 'immediately' ? 'active' : existing.status,
-      scheduled_change: effectiveFrom === 'immediately' ? null : {
-        action: 'resume',
-        effective_at: body.effective_from,
-        resume_at: null,
-      },
-      paused_at: effectiveFrom === 'immediately' ? null : existing.paused_at,
-      updated_at: new Date().toISOString(),
-    };
-    store.set(NS, subscription_id, updated);
-    return reply.code(200).send(updated);
-  };
-}
-
-export function buildActivateHandler(store: StateStore): OverrideHandler {
-  return async (req, reply) => {
-    const { subscription_id } = req.params as { subscription_id: string };
-    const existing = store.get<Record<string, unknown>>(NS, subscription_id);
-
-    if (!existing) {
-      return reply.code(404).send(paddleError('not_found', `Subscription ${subscription_id} not found`));
-    }
-
-    if (existing.status !== 'trialing') {
-      return reply.code(409).send(paddleStateError(`Subscription ${subscription_id} must be trialing to activate, current status: ${existing.status}`));
-    }
-
-    const updated = {
-      ...existing,
-      status: 'active',
-      started_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     store.set(NS, subscription_id, updated);
