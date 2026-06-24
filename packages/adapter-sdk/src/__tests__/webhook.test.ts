@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createServer, type Server } from 'node:http';
-import { createWebhookEmitSink, webhookSinkFromConfig } from '../behavior/webhook.js';
+import { WebhookHub } from '@mimicai/core';
+import { createWebhookEmitSink, webhookSinkFromConfig, WebhookDelivery } from '../behavior/webhook.js';
 
 /** Spin an ephemeral HTTP server that captures the first request. */
 function captureServer(): Promise<{ url: string; received: Promise<{ headers: Record<string, string | string[] | undefined>; body: string }>; close: () => void }> {
@@ -77,5 +78,48 @@ describe('webhook delivery', () => {
     expect(evt.id).toMatch(/^evt_/);
     expect(evt.data).toEqual({ id: 'sub_1', state: 'canceled' });   // generic: data is the resource directly
     expect(evt.object).toBeUndefined();                              // not stripe-style
+  });
+});
+
+describe('sync (flush) delivery + determinism', () => {
+  it('buffers in sync mode and delivers only on flush, deterministically', async () => {
+    const srv = await captureServer();
+    const hub = new WebhookHub();
+    const delivery = new WebhookDelivery({
+      endpoint: srv.url, mode: 'sync', deterministic: true, seed: 1000,
+      source: 'stripe', envelope: 'stripe', log: () => {}, hub,
+    });
+
+    delivery.sink({ type: 'payment_intent.succeeded', data: { id: 'pi_1' } });
+    delivery.sink({ type: 'invoice.paid', data: { id: 'in_1' } });
+
+    // Nothing delivered yet; buffered + recorded deterministically.
+    expect(delivery.pending).toBe(2);
+    expect(hub.pending).toBe(2);
+    expect(hub.inbox.map((e) => e.id)).toEqual(['evt_1', 'evt_2']);
+    expect(hub.inbox.map((e) => e.created)).toEqual([1001, 1002]);
+    expect(hub.inbox.every((e) => !e.delivered)).toBe(true);
+
+    const first = srv.received;
+    await delivery.flush();
+    const { body } = await first;
+    expect(JSON.parse(body).id).toBe('evt_1');
+    expect(JSON.parse(body).created).toBe(1001);
+
+    srv.close();
+    expect(delivery.pending).toBe(0);
+    expect(hub.pending).toBe(0);
+    expect(hub.inbox.every((e) => e.delivered)).toBe(true);
+  });
+
+  it('hub.flush() drives buffered deliveries (control-plane path)', async () => {
+    const hub = new WebhookHub();
+    const delivery = new WebhookDelivery({ mode: 'sync', deterministic: true, source: 'recurly', hub, log: () => {} });
+    delivery.sink({ type: 'subscription.canceled', data: { id: 'sub_1' } });
+    expect(hub.pending).toBe(1);
+    const flushed = await hub.flush();
+    expect(flushed).toBe(1);
+    expect(hub.pending).toBe(0);
+    expect(hub.inbox[0]).toMatchObject({ id: 'evt_1', type: 'subscription.canceled', delivered: true });
   });
 });

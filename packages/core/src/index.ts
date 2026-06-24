@@ -174,6 +174,8 @@ export type { ClaudeSkillExporterOptions } from './test/exporters/claude-skill.e
 export { MockServer } from './mock/server.js';
 export { MockRouter } from './mock/router.js';
 export { StateStore } from './mock/state-store.js';
+export { WebhookHub, webhookHub } from './mock/webhook-hub.js';
+export type { RecordedWebhook } from './mock/webhook-hub.js';
 export { RequestLogger } from './mock/request-logger.js';
 export type { RequestLogEntry } from './mock/request-logger.js';
 export { attachMcpTransport, detachMcpTransport } from './mock/mcp-transport.js';

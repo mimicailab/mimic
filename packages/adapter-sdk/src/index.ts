@@ -36,8 +36,10 @@ export { evalExpr, evalBool, resolveTemplate } from './behavior/expr.js';
 export { buildActionHandler, mountBehaviorPack } from './behavior/interpreter.js';
 export type { BehaviorContext, ErrorFactory, EmitSink, RegisterOverrideFn } from './behavior/interpreter.js';
 export { loadBehaviorPack } from './behavior/loader.js';
-export { createWebhookEmitSink, webhookSinkFromConfig } from './behavior/webhook.js';
-export type { WebhookSinkOptions } from './behavior/webhook.js';
+export { createWebhookEmitSink, webhookSinkFromConfig, WebhookDelivery } from './behavior/webhook.js';
+export type { WebhookSinkOptions, EnvelopeStyle, DeliveryMode } from './behavior/webhook.js';
+export { webhookHub, WebhookHub } from '@mimicai/core';
+export type { RecordedWebhook } from '@mimicai/core';
 export type {
   BehaviorPack, ActionSpec, Effect, EmitSpec, ErrorSpec, TargetRef,
   CreateEffect, SetEffect, UpdateEffect, VarEffect, WhenEffect, ErrorEffect,

@@ -139,3 +139,36 @@ The engine is written once; adapters are increasingly **content, not code**. The
 LLM-authored-behavior-pack + golden-test path described in the companion doc plugs
 in here: the LLM drafts the `behavior/*.yaml`, the engine executes it
 deterministically, and the test suite gates it.
+
+## Webhook delivery (live mode) — implemented
+
+`emit:` declarations on behavior actions are delivered as real outbound webhooks
+by `@mimicai/adapter-sdk`'s `WebhookDelivery`, wired into every migrated adapter
+via `webhookSinkFromConfig(this.context?.config, '<id>', { defaultEnvelope })`.
+
+Config (mimic.json):
+```jsonc
+"events": { "stripe": { "type": "webhook", "config": {
+  "endpoint": "http://localhost:3000/webhooks/stripe",
+  "secret": "whsec_…",          // HMAC-signs Stripe-Signature: t=…,v1=…
+  "envelope": "stripe",          // or "generic"
+  "mode": "sync",                // "async" (default) | "sync" (buffer + flush)
+  "deterministic": true,         // evt_<n> ids + seed-based timestamps
+  "seed": 1700000000
+} } }
+```
+
+- **async** (default): fire-and-forget on emit, like production.
+- **sync**: events buffer until flushed — CI-grade, no delivery races. The
+  MockServer exposes a control plane:
+  - `GET  /__mimic/events` → the recorded inbox + pending count
+  - `POST /__mimic/flush`  → deliver all buffered events
+- **deterministic**: `evt_<n>` ids and `seed + n` timestamps → byte-identical
+  envelopes every run. Backed by the `webhookHub` singleton in core.
+
+Verified e2e through `mimic host`: in sync+deterministic mode, a PI confirm+cancel
+produced no immediate delivery; `GET /__mimic/events` showed `evt_1`/`evt_2`
+pending with fixed timestamps; `POST /__mimic/flush` delivered both in order to
+the listener. This closes the live-mode loop deterministically — the user's own
+webhook handler runs against reproducible events instead of us seeding the
+mirrored DB.
