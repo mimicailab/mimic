@@ -3,7 +3,7 @@ title: "Guides"
 description: "CI/CD integration guide for running Mimic in automated pipelines."
 order: 9
 slug: "guides"
-prev: { slug: "testing", title: "Testing & Auto-Scenarios" }
+prev: { slug: "webhooks", title: "Webhooks & Live Mode" }
 next: { slug: "examples", title: "Examples" }
 ---
 

@@ -26,6 +26,7 @@
   <a href="#how-it-works">How It Works</a> ·
   <a href="#adapters">Adapters</a> ·
   <a href="#mcp-servers">MCP Servers</a> ·
+  <a href="#webhooks--live-mode">Webhooks & Live Mode</a> ·
   <a href="#flagship-example">Flagship Example</a> ·
   <a href="#cicd">CI/CD</a> ·
   <a href="CONTRIBUTING.md">Contributing</a>
@@ -103,6 +104,15 @@ That's it. Your agent now has a fully populated local environment with realistic
 
 Pre-built personas ship with the package — no LLM calls, no API keys, no internet needed. For custom domains, Mimic uses an LLM to generate realistic persona blueprints and API mock data.
 
+### Behavior packs — data-driven adapters
+
+Adapter lifecycle logic — the state machines behind each action (guards, transitions, and side effects) — is authored as declarative YAML in each adapter's `src/behavior/*.yaml`. A shared `mimic-behavior-codegen` bin compiles those packs to `generated/behavior.ts`, and a generic interpreter in [`@mimicai/adapter-sdk`](packages/adapter-sdk/) executes them. This replaces hand-written TypeScript override handlers with a single engine driven by data.
+
+A behavior action declares `method`, `path`, a `target` (`namespace` + `id`), `notFound`, a `guard` (with `guardError`), `effects` (`set` / `merge` / `create` / `update` / `var` / `when` / `error`), and what to `respond`, `delete`, or `emit`.
+
+- **8 adapters migrated** (~49 actions): Stripe, Recurly, Chargebee, GoCardless, RevenueCat, Zuora, Lemon Squeezy, and Paddle.
+- **Synthesis-heavy adapters** (Gmail, Slack, Attio, HubSpot, Plaid, Granola) keep hand-written handlers — a supported "escape hatch" for logic that doesn't fit the declarative model.
+
 ## Quickstart
 
 ### Configure
@@ -172,6 +182,8 @@ Execute test scenarios against your mock environment with optional AI-powered ev
 
 ## Features
 
+- **Data-driven adapters** — Adapter lifecycle (guards, transitions, side effects) is authored as declarative YAML behavior packs and run by a generic interpreter in the SDK — not hand-written handlers
+- **Live-mode webhooks** — Behavior-pack `emit:` declarations deliver as real outbound webhooks, so your own handler runs and you test the sync layer, not just a static snapshot
 - **Cross-surface consistency** — One persona generates consistent data across databases, APIs, and MCP servers
 - **Deterministic seeding** — Same seed + same persona = identical data every run. No flaky tests.
 - **High-performance seeding** — FK-aware ordering and atomic transactions
@@ -287,6 +299,74 @@ Or add via Claude Code CLI:
 claude mcp add mimic-stripe -- npx -y @mimicai/adapter-stripe mcp
 ```
 
+## Webhooks & Live Mode
+
+In production, a write to Stripe doesn't just update Stripe — it fires a webhook back to your app, your handler runs, and your business logic populates your database. A static seeded snapshot can't exercise any of that. You end up testing your read path against fixtures while your **integration/sync layer** — the code that actually matters — never runs.
+
+Live mode closes that gap. The `emit:` declarations in an adapter's behavior packs deliver as **real outbound webhooks** to your app, so your own webhook handler and business logic run and populate your database. You're testing the sync layer, not just a frozen snapshot.
+
+> Only the migrated state-machine adapters (Stripe, Recurly, Chargebee, GoCardless, RevenueCat, Zuora, Lemon Squeezy, Paddle) emit webhooks today, via their behavior-pack `emit:` declarations.
+
+Live mode is **opt-in and backwards compatible** — existing configs and examples are unaffected. Enable it per adapter under `events` in `mimic.json`:
+
+```json
+{
+  "events": {
+    "stripe": {
+      "type": "webhook",
+      "config": {
+        "endpoint": "http://localhost:3000/api/webhooks/stripe",
+        "secret": "whsec_...",       // signs Stripe-Signature: t=..,v1=hmac
+        "envelope": "stripe",        // "stripe" (data.object wrapper) or "generic"
+        "mode": "async",             // "async" (fire-and-forget, like prod) | "sync" (buffer + flush)
+        "deterministic": true,       // evt_<n> ids + seed-based timestamps (reproducible CI)
+        "seed": 1700000000
+      }
+    }
+  }
+}
+```
+
+### Async vs sync
+
+- **`async`** (default) — the webhook fires on the triggering API write, exactly like production. Closest to real behavior.
+- **`sync`** — events buffer and deliver only when you flush them, so there are no async races in tests. Drive the app, flush, then assert deterministically.
+
+When `deterministic: true`, events get sequential `evt_<n>` ids and seed-based timestamps, so the same run produces byte-identical webhooks every time — ideal for CI.
+
+### Signing
+
+For Stripe, Mimic signs each delivery with the configured `secret` as `Stripe-Signature: t=..,v1=<hmac>`, so your real signature-verification code runs against the mock. The `envelope` controls the payload shape: `"stripe"` wraps the resource in a `data.object` envelope; `"generic"` delivers the raw event.
+
+### Control plane
+
+The mock API server exposes a control plane for inspecting and driving event delivery:
+
+- **`GET /__mimic/events`** — the event inbox plus a pending count.
+- **`POST /__mimic/flush`** — deliver all buffered (`sync`-mode) events.
+
+### Sync mode in CI
+
+`sync` mode removes sleeps and flakiness: drive the app, flush, then assert your handler ran.
+
+```ts
+// 1. Drive the app — a write that triggers an emit on the Stripe adapter
+await app.createSubscription({ customer: "cus_123", price: "price_pro" });
+
+// 2. Flush buffered events — delivers webhooks synchronously, no sleeps
+await fetch("http://localhost:4100/__mimic/flush", { method: "POST" });
+
+// 3. Assert your own webhook handler ran and populated your database
+const row = await db.subscriptions.findUnique({ where: { id: "cus_123" } });
+expect(row.status).toBe("active");
+
+// Deterministic ids/timestamps make this reproducible across runs
+const inbox = await fetch("http://localhost:4100/__mimic/events").then((r) => r.json());
+expect(inbox.events[0].id).toBe("evt_1");
+```
+
+> See [examples/stripe-webhooks](examples/stripe-webhooks/) for a runnable live-mode demo with sync/flush.
+
 ## Flagship Example
 
 ### CFO Agent — 8 billing platforms, one AI
@@ -312,6 +392,7 @@ mimic run && mimic seed && mimic host
 |---------|-------------|
 | [billing-agent](examples/billing-agent/) | SaaS billing agent with PostgreSQL + Stripe mock, Next.js chat UI, 25 MCP tools |
 | [cfo-agent](examples/cfo-agent/) | CFO agent with 8 billing platforms, 9 MCP servers, LangGraph supervisor |
+| [stripe-webhooks](examples/stripe-webhooks/) | Live-mode webhooks with sync/flush demo — test the integration/sync layer |
 | [budget-agent](examples/budget-agent/) | Budget management agent |
 | [finance-assistant](examples/finance-assistant/) | Personal finance assistant |
 | [stripe-explorer](examples/stripe-explorer/) | Stripe data exploration |
