@@ -17,10 +17,7 @@ import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute } from './generated/routes.js';
 import { behaviorPacks } from './generated/behavior.js';
 
-// State-machine overrides (being migrated to declarative behavior packs)
-import * as siOverrides from './overrides/setup-intents.js';
-import * as invOverrides from './overrides/invoices.js';
-import * as chOverrides from './overrides/charges.js';
+// State-machine overrides (migrated: payment-intents, setup-intents, invoices, charges)
 import * as bpOverrides from './overrides/billing-portal.js';
 import * as refundOverrides from './overrides/refunds.js';
 import * as pmOverrides from './overrides/payment-methods.js';
@@ -107,45 +104,8 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
     // ── Declarative behavior packs (state machines authored as YAML) ──────────
     // Replaces hand-written override handlers. The generic interpreter in
     // @mimicai/adapter-sdk executes each pack against the StateStore.
+    // Migrated packs: payment-intents, setup-intents, invoices, charges.
     this.mountBehaviorPacks(store, behaviorPacks, (e) => stripeError(e.code, e.message));
-
-    // ── Setup Intents ─────────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/setup_intents/:intent/confirm',
-      siOverrides.buildConfirmHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/setup_intents/:intent/cancel',
-      siOverrides.buildCancelHandler(store),
-    );
-
-    // ── Invoices ──────────────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/finalize',
-      invOverrides.buildFinalizeHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/pay',
-      invOverrides.buildPayHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/void',
-      invOverrides.buildVoidHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/mark_uncollectible',
-      invOverrides.buildMarkUncollectibleHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/send',
-      invOverrides.buildSendHandler(store),
-    );
-
-    // ── Charges ───────────────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/charges/:charge/capture',
-      chOverrides.buildCaptureHandler(store),
-    );
 
     // ── Billing Portal ────────────────────────────────────────────────────────
     this.registerOverride(
@@ -247,12 +207,6 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
     this.registerOverride(
       'DELETE', '/v1/customers/:customer',
       custOverrides.buildDeleteHandler(store),
-    );
-
-    // ── Invoices — only draft invoices can be deleted ─────────────────────────
-    this.registerOverride(
-      'DELETE', '/v1/invoices/:invoice',
-      invOverrides.buildDeleteHandler(store),
     );
 
     // ── Subscription Items — keep parent subscription.items in sync ───────────

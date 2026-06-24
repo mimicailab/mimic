@@ -1,0 +1,139 @@
+# Stripe Invoice lifecycle — declarative behavior pack.
+# Replaces overrides/invoices.ts (finalize/pay/void/mark_uncollectible/send/delete).
+# Lifecycle: draft → open → paid | uncollectible | void
+adapter: stripe
+idLength: 24
+actions:
+  # ── finalize: draft → open ─────────────────────────────────────────────────
+  - method: POST
+    path: /v1/invoices/:invoice/finalize
+    target: { namespace: stripe:invoices, id: '{{ params.invoice }}' }
+    notFound: { status: 404, code: resource_missing, message: "No such invoice: '{{ params.invoice }}'" }
+    guard: "self.status == 'draft'"
+    guardError:
+      status: 400
+      code: invoice_finalization_error
+      message: "This invoice's status is '{{ self.status }}'. Only draft invoices can be finalized."
+    effects:
+      - set:
+          status: open
+          finalized_at: '{{ now }}'
+          due_date: "{{ self.due_date != null ? self.due_date : now + 30 * 86400 }}"
+          hosted_invoice_url: "https://invoice.stripe.com/i/acct_mock/{{ params.invoice }}"
+          invoice_pdf: "https://pay.stripe.com/invoice/acct_mock/{{ params.invoice }}/pdf"
+    emit:
+      - event: invoice.finalized
+
+  # ── pay: (auto-finalize draft) open → paid, create charge ──────────────────
+  - method: POST
+    path: /v1/invoices/:invoice/pay
+    target: { namespace: stripe:invoices, id: '{{ params.invoice }}' }
+    notFound: { status: 404, code: resource_missing, message: "No such invoice: '{{ params.invoice }}'" }
+    guard: "self.status == 'draft' || self.status == 'open'"
+    guardError:
+      status: 400
+      code: invoice_payment_error
+      message: "This invoice's status is '{{ self.status }}'. Only draft or open invoices can be paid."
+    effects:
+      - when: "self.status == 'draft'"
+        then:
+          - set:
+              status: open
+              finalized_at: '{{ now }}'
+              due_date: "{{ self.due_date != null ? self.due_date : now + 30 * 86400 }}"
+              hosted_invoice_url: "https://invoice.stripe.com/i/acct_mock/{{ params.invoice }}"
+              invoice_pdf: "https://pay.stripe.com/invoice/acct_mock/{{ params.invoice }}/pdf"
+      - var:
+          pay_amount: "{{ self.amount_due != null ? self.amount_due : 0 }}"
+      - create: charge
+        namespace: stripe:charges
+        idPrefix: ch_
+        bind: charge
+        fields:
+          object: charge
+          amount: '{{ pay_amount }}'
+          amount_captured: '{{ pay_amount }}'
+          amount_refunded: 0
+          currency: "{{ self.currency != null ? self.currency : 'usd' }}"
+          customer: "{{ self.customer != null ? self.customer : null }}"
+          description: "Invoice {{ params.invoice }}"
+          captured: true
+          paid: true
+          refunded: false
+          status: succeeded
+          payment_method: "{{ body.payment_method != null ? body.payment_method : (self.default_payment_method != null ? self.default_payment_method : null) }}"
+          invoice: '{{ params.invoice }}'
+          livemode: false
+          metadata: {}
+          created: '{{ now }}'
+      - set:
+          status: paid
+          paid: true
+          paid_at: '{{ now }}'
+          amount_paid: '{{ pay_amount }}'
+          amount_remaining: 0
+          charge: '{{ charge }}'
+          payment_intent: "{{ self.payment_intent != null ? self.payment_intent : null }}"
+    emit:
+      - event: invoice.paid
+
+  # ── void: open → void ──────────────────────────────────────────────────────
+  - method: POST
+    path: /v1/invoices/:invoice/void
+    target: { namespace: stripe:invoices, id: '{{ params.invoice }}' }
+    notFound: { status: 404, code: resource_missing, message: "No such invoice: '{{ params.invoice }}'" }
+    guard: "self.status == 'open'"
+    guardError:
+      status: 400
+      code: invoice_action_not_allowed
+      message: "This invoice's status is '{{ self.status }}'. Only open invoices can be voided."
+    effects:
+      - set:
+          status: void
+          voided_at: '{{ now }}'
+    emit:
+      - event: invoice.voided
+
+  # ── mark_uncollectible: open → uncollectible ───────────────────────────────
+  - method: POST
+    path: /v1/invoices/:invoice/mark_uncollectible
+    target: { namespace: stripe:invoices, id: '{{ params.invoice }}' }
+    notFound: { status: 404, code: resource_missing, message: "No such invoice: '{{ params.invoice }}'" }
+    guard: "self.status == 'open'"
+    guardError:
+      status: 400
+      code: invoice_action_not_allowed
+      message: "This invoice's status is '{{ self.status }}'. Only open invoices can be marked uncollectible."
+    effects:
+      - set:
+          status: uncollectible
+    emit:
+      - event: invoice.marked_uncollectible
+
+  # ── send: auto-finalize draft, mark sent ───────────────────────────────────
+  - method: POST
+    path: /v1/invoices/:invoice/send
+    target: { namespace: stripe:invoices, id: '{{ params.invoice }}' }
+    notFound: { status: 404, code: resource_missing, message: "No such invoice: '{{ params.invoice }}'" }
+    effects:
+      - when: "self.status == 'draft'"
+        then:
+          - set:
+              status: open
+              finalized_at: '{{ now }}'
+
+  # ── delete: only draft invoices can be deleted ─────────────────────────────
+  - method: DELETE
+    path: /v1/invoices/:invoice
+    target: { namespace: stripe:invoices, id: '{{ params.invoice }}' }
+    notFound: { status: 404, code: resource_missing, message: "No such invoice: '{{ params.invoice }}'" }
+    guard: "self.status == 'draft'"
+    guardError:
+      status: 400
+      code: invoice_not_editable
+      message: "This invoice's status is '{{ self.status }}'. Only draft invoices can be deleted."
+    delete: true
+    respond:
+      id: '{{ params.invoice }}'
+      object: invoice
+      deleted: true

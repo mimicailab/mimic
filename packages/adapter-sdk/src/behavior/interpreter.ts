@@ -99,6 +99,15 @@ function runEffect(effect: Effect, scope: Record<string, unknown>, ctx: Behavior
     Object.assign(self, patch);
     return;
   }
+
+  if ('merge' in effect) {
+    const self = scope.self as Record<string, unknown>;
+    const obj = resolveTemplate(effect.merge, scope);
+    if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+      Object.assign(self, obj as Record<string, unknown>);
+    }
+    return;
+  }
 }
 
 function runEmits(emits: EmitSpec[], scope: Record<string, unknown>, ctx: BehaviorContext): void {
@@ -157,10 +166,14 @@ export function buildActionHandler(action: ActionSpec, ctx: BehaviorContext) {
       throw err;
     }
 
-    // Persist the mutated target.
+    // Persist (or delete) the target.
     if (action.target) {
       const id = String(resolveTemplate(action.target.id, scope));
-      ctx.store.set(action.target.namespace, id, scope.self);
+      if (action.delete) {
+        ctx.store.delete(action.target.namespace, id);
+      } else {
+        ctx.store.set(action.target.namespace, id, scope.self);
+      }
     }
 
     // Emits (post-effect).

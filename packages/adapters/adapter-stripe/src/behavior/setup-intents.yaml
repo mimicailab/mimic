@@ -1,0 +1,52 @@
+# Stripe SetupIntent lifecycle — declarative behavior pack.
+# Replaces overrides/setup-intents.ts.
+# Lifecycle: requires_payment_method → requires_confirmation → requires_action
+#            → processing → succeeded | canceled
+adapter: stripe
+idLength: 24
+actions:
+  - method: POST
+    path: /v1/setup_intents/:intent/confirm
+    target: { namespace: stripe:setup_intents, id: '{{ params.intent }}' }
+    notFound:
+      status: 404
+      code: resource_missing
+      message: "No such setup_intent: '{{ params.intent }}'"
+    guard: "!(self.status in ['succeeded', 'canceled'])"
+    guardError:
+      status: 400
+      code: setup_intent_unexpected_state
+      message: >-
+        This SetupIntent's status is '{{ self.status }}', but it should be
+        requires_payment_method, requires_confirmation, or requires_action.
+    effects:
+      - merge: '{{ body }}'
+      - set:
+          id: '{{ params.intent }}'
+          status: succeeded
+          payment_method: "{{ body.payment_method != null ? body.payment_method : (self.payment_method != null ? self.payment_method : null) }}"
+    emit:
+      - event: setup_intent.succeeded
+
+  - method: POST
+    path: /v1/setup_intents/:intent/cancel
+    target: { namespace: stripe:setup_intents, id: '{{ params.intent }}' }
+    notFound:
+      status: 404
+      code: resource_missing
+      message: "No such setup_intent: '{{ params.intent }}'"
+    guard: "!(self.status in ['succeeded', 'canceled'])"
+    guardError:
+      status: 400
+      code: setup_intent_unexpected_state
+      message: >-
+        This SetupIntent's status is '{{ self.status }}'. Only a SetupIntent with
+        one of the following statuses may be canceled:
+        requires_payment_method, requires_confirmation, requires_action, processing.
+    effects:
+      - set:
+          status: canceled
+          cancellation_reason: "{{ body.cancellation_reason != null ? body.cancellation_reason : 'requested_by_customer' }}"
+          canceled_at: '{{ now }}'
+    emit:
+      - event: setup_intent.canceled

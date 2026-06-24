@@ -45,6 +45,11 @@ export interface SetEffect {
   set: Record<string, unknown>;     // templated field map merged onto `self`
 }
 
+/** Shallow-merge a resolved object onto the target (e.g. the request body). */
+export interface MergeEffect {
+  merge: unknown;                   // template resolving to an object, spread onto `self`
+}
+
 /** Patch fields on another existing resource. */
 export interface UpdateEffect {
   update: { namespace: string; id: string; set: Record<string, unknown> };
@@ -68,7 +73,7 @@ export interface ErrorEffect {
 }
 
 export type Effect =
-  | CreateEffect | SetEffect | UpdateEffect | VarEffect | WhenEffect | ErrorEffect;
+  | CreateEffect | SetEffect | MergeEffect | UpdateEffect | VarEffect | WhenEffect | ErrorEffect;
 
 /** Webhook emit on a state transition (consumed by the delivery engine). */
 export interface EmitSpec {
@@ -97,6 +102,8 @@ export interface ActionSpec {
   respond?: unknown;
   /** HTTP status for a successful response (default 200). */
   status?: number;
+  /** When true, delete the target from the store instead of re-storing it. */
+  delete?: boolean;
   /** Webhook emits triggered by this action. */
   emit?: EmitSpec[];
 }
