@@ -28,6 +28,9 @@
       "require": "./dist/index.cjs"
     }
   },
+  "bin": {
+    "mimic-behavior-codegen": "./dist/bin/behavior-codegen.js"
+  },
   "files": [
     "dist"
   ],
