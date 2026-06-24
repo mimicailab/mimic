@@ -1,0 +1,45 @@
+# GoCardless Payment lifecycle — declarative behavior pack.
+# Replaces overrides/payments.ts.
+adapter: gocardless
+actions:
+  # ── cancel ─────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /payments/:payment_id/actions/cancel
+    target: { namespace: gocardless:payments, id: '{{ params.payment_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: 'payment with id {{ params.payment_id }} not found'
+    guard: "self.status in ['pending_submission', 'submitted', 'pending_customer_approval']"
+    guardError:
+      status: 409
+      kind: state
+      code: invalid_state
+      message: 'Payment {{ params.payment_id }} cannot be cancelled in status: {{ self.status }}'
+    effects:
+      - set: { status: cancelled }
+    respond: { payments: '{{ self }}' }
+    emit:
+      - event: payment.cancelled
+
+  # ── retry ──────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /payments/:payment_id/actions/retry
+    target: { namespace: gocardless:payments, id: '{{ params.payment_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: 'payment with id {{ params.payment_id }} not found'
+    guard: "self.status == 'failed'"
+    guardError:
+      status: 409
+      kind: state
+      code: invalid_state
+      message: 'Payment {{ params.payment_id }} must be failed to retry, current: {{ self.status }}'
+    effects:
+      - set: { status: pending_submission }
+    respond: { payments: '{{ self }}' }
+    emit:
+      - event: payment.retried

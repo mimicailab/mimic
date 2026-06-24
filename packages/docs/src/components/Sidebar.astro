@@ -33,6 +33,8 @@ const groups: SidebarGroup[] = [
     sections: [
       { id: 'personas', title: 'Personas & Blueprints' },
       { id: 'adapters', title: 'Adapters' },
+      { id: 'behavior-packs', title: 'Behavior Packs' },
+      { id: 'live-mode', title: 'Webhooks & Live Mode' },
       { id: 'mock-server', title: 'Mock Server' },
       { id: 'state-store', title: 'State Store' },
     ],
@@ -47,6 +49,7 @@ const groups: SidebarGroup[] = [
       { id: 'config-llm', title: 'llm' },
       { id: 'config-generate', title: 'generate' },
       { id: 'config-databases', title: 'databases' },
+      { id: 'config-events', title: 'events' },
       { id: 'config-test', title: 'test' },
       { id: 'env-vars', title: 'Environment Variables' },
     ],
@@ -75,6 +78,19 @@ const groups: SidebarGroup[] = [
       { id: 'adapter-api', title: 'API Mock Adapters' },
       { id: 'adapter-sdk', title: 'Adapter SDK' },
       { id: 'adapter-dev', title: 'Build an Adapter' },
+    ],
+  },
+  {
+    title: 'Adapter Guide: Behavior Packs',
+    slug: 'adapter-guide',
+    sections: [
+      { id: 'behavior-overview', title: 'Behavior Packs' },
+      { id: 'behavior-pipeline', title: 'The Pipeline' },
+      { id: 'behavior-action', title: 'Action Schema' },
+      { id: 'behavior-effects', title: 'Effects' },
+      { id: 'behavior-expressions', title: 'Expression Language' },
+      { id: 'behavior-migrated', title: 'Migrated Adapters' },
+      { id: 'behavior-escape-hatch', title: 'Imperative Escape Hatch' },
     ],
   },
   {
@@ -108,6 +124,18 @@ const groups: SidebarGroup[] = [
       { id: 'testing-export', title: 'Exporting Scenarios' },
       { id: 'testing-config', title: 'Configuration' },
       { id: 'testing-pipeline', title: 'End-to-End Example' },
+    ],
+  },
+  {
+    title: 'Webhooks & Live Mode',
+    slug: 'webhooks',
+    sections: [
+      { id: 'webhooks-overview', title: 'Overview' },
+      { id: 'webhooks-config', title: 'Configuration' },
+      { id: 'webhooks-modes', title: 'Async vs Sync' },
+      { id: 'webhooks-signing', title: 'Signing' },
+      { id: 'webhooks-envelopes', title: 'Envelopes' },
+      { id: 'webhooks-ci', title: 'Deterministic CI Pattern' },
     ],
   },
   {

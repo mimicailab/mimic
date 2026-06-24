@@ -4,7 +4,7 @@ description: "Adapter catalog, database and API mock adapters, the Adapter SDK, 
 order: 5
 slug: "adapters"
 prev: { slug: "cli", title: "CLI Reference" }
-next: { slug: "mcp", title: "MCP Servers" }
+next: { slug: "adapter-guide", title: "Adapter Guide: Behavior Packs" }
 ---
 
 <h2 id="adapter-list">Adapter Catalog</h2>

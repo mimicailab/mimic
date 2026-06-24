@@ -1,0 +1,28 @@
+# Zuora credit-memo state transitions — declarative behavior pack.
+# Replaces the apply-credit-memo state-machine handler in overrides/operations.ts.
+# Loads the credit memo as `self`, posts it, and returns Zuora's { id } envelope
+# (the preSerialization hook adds { success: true }).
+#
+# NOTE: create-from-invoice and the read/list/aggregate handlers remain in
+# overrides/operations.ts as code (escape hatch) — they synthesize new resources
+# or shape multi-resource reads, which the DSL cannot express.
+adapter: zuora
+idLength: 32
+actions:
+  # ── apply ──────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /v1/credit-memos/:creditMemoKey/apply
+    target: { namespace: zuora:credit-memos, id: '{{ params.creditMemoKey }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: OBJECT_NOT_FOUND
+      message: "Credit memo '{{ params.creditMemoKey }}' not found"
+    effects:
+      - set:
+          status: Posted
+          updatedDate: '{{ nowIso }}'
+    emit:
+      - event: credit_memo.applied
+    respond:
+      id: '{{ params.creditMemoKey }}'

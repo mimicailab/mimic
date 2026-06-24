@@ -6,6 +6,7 @@ import { logger } from '../utils/logger.js';
 import { MockRouter } from './router.js';
 import { StateStore } from './state-store.js';
 import { RequestLogger } from './request-logger.js';
+import { webhookHub } from './webhook-hub.js';
 
 export class MockServer {
   private server: FastifyInstance;
@@ -62,6 +63,18 @@ export class MockServer {
       logger.debug(`${req.method} ${req.url}`);
       done();
     });
+
+    // Webhook control plane — inspect the event inbox and flush buffered
+    // (sync-mode) webhook deliveries. Enables deterministic, CI-grade testing:
+    //   GET  /__mimic/events   → the recorded event inbox + pending count
+    //   POST /__mimic/flush    → deliver all buffered events, returns count
+    this.server.get('/__mimic/events', async () => ({
+      events: webhookHub.inbox,
+      pending: webhookHub.pending,
+    }));
+    this.server.post('/__mimic/flush', async () => ({
+      flushed: await webhookHub.flush(),
+    }));
 
     // 404 handler — helps developers identify unmocked endpoints
     this.server.setNotFoundHandler((req, reply) => {

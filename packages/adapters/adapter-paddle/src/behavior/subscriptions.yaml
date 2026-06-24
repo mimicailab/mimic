@@ -1,0 +1,70 @@
+# Paddle subscription lifecycle — declarative behavior pack.
+# Migrated from overrides/subscriptions.ts (the simple state machines only).
+#
+# Paddle subscription statuses: trialing | active | paused | canceled.
+# Timestamps are ISO-8601 strings (new Date().toISOString() -> '{{ nowIso }}').
+#
+# NOTE: `cancel` and `pause` are intentionally NOT migrated. Their
+# `next_billing_period` branch computes scheduled_change.effective_at as
+# `new Date(Date.now() + 30 days).toISOString()`, which the expression DSL
+# cannot express (no date arithmetic / unix->ISO conversion). They remain
+# hand-written overrides so behavior is preserved exactly.
+adapter: paddle
+actions:
+  # ── activate (trialing -> active) ──────────────────────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/activate
+    target: { namespace: paddle:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Subscription {{ params.subscription_id }} not found"
+    guard: "self.status == 'trialing'"
+    guardError:
+      status: 409
+      kind: conflict
+      code: conflict
+      message: "Subscription {{ params.subscription_id }} must be trialing to activate, current status: {{ self.status }}"
+    emit:
+      - event: subscription.activated
+    effects:
+      - set:
+          status: active
+          started_at: '{{ nowIso }}'
+          updated_at: '{{ nowIso }}'
+
+  # ── resume (paused -> active) ──────────────────────────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/resume
+    target: { namespace: paddle:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Subscription {{ params.subscription_id }} not found"
+    guard: "self.status == 'paused'"
+    guardError:
+      status: 409
+      kind: conflict
+      code: conflict
+      message: "Subscription {{ params.subscription_id }} must be paused to resume, current status: {{ self.status }}"
+    emit:
+      - event: subscription.resumed
+    effects:
+      # effective_from defaults to 'immediately' when absent.
+      - when: "body.effective_from == null || body.effective_from == 'immediately'"
+        then:
+          - set:
+              status: active
+              scheduled_change: null
+              paused_at: null
+              updated_at: '{{ nowIso }}'
+        else:
+          - set:
+              # status & paused_at unchanged on the scheduled path.
+              scheduled_change:
+                action: resume
+                effective_at: '{{ body.effective_from }}'
+                resume_at: null
+              updated_at: '{{ nowIso }}'

@@ -39,6 +39,14 @@ Adapters are Mimic's plugin system. There are two types:
 
 **API mock adapters** register Fastify routes that simulate real API endpoints. They implement `ApiMockAdapter` with `registerRoutes()` and `getEndpoints()` methods.
 
+<h2 id="behavior-packs">Behavior Packs</h2>
+
+An adapter's lifecycle logic &mdash; the state machines behind endpoints like *confirm*, *capture*, or *cancel* &mdash; is authored as declarative YAML **behavior packs**: guard on the current state, mutate fields, run optional side effects, then respond. A shared codegen step compiles the YAML and a generic interpreter in `@mimicai/adapter-sdk` executes it. Synthesis-heavy adapters can still hand-write handlers. See the <a href="/docs/adapter-guide">Adapter Guide</a>.
+
+<h2 id="live-mode">Webhooks & Live Mode</h2>
+
+Behavior packs can declare events that deliver **real outbound webhooks** to an endpoint you control. In live mode you seed only the source-of-truth adapter and let your own webhook handler populate your database &mdash; so you exercise the integration layer instead of a static snapshot. It is opt-in and backwards compatible. See <a href="/docs/webhooks">Webhooks & Live Mode</a>.
+
 <h2 id="mock-server">Mock Server</h2>
 
 The mock server is a Fastify instance that:

@@ -1,0 +1,43 @@
+# RevenueCat subscription lifecycle — declarative behavior pack.
+# Replaces overrides/subscriptions.ts.
+adapter: revenuecat
+actions:
+  # ── cancel ─────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /projects/:project_id/subscriptions/:subscription_id/actions/cancel
+    target: { namespace: revenuecat:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "subscription with id '{{ params.subscription_id }}' not found"
+    guard: "self.status != 'expired'"
+    guardError:
+      status: 409
+      kind: state_error
+      code: invalid_request
+      message: "Subscription {{ params.subscription_id }} is already expired"
+    effects:
+      - set:
+          status: expired
+          auto_renewal_status: will_not_renew
+          gives_access: false
+    emit:
+      - event: subscription.expired
+
+  # ── refund ─────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /projects/:project_id/subscriptions/:subscription_id/actions/refund
+    target: { namespace: revenuecat:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "subscription with id '{{ params.subscription_id }}' not found"
+    effects:
+      - set:
+          status: expired
+          auto_renewal_status: will_not_renew
+          gives_access: false
+    emit:
+      - event: subscription.refunded

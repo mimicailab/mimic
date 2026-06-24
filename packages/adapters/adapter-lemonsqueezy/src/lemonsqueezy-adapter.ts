@@ -3,11 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import type { LemonSqueezyConfig } from './config.js';
 import { registerLemonSqueezyTools } from './mcp.js';
-import { lsNotFound } from './lemonsqueezy-errors.js';
+import { lsNotFound, lsStateError } from './lemonsqueezy-errors.js';
 import meta from './adapter-meta.js';
 
 // Generated files
@@ -15,9 +15,7 @@ import { lemonsqueezyResourceSpecs } from './generated/resource-specs.js';
 import { SCHEMA_DEFAULTS } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute } from './generated/routes.js';
-
-// Override handlers
-import * as subOverrides from './overrides/subscriptions.js';
+import { behaviorPacks } from './generated/behavior.js';
 
 function ns(resource: string): string {
   return `lemonsqueezy:${resource}`;
@@ -203,17 +201,15 @@ export class LemonSqueezyAdapter extends OpenApiMockAdapter<LemonSqueezyConfig> 
   // ---------------------------------------------------------------------------
 
   private mountOverrides(store: StateStore): void {
-    // ── Subscriptions ─────────────────────────────────────────────────────
-    // Cancel via DELETE sets status to 'cancelled'
-    this.registerOverride(
-      'DELETE', '/v1/subscriptions/:id',
-      subOverrides.buildCancelHandler(store),
-    );
-
-    // Update via PATCH handles pause/unpause, cancel/uncancel
-    this.registerOverride(
-      'PATCH', '/v1/subscriptions/:id',
-      subOverrides.buildUpdateHandler(store),
+    // ── Subscriptions (declarative behavior pack) ─────────────────────────
+    // DELETE = cancel, PATCH = update/pause/unpause/cancel — see
+    // src/behavior/subscriptions.yaml.
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'lemonsqueezy', { defaultEnvelope: 'generic' });
+    this.mountBehaviorPacks(store, behaviorPacks, (e) =>
+      e.kind === 'not_found'
+        ? { errors: [{ detail: e.message, status: '404', title: 'Not Found' }] }
+        : lsStateError(e.message),
+      emitSink,
     );
 
     // ── Discounts ─────────────────────────────────────────────────────────

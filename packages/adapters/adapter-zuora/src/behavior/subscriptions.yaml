@@ -1,0 +1,85 @@
+# Zuora subscription lifecycle — declarative behavior pack.
+# Replaces the state-machine handlers in overrides/subscriptions.ts
+# (cancel / renew / suspend / resume). Executed by the @mimicai/adapter-sdk
+# behavior interpreter against the StateStore.
+#
+# Each action loads the subscription as `self`, mutates its status + timestamps,
+# re-stores it, and returns Zuora's { subscriptionId } envelope (the
+# preSerialization hook adds { success: true }).
+adapter: zuora
+idLength: 32
+actions:
+  # ── cancel ─────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /v1/subscriptions/:subscriptionKey/cancel
+    target: { namespace: zuora:subscriptions, id: '{{ params.subscriptionKey }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: OBJECT_NOT_FOUND
+      message: "Subscription '{{ params.subscriptionKey }}' not found"
+    effects:
+      - set:
+          status: Cancelled
+          cancelledDate: '{{ nowIso }}'
+          updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.cancelled
+    respond:
+      subscriptionId: '{{ self.id }}'
+
+  # ── renew ──────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /v1/subscriptions/:subscriptionKey/renew
+    target: { namespace: zuora:subscriptions, id: '{{ params.subscriptionKey }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: OBJECT_NOT_FOUND
+      message: "Subscription '{{ params.subscriptionKey }}' not found"
+    effects:
+      - set:
+          status: Active
+          updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.renewed
+    respond:
+      subscriptionId: '{{ self.id }}'
+
+  # ── suspend ────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /v1/subscriptions/:subscriptionKey/suspend
+    target: { namespace: zuora:subscriptions, id: '{{ params.subscriptionKey }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: OBJECT_NOT_FOUND
+      message: "Subscription '{{ params.subscriptionKey }}' not found"
+    effects:
+      - set:
+          status: Suspended
+          suspendedDate: '{{ nowIso }}'
+          updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.suspended
+    respond:
+      subscriptionId: '{{ self.id }}'
+
+  # ── resume ─────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /v1/subscriptions/:subscriptionKey/resume
+    target: { namespace: zuora:subscriptions, id: '{{ params.subscriptionKey }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: OBJECT_NOT_FOUND
+      message: "Subscription '{{ params.subscriptionKey }}' not found"
+    effects:
+      - set:
+          status: Active
+          suspendedDate: null
+          updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.resumed
+    respond:
+      subscriptionId: '{{ self.id }}'

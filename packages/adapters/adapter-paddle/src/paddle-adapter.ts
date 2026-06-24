@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, generateId, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import meta from './adapter-meta.js';
 import type { PaddleConfig } from './config.js';
@@ -16,6 +16,8 @@ import type { GeneratedRoute } from './generated/routes.js';
 
 import * as subscriptionOverrides from './overrides/subscriptions.js';
 import * as transactionOverrides from './overrides/transactions.js';
+import { behaviorPacks } from './generated/behavior.js';
+import { paddleError, paddleStateError } from './paddle-errors.js';
 
 function ns(resource: string): string {
   return `paddle:${resource}`;
@@ -159,18 +161,25 @@ export class PaddleAdapter extends OpenApiMockAdapter<PaddleConfig> {
   // ---------------------------------------------------------------------------
 
   private mountOverrides(store: StateStore): void {
-    // Subscription lifecycle
+    // Subscription lifecycle (declarative behavior pack): activate, resume.
+    // cancel & pause stay hand-written — their next_billing_period branch
+    // computes an ISO timestamp 30 days out, which the DSL cannot express.
     this.registerOverride('POST', '/subscriptions/:subscription_id/cancel',
       subscriptionOverrides.buildCancelHandler(store));
     this.registerOverride('POST', '/subscriptions/:subscription_id/pause',
       subscriptionOverrides.buildPauseHandler(store));
-    this.registerOverride('POST', '/subscriptions/:subscription_id/resume',
-      subscriptionOverrides.buildResumeHandler(store));
-    this.registerOverride('POST', '/subscriptions/:subscription_id/activate',
-      subscriptionOverrides.buildActivateHandler(store));
 
-    // Transaction lifecycle
+    // Transaction lifecycle (whole-body merge marshaller — kept as override).
     this.registerOverride('POST', '/transactions/:transaction_id/revise',
       transactionOverrides.buildReviseHandler(store));
+
+    // Declarative behavior packs (activate, resume).
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'paddle', { defaultEnvelope: 'generic' });
+    this.mountBehaviorPacks(store, behaviorPacks, (e) =>
+      e.kind === 'not_found'
+        ? paddleError('not_found', e.message)
+        : paddleStateError(e.message),
+      emitSink,
+    );
   }
 }

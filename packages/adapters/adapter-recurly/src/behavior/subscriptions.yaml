@@ -1,0 +1,130 @@
+# Recurly Subscription lifecycle — declarative behavior pack.
+# Replaces overrides/subscriptions.ts. Executed by the @mimicai/adapter-sdk
+# behavior interpreter against the StateStore.
+#
+# Recurly subscription states: active | future | paused | canceled | expired.
+adapter: recurly
+actions:
+  # ── cancel ─────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /subscriptions/:subscription_id/cancel
+    target: { namespace: recurly:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Couldn't find Subscription with id = {{ params.subscription_id }}"
+    guard: "self.state == 'active' || self.state == 'future'"
+    guardError:
+      status: 422
+      kind: immutable
+      code: immutable_subscription
+      message: "Subscription is {{ self.state }}, cannot cancel"
+    effects:
+      - set:
+          state: canceled
+          canceled_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.canceled
+
+  # ── pause ──────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /subscriptions/:subscription_id/pause
+    target: { namespace: recurly:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Couldn't find Subscription with id = {{ params.subscription_id }}"
+    guard: "self.state == 'active'"
+    guardError:
+      status: 422
+      kind: immutable
+      code: immutable_subscription
+      message: "Subscription is {{ self.state }}, cannot pause"
+    effects:
+      - set:
+          state: paused
+          paused_at: '{{ nowIso }}'
+          remaining_pause_cycles: "{{ body.remaining_pause_cycles != null ? body.remaining_pause_cycles : 1 }}"
+    emit:
+      - event: subscription.paused
+
+  # ── resume ─────────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /subscriptions/:subscription_id/resume
+    target: { namespace: recurly:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Couldn't find Subscription with id = {{ params.subscription_id }}"
+    guard: "self.state == 'paused'"
+    guardError:
+      status: 422
+      kind: immutable
+      code: immutable_subscription
+      message: "Subscription is {{ self.state }}, cannot resume"
+    effects:
+      - set:
+          state: active
+          paused_at: null
+          remaining_pause_cycles: null
+    emit:
+      - event: subscription.resumed
+
+  # ── reactivate ─────────────────────────────────────────────────────────────
+  - method: PUT
+    path: /subscriptions/:subscription_id/reactivate
+    target: { namespace: recurly:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Couldn't find Subscription with id = {{ params.subscription_id }}"
+    guard: "self.state == 'canceled' || self.state == 'expired'"
+    guardError:
+      status: 422
+      kind: immutable
+      code: immutable_subscription
+      message: "Subscription is {{ self.state }}, cannot reactivate"
+    effects:
+      - set:
+          state: active
+          canceled_at: null
+          activated_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.reactivated
+
+  # ── convert_trial ──────────────────────────────────────────────────────────
+  - method: PUT
+    path: /subscriptions/:subscription_id/convert_trial
+    target: { namespace: recurly:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Couldn't find Subscription with id = {{ params.subscription_id }}"
+    effects:
+      - set:
+          state: active
+          converted_at: '{{ nowIso }}'
+          trial_ends_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.converted
+
+  # ── terminate (DELETE) ─────────────────────────────────────────────────────
+  - method: DELETE
+    path: /subscriptions/:subscription_id
+    target: { namespace: recurly:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "Couldn't find Subscription with id = {{ params.subscription_id }}"
+    effects:
+      - set:
+          state: expired
+          expires_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.terminated

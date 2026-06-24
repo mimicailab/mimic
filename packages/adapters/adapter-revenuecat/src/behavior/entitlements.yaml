@@ -1,0 +1,29 @@
+# RevenueCat entitlement archive/unarchive — declarative behavior pack.
+# Replaces overrides/entitlements.ts.
+adapter: revenuecat
+actions:
+  - method: POST
+    path: /projects/:project_id/entitlements/:entitlement_id/actions/archive
+    target: { namespace: revenuecat:entitlements, id: '{{ params.entitlement_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "entitlement with id '{{ params.entitlement_id }}' not found"
+    effects:
+      - set: { state: inactive }
+    emit:
+      - event: entitlement.archived
+
+  - method: POST
+    path: /projects/:project_id/entitlements/:entitlement_id/actions/unarchive
+    target: { namespace: revenuecat:entitlements, id: '{{ params.entitlement_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_missing
+      message: "entitlement with id '{{ params.entitlement_id }}' not found"
+    effects:
+      - set: { state: active }
+    emit:
+      - event: entitlement.unarchived

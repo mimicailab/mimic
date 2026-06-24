@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, unixNow } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, unixNow, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import type { GeneratedRoute } from '@mimicai/adapter-sdk';
 import type { ChargebeeConfig } from './config.js';
@@ -15,8 +15,10 @@ import { chargebeeResourceSpecs } from './generated/resource-specs.js';
 import { SCHEMA_DEFAULTS } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute as CBRoute } from './generated/routes.js';
+import { behaviorPacks } from './generated/behavior.js';
+import { chargebeeError } from './chargebee-errors.js';
 
-// Overrides
+// Overrides (escape-hatch handlers that are NOT simple state machines)
 import * as subOverrides from './overrides/subscriptions.js';
 import * as invOverrides from './overrides/invoices.js';
 
@@ -246,39 +248,21 @@ export class ChargebeeAdapter extends OpenApiMockAdapter<ChargebeeConfig> {
       'POST', '/customers/:customer_id/subscription_for_items',
       subOverrides.buildCreateSubscriptionHandler(store),
     );
-    this.registerOverride(
-      'POST', '/subscriptions/:subscription_id/cancel_for_items',
-      subOverrides.buildCancelHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/subscriptions/:subscription_id/reactivate',
-      subOverrides.buildReactivateHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/subscriptions/:subscription_id/pause',
-      subOverrides.buildPauseHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/subscriptions/:subscription_id/resume',
-      subOverrides.buildResumeHandler(store),
-    );
 
     // ── Invoices — create via /invoices/create_for_charge_items_and_charges ──
     this.registerOverride(
       'POST', '/invoices/create_for_charge_items_and_charges',
       invOverrides.buildCreateInvoiceHandler(store),
     );
-    this.registerOverride(
-      'POST', '/invoices/:invoice_id/void',
-      invOverrides.buildVoidHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/invoices/:invoice_id/write_off',
-      invOverrides.buildWriteOffHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/invoices/:invoice_id/record_payment',
-      invOverrides.buildRecordPaymentHandler(store),
+
+    // ── Lifecycle state machines (declarative behavior packs) ──────────────
+    // subscription cancel/reactivate/pause/resume + invoice void/write_off/
+    // record_payment. The errorFactory maps the engine's ErrorSpec to the flat
+    // Chargebee error envelope (code → api_error_code).
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'chargebee', { defaultEnvelope: 'generic' });
+    this.mountBehaviorPacks(store, behaviorPacks, (e) =>
+      chargebeeError(e.code, e.message, 'invalid_request'),
+      emitSink,
     );
 
     // ── Coupons — create via /coupons/create_for_items ──

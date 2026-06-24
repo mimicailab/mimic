@@ -412,6 +412,44 @@ Use `mimic adapters add stripe` to install and configure an adapter, or add the 
 
 ---
 
+<h3 id="config-events">events</h3>
+
+A named map, keyed by adapter ID, that turns an adapter's behavior-pack `emit:` declarations into **real outbound webhooks**. Opt-in and backwards compatible &mdash; omit it and nothing changes. See <a href="/docs/webhooks">Webhooks &amp; Live Mode</a> for the full guide.
+
+<div class="code-block">
+  <div class="code-bar"><span class="code-bar-lang">json</span><button class="code-copy">Copy</button></div>
+  <pre><code><span class="yk">"events"</span>: {
+  <span class="yk">"stripe"</span>: {
+    <span class="yk">"type"</span>: <span class="str">"webhook"</span>,
+    <span class="yk">"config"</span>: {
+      <span class="yk">"endpoint"</span>: <span class="str">"http://localhost:4000/webhooks/stripe"</span>,
+      <span class="yk">"secret"</span>: <span class="str">"$STRIPE_WEBHOOK_SECRET"</span>,
+      <span class="yk">"envelope"</span>: <span class="str">"stripe"</span>,
+      <span class="yk">"mode"</span>: <span class="str">"async"</span>,
+      <span class="yk">"deterministic"</span>: <span class="ty">false</span>,
+      <span class="yk">"seed"</span>: <span class="ty">42</span>
+    }
+  }
+}</code></pre>
+</div>
+
+<div class="doc-table-wrap">
+  <table class="doc-table">
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>type</code></td><td>string</td><td><code>"webhook"</code></td></tr>
+      <tr><td><code>config.endpoint</code></td><td>string (URL)</td><td>Where events are delivered</td></tr>
+      <tr><td><code>config.secret</code></td><td>string</td><td>Signing secret. When set, events carry a <code>Stripe-Signature</code> (<code>t=..,v1=hmac-sha256</code>) header</td></tr>
+      <tr><td><code>config.envelope</code></td><td>string</td><td><code>"stripe"</code> or <code>"generic"</code></td></tr>
+      <tr><td><code>config.mode</code></td><td>string</td><td><code>"async"</code> (default, fire-and-forget) or <code>"sync"</code> (buffer + flush)</td></tr>
+      <tr><td><code>config.deterministic</code></td><td>boolean</td><td>Sequential <code>evt_&lt;n&gt;</code> IDs and seed-based timestamps</td></tr>
+      <tr><td><code>config.seed</code></td><td>number</td><td>Seeds the deterministic timestamp sequence</td></tr>
+    </tbody>
+  </table>
+</div>
+
+---
+
 <h3 id="config-test">test</h3>
 
 Defines test scenarios that `mimic test` runs against your agent. Each scenario sends a goal to the agent and verifies the response against expected outcomes &mdash; which tools were called, whether the response contains expected keywords, and whether the response is factually accurate.

@@ -1,0 +1,69 @@
+# GoCardless Subscription lifecycle — declarative behavior pack.
+# Replaces overrides/subscriptions.ts. Executed by the @mimicai/adapter-sdk
+# behavior interpreter against the StateStore.
+#
+# Statuses: active | paused | cancelled (among others).
+adapter: gocardless
+actions:
+  # ── cancel ─────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/actions/cancel
+    target: { namespace: gocardless:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: 'subscription with id {{ params.subscription_id }} not found'
+    guard: "self.status != 'cancelled'"
+    guardError:
+      status: 409
+      kind: state
+      code: invalid_state
+      message: 'Subscription {{ params.subscription_id }} is already cancelled'
+    effects:
+      - set: { status: cancelled }
+    respond: { subscriptions: '{{ self }}' }
+    emit:
+      - event: subscription.cancelled
+
+  # ── pause ──────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/actions/pause
+    target: { namespace: gocardless:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: 'subscription with id {{ params.subscription_id }} not found'
+    guard: "self.status == 'active'"
+    guardError:
+      status: 409
+      kind: state
+      code: invalid_state
+      message: 'Subscription {{ params.subscription_id }} must be active to pause, current: {{ self.status }}'
+    effects:
+      - set: { status: paused }
+    respond: { subscriptions: '{{ self }}' }
+    emit:
+      - event: subscription.paused
+
+  # ── resume ─────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /subscriptions/:subscription_id/actions/resume
+    target: { namespace: gocardless:subscriptions, id: '{{ params.subscription_id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: resource_not_found
+      message: 'subscription with id {{ params.subscription_id }} not found'
+    guard: "self.status == 'paused'"
+    guardError:
+      status: 409
+      kind: state
+      code: invalid_state
+      message: 'Subscription {{ params.subscription_id }} must be paused to resume, current: {{ self.status }}'
+    effects:
+      - set: { status: active }
+    respond: { subscriptions: '{{ self }}' }
+    emit:
+      - event: subscription.resumed

@@ -13,6 +13,9 @@ import { unixNow } from './format-helpers.js';
 import { runMarshallers } from './marshalling.js';
 import type { Marshaller, PrecomputeMarshalContext } from './marshalling.js';
 import type { GeneratedRoute, RouteMethod } from './openapi-types.js';
+import { mountBehaviorPack } from './behavior/interpreter.js';
+import type { BehaviorContext, ErrorFactory, EmitSink } from './behavior/interpreter.js';
+import type { BehaviorPack } from './behavior/types.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -153,6 +156,32 @@ export abstract class OpenApiMockAdapter<TConfig = unknown> extends BaseApiMockA
    */
   protected registerOverride(method: RouteMethod, fastifyPath: string, handler: OverrideHandler): void {
     this.overrides.set(`${method}:${fastifyPath}`, handler);
+  }
+
+  /**
+   * Mount declarative behavior packs (YAML state machines) as override
+   * handlers. Each action's `path` must match the corresponding generated
+   * route so the scaffolding yields to the behavior handler.
+   *
+   * @param store        StateStore the behaviors execute against
+   * @param packs        compiled behavior packs (from generated/behavior.ts)
+   * @param errorFactory builds the platform error envelope from an ErrorSpec
+   * @param emitSink     optional webhook emit sink (delivery engine)
+   */
+  protected mountBehaviorPacks(
+    store: StateStore,
+    packs: BehaviorPack[],
+    errorFactory: ErrorFactory,
+    emitSink?: EmitSink,
+  ): void {
+    const ctx: BehaviorContext = { store, errorFactory, emitSink };
+    for (const pack of packs) {
+      mountBehaviorPack(
+        pack,
+        (m, p, h) => this.registerOverride(m, p, h as unknown as OverrideHandler),
+        ctx,
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------

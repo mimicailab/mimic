@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import meta from './adapter-meta.js';
 import type { RevenueCatConfig } from './config.js';
@@ -13,11 +13,8 @@ import { revenuecatResourceSpecs } from './generated/resource-specs.js';
 import { SCHEMA_DEFAULTS } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute } from './generated/routes.js';
-
-import * as subscriptionOverrides from './overrides/subscriptions.js';
-import * as entitlementOverrides from './overrides/entitlements.js';
-import * as productOverrides from './overrides/products.js';
-import * as offeringOverrides from './overrides/offerings.js';
+import { behaviorPacks } from './generated/behavior.js';
+import { rcError } from './revenuecat-errors.js';
 
 function ns(resource: string): string {
   return `revenuecat:${resource}`;
@@ -152,28 +149,12 @@ export class RevenueCatAdapter extends OpenApiMockAdapter<RevenueCatConfig> {
   // ---------------------------------------------------------------------------
 
   private mountOverrides(store: StateStore): void {
-    // Subscription lifecycle
-    this.registerOverride('POST', '/projects/:project_id/subscriptions/:subscription_id/actions/cancel',
-      subscriptionOverrides.buildCancelHandler(store));
-    this.registerOverride('POST', '/projects/:project_id/subscriptions/:subscription_id/actions/refund',
-      subscriptionOverrides.buildRefundHandler(store));
-
-    // Entitlement archive/unarchive
-    this.registerOverride('POST', '/projects/:project_id/entitlements/:entitlement_id/actions/archive',
-      entitlementOverrides.buildArchiveHandler(store));
-    this.registerOverride('POST', '/projects/:project_id/entitlements/:entitlement_id/actions/unarchive',
-      entitlementOverrides.buildUnarchiveHandler(store));
-
-    // Product archive/unarchive
-    this.registerOverride('POST', '/projects/:project_id/products/:product_id/actions/archive',
-      productOverrides.buildArchiveHandler(store));
-    this.registerOverride('POST', '/projects/:project_id/products/:product_id/actions/unarchive',
-      productOverrides.buildUnarchiveHandler(store));
-
-    // Offering archive/unarchive
-    this.registerOverride('POST', '/projects/:project_id/offerings/:offering_id/actions/archive',
-      offeringOverrides.buildArchiveHandler(store));
-    this.registerOverride('POST', '/projects/:project_id/offerings/:offering_id/actions/unarchive',
-      offeringOverrides.buildUnarchiveHandler(store));
+    // Subscription lifecycle + entitlement/product/offering archive
+    // are declarative behavior packs (src/behavior/*.yaml).
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'revenuecat', { defaultEnvelope: 'generic' });
+    this.mountBehaviorPacks(store, behaviorPacks, (e) =>
+      rcError(e.code, e.message, { param: e.param ?? undefined }),
+      emitSink,
+    );
   }
 }

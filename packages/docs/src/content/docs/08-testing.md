@@ -5,7 +5,7 @@ description: "Auto-generate test scenarios from your data, run them against your
 order: 8
 slug: "testing"
 prev: { slug: "architecture", title: "Architecture" }
-next: { slug: "guides", title: "Guides" }
+next: { slug: "webhooks", title: "Webhooks & Live Mode" }
 ---
 
 <h2 id="testing-overview">

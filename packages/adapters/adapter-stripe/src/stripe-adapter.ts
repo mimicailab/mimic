@@ -3,10 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, unixNow } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, unixNow, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
 import { registerStripeTools } from './mcp.js';
+import { stripeError } from './stripe-errors.js';
 import meta from './adapter-meta.js';
 
 // Generated files — do not edit directly; run `pnpm generate` to regenerate
@@ -14,12 +15,9 @@ import { stripeResourceSpecs } from './generated/resource-specs.js';
 import { SCHEMA_DEFAULTS } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute } from './generated/routes.js';
+import { behaviorPacks } from './generated/behavior.js';
 
-// State-machine overrides
-import * as piOverrides from './overrides/payment-intents.js';
-import * as siOverrides from './overrides/setup-intents.js';
-import * as invOverrides from './overrides/invoices.js';
-import * as chOverrides from './overrides/charges.js';
+// State-machine overrides (migrated: payment-intents, setup-intents, invoices, charges)
 import * as bpOverrides from './overrides/billing-portal.js';
 import * as refundOverrides from './overrides/refunds.js';
 import * as pmOverrides from './overrides/payment-methods.js';
@@ -103,57 +101,14 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
    * skips these paths and uses the override handlers instead.
    */
   private mountOverrides(store: StateStore): void {
-    // ── Payment Intents ───────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/payment_intents/:intent/confirm',
-      piOverrides.buildConfirmHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/payment_intents/:intent/capture',
-      piOverrides.buildCaptureHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/payment_intents/:intent/cancel',
-      piOverrides.buildCancelHandler(store),
-    );
-
-    // ── Setup Intents ─────────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/setup_intents/:intent/confirm',
-      siOverrides.buildConfirmHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/setup_intents/:intent/cancel',
-      siOverrides.buildCancelHandler(store),
-    );
-
-    // ── Invoices ──────────────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/finalize',
-      invOverrides.buildFinalizeHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/pay',
-      invOverrides.buildPayHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/void',
-      invOverrides.buildVoidHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/mark_uncollectible',
-      invOverrides.buildMarkUncollectibleHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/invoices/:invoice/send',
-      invOverrides.buildSendHandler(store),
-    );
-
-    // ── Charges ───────────────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/charges/:charge/capture',
-      chOverrides.buildCaptureHandler(store),
-    );
+    // ── Declarative behavior packs (state machines authored as YAML) ──────────
+    // Replaces hand-written override handlers. The generic interpreter in
+    // @mimicai/adapter-sdk executes each pack against the StateStore.
+    // Migrated packs: payment-intents, setup-intents, invoices, charges.
+    // Wire a webhook delivery sink from the `events.stripe` config (if present)
+    // so behavior `emit:` declarations fire as real outbound webhooks.
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'stripe');
+    this.mountBehaviorPacks(store, behaviorPacks, (e) => stripeError(e.code, e.message), emitSink);
 
     // ── Billing Portal ────────────────────────────────────────────────────────
     this.registerOverride(
@@ -255,12 +210,6 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
     this.registerOverride(
       'DELETE', '/v1/customers/:customer',
       custOverrides.buildDeleteHandler(store),
-    );
-
-    // ── Invoices — only draft invoices can be deleted ─────────────────────────
-    this.registerOverride(
-      'DELETE', '/v1/invoices/:invoice',
-      invOverrides.buildDeleteHandler(store),
     );
 
     // ── Subscription Items — keep parent subscription.items in sync ───────────

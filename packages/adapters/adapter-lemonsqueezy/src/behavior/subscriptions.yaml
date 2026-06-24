@@ -1,0 +1,104 @@
+# Lemon Squeezy subscription lifecycle — declarative behavior pack.
+# Replaces the state-machine overrides in overrides/subscriptions.ts
+# (DELETE = cancel, PATCH = update/pause/cancel). Executed by the
+# @mimicai/adapter-sdk behavior interpreter against the StateStore.
+#
+# Lemon Squeezy responses are JSON:API: { jsonapi, links, data: { type, id, attributes } }.
+# Statuses used here: active | paused | cancelled | expired.
+adapter: lemonsqueezy
+actions:
+  # ── cancel (DELETE) ────────────────────────────────────────────────────────
+  - method: DELETE
+    path: /v1/subscriptions/:id
+    target: { namespace: lemonsqueezy:subscriptions, id: '{{ params.id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "subscriptions with id '{{ params.id }}' not found."
+    guard: "self.status != 'cancelled' && self.status != 'expired'"
+    guardError:
+      status: 422
+      kind: state
+      code: invalid_state
+      message: "Subscription is already {{ self.status }}"
+    effects:
+      - set:
+          status: cancelled
+          status_formatted: Cancelled
+          cancelled: true
+          ends_at: '{{ nowIso }}'
+          updated_at: '{{ nowIso }}'
+    emit:
+      - event: subscription_cancelled
+    respond:
+      jsonapi: { version: '1.0' }
+      links: { self: 'https://api.lemonsqueezy.com/v1/subscriptions/{{ self.id }}' }
+      data:
+        type: subscriptions
+        id: '{{ self.id }}'
+        attributes: '{{ self }}'
+        relationships: {}
+
+  # ── update (PATCH) — pause/unpause, cancel/uncancel, variant, trial, anchor ─
+  - method: PATCH
+    path: /v1/subscriptions/:id
+    target: { namespace: lemonsqueezy:subscriptions, id: '{{ params.id }}' }
+    notFound:
+      status: 404
+      kind: not_found
+      code: not_found
+      message: "subscriptions with id '{{ params.id }}' not found."
+    effects:
+      # Unwrap JSON:API request body: { data: { attributes: {...} } } or plain body.
+      - var:
+          attrs: "{{ body.data != null && body.data.attributes != null ? body.data.attributes : body }}"
+      # ── pause ──
+      - when: "attrs.pause != null"
+        then:
+          - set: { pause: '{{ attrs.pause }}', status: paused, status_formatted: Paused }
+      # ── unpause ──
+      # DSL caveat: `== null` cannot distinguish an absent key from an explicit
+      # null, so unpause fires when `pause` is the only field carried as null.
+      - when: "attrs.pause == null && attrs.cancelled == null && attrs.variant_id == null && attrs.trial_ends_at == null && attrs.billing_anchor == null"
+        then:
+          - set: { pause: null, status: active, status_formatted: Active }
+      # ── cancel / uncancel ──
+      - when: "attrs.cancelled == true"
+        then:
+          - set:
+              status: cancelled
+              status_formatted: Cancelled
+              cancelled: true
+              ends_at: '{{ nowIso }}'
+      - when: "attrs.cancelled == false"
+        then:
+          - set:
+              status: active
+              status_formatted: Active
+              cancelled: false
+              ends_at: null
+      # ── variant change ──
+      - when: "attrs.variant_id != null"
+        then:
+          - set: { variant_id: '{{ attrs.variant_id }}' }
+      # ── trial extension ──
+      - when: "attrs.trial_ends_at != null"
+        then:
+          - set: { trial_ends_at: '{{ attrs.trial_ends_at }}' }
+      # ── billing anchor ──
+      - when: "attrs.billing_anchor != null"
+        then:
+          - set: { billing_anchor: '{{ attrs.billing_anchor }}' }
+      - set:
+          updated_at: '{{ nowIso }}'
+    emit:
+      - event: subscription_updated
+    respond:
+      jsonapi: { version: '1.0' }
+      links: { self: 'https://api.lemonsqueezy.com/v1/subscriptions/{{ self.id }}' }
+      data:
+        type: subscriptions
+        id: '{{ self.id }}'
+        attributes: '{{ self }}'
+        relationships: {}

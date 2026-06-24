@@ -1,0 +1,29 @@
+{
+  "$schema": "https://github.com/mimicailab/mimic/blob/main/packages/core/mimic.schema.json",
+  "domain": "Stripe live-mode webhooks demo. A checkout/billing service whose source of truth is its own database; Stripe is the payment processor. When PaymentIntents transition (confirm, cancel) the mock fires the same webhooks Stripe would, so the service's sync layer can be exercised end-to-end without touching real Stripe.",
+  "personas": [
+    {
+      "name": "webhook-demo",
+      "description": "A small checkout service with a handful of customers and PaymentIntents. Used to demonstrate that confirming or canceling a PaymentIntent against the mock fires real outbound webhooks (payment_intent.succeeded, payment_intent.canceled) to the service's endpoint."
+    }
+  ],
+  "apis": {
+    "stripe": {
+      "enabled": true,
+      "mcp": false
+    }
+  },
+  "events": {
+    "stripe": {
+      "type": "webhook",
+      "config": {
+        "endpoint": "http://localhost:3000/webhooks/stripe",
+        "secret": "whsec_demo",
+        "envelope": "stripe",
+        "mode": "sync",
+        "deterministic": true,
+        "seed": 1700000000
+      }
+    }
+  }
+}

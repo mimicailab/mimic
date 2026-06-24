@@ -1,0 +1,24 @@
+# Stripe Charge capture — declarative behavior pack.
+# Replaces overrides/charges.ts (POST /v1/charges/:charge/capture).
+adapter: stripe
+idLength: 24
+actions:
+  - method: POST
+    path: /v1/charges/:charge/capture
+    target: { namespace: stripe:charges, id: '{{ params.charge }}' }
+    notFound: { status: 404, code: resource_missing, message: "No such charge: '{{ params.charge }}'" }
+    guard: "self.captured != true"
+    guardError:
+      status: 400
+      code: charge_already_captured
+      message: "Charge {{ params.charge }} has already been captured."
+    effects:
+      - var:
+          capture_amount: "{{ body.amount != null ? body.amount : self.amount }}"
+      - set:
+          captured: true
+          paid: true
+          status: succeeded
+          amount_captured: '{{ capture_amount }}'
+    emit:
+      - event: charge.captured

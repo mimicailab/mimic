@@ -3,7 +3,7 @@ title: "MCP Servers"
 description: "MCP server overview, setup with Claude Code and Cursor, and how to build servers."
 order: 6
 slug: "mcp"
-prev: { slug: "adapters", title: "Adapters" }
+prev: { slug: "adapter-guide", title: "Adapter Guide: Behavior Packs" }
 next: { slug: "architecture", title: "Architecture" }
 ---
 

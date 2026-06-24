@@ -692,6 +692,7 @@
       <a href="#config-generate" class="sidebar-link">generate</a>
       <a href="#config-databases" class="sidebar-link">databases</a>
       <a href="#config-test" class="sidebar-link">test</a>
+      <a href="#config-events" class="sidebar-link">events</a>
       <a href="#env-vars" class="sidebar-link">Environment Variables</a>
     </div>
     <div class="sidebar-group">
@@ -1322,6 +1323,53 @@
             <tr><td><code>max_latency_ms</code></td><td>number</td><td>Response must arrive within this many milliseconds</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <hr>
+
+      <!-- ─── EVENTS / WEBHOOKS ───────────────────── -->
+      <h3 id="config-events">events</h3>
+      <p>The optional <code>events</code> block turns on <strong>live mode</strong>: when a mock's state changes &mdash; for example after you confirm a PaymentIntent &mdash; Mimic fires a <strong>real webhook</strong> to your application, exactly like the upstream provider would. Instead of seeding both the external API mock <em>and</em> your database, you seed only the source of truth and let your own webhook handler and business logic populate your DB. That means you test the integration and sync layer that actually breaks in production. The block is opt-in and fully backwards compatible &mdash; omit it and nothing changes.</p>
+
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">json</span></div>
+        <pre><code><span class="yk">"events"</span>: {
+  <span class="yk">"endpoint"</span>: <span class="str">"http://localhost:3000/webhooks/stripe"</span>,
+  <span class="yk">"secret"</span>: <span class="str">"$STRIPE_WEBHOOK_SECRET"</span>,
+  <span class="yk">"envelope"</span>: <span class="str">"stripe"</span>,
+  <span class="yk">"mode"</span>: <span class="str">"sync"</span>,
+  <span class="yk">"deterministic"</span>: <span class="ty">true</span>
+}</code></pre>
+      </div>
+
+      <div class="doc-table-wrap">
+        <table class="doc-table">
+          <thead><tr><th>Field</th><th>Required</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>endpoint</code></td><td>Yes</td><td>string (URL)</td><td>Your app's webhook handler. Mimic POSTs events here on state changes</td></tr>
+            <tr><td><code>secret</code></td><td>No</td><td>string</td><td>Signing secret. Webhooks are signed with an HMAC <code>Stripe-Signature</code> header so your handler can verify them</td></tr>
+            <tr><td><code>envelope</code></td><td>No</td><td>string</td><td><code>"stripe"</code> for Stripe-style event payloads, or <code>"generic"</code> (default)</td></tr>
+            <tr><td><code>mode</code></td><td>No</td><td>string</td><td><code>"async"</code> (default) or <code>"sync"</code> &mdash; see below</td></tr>
+            <tr><td><code>deterministic</code></td><td>No</td><td>boolean</td><td>Stabilises event ordering for race-free, repeatable test runs</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Async vs sync modes</h4>
+      <p><strong>Async</strong> is fire-and-forget, just like production &mdash; webhooks are delivered out of band as state changes. <strong>Sync</strong> buffers events instead of delivering them immediately, so you can flush them on demand for deterministic, race-free CI tests where you control exactly when your handler runs.</p>
+
+      <h4>Control routes</h4>
+      <p>The mock server exposes two routes for inspecting and driving buffered events:</p>
+      <div class="code-block">
+        <div class="code-bar"><span class="code-bar-lang">bash</span></div>
+        <pre><code><span class="prompt">$</span> curl http://localhost:4000/__mimic/events    <span class="cm"># list captured events</span>
+<span class="prompt">$</span> curl -X POST http://localhost:4000/__mimic/flush   <span class="cm"># deliver buffered events now</span></code></pre>
+      </div>
+      <p>In <code>sync</code> mode, drive your test by seeding the source of truth, calling <code>POST /__mimic/flush</code>, then asserting your DB reflects what your webhook handler wrote.</p>
+
+      <div class="callout info">
+        <span class="callout-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-bright)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+        <p>Live mode currently ships for billing adapters powered by behavior packs &mdash; declarative YAML state machines run by a generic engine in <code>@mimicai/adapter-sdk</code>. Eight adapters are migrated: Stripe, Recurly, Chargebee, GoCardless, RevenueCat, Zuora, Lemon Squeezy, and Paddle.</p>
       </div>
 
       <hr>
