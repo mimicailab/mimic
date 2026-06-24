@@ -1,0 +1,130 @@
+# Stripe PaymentIntent lifecycle — declarative behavior pack.
+#
+# Replaces overrides/payment-intents.ts. The generic behavior interpreter
+# (@mimicai/adapter-sdk) executes this against the StateStore.
+#
+# Stripe's PaymentIntent lifecycle:
+#   requires_payment_method → requires_confirmation → requires_action
+#   → processing → succeeded | canceled | requires_capture
+#   Manual capture: ... → requires_capture → succeeded (via /capture)
+adapter: stripe
+idLength: 24
+actions:
+  # ── confirm ───────────────────────────────────────────────────────────────
+  # Automatic capture → creates a captured Charge, PI → succeeded.
+  # Manual capture    → creates an uncaptured Charge, PI → requires_capture.
+  - method: POST
+    path: /v1/payment_intents/:intent/confirm
+    target: { namespace: stripe:payment_intents, id: '{{ params.intent }}' }
+    notFound:
+      status: 404
+      code: resource_missing
+      message: "No such payment_intent: '{{ params.intent }}'"
+    guard: "!(self.status in ['succeeded', 'canceled'])"
+    guardError:
+      status: 400
+      code: payment_intent_unexpected_state
+      message: >-
+        This PaymentIntent's status is '{{ self.status }}', but it should be
+        requires_payment_method, requires_confirmation, or requires_action.
+    effects:
+      - var:
+          capture_method: "{{ body.capture_method != null ? body.capture_method : (self.capture_method != null ? self.capture_method : 'automatic') }}"
+      - var:
+          is_manual: "{{ capture_method == 'manual' }}"
+      - create: charge
+        namespace: stripe:charges
+        idPrefix: ch_
+        bind: charge
+        fields:
+          object: charge
+          amount: '{{ self.amount }}'
+          amount_captured: "{{ is_manual ? 0 : self.amount }}"
+          amount_refunded: 0
+          currency: '{{ self.currency }}'
+          customer: '{{ self.customer != null ? self.customer : null }}'
+          description: '{{ self.description != null ? self.description : null }}'
+          captured: '{{ !is_manual }}'
+          paid: '{{ !is_manual }}'
+          refunded: false
+          status: "{{ is_manual ? 'pending' : 'succeeded' }}"
+          payment_intent: '{{ params.intent }}'
+          payment_method: "{{ body.payment_method != null ? body.payment_method : (self.payment_method != null ? self.payment_method : null) }}"
+          billing_details:
+            address:
+              city: null
+              country: null
+              line1: null
+              line2: null
+              postal_code: null
+              state: null
+            email: null
+            name: null
+            phone: null
+          receipt_url: null
+          livemode: false
+          metadata: '{{ self.metadata != null ? self.metadata : {} }}'
+          created: '{{ now }}'
+      - set:
+          status: "{{ is_manual ? 'requires_capture' : 'succeeded' }}"
+          capture_method: '{{ capture_method }}'
+          latest_charge: '{{ charge }}'
+          payment_method: "{{ body.payment_method != null ? body.payment_method : (self.payment_method != null ? self.payment_method : null) }}"
+    emit:
+      - when: "self.status == 'succeeded'"
+        event: payment_intent.succeeded
+      - when: "self.status == 'requires_capture'"
+        event: payment_intent.amount_capturable_updated
+
+  # ── capture ───────────────────────────────────────────────────────────────
+  # Captures an authorized PI in requires_capture. Supports partial capture.
+  - method: POST
+    path: /v1/payment_intents/:intent/capture
+    target: { namespace: stripe:payment_intents, id: '{{ params.intent }}' }
+    notFound:
+      status: 404
+      code: resource_missing
+      message: "No such payment_intent: '{{ params.intent }}'"
+    guard: "self.status == 'requires_capture'"
+    guardError:
+      status: 400
+      code: payment_intent_unexpected_state
+      message: "This PaymentIntent's status is '{{ self.status }}', but it must be requires_capture to capture."
+    effects:
+      - var:
+          captured_amount: "{{ body.amount_to_capture != null ? body.amount_to_capture : self.amount }}"
+      - set:
+          status: succeeded
+          amount_captured: '{{ captured_amount }}'
+      - update:
+          namespace: stripe:charges
+          id: '{{ self.latest_charge }}'
+          set:
+            amount_captured: '{{ captured_amount }}'
+            captured: true
+    emit:
+      - event: payment_intent.succeeded
+
+  # ── cancel ────────────────────────────────────────────────────────────────
+  - method: POST
+    path: /v1/payment_intents/:intent/cancel
+    target: { namespace: stripe:payment_intents, id: '{{ params.intent }}' }
+    notFound:
+      status: 404
+      code: resource_missing
+      message: "No such payment_intent: '{{ params.intent }}'"
+    guard: "!(self.status in ['succeeded', 'canceled'])"
+    guardError:
+      status: 400
+      code: payment_intent_unexpected_state
+      message: >-
+        This PaymentIntent's status is '{{ self.status }}'. Only a PaymentIntent with
+        one of the following statuses may be canceled:
+        requires_payment_method, requires_capture, requires_confirmation, requires_action, processing.
+    effects:
+      - set:
+          status: canceled
+          cancellation_reason: "{{ body.cancellation_reason != null ? body.cancellation_reason : 'requested_by_customer' }}"
+          canceled_at: '{{ now }}'
+    emit:
+      - event: payment_intent.canceled

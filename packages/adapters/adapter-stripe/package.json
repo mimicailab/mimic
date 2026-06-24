@@ -36,7 +36,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "generate": "tsx scripts/stripe-codegen.ts",
+    "generate": "tsx scripts/stripe-codegen.ts && tsx scripts/behavior-codegen.ts",
+    "generate:behavior": "tsx scripts/behavior-codegen.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

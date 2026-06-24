@@ -31,6 +31,16 @@ export type { TestServer } from './test-helpers.js';
 // ── Format helpers ──────────────────────────────────────────────────────────
 export { unixNow, toDateStr, capitalize } from './format-helpers.js';
 
+// ── Behavior DSL ─────────────────────────────────────────────────────────────
+export { evalExpr, evalBool, resolveTemplate } from './behavior/expr.js';
+export { buildActionHandler, mountBehaviorPack } from './behavior/interpreter.js';
+export type { BehaviorContext, ErrorFactory, EmitSink, RegisterOverrideFn } from './behavior/interpreter.js';
+export { loadBehaviorPack } from './behavior/loader.js';
+export type {
+  BehaviorPack, ActionSpec, Effect, EmitSpec, ErrorSpec, TargetRef,
+  CreateEffect, SetEffect, UpdateEffect, VarEffect, WhenEffect, ErrorEffect,
+} from './behavior/types.js';
+
 // ── Re-exports from core (convenience for adapter authors) ─────────────────
 export {
   generateId,

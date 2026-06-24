@@ -3,10 +3,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, unixNow } from '@mimicai/adapter-sdk';
-import type { DefaultFactory } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, unixNow, mountBehaviorPack } from '@mimicai/adapter-sdk';
+import type { DefaultFactory, RegisterOverrideFn } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
 import { registerStripeTools } from './mcp.js';
+import { stripeError } from './stripe-errors.js';
 import meta from './adapter-meta.js';
 
 // Generated files — do not edit directly; run `pnpm generate` to regenerate
@@ -14,9 +15,9 @@ import { stripeResourceSpecs } from './generated/resource-specs.js';
 import { SCHEMA_DEFAULTS } from './generated/schemas.js';
 import { GENERATED_ROUTES } from './generated/routes.js';
 import type { GeneratedRoute } from './generated/routes.js';
+import { behaviorPacks } from './generated/behavior.js';
 
-// State-machine overrides
-import * as piOverrides from './overrides/payment-intents.js';
+// State-machine overrides (being migrated to declarative behavior packs)
 import * as siOverrides from './overrides/setup-intents.js';
 import * as invOverrides from './overrides/invoices.js';
 import * as chOverrides from './overrides/charges.js';
@@ -103,19 +104,17 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
    * skips these paths and uses the override handlers instead.
    */
   private mountOverrides(store: StateStore): void {
-    // ── Payment Intents ───────────────────────────────────────────────────────
-    this.registerOverride(
-      'POST', '/v1/payment_intents/:intent/confirm',
-      piOverrides.buildConfirmHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/payment_intents/:intent/capture',
-      piOverrides.buildCaptureHandler(store),
-    );
-    this.registerOverride(
-      'POST', '/v1/payment_intents/:intent/cancel',
-      piOverrides.buildCancelHandler(store),
-    );
+    // ── Declarative behavior packs (state machines authored as YAML) ──────────
+    // Replaces hand-written override handlers. The generic interpreter in
+    // @mimicai/adapter-sdk executes each pack against the StateStore.
+    // Migrated so far: payment_intents (confirm/capture/cancel).
+    const register: RegisterOverrideFn = (m, p, h) => this.registerOverride(m, p, h);
+    for (const pack of behaviorPacks) {
+      mountBehaviorPack(pack, register, {
+        store,
+        errorFactory: (e) => stripeError(e.code, e.message),
+      });
+    }
 
     // ── Setup Intents ─────────────────────────────────────────────────────────
     this.registerOverride(
