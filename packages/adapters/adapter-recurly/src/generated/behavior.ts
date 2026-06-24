@@ -34,6 +34,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "canceled_at": "{{ nowIso }}"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "subscription.canceled"
+          }
         ]
       },
       {
@@ -63,6 +68,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "paused_at": "{{ nowIso }}",
               "remaining_pause_cycles": "{{ body.remaining_pause_cycles != null ? body.remaining_pause_cycles : 1 }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription.paused"
           }
         ]
       },
@@ -94,6 +104,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "remaining_pause_cycles": null
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "subscription.resumed"
+          }
         ]
       },
       {
@@ -124,6 +139,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "activated_at": "{{ nowIso }}"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "subscription.reactivated"
+          }
         ]
       },
       {
@@ -147,6 +167,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "trial_ends_at": "{{ nowIso }}"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "subscription.converted"
+          }
         ]
       },
       {
@@ -168,6 +193,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "state": "expired",
               "expires_at": "{{ nowIso }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription.terminated"
           }
         ]
       }

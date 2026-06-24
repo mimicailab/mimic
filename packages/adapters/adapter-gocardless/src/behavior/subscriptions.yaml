@@ -23,6 +23,8 @@ actions:
     effects:
       - set: { status: cancelled }
     respond: { subscriptions: '{{ self }}' }
+    emit:
+      - event: subscription.cancelled
 
   # ── pause ──────────────────────────────────────────────────────────────────
   - method: POST
@@ -42,6 +44,8 @@ actions:
     effects:
       - set: { status: paused }
     respond: { subscriptions: '{{ self }}' }
+    emit:
+      - event: subscription.paused
 
   # ── resume ─────────────────────────────────────────────────────────────────
   - method: POST
@@ -61,3 +65,5 @@ actions:
     effects:
       - set: { status: active }
     respond: { subscriptions: '{{ self }}' }
+    emit:
+      - event: subscription.resumed

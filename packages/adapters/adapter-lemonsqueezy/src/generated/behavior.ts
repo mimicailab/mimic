@@ -38,6 +38,11 @@ export const behaviorPacks: BehaviorPack[] = [
             }
           }
         ],
+        "emit": [
+          {
+            "event": "subscription_cancelled"
+          }
+        ],
         "respond": {
           "jsonapi": {
             "version": "1.0"
@@ -156,6 +161,11 @@ export const behaviorPacks: BehaviorPack[] = [
             "set": {
               "updated_at": "{{ nowIso }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription_updated"
           }
         ],
         "respond": {

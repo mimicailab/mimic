@@ -29,6 +29,11 @@ export const behaviorPacks: BehaviorPack[] = [
             }
           }
         ],
+        "emit": [
+          {
+            "event": "credit_memo.applied"
+          }
+        ],
         "respond": {
           "id": "{{ params.creditMemoKey }}"
         }
@@ -61,6 +66,11 @@ export const behaviorPacks: BehaviorPack[] = [
             }
           }
         ],
+        "emit": [
+          {
+            "event": "subscription.cancelled"
+          }
+        ],
         "respond": {
           "subscriptionId": "{{ self.id }}"
         }
@@ -84,6 +94,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "status": "Active",
               "updatedDate": "{{ nowIso }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription.renewed"
           }
         ],
         "respond": {
@@ -112,6 +127,11 @@ export const behaviorPacks: BehaviorPack[] = [
             }
           }
         ],
+        "emit": [
+          {
+            "event": "subscription.suspended"
+          }
+        ],
         "respond": {
           "subscriptionId": "{{ self.id }}"
         }
@@ -136,6 +156,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "suspendedDate": null,
               "updatedDate": "{{ nowIso }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription.resumed"
           }
         ],
         "respond": {

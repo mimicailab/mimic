@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import type { LemonSqueezyConfig } from './config.js';
 import { registerLemonSqueezyTools } from './mcp.js';
@@ -204,10 +204,12 @@ export class LemonSqueezyAdapter extends OpenApiMockAdapter<LemonSqueezyConfig> 
     // ── Subscriptions (declarative behavior pack) ─────────────────────────
     // DELETE = cancel, PATCH = update/pause/unpause/cancel — see
     // src/behavior/subscriptions.yaml.
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'lemonsqueezy', { defaultEnvelope: 'generic' });
     this.mountBehaviorPacks(store, behaviorPacks, (e) =>
       e.kind === 'not_found'
         ? { errors: [{ detail: e.message, status: '404', title: 'Not Found' }] }
         : lsStateError(e.message),
+      emitSink,
     );
 
     // ── Discounts ─────────────────────────────────────────────────────────

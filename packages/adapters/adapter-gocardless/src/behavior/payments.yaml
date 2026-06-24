@@ -20,6 +20,8 @@ actions:
     effects:
       - set: { status: cancelled }
     respond: { payments: '{{ self }}' }
+    emit:
+      - event: payment.cancelled
 
   # ── retry ──────────────────────────────────────────────────────────────────
   - method: POST
@@ -39,3 +41,5 @@ actions:
     effects:
       - set: { status: pending_submission }
     respond: { payments: '{{ self }}' }
+    emit:
+      - event: payment.retried

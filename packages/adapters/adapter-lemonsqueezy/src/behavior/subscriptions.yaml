@@ -29,6 +29,8 @@ actions:
           cancelled: true
           ends_at: '{{ nowIso }}'
           updated_at: '{{ nowIso }}'
+    emit:
+      - event: subscription_cancelled
     respond:
       jsonapi: { version: '1.0' }
       links: { self: 'https://api.lemonsqueezy.com/v1/subscriptions/{{ self.id }}' }
@@ -90,6 +92,8 @@ actions:
           - set: { billing_anchor: '{{ attrs.billing_anchor }}' }
       - set:
           updated_at: '{{ nowIso }}'
+    emit:
+      - event: subscription_updated
     respond:
       jsonapi: { version: '1.0' }
       links: { self: 'https://api.lemonsqueezy.com/v1/subscriptions/{{ self.id }}' }

@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import type { GeneratedRoute } from '@mimicai/adapter-sdk';
 import type { ZuoraConfig } from './config.js';
@@ -161,7 +161,8 @@ export class ZuoraAdapter extends OpenApiMockAdapter<ZuoraConfig> {
     // Replaces the hand-written state-machine handlers that loaded a resource,
     // mutated its status/timestamps, and re-stored it. Error specs are mapped to
     // Zuora's { success: false, reasons: [{ code, message }] } envelope.
-    this.mountBehaviorPacks(store, behaviorPacks, (e) => zuoraError(e.code, e.message));
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'zuora', { defaultEnvelope: 'generic' });
+    this.mountBehaviorPacks(store, behaviorPacks, (e) => zuoraError(e.code, e.message), emitSink);
 
     // ── Accounts ──────────────────────────────────────────────────────
     this.registerOverride('POST', `${BP}/accounts`, async (req, reply) => {

@@ -28,6 +28,8 @@ actions:
           voided_at: '{{ now }}'
           updated_at: '{{ now }}'
           resource_version: '{{ now * 1000 }}'
+    emit:
+      - event: invoice.voided
 
   # ── write_off (POST /invoices/:id/write_off) ───────────────────────────────
   - method: POST
@@ -50,6 +52,8 @@ actions:
           write_off_amount: "{{ self.amount_due != null ? self.amount_due : 0 }}"
           updated_at: '{{ now }}'
           resource_version: '{{ now * 1000 }}'
+    emit:
+      - event: invoice.written_off
 
   # ── record_payment (POST /invoices/:id/record_payment) ─────────────────────
   - method: POST
@@ -74,3 +78,5 @@ actions:
           amount_due: 0
           updated_at: '{{ now }}'
           resource_version: '{{ now * 1000 }}'
+    emit:
+      - event: invoice.payment_recorded

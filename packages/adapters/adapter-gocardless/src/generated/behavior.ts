@@ -36,7 +36,12 @@ export const behaviorPacks: BehaviorPack[] = [
         ],
         "respond": {
           "mandates": "{{ self }}"
-        }
+        },
+        "emit": [
+          {
+            "event": "mandate.cancelled"
+          }
+        ]
       },
       {
         "method": "POST",
@@ -67,7 +72,12 @@ export const behaviorPacks: BehaviorPack[] = [
         ],
         "respond": {
           "mandates": "{{ self }}"
-        }
+        },
+        "emit": [
+          {
+            "event": "mandate.reinstated"
+          }
+        ]
       }
     ]
   },
@@ -103,7 +113,12 @@ export const behaviorPacks: BehaviorPack[] = [
         ],
         "respond": {
           "payments": "{{ self }}"
-        }
+        },
+        "emit": [
+          {
+            "event": "payment.cancelled"
+          }
+        ]
       },
       {
         "method": "POST",
@@ -134,7 +149,12 @@ export const behaviorPacks: BehaviorPack[] = [
         ],
         "respond": {
           "payments": "{{ self }}"
-        }
+        },
+        "emit": [
+          {
+            "event": "payment.retried"
+          }
+        ]
       }
     ]
   },
@@ -170,7 +190,12 @@ export const behaviorPacks: BehaviorPack[] = [
         ],
         "respond": {
           "subscriptions": "{{ self }}"
-        }
+        },
+        "emit": [
+          {
+            "event": "subscription.cancelled"
+          }
+        ]
       },
       {
         "method": "POST",
@@ -201,7 +226,12 @@ export const behaviorPacks: BehaviorPack[] = [
         ],
         "respond": {
           "subscriptions": "{{ self }}"
-        }
+        },
+        "emit": [
+          {
+            "event": "subscription.paused"
+          }
+        ]
       },
       {
         "method": "POST",
@@ -232,7 +262,12 @@ export const behaviorPacks: BehaviorPack[] = [
         ],
         "respond": {
           "subscriptions": "{{ self }}"
-        }
+        },
+        "emit": [
+          {
+            "event": "subscription.resumed"
+          }
+        ]
       }
     ]
   }

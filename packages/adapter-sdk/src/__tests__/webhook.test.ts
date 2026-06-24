@@ -53,12 +53,29 @@ describe('webhook delivery', () => {
     const sink = webhookSinkFromConfig(
       { events: { stripe: { type: 'webhook', config: { endpoint: srv.url } } } },
       'stripe',
-      () => {},
+      { log: () => {} },
     );
     expect(sink).toBeDefined();
     sink!({ type: 'invoice.paid', data: { id: 'in_1' } });
     const { body } = await srv.received;
     srv.close();
     expect(JSON.parse(body).type).toBe('invoice.paid');
+  });
+
+  it('delivers a generic envelope when configured', async () => {
+    const srv = await captureServer();
+    const sink = webhookSinkFromConfig(
+      { events: { recurly: { type: 'webhook', config: { endpoint: srv.url } } } },
+      'recurly',
+      { log: () => {}, defaultEnvelope: 'generic' },
+    );
+    sink!({ type: 'subscription.canceled', data: { id: 'sub_1', state: 'canceled' } });
+    const { body } = await srv.received;
+    srv.close();
+    const evt = JSON.parse(body);
+    expect(evt.type).toBe('subscription.canceled');
+    expect(evt.id).toMatch(/^evt_/);
+    expect(evt.data).toEqual({ id: 'sub_1', state: 'canceled' });   // generic: data is the resource directly
+    expect(evt.object).toBeUndefined();                              // not stripe-style
   });
 });

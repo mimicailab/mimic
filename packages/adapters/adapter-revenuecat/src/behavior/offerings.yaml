@@ -12,6 +12,8 @@ actions:
       message: "offering with id '{{ params.offering_id }}' not found"
     effects:
       - set: { state: inactive }
+    emit:
+      - event: offering.archived
 
   - method: POST
     path: /projects/:project_id/offerings/:offering_id/actions/unarchive
@@ -23,3 +25,5 @@ actions:
       message: "offering with id '{{ params.offering_id }}' not found"
     effects:
       - set: { state: active }
+    emit:
+      - event: offering.unarchived

@@ -20,6 +20,8 @@ actions:
     effects:
       - set: { status: cancelled }
     respond: { mandates: '{{ self }}' }
+    emit:
+      - event: mandate.cancelled
 
   # ── reinstate ──────────────────────────────────────────────────────────────
   - method: POST
@@ -39,3 +41,5 @@ actions:
     effects:
       - set: { status: active }
     respond: { mandates: '{{ self }}' }
+    emit:
+      - event: mandate.reinstated

@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, generateId, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import meta from './adapter-meta.js';
 import type { GoCardlessConfig } from './config.js';
@@ -165,12 +165,14 @@ export class GoCardlessAdapter extends OpenApiMockAdapter<GoCardlessConfig> {
     // are declared in src/behavior/*.yaml and executed by the SDK behavior
     // interpreter. Non-state-machine overrides (if any) would be registered as
     // code here as an escape hatch.
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'gocardless', { defaultEnvelope: 'generic' });
     this.mountBehaviorPacks(store, behaviorPacks, (e) =>
       e.kind === 'not_found'
         ? gcError('invalid_api_usage', 404, e.message, [
             { reason: e.code, message: e.message },
           ])
         : gcStateError(e.message),
+      emitSink,
     );
   }
 }

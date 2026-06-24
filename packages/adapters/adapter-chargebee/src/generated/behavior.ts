@@ -36,6 +36,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "resource_version": "{{ now * 1000 }}"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "invoice.voided"
+          }
         ]
       },
       {
@@ -66,6 +71,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "updated_at": "{{ now }}",
               "resource_version": "{{ now * 1000 }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "invoice.written_off"
           }
         ]
       },
@@ -99,6 +109,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "updated_at": "{{ now }}",
               "resource_version": "{{ now * 1000 }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "invoice.payment_recorded"
           }
         ]
       }
@@ -137,6 +152,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "resource_version": "{{ now * 1000 }}"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "subscription.cancelled"
+          }
         ]
       },
       {
@@ -170,6 +190,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "resource_version": "{{ now * 1000 }}"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "subscription.reactivated"
+          }
         ]
       },
       {
@@ -200,6 +225,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "updated_at": "{{ now }}",
               "resource_version": "{{ now * 1000 }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription.paused"
           }
         ]
       },
@@ -232,6 +262,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "updated_at": "{{ now }}",
               "resource_version": "{{ now * 1000 }}"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription.resumed"
           }
         ]
       }

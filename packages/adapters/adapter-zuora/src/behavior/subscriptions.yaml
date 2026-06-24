@@ -23,6 +23,8 @@ actions:
           status: Cancelled
           cancelledDate: '{{ nowIso }}'
           updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.cancelled
     respond:
       subscriptionId: '{{ self.id }}'
 
@@ -39,6 +41,8 @@ actions:
       - set:
           status: Active
           updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.renewed
     respond:
       subscriptionId: '{{ self.id }}'
 
@@ -56,6 +60,8 @@ actions:
           status: Suspended
           suspendedDate: '{{ nowIso }}'
           updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.suspended
     respond:
       subscriptionId: '{{ self.id }}'
 
@@ -73,5 +79,7 @@ actions:
           status: Active
           suspendedDate: null
           updatedDate: '{{ nowIso }}'
+    emit:
+      - event: subscription.resumed
     respond:
       subscriptionId: '{{ self.id }}'

@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, generateId } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, generateId, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import meta from './adapter-meta.js';
 import type { PaddleConfig } from './config.js';
@@ -174,10 +174,12 @@ export class PaddleAdapter extends OpenApiMockAdapter<PaddleConfig> {
       transactionOverrides.buildReviseHandler(store));
 
     // Declarative behavior packs (activate, resume).
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'paddle', { defaultEnvelope: 'generic' });
     this.mountBehaviorPacks(store, behaviorPacks, (e) =>
       e.kind === 'not_found'
         ? paddleError('not_found', e.message)
         : paddleStateError(e.message),
+      emitSink,
     );
   }
 }

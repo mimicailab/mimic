@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, unixNow } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, unixNow, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import type { GeneratedRoute } from '@mimicai/adapter-sdk';
 import type { ChargebeeConfig } from './config.js';
@@ -259,8 +259,10 @@ export class ChargebeeAdapter extends OpenApiMockAdapter<ChargebeeConfig> {
     // subscription cancel/reactivate/pause/resume + invoice void/write_off/
     // record_payment. The errorFactory maps the engine's ErrorSpec to the flat
     // Chargebee error envelope (code → api_error_code).
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'chargebee', { defaultEnvelope: 'generic' });
     this.mountBehaviorPacks(store, behaviorPacks, (e) =>
       chargebeeError(e.code, e.message, 'invalid_request'),
+      emitSink,
     );
 
     // ── Coupons — create via /coupons/create_for_items ──

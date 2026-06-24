@@ -29,6 +29,8 @@ actions:
           cancelled_at: "{{ (body.end_of_term == true || body.end_of_term == 'true') ? null : now }}"
           updated_at: '{{ now }}'
           resource_version: '{{ now * 1000 }}'
+    emit:
+      - event: subscription.cancelled
 
   # ── reactivate (POST /subscriptions/:id/reactivate) ────────────────────────
   - method: POST
@@ -53,6 +55,8 @@ actions:
           activated_at: '{{ now }}'
           updated_at: '{{ now }}'
           resource_version: '{{ now * 1000 }}'
+    emit:
+      - event: subscription.reactivated
 
   # ── pause (POST /subscriptions/:id/pause) ──────────────────────────────────
   - method: POST
@@ -75,6 +79,8 @@ actions:
           pause_date: '{{ now }}'
           updated_at: '{{ now }}'
           resource_version: '{{ now * 1000 }}'
+    emit:
+      - event: subscription.paused
 
   # ── resume (POST /subscriptions/:id/resume) ────────────────────────────────
   - method: POST
@@ -98,3 +104,5 @@ actions:
           resume_date: '{{ now }}'
           updated_at: '{{ now }}'
           resource_version: '{{ now * 1000 }}'
+    emit:
+      - event: subscription.resumed

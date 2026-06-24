@@ -26,6 +26,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "state": "inactive"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "entitlement.archived"
+          }
         ]
       },
       {
@@ -46,6 +51,11 @@ export const behaviorPacks: BehaviorPack[] = [
             "set": {
               "state": "active"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "entitlement.unarchived"
           }
         ]
       }
@@ -73,6 +83,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "state": "inactive"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "offering.archived"
+          }
         ]
       },
       {
@@ -93,6 +108,11 @@ export const behaviorPacks: BehaviorPack[] = [
             "set": {
               "state": "active"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "offering.unarchived"
           }
         ]
       }
@@ -120,6 +140,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "state": "inactive"
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "product.archived"
+          }
         ]
       },
       {
@@ -140,6 +165,11 @@ export const behaviorPacks: BehaviorPack[] = [
             "set": {
               "state": "active"
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "product.unarchived"
           }
         ]
       }
@@ -176,6 +206,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "gives_access": false
             }
           }
+        ],
+        "emit": [
+          {
+            "event": "subscription.expired"
+          }
         ]
       },
       {
@@ -198,6 +233,11 @@ export const behaviorPacks: BehaviorPack[] = [
               "auto_renewal_status": "will_not_renew",
               "gives_access": false
             }
+          }
+        ],
+        "emit": [
+          {
+            "event": "subscription.refunded"
           }
         ]
       }

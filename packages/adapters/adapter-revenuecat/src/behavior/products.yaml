@@ -12,6 +12,8 @@ actions:
       message: "product with id '{{ params.product_id }}' not found"
     effects:
       - set: { state: inactive }
+    emit:
+      - event: product.archived
 
   - method: POST
     path: /projects/:project_id/products/:product_id/actions/unarchive
@@ -23,3 +25,5 @@ actions:
       message: "product with id '{{ params.product_id }}' not found"
     effects:
       - set: { state: active }
+    emit:
+      - event: product.unarchived

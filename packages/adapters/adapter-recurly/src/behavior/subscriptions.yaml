@@ -24,6 +24,8 @@ actions:
       - set:
           state: canceled
           canceled_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.canceled
 
   # ── pause ──────────────────────────────────────────────────────────────────
   - method: PUT
@@ -45,6 +47,8 @@ actions:
           state: paused
           paused_at: '{{ nowIso }}'
           remaining_pause_cycles: "{{ body.remaining_pause_cycles != null ? body.remaining_pause_cycles : 1 }}"
+    emit:
+      - event: subscription.paused
 
   # ── resume ─────────────────────────────────────────────────────────────────
   - method: PUT
@@ -66,6 +70,8 @@ actions:
           state: active
           paused_at: null
           remaining_pause_cycles: null
+    emit:
+      - event: subscription.resumed
 
   # ── reactivate ─────────────────────────────────────────────────────────────
   - method: PUT
@@ -87,6 +93,8 @@ actions:
           state: active
           canceled_at: null
           activated_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.reactivated
 
   # ── convert_trial ──────────────────────────────────────────────────────────
   - method: PUT
@@ -102,6 +110,8 @@ actions:
           state: active
           converted_at: '{{ nowIso }}'
           trial_ends_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.converted
 
   # ── terminate (DELETE) ─────────────────────────────────────────────────────
   - method: DELETE
@@ -116,3 +126,5 @@ actions:
       - set:
           state: expired
           expires_at: '{{ nowIso }}'
+    emit:
+      - event: subscription.terminated

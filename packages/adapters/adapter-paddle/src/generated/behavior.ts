@@ -27,6 +27,11 @@ export const behaviorPacks: BehaviorPack[] = [
           "code": "conflict",
           "message": "Subscription {{ params.subscription_id }} must be trialing to activate, current status: {{ self.status }}"
         },
+        "emit": [
+          {
+            "event": "subscription.activated"
+          }
+        ],
         "effects": [
           {
             "set": {
@@ -57,6 +62,11 @@ export const behaviorPacks: BehaviorPack[] = [
           "code": "conflict",
           "message": "Subscription {{ params.subscription_id }} must be paused to resume, current status: {{ self.status }}"
         },
+        "emit": [
+          {
+            "event": "subscription.resumed"
+          }
+        ],
         "effects": [
           {
             "when": "body.effective_from == null || body.effective_from == 'immediately'",

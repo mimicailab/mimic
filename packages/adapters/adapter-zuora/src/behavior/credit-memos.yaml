@@ -22,5 +22,7 @@ actions:
       - set:
           status: Posted
           updatedDate: '{{ nowIso }}'
+    emit:
+      - event: credit_memo.applied
     respond:
       id: '{{ params.creditMemoKey }}'

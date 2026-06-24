@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import type { RecurlyConfig } from './config.js';
 import { registerRecurlyTools } from './mcp.js';
@@ -117,10 +117,12 @@ export class RecurlyAdapter extends OpenApiMockAdapter<RecurlyConfig> {
     );
 
     // ── Subscriptions (declarative behavior pack) ──────────────────────────
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'recurly', { defaultEnvelope: 'generic' });
     this.mountBehaviorPacks(store, behaviorPacks, (e) =>
       e.kind === 'not_found'
         ? { error: { type: 'not_found', code: 'not_found', message: e.message, param: null } }
         : recurlyStateError(e.message),
+      emitSink,
     );
 
     // ── Invoices ──────────────────────────────────────────────────────────

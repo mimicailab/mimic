@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData, PromptContext } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory, NotFoundError } from '@mimicai/adapter-sdk';
 import meta from './adapter-meta.js';
 import type { RevenueCatConfig } from './config.js';
@@ -151,8 +151,10 @@ export class RevenueCatAdapter extends OpenApiMockAdapter<RevenueCatConfig> {
   private mountOverrides(store: StateStore): void {
     // Subscription lifecycle + entitlement/product/offering archive
     // are declarative behavior packs (src/behavior/*.yaml).
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'revenuecat', { defaultEnvelope: 'generic' });
     this.mountBehaviorPacks(store, behaviorPacks, (e) =>
       rcError(e.code, e.message, { param: e.param ?? undefined }),
+      emitSink,
     );
   }
 }

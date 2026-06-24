@@ -26,6 +26,8 @@ actions:
       kind: conflict
       code: conflict
       message: "Subscription {{ params.subscription_id }} must be trialing to activate, current status: {{ self.status }}"
+    emit:
+      - event: subscription.activated
     effects:
       - set:
           status: active
@@ -47,6 +49,8 @@ actions:
       kind: conflict
       code: conflict
       message: "Subscription {{ params.subscription_id }} must be paused to resume, current status: {{ self.status }}"
+    emit:
+      - event: subscription.resumed
     effects:
       # effective_from defaults to 'immediately' when absent.
       - when: "body.effective_from == null || body.effective_from == 'immediately'"

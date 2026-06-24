@@ -22,6 +22,8 @@ actions:
           status: expired
           auto_renewal_status: will_not_renew
           gives_access: false
+    emit:
+      - event: subscription.expired
 
   # ── refund ─────────────────────────────────────────────────────────────────
   - method: POST
@@ -37,3 +39,5 @@ actions:
           status: expired
           auto_renewal_status: will_not_renew
           gives_access: false
+    emit:
+      - event: subscription.refunded

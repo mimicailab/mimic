@@ -12,6 +12,8 @@ actions:
       message: "entitlement with id '{{ params.entitlement_id }}' not found"
     effects:
       - set: { state: inactive }
+    emit:
+      - event: entitlement.archived
 
   - method: POST
     path: /projects/:project_id/entitlements/:entitlement_id/actions/unarchive
@@ -23,3 +25,5 @@ actions:
       message: "entitlement with id '{{ params.entitlement_id }}' not found"
     effects:
       - set: { state: active }
+    emit:
+      - event: entitlement.unarchived

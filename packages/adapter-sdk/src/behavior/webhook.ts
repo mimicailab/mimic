@@ -14,21 +14,40 @@ import { generateId } from '@mimicai/core';
 import { unixNow } from '../format-helpers.js';
 import type { EmitSink } from './interpreter.js';
 
+/**
+ * Event envelope style. Platforms differ in webhook shape; `stripe` wraps the
+ * resource in `data.object`, `generic` is a platform-neutral event record that
+ * any handler can consume. Adapters can later add a fully platform-exact
+ * envelope as needed.
+ */
+export type EnvelopeStyle = 'stripe' | 'generic';
+
 export interface WebhookSinkOptions {
   /** Destination URL for delivered events. */
   endpoint: string;
-  /** Optional signing secret (Stripe-style `Stripe-Signature` HMAC). */
+  /** Optional signing secret (HMAC, Stripe-style `t=<ts>,v1=<sig>`). */
   secret?: string;
   /** Header name for the signature (default `Stripe-Signature`). */
   signatureHeader?: string;
+  /** Event envelope style (default `stripe`). */
+  envelope?: EnvelopeStyle;
   /** Short label used in logs, e.g. the adapter id. */
   source?: string;
   /** Log callback (defaults to console.log). */
   log?: (msg: string) => void;
 }
 
-/** Wrap a behavior emit in a Stripe-style event envelope. */
-function buildEnvelope(type: string, data: unknown): Record<string, unknown> {
+/** Wrap a behavior emit in an event envelope. */
+function buildEnvelope(style: EnvelopeStyle, type: string, data: unknown): Record<string, unknown> {
+  if (style === 'generic') {
+    return {
+      id: generateId('evt_', 24),
+      type,
+      created: unixNow(),
+      data,
+    };
+  }
+  // Stripe-style
   return {
     id: generateId('evt_', 24),
     object: 'event',
@@ -58,10 +77,11 @@ function sign(payload: string, secret: string): string {
 export function createWebhookEmitSink(opts: WebhookSinkOptions): EmitSink {
   const log = opts.log ?? ((m: string) => console.log(m));
   const sigHeader = opts.signatureHeader ?? 'Stripe-Signature';
+  const style: EnvelopeStyle = opts.envelope ?? 'stripe';
   const src = opts.source ? `[${opts.source}] ` : '';
 
   return (event) => {
-    const envelope = buildEnvelope(event.type, event.data);
+    const envelope = buildEnvelope(style, event.type, event.data);
     const payload = JSON.stringify(envelope);
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (opts.secret) headers[sigHeader] = sign(payload, opts.secret);
@@ -87,7 +107,7 @@ export function createWebhookEmitSink(opts: WebhookSinkOptions): EmitSink {
 export function webhookSinkFromConfig(
   config: unknown,
   adapterId: string,
-  log?: (msg: string) => void,
+  opts?: { log?: (msg: string) => void; defaultEnvelope?: EnvelopeStyle },
 ): EmitSink | undefined {
   const events = (config as { events?: Record<string, { type?: string; config?: Record<string, unknown> }> } | undefined)?.events;
   const entry = events?.[adapterId];
@@ -97,7 +117,9 @@ export function webhookSinkFromConfig(
   return createWebhookEmitSink({
     endpoint,
     secret: entry.config?.secret as string | undefined,
+    signatureHeader: entry.config?.signatureHeader as string | undefined,
+    envelope: (entry.config?.envelope as EnvelopeStyle | undefined) ?? opts?.defaultEnvelope,
     source: adapterId,
-    log,
+    log: opts?.log,
   });
 }
