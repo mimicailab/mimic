@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { EndpointDefinition, DataSpec, ExpandedData } from '@mimicai/core';
 import { derivePromptContext, deriveDataSpec, generateId } from '@mimicai/core';
 import type { StateStore } from '@mimicai/core';
-import { OpenApiMockAdapter, unixNow } from '@mimicai/adapter-sdk';
+import { OpenApiMockAdapter, unixNow, webhookSinkFromConfig } from '@mimicai/adapter-sdk';
 import type { DefaultFactory } from '@mimicai/adapter-sdk';
 import type { StripeConfig } from './config.js';
 import { registerStripeTools } from './mcp.js';
@@ -105,7 +105,10 @@ export class StripeAdapter extends OpenApiMockAdapter<StripeConfig> {
     // Replaces hand-written override handlers. The generic interpreter in
     // @mimicai/adapter-sdk executes each pack against the StateStore.
     // Migrated packs: payment-intents, setup-intents, invoices, charges.
-    this.mountBehaviorPacks(store, behaviorPacks, (e) => stripeError(e.code, e.message));
+    // Wire a webhook delivery sink from the `events.stripe` config (if present)
+    // so behavior `emit:` declarations fire as real outbound webhooks.
+    const emitSink = webhookSinkFromConfig(this.context?.config, 'stripe');
+    this.mountBehaviorPacks(store, behaviorPacks, (e) => stripeError(e.code, e.message), emitSink);
 
     // ── Billing Portal ────────────────────────────────────────────────────────
     this.registerOverride(
