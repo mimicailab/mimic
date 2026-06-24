@@ -25,10 +25,11 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "generate": "tsx scripts/recurly-codegen.ts",
+    "generate": "tsx scripts/recurly-codegen.ts && mimic-behavior-codegen",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "generate:behavior": "mimic-behavior-codegen"
   },
   "dependencies": {
     "@mimicai/adapter-sdk": "workspace:*",

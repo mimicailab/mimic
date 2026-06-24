@@ -41,7 +41,8 @@ function buildScope(req: FastifyRequest): Record<string, unknown> {
     body: (req.body ?? {}) as Record<string, unknown>,
     params: (req.params ?? {}) as Record<string, unknown>,
     query: (req.query ?? {}) as Record<string, unknown>,
-    now: unixNow(),
+    now: unixNow(),                       // unix seconds (Stripe-style)
+    nowIso: new Date().toISOString(),     // ISO-8601 string (Recurly-style)
   };
 }
 
